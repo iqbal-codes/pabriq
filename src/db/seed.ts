@@ -103,7 +103,7 @@ export const ddl = [
   `CREATE TABLE IF NOT EXISTS "addresses" (
     id TEXT PRIMARY KEY,
     org_id TEXT NOT NULL REFERENCES "organization"(id) ON DELETE CASCADE,
-    area_id TEXT REFERENCES "biteship_areas"(area_id) ON DELETE NO ACTION,
+    area_id TEXT,
     area_name TEXT,
     street_address TEXT,
     is_default BOOLEAN NOT NULL DEFAULT FALSE,
@@ -186,6 +186,7 @@ export const ddl = [
     notes TEXT,
     total REAL NOT NULL DEFAULT 0,
     quote_number TEXT,
+    order_token TEXT UNIQUE,
     valid_until TIMESTAMP,
     shipping_address JSONB,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -200,7 +201,9 @@ export const ddl = [
     quantity INTEGER NOT NULL DEFAULT 1,
     unit_price REAL NOT NULL,
     total REAL NOT NULL,
+    name TEXT,
     notes TEXT,
+    asset_id TEXT REFERENCES "assets"(id) ON DELETE SET NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   )`,

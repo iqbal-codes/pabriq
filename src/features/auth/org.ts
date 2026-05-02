@@ -2,7 +2,11 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { eq } from 'drizzle-orm'
 import { db } from '#/db/index'
-import { member, organization as organizationTable } from '#/db/schema'
+import {
+  member,
+  organizationProfiles,
+  organization as organizationTable,
+} from '#/db/schema'
 
 export const listUserOrgs = createServerFn({ method: 'GET' }).handler(
   async () => {
@@ -16,24 +20,25 @@ export const listUserOrgs = createServerFn({ method: 'GET' }).handler(
         id: organizationTable.id,
         name: organizationTable.name,
         slug: organizationTable.slug,
-        logo: organizationTable.logoAssetId,
+        logo: organizationProfiles.logoAssetId,
       })
       .from(member)
       .innerJoin(
         organizationTable,
         eq(member.organizationId, organizationTable.id),
       )
+      .leftJoin(
+        organizationProfiles,
+        eq(organizationProfiles.orgId, organizationTable.id),
+      )
       .where(eq(member.userId, session.user.id))
 
-    return memberships.map(
-      (m) =>
-        ({
-          id: m.id,
-          name: m.name,
-          slug: m.slug,
-          logo: (m as unknown as { logoAssetId: string | null }).logoAssetId,
-        }) as typeof m,
-    )
+    return memberships.map((m) => ({
+      id: m.id,
+      name: m.name,
+      slug: m.slug,
+      logo: m.logo,
+    }))
   },
 )
 
@@ -78,10 +83,11 @@ export const createOrganization = createServerFn({ method: 'POST' })
             .limit(1)
 
           if (orgs[0]) {
-            await db
-              .update(organizationTable)
-              .set({ logoAssetId: data.logoAssetId })
-              .where(eq(organizationTable.id, orgs[0].id))
+            await db.insert(organizationProfiles).values({
+              id: crypto.randomUUID(),
+              orgId: orgs[0].id,
+              logoAssetId: data.logoAssetId,
+            })
           }
         }
 

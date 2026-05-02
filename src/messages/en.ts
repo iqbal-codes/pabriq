@@ -244,6 +244,44 @@ export type Messages = {
     areaNotFound: string
     defaultAddress: string
   }
+  portal: {
+    title: string
+    waitApproval: string
+    orderSummary: string
+    lineItems: string
+    productName: string
+    quantity: string
+    unitPrice: string
+    lineTotal: string
+    itemName: string
+    itemNamePlaceholder: string
+    itemNotes: string
+    itemNotesPlaceholder: string
+    attachment: string
+    addAttachment: string
+    shippingAddress: string
+    orderTotal: string
+    submit: string
+    submitting: string
+    guestName: string
+    guestNamePlaceholder: string
+    guestPhone: string
+    guestPhonePlaceholder: string
+    copyLink: string
+    linkCopied: string
+    downloadInvoice: string
+    contactAdmin: string
+    notFound: string
+    statusDraft: string
+    statusPending: string
+    statusApproved: string
+    statusProduction: string
+    statusInDelivery: string
+    statusCompleted: string
+    statusCancelled: string
+    required: string
+    areaRequired: string
+  }
 }
 
 const en: Messages = {
@@ -492,6 +530,45 @@ const en: Messages = {
     orgAddressRequired: 'Please set your organization address to continue',
     areaNotFound: 'Area not found. Please check the area name.',
     defaultAddress: 'Default address',
+  },
+  portal: {
+    title: 'Order Confirmation',
+    waitApproval:
+      'Your order has been submitted. Please wait for admin approval.',
+    orderSummary: 'Order Summary',
+    lineItems: 'Order Items',
+    productName: 'Product',
+    quantity: 'Qty',
+    unitPrice: 'Unit Price',
+    lineTotal: 'Total',
+    itemName: 'Item Name',
+    itemNamePlaceholder: 'Enter item name (optional override)',
+    itemNotes: 'Notes / Specification',
+    itemNotesPlaceholder: 'Add notes or specifications for this item',
+    attachment: 'Attachment',
+    addAttachment: 'Add attachment',
+    shippingAddress: 'Shipping Address',
+    orderTotal: 'Order Total',
+    submit: 'Confirm Order',
+    submitting: 'Submitting...',
+    guestName: 'Full Name',
+    guestNamePlaceholder: 'Enter your full name',
+    guestPhone: 'Phone Number',
+    guestPhonePlaceholder: 'Enter your phone number',
+    copyLink: 'Copy Link',
+    linkCopied: 'Link copied!',
+    downloadInvoice: 'Download Invoice',
+    contactAdmin: 'Contact Admin via WhatsApp',
+    notFound: 'Order not found',
+    statusDraft: 'Pending Confirmation',
+    statusPending: 'Awaiting Approval',
+    statusApproved: 'Approved',
+    statusProduction: 'In Production',
+    statusInDelivery: 'In Delivery',
+    statusCompleted: 'Completed',
+    statusCancelled: 'Cancelled',
+    required: 'This field is required',
+    areaRequired: 'Please select an area',
   },
 }
 

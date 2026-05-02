@@ -14,6 +14,7 @@ import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OrgRouteImport } from './routes/_org'
 import { Route as OrgIndexRouteImport } from './routes/_org/index'
+import { Route as OrderTokenRouteImport } from './routes/order.$token'
 import { Route as OrgProductsIndexRouteImport } from './routes/_org/products/index'
 import { Route as OrgOrdersIndexRouteImport } from './routes/_org/orders/index'
 import { Route as OrgCustomersIndexRouteImport } from './routes/_org/customers/index'
@@ -47,6 +48,11 @@ const OrgIndexRoute = OrgIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => OrgRoute,
+} as any)
+const OrderTokenRoute = OrderTokenRouteImport.update({
+  id: '/order/$token',
+  path: '/order/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const OrgProductsIndexRoute = OrgProductsIndexRouteImport.update({
   id: '/products/',
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/order/$token': typeof OrderTokenRoute
   '/customers/new': typeof OrgCustomersNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
   '/products/new': typeof OrgProductsNewRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/order/$token': typeof OrderTokenRoute
   '/': typeof OrgIndexRoute
   '/customers/new': typeof OrgCustomersNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/order/$token': typeof OrderTokenRoute
   '/_org/': typeof OrgIndexRoute
   '/_org/customers/new': typeof OrgCustomersNewRoute
   '/_org/orders/new': typeof OrgOrdersNewRoute
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/sign-in'
     | '/sign-up'
+    | '/order/$token'
     | '/customers/new'
     | '/orders/new'
     | '/products/new'
@@ -163,6 +173,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/sign-in'
     | '/sign-up'
+    | '/order/$token'
     | '/'
     | '/customers/new'
     | '/orders/new'
@@ -179,6 +190,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/sign-in'
     | '/sign-up'
+    | '/order/$token'
     | '/_org/'
     | '/_org/customers/new'
     | '/_org/orders/new'
@@ -196,6 +208,7 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  OrderTokenRoute: typeof OrderTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiDocumentsOrdersIdQuotationRoute: typeof ApiDocumentsOrdersIdQuotationRoute
 }
@@ -236,6 +249,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof OrgIndexRouteImport
       parentRoute: typeof OrgRoute
+    }
+    '/order/$token': {
+      id: '/order/$token'
+      path: '/order/$token'
+      fullPath: '/order/$token'
+      preLoaderRoute: typeof OrderTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_org/products/': {
       id: '/_org/products/'
@@ -332,6 +352,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  OrderTokenRoute: OrderTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiDocumentsOrdersIdQuotationRoute: ApiDocumentsOrdersIdQuotationRoute,
 }

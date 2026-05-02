@@ -62,9 +62,6 @@ export const organization = pgTable('organization', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
-  logoAssetId: text('logo_asset_id').references(() => assets.id, {
-    onDelete: 'set null',
-  }),
   metadata: text('metadata'),
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at'),
@@ -85,9 +82,7 @@ export const addresses = pgTable('addresses', {
   orgId: text('org_id')
     .notNull()
     .references(() => organization.id, { onDelete: 'cascade' }),
-  areaId: text('area_id').references(() => biteshipAreas.areaId, {
-    onDelete: 'no action',
-  }),
+  areaId: text('area_id'),
   areaName: text('area_name'),
   streetAddress: text('street_address'),
   isDefault: boolean('is_default').notNull().default(false),
@@ -225,6 +220,7 @@ export const orders = pgTable('orders', {
   notes: text('notes'),
   total: real('total').notNull().default(0),
   quoteNumber: text('quote_number'),
+  orderToken: text('order_token').unique(),
   validUntil: timestamp('valid_until'),
   shippingAddress: json('shipping_address'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -248,7 +244,11 @@ export const orderLineItems = pgTable('order_line_items', {
   quantity: integer('quantity').notNull().default(1),
   unitPrice: real('unit_price').notNull(),
   total: real('total').notNull(),
+  name: text('name'),
   notes: text('notes'),
+  assetId: text('asset_id').references(() => assets.id, {
+    onDelete: 'set null',
+  }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
