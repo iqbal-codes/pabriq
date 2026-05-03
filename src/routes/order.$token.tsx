@@ -1,27 +1,19 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useParams } from '@tanstack/react-router'
 import { CheckCircle2 } from 'lucide-react'
 import { useTranslations } from 'use-intl'
+import { usePortalOrder } from '#/features/portal/hooks'
 import type { PortalOrder } from '#/features/portal/model'
-import { getPortalOrderFn } from '#/features/portal/server'
 
 export const Route = createFileRoute('/order/$token')({
-  loader: async ({ params }) => {
-    const result = await getPortalOrderFn({
-      data: { token: params.token },
-    })
-    if (!result.ok) {
-      return { order: null }
-    }
-    return { order: result.order }
-  },
   component: PortalRoute,
 })
 
 function PortalRoute() {
+  const { token } = useParams({ from: Route.id })
+  const { data } = usePortalOrder(token)
   const t = useTranslations('portal')
-  const data = Route.useLoaderData()
 
-  if (!data.order) {
+  if (!data.ok) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -31,7 +23,7 @@ function PortalRoute() {
     )
   }
 
-  const order: PortalOrder = data.order
+  const order = data.order
 
   if (order.status === 'pending') {
     return <PendingView order={order} />
