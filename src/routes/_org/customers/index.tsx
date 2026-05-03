@@ -8,7 +8,8 @@ import { DataTable, DataTableSearch } from '#/components/app/data-table'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { Badge } from '#/components/ui/badge'
-import { type CustomerRow, listCustomers } from '#/features/customers/model'
+import type { CustomerRow } from '#/features/customers/model'
+import { listCustomersFn } from '#/features/customers/server'
 
 type CustomerSearch = { q?: string }
 
@@ -24,7 +25,7 @@ export const Route = createFileRoute('/_org/customers/')({
   loaderDeps: ({ search: { q } }) => ({ q }),
   loader: async ({ context, deps }) => {
     const ctx = context as { org: { id: string } }
-    const result = await listCustomers({
+    const result = await listCustomersFn({
       data: { orgId: ctx.org.id, search: deps.q },
     })
     return result

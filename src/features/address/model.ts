@@ -1,6 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
 import { and, eq, ilike, or } from 'drizzle-orm'
-import { db } from '#/db/index'
 import { addresses, biteshipAreas, customers } from '#/db/schema'
 
 export type BiteshipArea = {
@@ -45,6 +44,11 @@ export function validateAddressInput(input: AddressInput): string | null {
   return null
 }
 
+async function getDb() {
+  const { db } = await import('#/db/index')
+  return db
+}
+
 export async function createAddressFn(
   input: AddressInput,
 ): Promise<{ ok: true; addressId: string } | { ok: false; error: string }> {
@@ -54,6 +58,7 @@ export async function createAddressFn(
   }
 
   const shouldSetDefault = input.isDefault ?? false
+  const db = await getDb()
 
   if (shouldSetDefault) {
     await db
@@ -81,6 +86,7 @@ export async function updateAddressFn(
   id: string,
   input: Partial<AddressInput>,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  const db = await getDb()
   const existing = await db
     .select()
     .from(addresses)
@@ -133,6 +139,7 @@ export async function searchAreas(query: string): Promise<BiteshipArea[]> {
   }
 
   const pattern = `%${query.trim()}%`
+  const db = await getDb()
 
   const rows = await db
     .select({
@@ -171,6 +178,7 @@ export async function getCustomerAddress(
   streetAddress: string | null
   isWni: boolean
 } | null> {
+  const db = await getDb()
   const rows = await db
     .select({
       areaId: customers.addressId,
@@ -225,6 +233,7 @@ export const updateCustomerAddress = createServerFn({ method: 'POST' })
   )
   .handler(
     async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
+      const db = await getDb()
       await db
         .update(customers)
         .set({

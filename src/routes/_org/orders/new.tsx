@@ -10,7 +10,7 @@ import {
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { Button } from '#/components/ui/button'
-import { listCustomers } from '#/features/customers/model'
+import { listCustomersFn } from '#/features/customers/server'
 import { createDraftOrderFn } from '#/features/orders/server'
 import { listProductsFn } from '#/features/products/server'
 
@@ -22,7 +22,7 @@ export const Route = createFileRoute('/_org/orders/new')({
   loader: async ({ context }) => {
     const ctx = context as { org: { id: string } }
     const [customers, products] = await Promise.all([
-      listCustomers({ data: { orgId: ctx.org.id } }),
+      listCustomersFn({ data: { orgId: ctx.org.id } }),
       listProductsFn({ data: { orgId: ctx.org.id } }),
     ])
     return { customers: customers.rows, products: products.rows }

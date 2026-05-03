@@ -1,7 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { eq } from 'drizzle-orm'
-import { db } from '#/db/index'
 import {
   member,
   organizationProfiles,
@@ -15,6 +14,7 @@ export const listUserOrgs = createServerFn({ method: 'GET' }).handler(
     const session = await auth.api.getSession({ headers })
     if (!session) return []
 
+    const { db } = await import('#/db/index')
     const memberships = await db
       .select({
         id: organizationTable.id,
@@ -76,6 +76,7 @@ export const createOrganization = createServerFn({ method: 'POST' })
         })
 
         if (data.logoAssetId) {
+          const { db } = await import('#/db/index')
           const orgs = await db
             .select({ id: organizationTable.id })
             .from(organizationTable)

@@ -1,16 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import {
-  type CreateDraftOrderInput,
-  type CreateDraftOrderResult,
-  createDraftOrder,
-  type GetOrderResult,
-  getOrder,
-  type ListOrdersResult,
-  listOrders,
-  removeLineItem,
-  type UpdateLineItemInput,
-  updateLineItem,
+import type {
+  CreateDraftOrderInput,
+  CreateDraftOrderResult,
+  GetOrderResult,
+  ListOrdersResult,
+  UpdateLineItemInput,
 } from './model'
 
 async function resolveOrgId(): Promise<string> {
@@ -35,12 +30,14 @@ async function resolveOrgId(): Promise<string> {
 export const listOrdersFn = createServerFn({ method: 'GET' })
   .inputValidator((data: { orgId: string }) => data)
   .handler(async ({ data }): Promise<ListOrdersResult> => {
+    const { listOrders } = await import('./model')
     return listOrders(data.orgId)
   })
 
 export const getOrderFn = createServerFn({ method: 'GET' })
   .inputValidator((input: { id: string; orgId: string }) => input)
   .handler(async ({ data }): Promise<GetOrderResult | null> => {
+    const { getOrder } = await import('./model')
     return getOrder(data.id, data.orgId)
   })
 
@@ -50,6 +47,7 @@ export const createDraftOrderFn = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }): Promise<CreateDraftOrderResult> => {
     const orgId = await resolveOrgId()
+    const { createDraftOrder } = await import('./model')
     return createDraftOrder(orgId, {
       customerId: data.customerId,
       notes: data.notes,
@@ -63,6 +61,7 @@ export const updateLineItemFn = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }) => {
     const orgId = await resolveOrgId()
+    const { updateLineItem } = await import('./model')
     return updateLineItem(data.itemId, orgId, {
       quantity: data.quantity,
       unitPrice: data.unitPrice,
@@ -73,5 +72,6 @@ export const removeLineItemFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { itemId: string; orgId: string }) => input)
   .handler(async ({ data }) => {
     const orgId = await resolveOrgId()
+    const { removeLineItem } = await import('./model')
     return removeLineItem(data.itemId, orgId)
   })

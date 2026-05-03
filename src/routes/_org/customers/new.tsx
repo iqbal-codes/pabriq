@@ -1,13 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
-import {
-  createR2UploaderAdapter,
-  getAcceptedMimeTypes,
-  getMaxBytes,
-  PhotoGridUpload,
-  useUploadMachine,
-} from '#/components/app/asset-upload'
 import {
   FormGrid,
   FormRoot,
@@ -16,8 +9,8 @@ import {
 } from '#/components/app/form'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
-import type { UploadItem } from '#/features/assets/upload-machine'
 import type { CustomerInput } from '#/features/customers/model'
+import { createCustomerFn } from '#/features/customers/server'
 
 export const Route = createFileRoute('/_org/customers/new')({
   beforeLoad: () => ({
@@ -30,21 +23,6 @@ export const Route = createFileRoute('/_org/customers/new')({
 function CreateCustomer() {
   const navigate = useNavigate()
   const t = useTranslations('customers')
-  const [uploadItems, setUploadItems] = useState<UploadItem[]>([])
-  const [_uploadedPhotoAssetId, setUploadedPhotoAssetId] = useState<
-    string | null
-  >(null)
-
-  const photoAdapter = createR2UploaderAdapter({
-    ownerType: 'customer',
-    usage: 'profile',
-  })
-
-  const photoMachine = useUploadMachine(uploadItems, {
-    adapter: photoAdapter,
-    onUploadComplete: (assetId) => setUploadedPhotoAssetId(assetId),
-    onUploadError: () => {},
-  })
 
   const form = useAppForm({
     defaultValues: {
@@ -53,10 +31,18 @@ function CreateCustomer() {
       phone: '',
       notes: '',
       active: true,
-      photoAssetId: null,
+      photoAssetId: null as string | null,
     } satisfies CustomerInput,
-    onSubmit: async () => {
-      navigate({ to: '/customers' })
+    onSubmit: async ({ value }) => {
+      const result = await createCustomerFn({ data: value })
+      if (result.ok) {
+        toast.success(t('customerCreated'))
+        navigate({ to: '/customers' })
+      } else {
+        const msg =
+          result.error === 'nameRequired' ? t('nameRequired') : result.error
+        toast.error(msg)
+      }
     },
   })
 
@@ -84,26 +70,9 @@ function CreateCustomer() {
             <form.AppField name="notes">
               {(field) => <field.TextareaField label={t('notes')} />}
             </form.AppField>
-            <div className="col-span-full">
-              <p className="text-sm font-medium">{t('photo')}</p>
-              <div className="mt-1">
-                <PhotoGridUpload
-                  items={photoMachine.items}
-                  onItemsChange={(items) => setUploadItems(items)}
-                  config={{
-                    ownerType: 'customer',
-                    usage: 'profile',
-                    maxFiles: 1,
-                  }}
-                  adapter={photoAdapter}
-                  acceptedMimeTypes={getAcceptedMimeTypes('profile')}
-                  maxBytes={getMaxBytes('profile')}
-                  onUploadComplete={(assetId) =>
-                    setUploadedPhotoAssetId(assetId)
-                  }
-                />
-              </div>
-            </div>
+            <form.AppField name="photoAssetId">
+              {(field) => <field.PhotoUploadField label={t('photo')} />}
+            </form.AppField>
           </FormGrid>
         </FormSection>
       </FormRoot>

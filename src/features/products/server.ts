@@ -1,19 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { and, desc, eq, ilike, type SQL, sql } from 'drizzle-orm'
-import { db } from '#/db/index'
 import {
   pricingBreakpoints as breakpointsTable,
   products as productsTable,
 } from '#/db/schema'
-import {
-  type CreateProductInput,
-  createProduct,
-  getProduct,
-  type Product,
-  type UpdateProductInput,
-  updateProduct,
-} from './model'
+import type { CreateProductInput, Product, UpdateProductInput } from './model'
 
 export type ProductRow = {
   id: string
@@ -55,6 +47,7 @@ async function resolveOrgId(): Promise<string> {
 export const listProductsFn = createServerFn({ method: 'GET' })
   .inputValidator((data: { orgId: string; search?: string }) => data)
   .handler(async ({ data }): Promise<ListProductsResult> => {
+    const { db } = await import('#/db/index')
     const conditions: SQL[] = [eq(productsTable.orgId, data.orgId)]
 
     if (data.search?.trim()) {
@@ -100,6 +93,7 @@ export const getProductFn = createServerFn({ method: 'GET' })
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data }): Promise<Product | null> => {
     const orgId = await resolveOrgId()
+    const { getProduct } = await import('./model')
     return getProduct(data.id, orgId)
   })
 
@@ -107,6 +101,7 @@ export const createProductFn = createServerFn({ method: 'POST' })
   .inputValidator((input: Omit<CreateProductInput, 'orgId'>) => input)
   .handler(async ({ data }): Promise<Product> => {
     const orgId = await resolveOrgId()
+    const { createProduct } = await import('./model')
     return createProduct({ ...data, orgId })
   })
 
@@ -114,5 +109,6 @@ export const updateProductFn = createServerFn({ method: 'POST' })
   .inputValidator((input: UpdateProductInput) => input)
   .handler(async ({ data }): Promise<Product> => {
     const orgId = await resolveOrgId()
+    const { updateProduct } = await import('./model')
     return updateProduct({ ...data, orgId })
   })

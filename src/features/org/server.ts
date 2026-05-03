@@ -1,7 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { eq } from 'drizzle-orm'
-import { db } from '#/db/index'
 import { member, organization } from '#/db/schema'
 import type { Role } from '#/features/permissions/model'
 
@@ -19,6 +18,7 @@ export const getActiveOrg = createServerFn({ method: 'GET' }).handler(
     const session = await auth.api.getSession({ headers })
     if (!session) return null
 
+    const { db } = await import('#/db/index')
     const memberships = await db
       .select({
         id: organization.id,

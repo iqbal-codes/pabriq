@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import {
   createR2UploaderAdapter,
   getAcceptedMimeTypes,
   getMaxBytes,
   PhotoGridUpload,
-  useUploadMachine,
 } from '#/components/app/asset-upload'
 import {
   FormActions,
@@ -18,22 +18,16 @@ import {
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import type { UploadItem } from '#/features/assets/upload-machine'
-import {
-  type Customer,
-  type CustomerInput,
-  getCustomer,
-} from '#/features/customers/model'
+import type { Customer, CustomerInput } from '#/features/customers/model'
+import { getCustomerFn, updateCustomerFn } from '#/features/customers/server'
 
 export const Route = createFileRoute('/_org/customers/$id/edit')({
   beforeLoad: () => ({
     breadcrumb: 'editCustomer',
     pageTitle: 'editCustomer',
   }),
-  loader: async ({ context, params }) => {
-    const ctx = context as { org: { id: string } }
-    return await getCustomer({
-      data: { id: params.id, orgId: ctx.org.id },
-    })
+  loader: async ({ params }) => {
+    return await getCustomerFn({ data: { id: params.id } })
   },
   component: EditCustomer,
 })
@@ -47,16 +41,14 @@ function EditCustomer() {
     string | null
   >(null)
 
-  const photoAdapter = createR2UploaderAdapter({
-    ownerType: 'customer',
-    usage: 'profile',
-  })
-
-  const photoMachine = useUploadMachine(uploadItems, {
-    adapter: photoAdapter,
-    onUploadComplete: (assetId) => setUploadedPhotoAssetId(assetId),
-    onUploadError: () => {},
-  })
+  const photoAdapter = useMemo(
+    () =>
+      createR2UploaderAdapter({
+        ownerType: 'customer',
+        usage: 'profile',
+      }),
+    [],
+  )
 
   const form = useAppForm({
     defaultValues: {
@@ -67,8 +59,18 @@ function EditCustomer() {
       active: customer?.active ?? true,
       photoAssetId: customer?.photoAssetId ?? null,
     } satisfies CustomerInput,
-    onSubmit: async () => {
-      navigate({ to: '/customers' })
+    onSubmit: async ({ value }) => {
+      const result = await updateCustomerFn({
+        data: { ...value, id: customer?.id ?? '' },
+      })
+      if (result.ok) {
+        toast.success(t('customerUpdated'))
+        navigate({ to: '/customers' })
+      } else {
+        const msg =
+          result.error === 'nameRequired' ? t('nameRequired') : result.error
+        toast.error(msg)
+      }
     },
   })
 
@@ -108,7 +110,7 @@ function EditCustomer() {
               <p className="text-sm font-medium">{t('photo')}</p>
               <div className="mt-1">
                 <PhotoGridUpload
-                  items={photoMachine.items}
+                  items={uploadItems}
                   onItemsChange={(items) => setUploadItems(items)}
                   config={{
                     ownerType: 'customer',

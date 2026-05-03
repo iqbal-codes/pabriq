@@ -1,6 +1,4 @@
-import { createServerFn } from '@tanstack/react-start'
 import { and, desc, eq, ilike, or, type SQL, sql } from 'drizzle-orm'
-import { db } from '#/db/index'
 import { customers as customersTable } from '#/db/schema'
 
 export type Customer = {
@@ -46,118 +44,111 @@ export function validateCustomerInput(input: CustomerInput): string | null {
   return null
 }
 
-export const listCustomers = createServerFn({ method: 'GET' })
-  .inputValidator((data: { orgId: string; search?: string }) => data)
-  .handler(async ({ data }): Promise<ListCustomersResult> => {
-    const conditions: SQL[] = [eq(customersTable.orgId, data.orgId)]
+async function getDb() {
+  const { db } = await import('#/db/index')
+  return db
+}
 
-    if (data.search?.trim()) {
-      const pattern = `%${data.search.trim()}%`
-      conditions.push(
-        or(
-          ilike(customersTable.name, pattern),
-          ilike(customersTable.email, pattern),
-          ilike(customersTable.phone, pattern),
-        ) as SQL,
-      )
-    }
+export async function listCustomers(
+  orgId: string,
+  search?: string,
+): Promise<ListCustomersResult> {
+  const db = await getDb()
+  const conditions: SQL[] = [eq(customersTable.orgId, orgId)]
 
-    const allConditions = and(...conditions) as SQL
+  if (search?.trim()) {
+    const pattern = `%${search.trim()}%`
+    conditions.push(
+      or(
+        ilike(customersTable.name, pattern),
+        ilike(customersTable.email, pattern),
+        ilike(customersTable.phone, pattern),
+      ) as SQL,
+    )
+  }
 
-    const rows = await db
-      .select({
-        id: customersTable.id,
-        name: customersTable.name,
-        email: customersTable.email,
-        phone: customersTable.phone,
-        active: customersTable.active,
-        photoAssetId: customersTable.photoAssetId,
-      })
-      .from(customersTable)
-      .where(allConditions)
-      .orderBy(desc(customersTable.createdAt))
+  const allConditions = and(...conditions) as SQL
 
-    const countResult = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(customersTable)
-      .where(allConditions)
+  const rows = await db
+    .select({
+      id: customersTable.id,
+      name: customersTable.name,
+      email: customersTable.email,
+      phone: customersTable.phone,
+      active: customersTable.active,
+      photoAssetId: customersTable.photoAssetId,
+    })
+    .from(customersTable)
+    .where(allConditions)
+    .orderBy(desc(customersTable.createdAt))
 
-    return {
-      rows,
-      totalRows: Number(countResult[0]?.count ?? 0),
-    }
+  const countResult = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(customersTable)
+    .where(allConditions)
+
+  return {
+    rows,
+    totalRows: Number(countResult[0]?.count ?? 0),
+  }
+}
+
+export async function createCustomer(
+  input: CustomerInput & { orgId: string },
+): Promise<void> {
+  const validationError = validateCustomerInput(input)
+  if (validationError) {
+    throw new Error(validationError)
+  }
+
+  const db = await getDb()
+  await db.insert(customersTable).values({
+    id: crypto.randomUUID(),
+    orgId: input.orgId,
+    name: input.name.trim(),
+    email: input.email?.trim() ?? null,
+    phone: input.phone?.trim() ?? null,
+    notes: input.notes?.trim() ?? null,
+    active: input.active ?? true,
+    photoAssetId: input.photoAssetId ?? null,
   })
+}
 
-export const createCustomer = createServerFn({ method: 'POST' })
-  .inputValidator((input: CustomerInput & { orgId: string }) => input)
-  .handler(
-    async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
-      const validationError = validateCustomerInput(data)
-      if (validationError) {
-        return { ok: false, error: validationError }
-      }
+export async function updateCustomer(
+  id: string,
+  orgId: string,
+  input: CustomerInput,
+): Promise<void> {
+  const validationError = validateCustomerInput(input)
+  if (validationError) {
+    throw new Error(validationError)
+  }
 
-      await db.insert(customersTable).values({
-        id: crypto.randomUUID(),
-        orgId: data.orgId,
-        name: data.name.trim(),
-        email: data.email?.trim() ?? null,
-        phone: data.phone?.trim() ?? null,
-        notes: data.notes?.trim() ?? null,
-        active: data.active ?? true,
-        photoAssetId: data.photoAssetId ?? null,
-      })
+  const db = await getDb()
+  await db
+    .update(customersTable)
+    .set({
+      name: input.name.trim(),
+      email: input.email?.trim() ?? null,
+      phone: input.phone?.trim() ?? null,
+      notes: input.notes?.trim() ?? null,
+      active: input.active ?? true,
+      photoAssetId: input.photoAssetId ?? null,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(customersTable.id, id), eq(customersTable.orgId, orgId)))
+}
 
-      return { ok: true }
-    },
-  )
+export async function getCustomer(
+  id: string,
+  orgId: string,
+): Promise<Customer | null> {
+  const db = await getDb()
+  const rows = await db
+    .select()
+    .from(customersTable)
+    .where(and(eq(customersTable.id, id), eq(customersTable.orgId, orgId)))
+    .limit(1)
 
-export const updateCustomer = createServerFn({ method: 'POST' })
-  .inputValidator(
-    (input: CustomerInput & { id: string; orgId: string }) => input,
-  )
-  .handler(
-    async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
-      const validationError = validateCustomerInput(data)
-      if (validationError) {
-        return { ok: false, error: validationError }
-      }
-
-      await db
-        .update(customersTable)
-        .set({
-          name: data.name.trim(),
-          email: data.email?.trim() ?? null,
-          phone: data.phone?.trim() ?? null,
-          notes: data.notes?.trim() ?? null,
-          active: data.active ?? true,
-          photoAssetId: data.photoAssetId ?? null,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(customersTable.id, data.id),
-            eq(customersTable.orgId, data.orgId),
-          ),
-        )
-
-      return { ok: true }
-    },
-  )
-
-export const getCustomer = createServerFn({ method: 'GET' })
-  .inputValidator((data: { id: string; orgId: string }) => data)
-  .handler(async ({ data }) => {
-    const rows = await db
-      .select()
-      .from(customersTable)
-      .where(
-        and(
-          eq(customersTable.id, data.id),
-          eq(customersTable.orgId, data.orgId),
-        ),
-      )
-      .limit(1)
-
-    return rows[0] ?? null
-  })
+  return rows[0] ?? null
+}
