@@ -7,12 +7,19 @@ import { DataTable, DataTableSearch } from '#/components/app/data-table'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { Badge } from '#/components/ui/badge'
+import { useCustomersList } from '#/features/customers/hooks'
 import type { CustomerRow } from '#/features/customers/model'
 import { Route } from '#/routes/_org/customers/index'
 
 export function CustomersListPage() {
-  const { rows, totalRows } = Route.useLoaderData()
+  const ctx = Route.useRouteContext() as { org: { id: string } }
   const [search, setSearch] = useQueryState('q', parseAsString.withDefault(''))
+  const {
+    data: { rows, totalRows },
+  } = useCustomersList({
+    orgId: ctx.org.id,
+    search,
+  })
   const t = useTranslations('customers')
   const dt = useTranslations('dataTable')
   const st = useTranslations('status')

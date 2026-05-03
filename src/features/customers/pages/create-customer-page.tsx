@@ -6,13 +6,14 @@ import { FormRoot, useAppForm } from '#/components/app/form'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { CustomerFormFields } from '#/features/customers/components/customer-form-fields'
+import { useCreateCustomer } from '#/features/customers/hooks'
 import type { CustomerInput } from '#/features/customers/model'
-import { createCustomerFn } from '#/features/customers/server'
 import { customerFormSchema } from '#/lib/validation-schemas'
 
 export function CreateCustomerPage() {
   const navigate = useNavigate()
   const t = useTranslations('customers')
+  const createCustomer = useCreateCustomer()
 
   const form = useAppForm({
     defaultValues: {
@@ -28,7 +29,7 @@ export function CreateCustomerPage() {
     },
     onSubmit: async ({ value, formApi }) => {
       if (!formApi.state.isValid) return
-      const result = await createCustomerFn({ data: value })
+      const result = await createCustomer.mutateAsync(value)
       if (result.ok) {
         toast.success(t('customerCreated'))
         navigate({ to: '/customers' })
