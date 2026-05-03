@@ -5,6 +5,7 @@ import { organization } from 'better-auth/plugins/organization'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { db } from '#/db/index'
 import * as schema from '#/db/schema'
+import { logger } from '#/lib/logger'
 
 const statement = {
   organization: ['update', 'delete'],
@@ -88,7 +89,7 @@ export const auth = betterAuth({
       },
       async sendInvitationEmail(data) {
         const link = `${process.env.BETTER_AUTH_URL}/invite/accept?invitationId=${data.id}`
-        console.log(`[INVITE] ${data.email} → ${link}`)
+        logger.warn({ email: data.email, link }, 'invite email not configured')
       },
     }),
   ],

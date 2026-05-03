@@ -1,6 +1,7 @@
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import type { QueryClient } from '@tanstack/react-query'
 import {
+  ClientOnly,
   createRootRouteWithContext,
   HeadContent,
   Outlet,
@@ -9,6 +10,8 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router'
 import { IntlProvider, useTranslations } from 'use-intl'
+import { Toaster } from '#/components/ui/sonner'
+import { ThemeProvider } from '#/components/ui/theme-provider'
 import { TooltipProvider } from '#/components/ui/tooltip'
 import { getCurrentLocale } from '#/lib/i18n.utils'
 import { messages } from '#/messages'
@@ -77,22 +80,33 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         className="font-sans antialiased wrap-anywhere"
         suppressHydrationWarning
       >
-        <IntlProvider locale={locale} messages={messages[locale ?? 'en']}>
+        <IntlProvider
+          locale={locale}
+          messages={messages[locale ?? 'en']}
+          timeZone="UTC"
+        >
           <TitleSetter />
-          <TooltipProvider>{children}</TooltipProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <TooltipProvider>
+              {children}
+              <Toaster />
+            </TooltipProvider>
+          </ThemeProvider>
         </IntlProvider>
-        <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-            TanStackQueryDevtools,
-          ]}
-        />
+        <ClientOnly fallback={null}>
+          <TanStackDevtools
+            config={{
+              position: 'bottom-right',
+            }}
+            plugins={[
+              {
+                name: 'Tanstack Router',
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+              TanStackQueryDevtools,
+            ]}
+          />
+        </ClientOnly>
         <Scripts />
       </body>
     </html>
