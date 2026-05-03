@@ -7,8 +7,8 @@ import { DataTable, DataTableSearch } from '#/components/app/data-table'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { Badge } from '#/components/ui/badge'
+import { useOrdersList } from '#/features/orders/hooks'
 import type { OrderRow } from '#/features/orders/model'
-import { listOrdersFn } from '#/features/orders/server'
 
 type OrderSearch = { q?: string }
 
@@ -21,19 +21,15 @@ export const Route = createFileRoute('/_org/orders/')({
     pageTitle: 'orders',
     primaryAction: { label: 'createOrder', href: '/orders/new' },
   }),
-  loader: async ({ context }) => {
-    const ctx = context as { org: { id: string } }
-    const result = await listOrdersFn({
-      data: { orgId: ctx.org.id },
-    })
-    return result
-  },
   component: OrdersList,
 })
 
 function OrdersList() {
-  const { rows, totalRows } = Route.useLoaderData()
+  const ctx = Route.useRouteContext() as { org: { id: string } }
   const [search, setSearch] = useQueryState('q', parseAsString.withDefault(''))
+  const {
+    data: { rows, totalRows },
+  } = useOrdersList({ orgId: ctx.org.id })
   const t = useTranslations('orders')
   const dt = useTranslations('dataTable')
   const st = useTranslations('status')

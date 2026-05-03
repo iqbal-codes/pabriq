@@ -10,31 +10,31 @@ import {
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { Button } from '#/components/ui/button'
-import { listCustomersFn } from '#/features/customers/server'
-import { createDraftOrderFn } from '#/features/orders/server'
-import { listProductsFn } from '#/features/products/server'
+import { useCustomersList } from '#/features/customers/hooks'
+import { useCreateDraftOrder } from '#/features/orders/hooks'
+import { useProductsList } from '#/features/products/hooks'
 
 export const Route = createFileRoute('/_org/orders/new')({
   beforeLoad: () => ({
     breadcrumb: 'createOrder',
     pageTitle: 'createOrder',
   }),
-  loader: async ({ context }) => {
-    const ctx = context as { org: { id: string } }
-    const [customers, products] = await Promise.all([
-      listCustomersFn({ data: { orgId: ctx.org.id } }),
-      listProductsFn({ data: { orgId: ctx.org.id } }),
-    ])
-    return { customers: customers.rows, products: products.rows }
-  },
   component: CreateOrder,
 })
 
 function CreateOrder() {
-  const { customers, products } = Route.useLoaderData()
+  const ctx = Route.useRouteContext() as { org: { id: string } }
+  const {
+    data: { rows: customers },
+  } = useCustomersList({ orgId: ctx.org.id })
+  const {
+    data: { rows: products },
+  } = useProductsList({ orgId: ctx.org.id })
   const navigate = useNavigate()
   const t = useTranslations('orders')
   const pt = useTranslations('products')
+
+  const createOrder = useCreateDraftOrder()
 
   const form = useAppForm({
     defaultValues: {
@@ -48,16 +48,14 @@ function CreateOrder() {
       )
       if (validItems.length === 0 || !value.customerId) return
 
-      await createDraftOrderFn({
-        data: {
-          orgId: '',
-          customerId: value.customerId,
-          notes: value.notes || undefined,
-          lineItems: validItems.map((i) => ({
-            productId: i.productId,
-            quantity: parseInt(i.quantity, 10) || 1,
-          })),
-        },
+      await createOrder.mutateAsync({
+        orgId: ctx.org.id,
+        customerId: value.customerId,
+        notes: value.notes || undefined,
+        lineItems: validItems.map((i) => ({
+          productId: i.productId,
+          quantity: parseInt(i.quantity, 10) || 1,
+        })),
       })
       navigate({ to: '/orders' })
     },
