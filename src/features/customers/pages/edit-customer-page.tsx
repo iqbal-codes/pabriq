@@ -15,6 +15,7 @@ export function EditCustomerPage() {
   const navigate = useNavigate()
   const customer = useCustomer(Route.useParams().id).data
   const t = useTranslations('customers')
+  const ct = useTranslations('common')
   const updateCustomer = useUpdateCustomer()
 
   const form = useAppForm({
@@ -60,6 +61,7 @@ export function EditCustomerPage() {
     <PageContent>
       <PageHeader
         title={t('editCustomer')}
+        backAction={{ label: ct('back'), href: '/customers' }}
         primaryAction={{
           label: t('save'),
           isLoading: isSubmitting,

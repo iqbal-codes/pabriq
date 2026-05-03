@@ -1,6 +1,24 @@
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRouter,
+  RouterProvider,
+} from '@tanstack/react-router'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { PageHeader } from './page-header'
+
+async function renderWithRouter(component: React.ReactNode) {
+  const rootRoute = createRootRoute({ component: () => component })
+  const router = createRouter({
+    routeTree: rootRoute,
+    history: createMemoryHistory({ initialEntries: ['/'] }),
+  })
+  await router.load()
+
+  return render(<RouterProvider router={router} />)
+}
 
 describe('PageHeader', () => {
   it('renders the title', () => {
@@ -21,6 +39,37 @@ describe('PageHeader', () => {
       />,
     )
     expect(screen.getByText('New Order')).toBeDefined()
+  })
+
+  it('does not render a back button by default', () => {
+    render(<PageHeader title="Orders" />)
+    expect(screen.queryByRole('button', { name: 'Back' })).toBeNull()
+  })
+
+  it('renders an accessible back link when provided with href', async () => {
+    await renderWithRouter(
+      <PageHeader title="Orders" backAction={{ label: 'Back', href: '/' }} />,
+    )
+    expect(screen.getByRole('link', { name: 'Back' })).toBeDefined()
+  })
+
+  it('renders an accessible back button when provided with onClick', async () => {
+    const user = userEvent.setup()
+    let clicked = false
+    render(
+      <PageHeader
+        title="Orders"
+        backAction={{
+          label: 'Back',
+          onClick: () => {
+            clicked = true
+          },
+        }}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+    expect(clicked).toBe(true)
   })
 
   it('hides on mobile with hidden md:flex classes', () => {

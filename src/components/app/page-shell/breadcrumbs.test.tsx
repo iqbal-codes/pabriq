@@ -13,6 +13,10 @@ import { Breadcrumbs } from './breadcrumbs'
 const testMessages = {
   breadcrumb: {
     dashboard: 'Dashboard',
+    customers: 'Customers',
+    detail: 'Detail',
+    edit: 'Edit',
+    new: 'New',
     orders: 'Orders',
   },
 }
@@ -26,7 +30,11 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
 }
 
 async function renderBreadcrumbs(
-  routes: { path: string; breadcrumb: string }[],
+  routes: {
+    path: string
+    breadcrumb: string
+    parentBreadcrumbs?: { label: string; href: string }[]
+  }[],
 ) {
   const rootRoute = createRootRoute()
 
@@ -34,7 +42,10 @@ async function renderBreadcrumbs(
     createRoute({
       getParentRoute: () => rootRoute,
       path: r.path,
-      beforeLoad: () => ({ breadcrumb: r.breadcrumb }),
+      beforeLoad: () => ({
+        breadcrumb: r.breadcrumb,
+        parentBreadcrumbs: r.parentBreadcrumbs,
+      }),
     }),
   )
 
@@ -83,6 +94,11 @@ describe('Breadcrumbs', () => {
     expect(screen.getByText('Dashboard')).toBeDefined()
   })
 
+  it('does not render a home icon link', async () => {
+    await renderBreadcrumbs([{ path: '/', breadcrumb: 'dashboard' }])
+    expect(screen.queryByRole('link', { name: '' })).toBeNull()
+  })
+
   it('renders the last crumb as the current page', async () => {
     await renderBreadcrumbs([
       { path: '/', breadcrumb: 'dashboard' },
@@ -100,5 +116,18 @@ describe('Breadcrumbs', () => {
     expect(
       container.querySelectorAll('li li[data-slot="breadcrumb-separator"]'),
     ).toHaveLength(0)
+  })
+
+  it('renders explicit parent breadcrumbs before the current page', async () => {
+    await renderBreadcrumbs([
+      {
+        path: '/customers/new',
+        breadcrumb: 'new',
+        parentBreadcrumbs: [{ label: 'customers', href: '/customers' }],
+      },
+    ])
+
+    expect(screen.getByRole('link', { name: 'Customers' })).toBeDefined()
+    expect(screen.getByText('New')).toBeDefined()
   })
 })

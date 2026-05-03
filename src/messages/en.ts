@@ -24,6 +24,9 @@ export type Messages = {
   app: {
     title: string
     retry: string
+    language: string
+    english: string
+    indonesian: string
   }
   assetUpload: {
     dropzone: {
@@ -55,6 +58,7 @@ export type Messages = {
     }
   }
   common: {
+    back: string
     loading: string
     pageNotFound: string
     pageNotFoundDesc: string
@@ -104,6 +108,9 @@ export type Messages = {
   }
   breadcrumb: {
     dashboard: string
+    detail: string
+    edit: string
+    new: string
     customers: string
     createCustomer: string
     editCustomer: string
@@ -315,6 +322,9 @@ const en: Messages = {
   app: {
     title: 'Admin Console',
     retry: 'Retry',
+    language: 'Language',
+    english: 'English',
+    indonesian: 'Indonesian',
   },
   assetUpload: {
     dropzone: {
@@ -346,6 +356,7 @@ const en: Messages = {
     },
   },
   common: {
+    back: 'Back',
     loading: 'Loading',
     pageNotFound: 'Page not found',
     pageNotFoundDesc:
@@ -396,6 +407,9 @@ const en: Messages = {
   },
   breadcrumb: {
     dashboard: 'Dashboard',
+    detail: 'Detail',
+    edit: 'Edit',
+    new: 'New',
     customers: 'Customers',
     createCustomer: 'Create Customer',
     editCustomer: 'Edit Customer',

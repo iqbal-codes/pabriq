@@ -6,6 +6,7 @@ import {
   useRouterState,
 } from '@tanstack/react-router'
 import { useTranslations } from 'use-intl'
+import { LanguageToggle, ThemeToggle } from '#/components/app/header-controls'
 import { Breadcrumbs } from '#/components/app/page-shell/breadcrumbs'
 import { AppSidebar } from '#/components/app-sidebar'
 import { Button } from '#/components/ui/button'
@@ -71,7 +72,11 @@ function OrgLayout() {
               <Breadcrumbs />
             </div>
           </div>
-          <div className="md:hidden ml-auto flex items-center gap-2">
+          <div className="flex items-center gap-1 ml-auto">
+            <ThemeToggle />
+            <LanguageToggle />
+          </div>
+          <div className="md:hidden flex items-center gap-2">
             {primaryAction && (
               <Button size="sm" asChild>
                 <Link to={primaryAction.href}>{bt(primaryAction.label)}</Link>

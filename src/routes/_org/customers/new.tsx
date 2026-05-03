@@ -3,7 +3,8 @@ import { CreateCustomerPage } from '#/features/customers/pages/create-customer-p
 
 export const Route = createFileRoute('/_org/customers/new')({
   beforeLoad: () => ({
-    breadcrumb: 'createCustomer',
+    breadcrumb: 'new',
+    parentBreadcrumbs: [{ label: 'customers', href: '/customers' }],
     pageTitle: 'createCustomer',
   }),
   component: CreateCustomerPage,

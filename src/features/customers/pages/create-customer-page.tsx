@@ -13,6 +13,7 @@ import { customerFormSchema } from '#/lib/validation-schemas'
 export function CreateCustomerPage() {
   const navigate = useNavigate()
   const t = useTranslations('customers')
+  const ct = useTranslations('common')
   const createCustomer = useCreateCustomer()
 
   const form = useAppForm({
@@ -47,6 +48,7 @@ export function CreateCustomerPage() {
     <PageContent>
       <PageHeader
         title={t('createCustomer')}
+        backAction={{ label: ct('back'), href: '/customers' }}
         primaryAction={{
           label: t('save'),
           isLoading: isSubmitting,

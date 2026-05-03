@@ -11,6 +11,7 @@ export function ViewCustomerPage() {
   const { id } = Route.useParams()
   const customer = useCustomer(id).data
   const t = useTranslations('customers')
+  const ct = useTranslations('common')
   const st = useTranslations('status')
 
   if (!customer) {
@@ -25,6 +26,7 @@ export function ViewCustomerPage() {
     <PageContent>
       <PageHeader
         title={t('viewCustomer')}
+        backAction={{ label: ct('back'), href: '/customers' }}
         primaryAction={{
           label: t('editCustomer'),
           href: `/customers/${customer.id}/edit`,

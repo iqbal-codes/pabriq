@@ -3,7 +3,8 @@ import { ViewCustomerPage } from '#/features/customers/pages/view-customer-page'
 
 export const Route = createFileRoute('/_org/customers/$id/')({
   beforeLoad: () => ({
-    breadcrumb: 'viewCustomer',
+    breadcrumb: 'detail',
+    parentBreadcrumbs: [{ label: 'customers', href: '/customers' }],
     pageTitle: 'viewCustomer',
   }),
   component: ViewCustomerPage,

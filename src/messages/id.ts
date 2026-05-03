@@ -26,6 +26,9 @@ const id: Messages = {
   app: {
     title: 'Konsol Admin',
     retry: 'Coba Lagi',
+    language: 'Bahasa',
+    english: 'Inggris',
+    indonesian: 'Indonesia',
   },
   assetUpload: {
     dropzone: {
@@ -57,6 +60,7 @@ const id: Messages = {
     },
   },
   common: {
+    back: 'Kembali',
     loading: 'Memuat',
     pageNotFound: 'Halaman tidak ditemukan',
     pageNotFoundDesc:
@@ -107,6 +111,9 @@ const id: Messages = {
   },
   breadcrumb: {
     dashboard: 'Dasbor',
+    detail: 'Detail',
+    edit: 'Edit',
+    new: 'Baru',
     customers: 'Pelanggan',
     createCustomer: 'Buat Pelanggan',
     editCustomer: 'Edit Pelanggan',

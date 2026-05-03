@@ -2,17 +2,17 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
-} from '@tanstack/react-table'
-import type { LucideIcon } from 'lucide-react'
-import { AlertCircle, PackageOpen, RefreshCw, SearchX } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+} from "@tanstack/react-table";
+import type { LucideIcon } from "lucide-react";
+import { AlertCircle, PackageOpen, RefreshCw, SearchX } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   EmptyState,
   type EmptyStateAction,
-} from '#/components/app/page-shell/empty-state'
-import { Button } from '#/components/ui/button'
-import { Checkbox } from '#/components/ui/checkbox'
-import { Skeleton } from '#/components/ui/skeleton'
+} from "#/components/app/page-shell/empty-state";
+import { Button } from "#/components/ui/button";
+import { Checkbox } from "#/components/ui/checkbox";
+import { Skeleton } from "#/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -20,69 +20,69 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '#/components/ui/table'
-import { cn } from '#/lib/utils'
-import { DataTableProvider } from './data-table-context'
-import { DataTableMobileCard } from './data-table-mobile-card'
-import { DataTablePagination } from './data-table-pagination'
-import { DataTableToolbar } from './data-table-toolbar'
+} from "#/components/ui/table";
+import { cn } from "#/lib/utils";
+import { DataTableProvider } from "./data-table-context";
+import { DataTableMobileCard } from "./data-table-mobile-card";
+import { DataTablePagination } from "./data-table-pagination";
+import { DataTableToolbar } from "./data-table-toolbar";
 import type {
   AppColumnDef,
   AppColumnMeta,
   DataTableLabels,
   DataTableSlotContext,
   SortState,
-} from './data-table-utils'
-import { getStoredVisibility, setStoredVisibility } from './data-table-utils'
-import { DataTableViewOptions } from './data-table-view-options'
+} from "./data-table-utils";
+import { getStoredVisibility, setStoredVisibility } from "./data-table-utils";
+import { DataTableViewOptions } from "./data-table-view-options";
 
 const DESKTOP_SKELETON = [
-  'skeleton-0',
-  'skeleton-1',
-  'skeleton-2',
-  'skeleton-3',
-  'skeleton-4',
-]
-const MOBILE_SKELETON = ['s-card-0', 's-card-1', 's-card-2']
+  "skeleton-0",
+  "skeleton-1",
+  "skeleton-2",
+  "skeleton-3",
+  "skeleton-4",
+];
+const MOBILE_SKELETON = ["s-card-0", "s-card-1", "s-card-2"];
 
 type DataTableProps<TData> = {
-  columns: AppColumnDef<TData>[]
-  data: TData[]
-  error?: string | null
-  getRowId: (row: TData) => string
-  isLoading?: boolean
-  isRefetching?: boolean
-  labels: DataTableLabels
-  onPageChange: (page: number) => void
-  onPerPageChange: (perPage: number) => void
-  onSortChange?: (sort: SortState | null) => void
-  enableRowSelection?: boolean
-  page: number
-  perPage: number
-  sort?: SortState | null
-  tableId: string
-  totalRows: number
-  emptyState?: React.ReactNode
-  emptyIcon?: LucideIcon
-  emptyTitle?: string
-  emptyDescription?: string
-  emptyAction?: EmptyStateAction
-  noResultsState?: React.ReactNode
-  noResultsIcon?: LucideIcon
-  noResultsTitle?: string
-  noResultsDescription?: string
-  noResultsAction?: EmptyStateAction
-  hasActiveFilters?: boolean
-  onClearFilters?: () => void
-  onRowClick?: (row: TData) => void
-  rowActions?: (row: TData) => React.ReactNode
-  toolbarStart?: React.ReactNode
-  toolbarEnd?: React.ReactNode
-  selectionToolbar?: (ctx: DataTableSlotContext<TData>) => React.ReactNode
-  customMobileCard?: (row: TData) => React.ReactNode
-  onRefetch?: () => void
-  errorMessage?: string
-}
+  columns: AppColumnDef<TData>[];
+  data: TData[];
+  error?: string | null;
+  getRowId: (row: TData) => string;
+  isLoading?: boolean;
+  isRefetching?: boolean;
+  labels: DataTableLabels;
+  onPageChange: (page: number) => void;
+  onPerPageChange: (perPage: number) => void;
+  onSortChange?: (sort: SortState | null) => void;
+  enableRowSelection?: boolean;
+  page: number;
+  perPage: number;
+  sort?: SortState | null;
+  tableId: string;
+  totalRows: number;
+  emptyState?: React.ReactNode;
+  emptyIcon?: LucideIcon;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  emptyAction?: EmptyStateAction;
+  noResultsState?: React.ReactNode;
+  noResultsIcon?: LucideIcon;
+  noResultsTitle?: string;
+  noResultsDescription?: string;
+  noResultsAction?: EmptyStateAction;
+  hasActiveFilters?: boolean;
+  onClearFilters?: () => void;
+  onRowClick?: (row: TData) => void;
+  rowActions?: (row: TData) => React.ReactNode;
+  toolbarStart?: React.ReactNode;
+  toolbarEnd?: React.ReactNode;
+  selectionToolbar?: (ctx: DataTableSlotContext<TData>) => React.ReactNode;
+  customMobileCard?: (row: TData) => React.ReactNode;
+  onRefetch?: () => void;
+  errorMessage?: string;
+};
 
 export function DataTable<TData>({
   columns,
@@ -123,13 +123,13 @@ export function DataTable<TData>({
   errorMessage,
 }: DataTableProps<TData>) {
   const allColumns = useMemo(() => {
-    const cols: AppColumnDef<TData>[] = []
+    const cols: AppColumnDef<TData>[] = [];
     if (enableRowSelection) {
       cols.push({
-        id: 'select',
+        id: "select",
         enableSorting: false,
         enableHiding: false,
-        meta: { label: '', mobileRole: 'hidden' } as AppColumnMeta,
+        meta: { label: "", mobileRole: "hidden" } as AppColumnMeta,
         header: ({ table }) => (
           <Checkbox
             checked={table.getIsAllRowsSelected()}
@@ -139,20 +139,19 @@ export function DataTable<TData>({
         ),
         cell: ({ row }) => (
           <Checkbox
-            className="ml-2"
             checked={row.getIsSelected()}
             onCheckedChange={(v) => row.toggleSelected(!!v)}
             aria-label="Select row"
           />
         ),
-      } as AppColumnDef<TData>)
+      } as AppColumnDef<TData>);
     }
-    cols.push(...columns)
-    if (rowActions && !cols.find((c) => 'id' in c && c.id === 'actions')) {
+    cols.push(...columns);
+    if (rowActions && !cols.find((c) => "id" in c && c.id === "actions")) {
       cols.push({
-        id: 'actions',
+        id: "actions",
         enableHiding: false,
-        meta: { label: '', mobileRole: 'actions' } as unknown as AppColumnMeta,
+        meta: { label: "", mobileRole: "actions" } as unknown as AppColumnMeta,
         header: ({ table }) => (
           <div className="flex justify-end">
             <DataTableViewOptions
@@ -170,12 +169,12 @@ export function DataTable<TData>({
           </div>
         ),
         cell: ({ row }) => rowActions?.(row.original),
-      } as AppColumnDef<TData>)
+      } as AppColumnDef<TData>);
     } else {
       cols.push({
-        id: 'column-visibility',
+        id: "column-visibility",
         enableHiding: false,
-        meta: { label: '', mobileRole: 'hidden' } as AppColumnMeta,
+        meta: { label: "", mobileRole: "hidden" } as AppColumnMeta,
         header: ({ table }) => (
           <div className="flex justify-end">
             <DataTableViewOptions
@@ -192,31 +191,31 @@ export function DataTable<TData>({
             />
           </div>
         ),
-      } as AppColumnDef<TData>)
+      } as AppColumnDef<TData>);
     }
-    return cols
-  }, [columns, rowActions, enableRowSelection, labels])
+    return cols;
+  }, [columns, rowActions, enableRowSelection, labels]);
 
-  const visibilityKey = `${tableId}`
+  const visibilityKey = `${tableId}`;
 
   const [columnVisibility, setColumnVisibility] = useState<
     Record<string, boolean>
   >(() => {
-    const stored = getStoredVisibility(visibilityKey)
-    const vis: Record<string, boolean> = {}
+    const stored = getStoredVisibility(visibilityKey);
+    const vis: Record<string, boolean> = {};
     for (const col of allColumns) {
-      if ('accessorKey' in col || 'id' in col) {
-        const id = 'accessorKey' in col ? col.accessorKey : col.id
-        if (id && typeof id === 'string') {
-          const def = col.enableHiding === false ? true : undefined
-          vis[id] = stored[id] ?? def ?? true
+      if ("accessorKey" in col || "id" in col) {
+        const id = "accessorKey" in col ? col.accessorKey : col.id;
+        if (id && typeof id === "string") {
+          const def = col.enableHiding === false ? true : undefined;
+          vis[id] = stored[id] ?? def ?? true;
         }
       }
     }
-    return vis
-  })
+    return vis;
+  });
 
-  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
 
   const table = useReactTable({
     data,
@@ -229,10 +228,10 @@ export function DataTable<TData>({
     },
     onColumnVisibilityChange: (updater) => {
       setColumnVisibility((prev) => {
-        const next = typeof updater === 'function' ? updater(prev) : updater
-        setStoredVisibility(visibilityKey, next)
-        return next
-      })
+        const next = typeof updater === "function" ? updater(prev) : updater;
+        setStoredVisibility(visibilityKey, next);
+        return next;
+      });
     },
     ...(enableRowSelection
       ? {
@@ -240,25 +239,25 @@ export function DataTable<TData>({
           onRowSelectionChange: setRowSelection,
         }
       : {}),
-  })
+  });
 
   const handleSort = useCallback(
     (field: string) => {
-      if (!onSortChange) return
+      if (!onSortChange) return;
       if (sort?.field === field) {
-        const next = sort.direction === 'asc' ? 'desc' : 'asc'
-        onSortChange({ field, direction: next })
+        const next = sort.direction === "asc" ? "desc" : "asc";
+        onSortChange({ field, direction: next });
       } else {
-        onSortChange({ field, direction: 'asc' })
+        onSortChange({ field, direction: "asc" });
       }
     },
     [onSortChange, sort],
-  )
+  );
 
   const selectedRowIds = useMemo(
     () => table.getSelectedRowModel().rows.map((r) => r.id),
     [table],
-  )
+  );
 
   const slotContext = useMemo<DataTableSlotContext<TData>>(
     () => ({
@@ -269,7 +268,7 @@ export function DataTable<TData>({
       visibleRows: data,
     }),
     [table, selectedRowIds, totalRows, data],
-  )
+  );
 
   useEffect(() => {
     if (
@@ -278,22 +277,22 @@ export function DataTable<TData>({
       perPage !== undefined ||
       sort !== undefined
     ) {
-      table.resetRowSelection()
+      table.resetRowSelection();
     }
-  }, [hasActiveFilters, page, perPage, sort, table])
+  }, [hasActiveFilters, page, perPage, sort, table]);
 
   const visibleEmptyColumns = useMemo(
     () =>
       allColumns.filter((col) => {
-        if ('accessorKey' in col || 'id' in col) {
-          const id = 'accessorKey' in col ? col.accessorKey : col.id
-          if (id === 'select') return false
-          return columnVisibility[id as string] !== false
+        if ("accessorKey" in col || "id" in col) {
+          const id = "accessorKey" in col ? col.accessorKey : col.id;
+          if (id === "select") return false;
+          return columnVisibility[id as string] !== false;
         }
-        return false
+        return false;
       }),
     [allColumns, columnVisibility],
-  )
+  );
 
   if (error) {
     return (
@@ -314,24 +313,24 @@ export function DataTable<TData>({
                 <TableHeader>
                   <TableRow className="bg-muted/50 *:px-3 sm:*:px-4">
                     {visibleEmptyColumns.map((col) => {
-                      if ('accessorKey' in col || 'id' in col) {
+                      if ("accessorKey" in col || "id" in col) {
                         const id =
-                          'accessorKey' in col ? col.accessorKey : col.id
-                        const meta = col.meta as AppColumnMeta | undefined
+                          "accessorKey" in col ? col.accessorKey : col.id;
+                        const meta = col.meta as AppColumnMeta | undefined;
                         return (
                           <TableHead
                             key={id as string}
                             className={cn(
-                              meta?.align === 'end' && 'text-right',
-                              meta?.align === 'center' && 'text-center',
+                              meta?.align === "end" && "text-right",
+                              meta?.align === "center" && "text-center",
                               meta?.headerClassName,
                             )}
                           >
                             {meta?.label || (id as string)}
                           </TableHead>
-                        )
+                        );
                       }
-                      return null
+                      return null;
                     })}
                   </TableRow>
                 </TableHeader>
@@ -371,7 +370,7 @@ export function DataTable<TData>({
           </div>
         </div>
       </DataTableProvider>
-    )
+    );
   }
 
   if (isLoading) {
@@ -394,20 +393,20 @@ export function DataTable<TData>({
                   <TableHeader>
                     <TableRow>
                       {allColumns.map((col) => {
-                        if ('accessorKey' in col || 'id' in col) {
+                        if ("accessorKey" in col || "id" in col) {
                           const id =
-                            'accessorKey' in col ? col.accessorKey : col.id
-                          if (id === 'select') return null
+                            "accessorKey" in col ? col.accessorKey : col.id;
+                          if (id === "select") return null;
                           const isHidden =
-                            columnVisibility[id as string] === false
-                          if (isHidden) return null
+                            columnVisibility[id as string] === false;
+                          if (isHidden) return null;
                           return (
                             <TableHead key={id as string}>
                               <Skeleton className="h-4 w-24" />
                             </TableHead>
-                          )
+                          );
                         }
-                        return null
+                        return null;
                       })}
                     </TableRow>
                   </TableHeader>
@@ -415,20 +414,20 @@ export function DataTable<TData>({
                     {DESKTOP_SKELETON.map((key) => (
                       <TableRow key={key}>
                         {allColumns.map((col) => {
-                          if ('accessorKey' in col || 'id' in col) {
+                          if ("accessorKey" in col || "id" in col) {
                             const id =
-                              'accessorKey' in col ? col.accessorKey : col.id
-                            if (id === 'select') return null
+                              "accessorKey" in col ? col.accessorKey : col.id;
+                            if (id === "select") return null;
                             const isHidden =
-                              columnVisibility[id as string] === false
-                            if (isHidden) return null
+                              columnVisibility[id as string] === false;
+                            if (isHidden) return null;
                             return (
                               <TableCell key={id as string}>
                                 <Skeleton className="h-4 w-full" />
                               </TableCell>
-                            )
+                            );
                           }
-                          return null
+                          return null;
                         })}
                       </TableRow>
                     ))}
@@ -449,7 +448,7 @@ export function DataTable<TData>({
           </div>
         </div>
       </DataTableProvider>
-    )
+    );
   }
 
   if (data.length === 0 && !hasActiveFilters) {
@@ -471,24 +470,24 @@ export function DataTable<TData>({
                 <TableHeader>
                   <TableRow className="bg-muted/50 *:px-3 sm:*:px-4">
                     {visibleEmptyColumns.map((col) => {
-                      if ('accessorKey' in col || 'id' in col) {
+                      if ("accessorKey" in col || "id" in col) {
                         const id =
-                          'accessorKey' in col ? col.accessorKey : col.id
-                        const meta = col.meta as AppColumnMeta | undefined
+                          "accessorKey" in col ? col.accessorKey : col.id;
+                        const meta = col.meta as AppColumnMeta | undefined;
                         return (
                           <TableHead
                             key={id as string}
                             className={cn(
-                              meta?.align === 'end' && 'text-right',
-                              meta?.align === 'center' && 'text-center',
+                              meta?.align === "end" && "text-right",
+                              meta?.align === "center" && "text-center",
                               meta?.headerClassName,
                             )}
                           >
                             {meta?.label || (id as string)}
                           </TableHead>
-                        )
+                        );
                       }
-                      return null
+                      return null;
                     })}
                   </TableRow>
                 </TableHeader>
@@ -504,7 +503,7 @@ export function DataTable<TData>({
                           <EmptyState
                             icon={emptyIcon ?? PackageOpen}
                             title={emptyTitle}
-                            description={emptyDescription ?? ''}
+                            description={emptyDescription ?? ""}
                             action={emptyAction}
                           />
                         ) : (
@@ -522,7 +521,7 @@ export function DataTable<TData>({
           </div>
         </div>
       </DataTableProvider>
-    )
+    );
   }
 
   if (data.length === 0 && hasActiveFilters) {
@@ -544,24 +543,24 @@ export function DataTable<TData>({
                 <TableHeader>
                   <TableRow className="bg-muted/50 *:px-3 sm:*:px-4">
                     {visibleEmptyColumns.map((col) => {
-                      if ('accessorKey' in col || 'id' in col) {
+                      if ("accessorKey" in col || "id" in col) {
                         const id =
-                          'accessorKey' in col ? col.accessorKey : col.id
-                        const meta = col.meta as AppColumnMeta | undefined
+                          "accessorKey" in col ? col.accessorKey : col.id;
+                        const meta = col.meta as AppColumnMeta | undefined;
                         return (
                           <TableHead
                             key={id as string}
                             className={cn(
-                              meta?.align === 'end' && 'text-right',
-                              meta?.align === 'center' && 'text-center',
+                              meta?.align === "end" && "text-right",
+                              meta?.align === "center" && "text-center",
                               meta?.headerClassName,
                             )}
                           >
                             {meta?.label || (id as string)}
                           </TableHead>
-                        )
+                        );
                       }
-                      return null
+                      return null;
                     })}
                   </TableRow>
                 </TableHeader>
@@ -577,7 +576,7 @@ export function DataTable<TData>({
                           <EmptyState
                             icon={noResultsIcon ?? SearchX}
                             title={noResultsTitle}
-                            description={noResultsDescription ?? ''}
+                            description={noResultsDescription ?? ""}
                             action={noResultsAction}
                           />
                         ) : (
@@ -607,7 +606,7 @@ export function DataTable<TData>({
           </div>
         </div>
       </DataTableProvider>
-    )
+    );
   }
 
   return (
@@ -631,27 +630,24 @@ export function DataTable<TData>({
                 <Table>
                   <TableHeader>
                     {table.getHeaderGroups().map((headerGroup) => (
-                      <TableRow
-                        key={headerGroup.id}
-                        className="bg-muted/50 *:px-3 sm:*:px-4"
-                      >
+                      <TableRow key={headerGroup.id} className="bg-muted/50">
                         {headerGroup.headers.map((header) => {
                           const meta = header.column.columnDef.meta as
                             | AppColumnMeta
-                            | undefined
+                            | undefined;
                           return (
                             <TableHead
                               key={header.id}
                               className={cn(
-                                meta?.align === 'end' && 'text-right',
-                                meta?.align === 'center' && 'text-center',
+                                meta?.align === "end" && "text-right",
+                                meta?.align === "center" && "text-center",
                                 meta?.headerClassName,
                               )}
                             >
                               {header.column.getCanSort() && onSortChange ? (
                                 <button
                                   type="button"
-                                  className="flex items-center gap-1 hover:text-foreground"
+                                  className="flex items-center gap-1 hover:text-foreground cursor-pointer"
                                   onClick={() =>
                                     handleSort(header.column.id as string)
                                   }
@@ -662,7 +658,7 @@ export function DataTable<TData>({
                                   )}
                                   {sort?.field === header.column.id && (
                                     <span className="text-xs">
-                                      {sort.direction === 'asc' ? '↑' : '↓'}
+                                      {sort.direction === "asc" ? "↑" : "↓"}
                                     </span>
                                   )}
                                 </button>
@@ -673,7 +669,7 @@ export function DataTable<TData>({
                                 )
                               )}
                             </TableHead>
-                          )
+                          );
                         })}
                       </TableRow>
                     ))}
@@ -682,20 +678,20 @@ export function DataTable<TData>({
                     {table.getRowModel().rows.map((row) => (
                       <TableRow
                         key={row.id}
-                        data-state={row.getIsSelected() && 'selected'}
+                        data-state={row.getIsSelected() && "selected"}
                         onClick={() => onRowClick?.(row.original)}
-                        className={cn(onRowClick && 'cursor-pointer')}
+                        className={cn(onRowClick && "cursor-pointer")}
                       >
                         {row.getVisibleCells().map((cell) => {
                           const meta = cell.column.columnDef.meta as
                             | AppColumnMeta
-                            | undefined
+                            | undefined;
                           return (
                             <TableCell
                               key={cell.id}
                               className={cn(
-                                meta?.align === 'end' && 'text-right',
-                                meta?.align === 'center' && 'text-center',
+                                meta?.align === "end" && "text-right",
+                                meta?.align === "center" && "text-center",
                                 meta?.cellClassName,
                               )}
                             >
@@ -704,7 +700,7 @@ export function DataTable<TData>({
                                 cell.getContext(),
                               )}
                             </TableCell>
-                          )
+                          );
                         })}
                       </TableRow>
                     ))}
@@ -742,5 +738,5 @@ export function DataTable<TData>({
         />
       </div>
     </DataTableProvider>
-  )
+  );
 }
