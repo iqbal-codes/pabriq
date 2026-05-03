@@ -1,5 +1,5 @@
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import type { QueryClient } from '@tanstack/react-query'
+import { type QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
   ClientOnly,
   createRootRouteWithContext,
@@ -14,6 +14,7 @@ import { Toaster } from '#/components/ui/sonner'
 import { ThemeProvider } from '#/components/ui/theme-provider'
 import { TooltipProvider } from '#/components/ui/tooltip'
 import { getCurrentLocale } from '#/lib/i18n.utils'
+import { getQueryClient } from '#/lib/query-client'
 import { messages } from '#/messages'
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 import appCss from '../styles.css?url'
@@ -86,12 +87,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           timeZone="UTC"
         >
           <TitleSetter />
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <TooltipProvider>
-              {children}
-              <Toaster />
-            </TooltipProvider>
-          </ThemeProvider>
+          <QueryClientProvider client={getQueryClient()}>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              <TooltipProvider>
+                {children}
+                <Toaster />
+              </TooltipProvider>
+            </ThemeProvider>
+          </QueryClientProvider>
         </IntlProvider>
         <ClientOnly fallback={null}>
           <TanStackDevtools
