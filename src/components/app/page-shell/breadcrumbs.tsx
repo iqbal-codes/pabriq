@@ -1,5 +1,6 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { ChevronsRight, Home } from 'lucide-react'
+import { Fragment } from 'react'
 import { useTranslations } from 'use-intl'
 import {
   Breadcrumb,
@@ -39,18 +40,20 @@ export function Breadcrumbs() {
           const label = (crumb.context as unknown as Record<string, unknown>)
             ?.breadcrumb as string
           return (
-            <BreadcrumbItem key={crumb.routeId}>
+            <Fragment key={crumb.routeId}>
               <BreadcrumbSeparator>
                 <ChevronsRight />
               </BreadcrumbSeparator>
-              {i === crumbs.length - 1 ? (
-                <BreadcrumbPage>{t(label)}</BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink asChild>
-                  <Link to={crumb.pathname}>{t(label)}</Link>
-                </BreadcrumbLink>
-              )}
-            </BreadcrumbItem>
+              <BreadcrumbItem>
+                {i === crumbs.length - 1 ? (
+                  <BreadcrumbPage>{t(label)}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink asChild>
+                    <Link to={crumb.pathname}>{t(label)}</Link>
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+            </Fragment>
           )
         })}
       </BreadcrumbList>

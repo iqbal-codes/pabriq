@@ -48,7 +48,7 @@ async function renderBreadcrumbs(
 
   await router.load()
 
-  render(
+  return render(
     <TestWrapper>
       <RouterProvider
         router={router}
@@ -89,5 +89,16 @@ describe('Breadcrumbs', () => {
       { path: '/orders', breadcrumb: 'orders' },
     ])
     expect(screen.getByText('Orders')).toBeDefined()
+  })
+
+  it('renders breadcrumb separators as list siblings', async () => {
+    const { container } = await renderBreadcrumbs([
+      { path: '/', breadcrumb: 'dashboard' },
+      { path: '/orders', breadcrumb: 'orders' },
+    ])
+
+    expect(
+      container.querySelectorAll('li li[data-slot="breadcrumb-separator"]'),
+    ).toHaveLength(0)
   })
 })

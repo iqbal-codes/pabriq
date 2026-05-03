@@ -17,7 +17,7 @@ import {
   PopoverTrigger,
 } from '#/components/ui/popover'
 import type { BiteshipArea } from '#/features/address/model'
-import { searchAreas } from '#/features/address/model'
+import { searchAreasFn } from '#/features/address/model'
 import { useFieldContext } from './form-context'
 import type { AreaSearchFieldProps } from './form-fields-shared'
 import { firstError } from './form-utils'
@@ -47,7 +47,7 @@ export function AreaSearchField({
     }
     setIsLoading(true)
     try {
-      const areas = await searchAreas(searchQuery)
+      const areas = await searchAreasFn({ data: { query: searchQuery } })
       setResults(areas)
     } finally {
       setIsLoading(false)
