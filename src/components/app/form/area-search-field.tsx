@@ -1,5 +1,5 @@
 import { XIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslations } from 'use-intl'
 
 import { Button } from '#/components/ui/button'
@@ -16,8 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '#/components/ui/popover'
-import type { BiteshipArea } from '#/features/address/model'
-import { searchAreasFn } from '#/features/address/model'
+import { useSearchAreas } from '#/features/address/hooks'
 import { useFieldContext } from './form-context'
 import type { AreaSearchFieldProps } from './form-fields-shared'
 import { firstError } from './form-utils'
@@ -36,29 +35,23 @@ export function AreaSearchField({
   const t = useTranslations('address')
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<BiteshipArea[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [debouncedQuery, setDebouncedQuery] = useState('')
 
-  async function handleSearch(searchQuery: string) {
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 300)
+    return () => clearTimeout(timer)
+  }, [query])
+
+  const { data: results = [], isFetching } = useSearchAreas(debouncedQuery)
+
+  function handleSearch(searchQuery: string) {
     setQuery(searchQuery)
-    if (!searchQuery.trim()) {
-      setResults([])
-      return
-    }
-    setIsLoading(true)
-    try {
-      const areas = await searchAreasFn({ data: { query: searchQuery } })
-      setResults(areas)
-    } finally {
-      setIsLoading(false)
-    }
   }
 
   function handleSelect(areaId: string) {
     const area = results.find((a) => a.id === areaId) ?? null
     onChange(area)
     setQuery('')
-    setResults([])
     setOpen(false)
     field.handleBlur()
   }
@@ -66,7 +59,7 @@ export function AreaSearchField({
   function handleClear() {
     onChange(null)
     setQuery('')
-    setResults([])
+    setDebouncedQuery('')
     field.handleBlur()
   }
 
@@ -120,12 +113,12 @@ export function AreaSearchField({
                 onValueChange={handleSearch}
               />
               <CommandList>
-                {isLoading && (
+                {isFetching && (
                   <div className="py-2 px-2 text-sm text-muted-foreground">
                     ...
                   </div>
                 )}
-                {!isLoading && query && results.length === 0 && (
+                {!isFetching && query && results.length === 0 && (
                   <CommandEmpty>{t('noResults')}</CommandEmpty>
                 )}
                 <CommandGroup>
