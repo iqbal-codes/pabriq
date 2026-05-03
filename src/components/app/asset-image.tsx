@@ -1,5 +1,5 @@
+import { useQuery } from '@tanstack/react-query'
 import { Package } from 'lucide-react'
-import { useEffect, useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { getAssetSignedUrl } from '#/features/assets/server'
 import { cn } from '#/lib/utils'
@@ -10,39 +10,19 @@ interface AssetImageProps {
 }
 
 export function AssetImage({ assetId, className }: AssetImageProps) {
-  const [url, setUrl] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(false)
   const t = useTranslations('products')
 
-  useEffect(() => {
-    if (!assetId) {
-      setUrl(null)
-      return
-    }
-    let cancelled = false
-    setLoading(true)
-    setError(false)
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['asset-signed-url', assetId],
+    queryFn: () => {
+      if (!assetId) throw new Error('assetId is required')
+      return getAssetSignedUrl({ data: { assetId, variantKey: 'preview' } })
+    },
+    enabled: !!assetId,
+    staleTime: 15 * 60 * 1000,
+  })
 
-    getAssetSignedUrl({ data: { assetId, variantKey: 'preview' } })
-      .then(({ url: fetchedUrl }) => {
-        if (cancelled) return
-        setUrl(fetchedUrl)
-      })
-      .catch(() => {
-        if (cancelled) return
-        setError(true)
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [assetId])
-
-  if (!assetId || error) {
+  if (!assetId || isError) {
     return (
       <div
         className={cn(
@@ -55,7 +35,7 @@ export function AssetImage({ assetId, className }: AssetImageProps) {
     )
   }
 
-  if (loading || !url) {
+  if (isLoading || !data?.url) {
     return (
       <div
         className={cn(
@@ -68,9 +48,12 @@ export function AssetImage({ assetId, className }: AssetImageProps) {
 
   return (
     <img
-      src={url}
+      src={data.url}
       alt={t('noPhoto')}
-      className={cn('h-10 w-10 rounded-lg object-cover shrink-0', className)}
+      className={cn(
+        'h-10 w-10 rounded-lg object-cover shrink-0 transition-opacity duration-150',
+        className,
+      )}
     />
   )
 }

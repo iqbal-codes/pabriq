@@ -1,7 +1,6 @@
 import { AlertCircle, CheckCircle, ImageIcon, RefreshCw, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { useTranslations } from 'use-intl'
 import { Button } from '#/components/ui/button'
 import { Progress } from '#/components/ui/progress'
 import type { UploadItem } from '#/features/assets/upload-machine'
@@ -42,8 +41,8 @@ function PhotoThumbnail({
   }, [item.file])
 
   return (
-    <div className="relative group rounded-lg border bg-background overflow-hidden">
-      <div className="aspect-square flex items-center justify-center bg-muted">
+    <div className="relative size-24 rounded-lg border bg-background overflow-hidden group shrink-0">
+      <div className="flex items-center justify-center bg-muted w-full h-full">
         {previewUrl ? (
           <img
             src={previewUrl}
@@ -51,43 +50,43 @@ function PhotoThumbnail({
             className="object-cover w-full h-full"
           />
         ) : (
-          <ImageIcon className="h-8 w-8 text-muted-foreground" />
+          <ImageIcon className="size-6 text-muted-foreground" />
         )}
       </div>
 
       {item.status === 'uploading' || item.status === 'processing' ? (
-        <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center p-2">
-          <Progress value={item.progress} className="w-full h-1" />
-          <span className="text-xs mt-1">{item.progress}%</span>
+        <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center p-1">
+          <Progress value={item.progress} className="w-full h-0.5" />
+          <span className="text-[10px] mt-0.5">{item.progress}%</span>
         </div>
       ) : item.status === 'failed' ? (
         <div className="absolute inset-0 bg-destructive/10 flex items-center justify-center">
-          <AlertCircle className="h-8 w-8 text-destructive" />
+          <AlertCircle className="size-5 text-destructive" />
         </div>
       ) : item.status === 'done' ? (
         <div className="absolute inset-0 flex items-center justify-center bg-green-500/10">
-          <CheckCircle className="h-6 w-6 text-green-500" />
+          <CheckCircle className="size-5 text-green-500" />
         </div>
       ) : null}
 
-      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+      <div className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
         {item.status === 'failed' && (
           <Button
             variant="secondary"
             size="icon"
-            className="h-6 w-6"
+            className="size-5"
             onClick={() => onRetry(item.id)}
           >
-            <RefreshCw className="h-3 w-3" />
+            <RefreshCw className="size-2.5" />
           </Button>
         )}
         <Button
           variant="secondary"
           size="icon"
-          className="h-6 w-6"
+          className="size-5"
           onClick={() => onRemove(item.id)}
         >
-          <X className="h-3 w-3" />
+          <X className="size-2.5" />
         </Button>
       </div>
     </div>
@@ -95,7 +94,6 @@ function PhotoThumbnail({
 }
 
 export function PhotoGridUpload(props: PhotoGridUploadProps) {
-  const t = useTranslations('assetUpload')
   const onItemsChangeRef = useRef(props.onItemsChange)
 
   useEffect(() => {
@@ -140,37 +138,27 @@ export function PhotoGridUpload(props: PhotoGridUploadProps) {
   })
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-wrap gap-2">
       <div
         {...getRootProps()}
         className={cn(
-          'relative rounded-lg border-2 border-dashed p-6 transition-colors cursor-pointer',
+          'size-24 rounded-lg border-2 border-dashed flex items-center justify-center bg-muted transition-colors cursor-pointer shrink-0',
           isDragActive ? 'border-primary bg-primary/5' : 'border-muted',
           props.disabled && 'opacity-50 pointer-events-none',
         )}
       >
         <input {...getInputProps()} />
-        <div className="flex flex-col items-center">
-          <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
-          <p className="text-sm font-medium">{t('dropzone.title')}</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {t('dropzone.hint')}
-          </p>
-        </div>
+        <ImageIcon className="size-6 text-muted-foreground" />
       </div>
 
-      {items.length > 0 && (
-        <div className="grid grid-cols-3 gap-2">
-          {items.map((item) => (
-            <PhotoThumbnail
-              key={item.id}
-              item={item}
-              onRemove={removeItem}
-              onRetry={retryItem}
-            />
-          ))}
-        </div>
-      )}
+      {items.map((item) => (
+        <PhotoThumbnail
+          key={item.id}
+          item={item}
+          onRemove={removeItem}
+          onRetry={retryItem}
+        />
+      ))}
     </div>
   )
 }
