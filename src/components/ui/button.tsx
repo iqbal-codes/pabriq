@@ -1,8 +1,9 @@
-import * as React from 'react'
+import type { ComponentProps } from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { Slot } from 'radix-ui'
 
 import { cn } from '#/lib/utils'
+import { Spinner } from '#/components/ui/spinner'
 
 const buttonVariants = cva(
   "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -43,21 +44,47 @@ function Button({
   variant = 'default',
   size = 'default',
   asChild = false,
+  isLoading,
+  loadingPosition = 'left',
+  children,
   ...props
-}: React.ComponentProps<'button'> &
+}: ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    isLoading?: boolean
+    loadingPosition?: 'left' | 'right' | 'replace'
   }) {
-  const Comp = asChild ? Slot.Root : 'button'
+  if (asChild) {
+    return (
+      <Slot.Root
+        data-slot="button"
+        data-variant={variant}
+        data-size={size}
+        className={cn(buttonVariants({ variant, size, className }))}
+        aria-busy={isLoading || undefined}
+        {...props}
+      >
+        {children}
+      </Slot.Root>
+    )
+  }
+
+  const isDisabled = props.disabled || isLoading
 
   return (
-    <Comp
+    <button
       data-slot="button"
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={isDisabled}
+      aria-busy={isLoading || undefined}
       {...props}
-    />
+    >
+      {isLoading && loadingPosition === 'left' && <Spinner />}
+      {isLoading && loadingPosition === 'replace' ? <Spinner /> : children}
+      {isLoading && loadingPosition === 'right' && <Spinner />}
+    </button>
   )
 }
 

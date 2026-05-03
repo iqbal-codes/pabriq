@@ -1,4 +1,4 @@
-export { useAppForm } from './form-context'
+export { useAppForm, withForm } from './form-context'
 export { FormError } from './form-error'
 export {
   EmailField,

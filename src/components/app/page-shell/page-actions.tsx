@@ -25,7 +25,12 @@ export function PageActions({
           <Link to={primaryAction.href}>{primaryAction.label}</Link>
         </Button>
       ) : primaryAction?.onClick ? (
-        <Button onClick={primaryAction.onClick}>{primaryAction.label}</Button>
+        <Button
+          onClick={primaryAction.onClick}
+          isLoading={primaryAction.isLoading}
+        >
+          {primaryAction.label}
+        </Button>
       ) : null}
       {secondaryActions && secondaryActions.length > 0 && (
         <DropdownMenu>

@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react'
+import { useStore } from '@tanstack/react-form'
 import type { ComponentProps } from 'react'
 import { Button } from '#/components/ui/button'
 import { useFormContext } from './form-context'
@@ -9,12 +9,16 @@ type SubmitButtonProps = ComponentProps<typeof Button> & {
 
 export function SubmitButton({ children, ...props }: SubmitButtonProps) {
   const form = useFormContext()
-  const isSubmitting = form.state.isSubmitting
-  const canSubmit = form.state.canSubmit
+  const isSubmitting = useStore(form.store, (state) => state.isSubmitting)
+  const canSubmit = useStore(form.store, (state) => state.canSubmit)
 
   return (
-    <Button type="submit" disabled={!canSubmit || isSubmitting} {...props}>
-      {isSubmitting && <Loader2 className="animate-spin" />}
+    <Button
+      type="submit"
+      disabled={!canSubmit || isSubmitting}
+      isLoading={isSubmitting}
+      {...props}
+    >
       {children}
     </Button>
   )

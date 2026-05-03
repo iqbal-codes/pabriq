@@ -1,6 +1,7 @@
 import { Input } from '#/components/ui/input'
 import { useFieldContext } from './form-context'
 import type { FieldProps } from './form-fields-shared'
+import { firstError } from './form-utils'
 
 export function TextField({
   label,
@@ -11,9 +12,10 @@ export function TextField({
   autoComplete,
 }: FieldProps) {
   const field = useFieldContext<string>()
+  const error = firstError(field.state.meta.errors)
 
   return (
-    <div>
+    <div data-invalid={!!error}>
       {label && (
         <label htmlFor={field.name} className="text-sm font-medium">
           {label}
@@ -36,6 +38,7 @@ export function TextField({
           autoComplete={autoComplete}
         />
       </div>
+      {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
     </div>
   )
 }

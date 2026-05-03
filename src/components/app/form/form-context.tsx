@@ -16,7 +16,7 @@ import { SubmitButton } from './form-submit'
 export const { fieldContext, formContext, useFieldContext, useFormContext } =
   createFormHookContexts()
 
-export const { useAppForm } = createFormHook({
+export const { useAppForm, withForm } = createFormHook({
   fieldComponents: {
     TextField,
     EmailField,

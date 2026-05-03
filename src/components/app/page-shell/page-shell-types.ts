@@ -5,4 +5,5 @@ export type PageAction = {
   icon?: LucideIcon
   href?: string
   onClick?: () => void
+  isLoading?: boolean
 }
