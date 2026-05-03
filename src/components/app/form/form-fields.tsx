@@ -1,3 +1,5 @@
+export type { AddressValue } from './address-field'
+export { AddressField } from './address-field'
 export { AreaSearchField } from './area-search-field'
 export { EmailField } from './email-field'
 export type {

@@ -10,4 +10,9 @@ export const customerFormSchema = z.object({
   notes: z.string(),
   active: z.boolean(),
   photoAssetId: z.string().nullable(),
+  address: z.object({
+    areaId: z.string(),
+    areaName: z.string(),
+    streetAddress: z.string(),
+  }),
 })

@@ -1,14 +1,19 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '#/components/ui/tooltip'
 import { DataTable } from './data-table'
-import { DataTableFilterSelect } from './data-table-filter-select'
 import { DataTableSearch } from './data-table-search'
-import type { AppColumnDef, DataTableLabels } from './data-table-utils'
+import type {
+  AppColumnDef,
+  DataTableFiltersConfig,
+  DataTableLabels,
+} from './data-table-utils'
 import {
   encodeSort,
+  getActiveFilterCount,
   getStoredVisibility,
+  isFilterActive,
   removeStoredVisibility,
   setStoredVisibility,
 } from './data-table-utils'
@@ -222,6 +227,266 @@ describe('DataTable - toolbar', () => {
   })
 })
 
+describe('DataTable - filter trigger', () => {
+  const baseFilters: DataTableFiltersConfig = {
+    definitions: [
+      { id: 'status', label: 'Status', type: 'radio-chips', options: [] },
+    ],
+    values: {},
+    onApply: vi.fn(),
+    onClear: vi.fn(),
+  }
+
+  it('renders filter trigger button when filters prop is provided', () => {
+    renderTable({ filters: baseFilters })
+    expect(screen.getByText('Filters')).toBeDefined()
+  })
+
+  it('does not render filter button without filters prop', () => {
+    renderTable()
+    expect(screen.queryByText('Filters')).toBeNull()
+  })
+
+  it('shows active count badge when filters have values', () => {
+    renderTable({
+      filters: {
+        ...baseFilters,
+        values: { status: 'active' },
+      },
+    })
+    const counts = screen.getAllByText('1').filter((el) => el.closest('button'))
+    expect(counts.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('does not show count badge when no filters active', () => {
+    renderTable({ filters: baseFilters })
+    const counts = screen
+      .queryAllByText('1')
+      .filter((el) => el.closest('button'))
+    expect(counts.length).toBe(0)
+  })
+
+  it('opens filter panel on trigger click', async () => {
+    renderTable({ filters: baseFilters })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    await user.click(screen.getByText('Filters'))
+    const applyBtn = await screen.findByText('Apply', {}, { timeout: 2000 })
+    expect(applyBtn).toBeDefined()
+  })
+})
+
+describe('DataTable - filter panel', () => {
+  const onApply = vi.fn()
+  const onClear = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  const filtersWithValues: DataTableFiltersConfig = {
+    definitions: [
+      {
+        id: 'status',
+        label: 'Status',
+        type: 'radio-chips',
+        options: [
+          { value: 'active', label: 'Active' },
+          { value: 'inactive', label: 'Inactive' },
+        ],
+      },
+    ],
+    values: { status: 'active' },
+    onApply,
+    onClear,
+  }
+
+  it('shows filter definitions inside the panel', async () => {
+    renderTable({ filters: filtersWithValues })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    await user.click(screen.getByText('Filters'))
+    const allBtns = await screen.findAllByText('Active', {}, { timeout: 2000 })
+    expect(allBtns.length).toBeGreaterThan(0)
+  })
+
+  it('shows Apply and Cancel buttons inside the panel', async () => {
+    renderTable({ filters: filtersWithValues })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    await user.click(screen.getByText('Filters'))
+    expect(
+      await screen.findByText('Apply', {}, { timeout: 2000 }),
+    ).toBeDefined()
+    expect(
+      await screen.findByText('Cancel', {}, { timeout: 2000 }),
+    ).toBeDefined()
+  })
+
+  it('calls onClear when Clear all is clicked in the panel', async () => {
+    renderTable({ filters: filtersWithValues })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    await user.click(screen.getByText('Filters'))
+    const dialog = await screen.findByRole('dialog', {}, { timeout: 2000 })
+    const clearBtn = within(dialog).getByText('Clear filters')
+    await user.click(clearBtn)
+    expect(onClear).toHaveBeenCalled()
+  })
+
+  it('renders custom content in the panel', async () => {
+    renderTable({
+      filters: {
+        ...filtersWithValues,
+        customContent: <div>Custom section</div>,
+      },
+    })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    await user.click(screen.getByText('Filters'))
+    expect(
+      await screen.findByText('Custom section', {}, { timeout: 2000 }),
+    ).toBeDefined()
+  })
+})
+
+describe('DataTable - active filter chips', () => {
+  const onApply = vi.fn()
+
+  it('renders active chips when filters have values', () => {
+    renderTable({
+      filters: {
+        definitions: [
+          {
+            id: 'status',
+            label: 'Status',
+            type: 'radio-chips',
+            options: [
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' },
+            ],
+          },
+        ],
+        values: { status: 'active' },
+        onApply,
+        onClear: vi.fn(),
+      },
+    })
+    expect(screen.getByText('Active')).toBeDefined()
+  })
+
+  it('does not render chips when no filters active', () => {
+    renderTable({
+      filters: {
+        definitions: [
+          {
+            id: 'status',
+            label: 'Status',
+            type: 'radio-chips',
+            options: [],
+          },
+        ],
+        values: {},
+        onApply,
+        onClear: vi.fn(),
+      },
+    })
+    expect(screen.queryByText(/Status:/)).toBeNull()
+  })
+})
+
+describe('getActiveFilterCount', () => {
+  it('counts active string filter', () => {
+    const defs = [
+      {
+        id: 'status',
+        label: 'Status',
+        type: 'radio-chips' as const,
+        options: [],
+      },
+    ]
+    expect(getActiveFilterCount(defs, { status: 'active' })).toBe(1)
+    expect(getActiveFilterCount(defs, { status: null })).toBe(0)
+    expect(getActiveFilterCount(defs, { status: '' })).toBe(0)
+    expect(getActiveFilterCount(defs, {})).toBe(0)
+  })
+
+  it('counts active multi-select filter', () => {
+    const defs = [
+      {
+        id: 'tags',
+        label: 'Tags',
+        type: 'combobox-multi' as const,
+        options: [],
+      },
+    ]
+    expect(getActiveFilterCount(defs, { tags: ['a', 'b'] })).toBe(1)
+    expect(getActiveFilterCount(defs, { tags: [] })).toBe(0)
+  })
+
+  it('counts active date range filter', () => {
+    const defs = [{ id: 'date', label: 'Date', type: 'date-range' as const }]
+    expect(
+      getActiveFilterCount(defs, { date: { from: '2026-01-01', to: null } }),
+    ).toBe(1)
+    expect(
+      getActiveFilterCount(defs, {
+        date: { from: '2026-01-01', to: '2026-01-31' },
+      }),
+    ).toBe(1)
+    expect(getActiveFilterCount(defs, { date: { from: null, to: null } })).toBe(
+      0,
+    )
+  })
+
+  it('counts filter groups, not values', () => {
+    const defs = [
+      {
+        id: 'status',
+        label: 'Status',
+        type: 'radio-chips' as const,
+        options: [],
+      },
+      {
+        id: 'tags',
+        label: 'Tags',
+        type: 'combobox-multi' as const,
+        options: [],
+      },
+    ]
+    expect(
+      getActiveFilterCount(defs, { status: 'active', tags: ['a', 'b', 'c'] }),
+    ).toBe(2)
+  })
+})
+
+describe('isFilterActive', () => {
+  it('returns true for non-null string', () => {
+    const def = {
+      id: 's',
+      label: 'S',
+      type: 'radio-chips' as const,
+      options: [],
+    }
+    expect(isFilterActive(def, 'active')).toBe(true)
+    expect(isFilterActive(def, '')).toBe(false)
+    expect(isFilterActive(def, null)).toBe(false)
+  })
+
+  it('returns true for non-empty array', () => {
+    const def = {
+      id: 't',
+      label: 'T',
+      type: 'combobox-multi' as const,
+      options: [],
+    }
+    expect(isFilterActive(def, ['a'])).toBe(true)
+    expect(isFilterActive(def, [])).toBe(false)
+  })
+
+  it('returns true for date range with any value', () => {
+    const def = { id: 'd', label: 'D', type: 'date-range' as const }
+    expect(isFilterActive(def, { from: '2026-01-01', to: null })).toBe(true)
+    expect(isFilterActive(def, { from: null, to: '2026-01-31' })).toBe(true)
+    expect(isFilterActive(def, { from: null, to: null })).toBe(false)
+  })
+})
+
 describe('DataTable - row actions', () => {
   it('renders row action buttons', () => {
     renderTable({
@@ -241,23 +506,6 @@ describe('DataTableSearch', () => {
       <DataTableSearch placeholder="Search..." value="" onChange={vi.fn()} />,
     )
     expect(screen.getByPlaceholderText('Search...')).toBeDefined()
-  })
-})
-
-describe('DataTableFilterSelect', () => {
-  it('renders options', () => {
-    render(
-      <DataTableFilterSelect
-        options={[
-          { value: 'active', label: 'Active' },
-          { value: 'inactive', label: 'Inactive' },
-        ]}
-        value=""
-        onChange={vi.fn()}
-      />,
-    )
-    expect(screen.getByText('Active')).toBeDefined()
-    expect(screen.getByText('Inactive')).toBeDefined()
   })
 })
 

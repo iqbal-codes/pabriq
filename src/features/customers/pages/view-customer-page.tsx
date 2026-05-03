@@ -33,7 +33,11 @@ export function ViewCustomerPage() {
         }}
       />
       <div className="flex items-center gap-4 mb-6">
-        <AssetImage assetId={customer.photoAssetId} className="rounded-full" />
+        <AssetImage
+          assetId={customer.photoAssetId}
+          assetKind="image"
+          className="rounded-full"
+        />
         <div>
           <h1 className="text-2xl font-semibold">{customer.name}</h1>
           <Badge

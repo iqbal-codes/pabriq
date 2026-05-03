@@ -54,6 +54,7 @@ export function PhotoUploadField({
           <div className="relative inline-block group">
             <AssetImage
               assetId={field.state.value}
+              assetKind="image"
               className="size-24 rounded-lg object-cover"
             />
             <Button

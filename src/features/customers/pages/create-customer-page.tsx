@@ -7,7 +7,6 @@ import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { CustomerFormFields } from '#/features/customers/components/customer-form-fields'
 import { useCreateCustomer } from '#/features/customers/hooks'
-import type { CustomerInput } from '#/features/customers/model'
 import { customerFormSchema } from '#/lib/validation-schemas'
 
 export function CreateCustomerPage() {
@@ -24,7 +23,12 @@ export function CreateCustomerPage() {
       notes: '',
       active: true as boolean,
       photoAssetId: null as string | null,
-    } satisfies CustomerInput,
+      address: {
+        areaId: '',
+        areaName: '',
+        streetAddress: '',
+      },
+    },
     validators: {
       onChange: customerFormSchema,
     },

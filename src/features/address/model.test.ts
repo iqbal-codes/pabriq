@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from '#/db/index'
 import { addresses, biteshipAreas, organization } from '#/db/schema'
 import { createAddressFn, searchAreas, updateAddressFn } from './model'
@@ -19,20 +19,37 @@ beforeEach(async () => {
       updatedAt: now,
     },
   ])
+
+  await db.insert(biteshipAreas).values([
+    {
+      areaId: 'area-1',
+      name: 'Cibis, Palmerah',
+      subdistrict: 'Palmerah',
+      district: 'Palmerah',
+      city: 'Jakarta Barat',
+      province: 'DKI Jakarta',
+      postalCode: '11480',
+    },
+    {
+      areaId: 'area-2',
+      name: 'Kebayoran Baru',
+      subdistrict: 'Kebayoran Baru',
+      district: 'Kebayoran Baru',
+      city: 'Jakarta Selatan',
+      province: 'DKI Jakarta',
+      postalCode: '12120',
+    },
+  ])
+
+  process.env.BITESHIP_API_KEY = 'test-key'
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('createAddressFn', () => {
   it('creates address with area', async () => {
-    await db.insert(biteshipAreas).values({
-      areaId: 'area-1',
-      name: 'Cibis, Palmerah',
-      subdistrict: 'Palmerah',
-      district: 'West Jakarta',
-      city: 'Jakarta',
-      province: 'DKI Jakarta',
-      postalCode: '11480',
-    })
-
     const result = await createAddressFn({
       orgId: org1Id,
       areaId: 'area-1',
@@ -81,16 +98,6 @@ describe('createAddressFn', () => {
 
 describe('updateAddressFn', () => {
   it('updates address fields', async () => {
-    await db.insert(biteshipAreas).values({
-      areaId: 'area-2',
-      name: 'Senayan, Kebayoran Baru',
-      subdistrict: 'Kebayoran Baru',
-      district: 'South Jakarta',
-      city: 'Jakarta',
-      province: 'DKI Jakarta',
-      postalCode: '12110',
-    })
-
     const addrId = crypto.randomUUID()
     await db.insert(addresses).values({
       id: addrId,
@@ -109,55 +116,90 @@ describe('updateAddressFn', () => {
 })
 
 describe('searchAreas', () => {
-  beforeEach(async () => {
-    await db.insert(biteshipAreas).values([
-      {
-        areaId: 'area-jakarta-1',
-        name: 'Cibis, Palmerah',
-        subdistrict: 'Palmerah',
-        district: 'West Jakarta',
-        city: 'Jakarta',
-        province: 'DKI Jakarta',
-        postalCode: '11480',
-      },
-      {
-        areaId: 'area-jakarta-2',
-        name: 'Senayan, Kebayoran Baru',
-        subdistrict: 'Kebayoran Baru',
-        district: 'South Jakarta',
-        city: 'Jakarta',
-        province: 'DKI Jakarta',
-        postalCode: '12110',
-      },
-      {
-        areaId: 'area-bandung-1',
-        name: 'Dago, Coblong',
-        subdistrict: 'Coblong',
-        district: 'Bandung',
-        city: 'Bandung',
-        province: 'West Java',
-        postalCode: '40135',
-      },
-    ])
-  })
+  it('returns results from Biteship API', async () => {
+    const mockResponse = {
+      success: true,
+      areas: [
+        {
+          id: 'IDNP6IDNC148IDND843IDZ12250',
+          name: 'Pesanggrahan, Jakarta Selatan, DKI Jakarta. 12250',
+          country_name: 'Indonesia',
+          country_code: 'ID',
+          administrative_division_level_1_name: 'DKI Jakarta',
+          administrative_division_level_1_type: 'province',
+          administrative_division_level_2_name: 'Jakarta Selatan',
+          administrative_division_level_2_type: 'city',
+          administrative_division_level_3_name: 'Pesanggrahan',
+          administrative_division_level_3_type: 'district',
+          postal_code: 12250,
+        },
+      ],
+    }
 
-  it('returns up to 20 results', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
     const results = await searchAreas('Jakarta')
-    expect(results.length).toBeLessThanOrEqual(20)
-  })
-
-  it('matches by name', async () => {
-    const results = await searchAreas('Senayan')
-    expect(results.some((r) => r.name.includes('Senayan'))).toBe(true)
-  })
-
-  it('matches by postal code', async () => {
-    const results = await searchAreas('11480')
-    expect(results.some((r) => r.id === 'area-jakarta-1')).toBe(true)
+    expect(results).toHaveLength(1)
+    expect(results[0].id).toBe('IDNP6IDNC148IDND843IDZ12250')
+    expect(results[0].name).toContain('Pesanggrahan')
+    expect(results[0].area).toBe('Pesanggrahan')
   })
 
   it('returns empty array for empty query', async () => {
     const results = await searchAreas('')
     expect(results).toEqual([])
+  })
+
+  it('returns empty array on API error', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response('Unauthorized', { status: 401 }),
+    )
+
+    const results = await searchAreas('Jakarta')
+    expect(results).toEqual([])
+  })
+
+  it('sends API key in authorization header', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: true, areas: [] }), {
+        status: 200,
+      }),
+    )
+
+    await searchAreas('Jakarta')
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/v1/maps/areas'),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          authorization: 'test-key',
+        }),
+      }),
+    )
+  })
+
+  it('builds correct query parameters', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: true, areas: [] }), {
+        status: 200,
+      }),
+    )
+
+    await searchAreas('Jakarta Selatan')
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('countries=ID'),
+      expect.anything(),
+    )
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('input=Jakarta+Selatan'),
+      expect.anything(),
+    )
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('type=single'),
+      expect.anything(),
+    )
   })
 })

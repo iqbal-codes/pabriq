@@ -7,7 +7,6 @@ import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { CustomerFormFields } from '#/features/customers/components/customer-form-fields'
 import { useCustomer, useUpdateCustomer } from '#/features/customers/hooks'
-import type { CustomerInput } from '#/features/customers/model'
 import { customerFormSchema } from '#/lib/validation-schemas'
 import { Route } from '#/routes/_org/customers/$id/edit'
 
@@ -26,7 +25,12 @@ export function EditCustomerPage() {
       notes: customer?.notes ?? '',
       active: customer?.active ?? true,
       photoAssetId: customer?.photoAssetId ?? null,
-    } satisfies CustomerInput,
+      address: customer?.address ?? {
+        areaId: '',
+        areaName: '',
+        streetAddress: '',
+      },
+    },
     validators: {
       onChange: customerFormSchema,
     },

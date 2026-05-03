@@ -1,10 +1,15 @@
+import type { ReactNode } from 'react'
 import type { DataTableSlotContext } from './data-table-utils'
 
 type DataTableToolbarProps<TData> = {
-  toolbarStart?: React.ReactNode
-  toolbarEnd?: React.ReactNode
-  selectionToolbar?: (ctx: DataTableSlotContext<TData>) => React.ReactNode
+  toolbarStart?: ReactNode
+  toolbarEnd?: ReactNode
+  selectionToolbar?: (ctx: DataTableSlotContext<TData>) => ReactNode
   slotContext: DataTableSlotContext<TData>
+  filterTrigger?: ReactNode
+  clearButton?: ReactNode
+  activeFilterChips?: ReactNode
+  hasStructuredFilters?: boolean
 }
 
 export function DataTableToolbar<TData>({
@@ -12,8 +17,13 @@ export function DataTableToolbar<TData>({
   toolbarEnd,
   selectionToolbar,
   slotContext,
+  filterTrigger,
+  clearButton,
+  activeFilterChips,
+  hasStructuredFilters,
 }: DataTableToolbarProps<TData>) {
   const hasSelection = slotContext.selectedRowIds.length > 0
+  const hasToolbarContent = !!(toolbarStart || toolbarEnd || filterTrigger)
 
   return (
     <div className="flex flex-col gap-4">
@@ -30,11 +40,18 @@ export function DataTableToolbar<TData>({
         </div>
       ) : null}
 
-      {!hasSelection && (toolbarStart || toolbarEnd) ? (
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">{toolbarStart}</div>
-          <div className="flex items-center gap-2">{toolbarEnd}</div>
-        </div>
+      {!hasSelection && hasToolbarContent ? (
+        <>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">{toolbarStart}</div>
+            <div className="flex items-center gap-2">
+              {toolbarEnd}
+              {hasStructuredFilters && clearButton}
+              {filterTrigger}
+            </div>
+          </div>
+          {activeFilterChips}
+        </>
       ) : null}
     </div>
   )

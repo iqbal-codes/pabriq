@@ -312,15 +312,43 @@ export const getAssetSignedUrl = createServerFn({ method: 'GET' })
     await resolveOrgId()
     const { db } = await import('#/db/index')
 
-    const variant = await db
+    const requestedVariant = await db
+      .select()
+      .from(assetVariants)
+      .where(
+        and(
+          eq(assetVariants.assetId, data.assetId),
+          eq(assetVariants.variantKey, data.variantKey),
+        ),
+      )
+      .limit(1)
+
+    const originalVariant =
+      data.variantKey === 'original'
+        ? []
+        : await db
+            .select()
+            .from(assetVariants)
+            .where(
+              and(
+                eq(assetVariants.assetId, data.assetId),
+                eq(assetVariants.variantKey, 'original'),
+              ),
+            )
+            .limit(1)
+
+    const fallbackVariant = await db
       .select()
       .from(assetVariants)
       .where(eq(assetVariants.assetId, data.assetId))
       .limit(1)
 
-    if (variant.length === 0) throw new Error('Variant not found')
+    const variant =
+      requestedVariant[0] ?? originalVariant[0] ?? fallbackVariant[0]
 
-    const key = variant[0].storageKey
+    if (!variant) throw new Error('Variant not found')
+
+    const key = variant.storageKey
     const ttl = data.variantKey === 'original' ? 5 * 60 : 15 * 60
 
     return generateSignedDownloadUrl(key, ttl)

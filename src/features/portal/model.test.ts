@@ -37,6 +37,16 @@ beforeEach(async () => {
     },
   ])
 
+  await db.insert(biteshipAreas).values({
+    areaId: 'area-1',
+    name: 'Cibis, Palmerah',
+    subdistrict: 'Palmerah',
+    district: 'Palmerah',
+    city: 'Jakarta Barat',
+    province: 'DKI Jakarta',
+    postalCode: '11480',
+  })
+
   await db.insert(customersTable).values([
     {
       id: customer1Id,
@@ -206,18 +216,6 @@ describe('updatePortalLineItem', () => {
 })
 
 describe('savePortalAddress', () => {
-  beforeEach(async () => {
-    await db.insert(biteshipAreas).values({
-      areaId: 'area-1',
-      name: 'Cibis, Palmerah',
-      subdistrict: 'Palmerah',
-      district: 'West Jakarta',
-      city: 'Jakarta',
-      province: 'DKI Jakarta',
-      postalCode: '11480',
-    })
-  })
-
   it('saves address and links to customer and order', async () => {
     const result = await savePortalAddress(
       order1Id,

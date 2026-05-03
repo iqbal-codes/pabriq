@@ -6,12 +6,12 @@ import { useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
 import type {
   AppColumnDef,
+  DataTableFiltersConfig,
   DataTableLabels,
   SortState,
 } from '#/components/app/data-table'
 import {
   DataTable,
-  DataTableFilterSelect,
   DataTableSearch,
   decodeSort,
   encodeSort,
@@ -84,19 +84,44 @@ export function CustomersListPage() {
     [setPerPage, setPage],
   )
 
-  const handleStatusFilter = useCallback(
-    (v: string) => {
-      setStatusFilter(v || null)
+  const handleApplyFilters = useCallback(
+    (values: Record<string, unknown>) => {
+      setStatusFilter((values.status as string) || null)
       setPage(1)
     },
     [setStatusFilter, setPage],
   )
 
-  const handleClearFilters = useCallback(() => {
+  const handleClearStructuredFilters = useCallback(() => {
+    setStatusFilter(null)
+    setPage(1)
+  }, [setStatusFilter, setPage])
+
+  const handleClearAllFilters = useCallback(() => {
     setSearch(null)
     setStatusFilter(null)
     setPage(1)
   }, [setSearch, setStatusFilter, setPage])
+
+  const filtersConfig = useMemo<DataTableFiltersConfig>(
+    () => ({
+      definitions: [
+        {
+          id: 'status',
+          label: t('active'),
+          type: 'radio-chips' as const,
+          options: [
+            { value: 'active', label: st('active') },
+            { value: 'inactive', label: st('inactive') },
+          ],
+        },
+      ],
+      values: { status: statusFilter || null },
+      onApply: handleApplyFilters,
+      onClear: handleClearStructuredFilters,
+    }),
+    [t, st, statusFilter, handleApplyFilters, handleClearStructuredFilters],
+  )
 
   const columns: AppColumnDef<CustomerRow>[] = [
     {
@@ -107,6 +132,7 @@ export function CustomersListPage() {
       cell: ({ row }) => (
         <AssetImage
           assetId={row.original.photoAssetId}
+          assetKind="image"
           className="rounded-full"
         />
       ),
@@ -156,6 +182,10 @@ export function CustomersListPage() {
       dt('rowsSelected', { selected, total }),
     visibleRows: (from: number, to: number, total: number) =>
       dt('visibleRows', { from, to, total }),
+    filters: dt('filters'),
+    applyFilters: dt('applyFilters'),
+    cancelFilters: dt('cancelFilters'),
+    activeFilters: dt('activeFilters'),
   }
 
   const hasActiveFilters = !!(search || statusFilter)
@@ -185,24 +215,13 @@ export function CustomersListPage() {
         perPage={perPage}
         tableId="customers"
         totalRows={totalRows}
+        filters={filtersConfig}
         toolbarStart={
-          <div className="flex items-center gap-2">
-            <DataTableSearch
-              placeholder={t('searchPlaceholder')}
-              value={search}
-              onChange={(v) => setSearch(v || null)}
-            />
-            <DataTableFilterSelect
-              label={t('active')}
-              placeholder={dt('filterAll')}
-              options={[
-                { value: 'active', label: st('active') },
-                { value: 'inactive', label: st('inactive') },
-              ]}
-              value={statusFilter}
-              onChange={handleStatusFilter}
-            />
-          </div>
+          <DataTableSearch
+            placeholder={t('searchPlaceholder')}
+            value={search}
+            onChange={(v) => setSearch(v || null)}
+          />
         }
         emptyIcon={Users}
         emptyTitle={t('noCustomers')}
@@ -212,7 +231,7 @@ export function CustomersListPage() {
         noResultsDescription={t('noCustomersDesc')}
         noResultsAction={{ label: t('createCustomer'), href: '/customers/new' }}
         hasActiveFilters={hasActiveFilters}
-        onClearFilters={handleClearFilters}
+        onClearFilters={handleClearAllFilters}
         rowActions={(row: CustomerRow) => (
           <div className="flex gap-1">
             <Button

@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, eq, ilike, or } from 'drizzle-orm'
-import { addresses, biteshipAreas, customers } from '#/db/schema'
+import { and, eq } from 'drizzle-orm'
+import { addresses, customers } from '#/db/schema'
 
 export type BiteshipArea = {
   id: string
@@ -138,28 +138,44 @@ export async function searchAreas(query: string): Promise<BiteshipArea[]> {
     return []
   }
 
-  const pattern = `%${query.trim()}%`
-  const db = await getDb()
+  const apiKey = process.env.BITESHIP_API_KEY
+  if (!apiKey) {
+    return []
+  }
 
-  const rows = await db
-    .select({
-      id: biteshipAreas.areaId,
-      name: biteshipAreas.name,
-      area: biteshipAreas.subdistrict,
-    })
-    .from(biteshipAreas)
-    .where(
-      or(
-        ilike(biteshipAreas.name, pattern),
-        ilike(biteshipAreas.postalCode, pattern),
-      ),
-    )
-    .limit(20)
+  const url = new URL('https://api.biteship.com/v1/maps/areas')
+  url.searchParams.set('countries', 'ID')
+  url.searchParams.set('input', query.trim())
+  url.searchParams.set('type', 'single')
 
-  return rows.map((r) => ({
-    id: r.id,
-    name: r.name,
-    area: r.area,
+  const res = await fetch(url.toString(), {
+    headers: {
+      authorization: apiKey,
+      'content-type': 'application/json',
+    },
+  })
+
+  if (!res.ok) {
+    return []
+  }
+
+  const body = (await res.json()) as {
+    success: boolean
+    areas: Array<{
+      id: string
+      name: string
+      administrative_division_level_3_name: string
+    }>
+  }
+
+  if (!body.success || !body.areas) {
+    return []
+  }
+
+  return body.areas.map((a) => ({
+    id: a.id,
+    name: a.name,
+    area: a.administrative_division_level_3_name,
   }))
 }
 

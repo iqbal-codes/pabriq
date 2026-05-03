@@ -62,12 +62,14 @@ const id: Messages = {
   common: {
     back: 'Kembali',
     loading: 'Memuat',
+    close: 'Tutup',
     pageNotFound: 'Halaman tidak ditemukan',
     pageNotFoundDesc:
       'Halaman yang Anda cari tidak ada atau mungkin telah dipindahkan.',
     goHome: 'Ke beranda',
     confirm: 'Konfirmasi',
     cancel: 'Batal',
+    preview: 'Pratinjau',
   },
   dataTable: {
     clearFilters: 'Hapus filter',
@@ -86,6 +88,10 @@ const id: Messages = {
     visibleRows: '{from}-{to} dari {total}',
     loading: 'Memuat',
     filterAll: 'Semua',
+    filters: 'Filter',
+    applyFilters: 'Terapkan',
+    cancelFilters: 'Batal',
+    activeFilters: 'Filter aktif',
   },
   orders: {
     title: 'Pesanan',
@@ -172,7 +178,7 @@ const id: Messages = {
     name: 'Nama',
     email: 'Email',
     phone: 'Telepon',
-    notes: 'Catatan Internal',
+    notes: 'Catatan',
     active: 'Aktif',
     inactive: 'Tidak Aktif',
     searchPlaceholder: 'Cari pelanggan...',
@@ -249,6 +255,8 @@ const id: Messages = {
     title: 'Alamat',
     areaSearch: 'Cari area...',
     areaSearchPlaceholder: 'Cari kecamatan, kota, atau kode pos',
+    startTypingToSearch: 'Mulai ketik untuk mencari area',
+    searchingAreas: 'Mencari area...',
     noResults: 'Area tidak ditemukan',
     streetAddress: 'Alamat Jalan',
     streetAddressPlaceholder: 'cth. Jl. Raya Bogor No. 123',

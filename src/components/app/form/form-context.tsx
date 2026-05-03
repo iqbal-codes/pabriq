@@ -1,6 +1,7 @@
 import { createFormHook, createFormHookContexts } from '@tanstack/react-form'
 import { FormError } from './form-error'
 import {
+  AddressField,
   AreaSearchField,
   EmailField,
   NumberField,
@@ -18,6 +19,7 @@ export const { fieldContext, formContext, useFieldContext, useFormContext } =
 
 export const { useAppForm, withForm } = createFormHook({
   fieldComponents: {
+    AddressField,
     TextField,
     EmailField,
     PasswordField,

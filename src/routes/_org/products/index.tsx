@@ -44,7 +44,10 @@ function ProductsList() {
       header: t('noPhoto'),
       meta: { label: t('noPhoto'), mobileRole: 'meta' },
       cell: ({ row }) => (
-        <AssetImage assetId={row.original.primaryImageAssetId} />
+        <AssetImage
+          assetId={row.original.primaryImageAssetId}
+          assetKind="image"
+        />
       ),
     },
     {

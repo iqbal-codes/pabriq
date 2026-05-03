@@ -1,6 +1,8 @@
 export { useAppForm, withForm } from './form-context'
 export { FormError } from './form-error'
+export type { AddressValue } from './form-fields'
 export {
+  AddressField,
   EmailField,
   NumberField,
   PasswordField,

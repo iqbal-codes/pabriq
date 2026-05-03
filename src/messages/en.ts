@@ -60,11 +60,13 @@ export type Messages = {
   common: {
     back: string
     loading: string
+    close: string
     pageNotFound: string
     pageNotFoundDesc: string
     goHome: string
     confirm: string
     cancel: string
+    preview: string
   }
   dataTable: {
     clearFilters: string
@@ -83,6 +85,10 @@ export type Messages = {
     visibleRows: string
     loading: string
     filterAll: string
+    filters: string
+    applyFilters: string
+    cancelFilters: string
+    activeFilters: string
   }
   orders: {
     title: string
@@ -245,6 +251,8 @@ export type Messages = {
     title: string
     areaSearch: string
     areaSearchPlaceholder: string
+    startTypingToSearch: string
+    searchingAreas: string
     noResults: string
     streetAddress: string
     streetAddressPlaceholder: string
@@ -358,12 +366,14 @@ const en: Messages = {
   common: {
     back: 'Back',
     loading: 'Loading',
+    close: 'Close',
     pageNotFound: 'Page not found',
     pageNotFoundDesc:
       "The page you're looking for doesn't exist or may have been moved.",
     goHome: 'Go home',
     confirm: 'Confirm',
     cancel: 'Cancel',
+    preview: 'Preview',
   },
   dataTable: {
     clearFilters: 'Clear filters',
@@ -382,6 +392,10 @@ const en: Messages = {
     visibleRows: '{from}-{to} of {total}',
     loading: 'Loading',
     filterAll: 'All',
+    filters: 'Filters',
+    applyFilters: 'Apply',
+    cancelFilters: 'Cancel',
+    activeFilters: 'Active filters',
   },
   orders: {
     title: 'Orders',
@@ -468,7 +482,7 @@ const en: Messages = {
     name: 'Name',
     email: 'Email',
     phone: 'Phone',
-    notes: 'Internal Notes',
+    notes: 'Notes',
     active: 'Active',
     inactive: 'Inactive',
     searchPlaceholder: 'Search customers...',
@@ -544,6 +558,8 @@ const en: Messages = {
     title: 'Address',
     areaSearch: 'Search area...',
     areaSearchPlaceholder: 'Search subdistrict, district, city, or postal code',
+    startTypingToSearch: 'Start typing to search areas',
+    searchingAreas: 'Searching areas...',
     noResults: 'Area not found',
     streetAddress: 'Street Address',
     streetAddressPlaceholder: 'e.g. Jl. Raya Bogor No. 123',

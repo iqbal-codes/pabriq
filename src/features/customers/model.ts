@@ -10,6 +10,12 @@ import {
   sql,
 } from 'drizzle-orm'
 import { customers as customersTable } from '#/db/schema'
+import {
+  createAddressFn,
+  getCustomerAddress,
+  type ShippingAddress,
+  updateAddressFn,
+} from '#/features/address/model'
 
 export type Customer = {
   id: string
@@ -20,6 +26,7 @@ export type Customer = {
   notes: string | null
   active: boolean
   photoAssetId: string | null
+  address: ShippingAddress | null
   createdAt: Date
   updatedAt: Date
 }
@@ -31,6 +38,7 @@ export type CustomerInput = {
   notes?: string | null
   active?: boolean
   photoAssetId?: string | null
+  address?: ShippingAddress | null
 }
 
 export type CustomerRow = {
@@ -61,6 +69,56 @@ export function validateCustomerInput(input: CustomerInput): string | null {
     return 'nameRequired'
   }
   return null
+}
+
+function normalizeAddress(
+  address?: ShippingAddress | null,
+): ShippingAddress | null {
+  if (!address) return null
+
+  const areaId = address.areaId.trim()
+  const areaName = address.areaName.trim()
+  const streetAddress = address.streetAddress.trim()
+
+  if (!areaId && !areaName && !streetAddress) {
+    return null
+  }
+
+  return {
+    areaId,
+    areaName,
+    streetAddress,
+  }
+}
+
+async function persistCustomerAddress(
+  orgId: string,
+  addressId: string | null,
+  address: ShippingAddress | null,
+): Promise<string | null> {
+  if (!address) {
+    return null
+  }
+
+  if (addressId) {
+    const updateResult = await updateAddressFn(addressId, address)
+    if (updateResult.ok) {
+      return addressId
+    }
+  }
+
+  const createResult = await createAddressFn({
+    orgId,
+    areaId: address.areaId,
+    areaName: address.areaName,
+    streetAddress: address.streetAddress,
+  })
+
+  if (!createResult.ok) {
+    throw new Error(createResult.error)
+  }
+
+  return createResult.addressId
 }
 
 async function getDb() {
@@ -146,6 +204,9 @@ export async function createCustomer(
   }
 
   const db = await getDb()
+  const address = normalizeAddress(input.address)
+  const addressId = await persistCustomerAddress(input.orgId, null, address)
+
   await db.insert(customersTable).values({
     id: crypto.randomUUID(),
     orgId: input.orgId,
@@ -155,6 +216,7 @@ export async function createCustomer(
     notes: input.notes?.trim() ?? null,
     active: input.active ?? true,
     photoAssetId: input.photoAssetId ?? null,
+    addressId,
   })
 }
 
@@ -169,6 +231,23 @@ export async function updateCustomer(
   }
 
   const db = await getDb()
+  const existing = await db
+    .select({ addressId: customersTable.addressId })
+    .from(customersTable)
+    .where(and(eq(customersTable.id, id), eq(customersTable.orgId, orgId)))
+    .limit(1)
+
+  if (existing.length === 0) {
+    return
+  }
+
+  const address = normalizeAddress(input.address)
+  const addressId = await persistCustomerAddress(
+    orgId,
+    existing[0].addressId,
+    address,
+  )
+
   await db
     .update(customersTable)
     .set({
@@ -178,6 +257,7 @@ export async function updateCustomer(
       notes: input.notes?.trim() ?? null,
       active: input.active ?? true,
       photoAssetId: input.photoAssetId ?? null,
+      addressId,
       updatedAt: new Date(),
     })
     .where(and(eq(customersTable.id, id), eq(customersTable.orgId, orgId)))
@@ -194,5 +274,30 @@ export async function getCustomer(
     .where(and(eq(customersTable.id, id), eq(customersTable.orgId, orgId)))
     .limit(1)
 
-  return rows[0] ?? null
+  const customer = rows[0]
+  if (!customer) {
+    return null
+  }
+
+  const address = await getCustomerAddress(id, orgId)
+
+  return {
+    id: customer.id,
+    orgId: customer.orgId,
+    name: customer.name,
+    email: customer.email,
+    phone: customer.phone,
+    notes: customer.notes,
+    active: customer.active,
+    photoAssetId: customer.photoAssetId,
+    address: address
+      ? {
+          areaId: address.areaId ?? '',
+          areaName: address.areaName ?? '',
+          streetAddress: address.streetAddress ?? '',
+        }
+      : null,
+    createdAt: customer.createdAt,
+    updatedAt: customer.updatedAt,
+  }
 }

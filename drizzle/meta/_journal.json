@@ -43,6 +43,13 @@
       "when": 1777701175611,
       "tag": "0005_silly_dorian_gray",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1746720000000,
+      "tag": "0010_remove_biteship_area_fk",
+      "breakpoints": true
     }
   ]
 }

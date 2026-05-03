@@ -1,5 +1,50 @@
-import { describe, expect, it } from 'vitest'
-import { type CustomerInput, validateCustomerInput } from './model'
+import { eq, sql } from 'drizzle-orm'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { db } from '#/db/index'
+import { addresses, biteshipAreas, customers, organization } from '#/db/schema'
+import {
+  type CustomerInput,
+  createCustomer,
+  getCustomer,
+  updateCustomer,
+  validateCustomerInput,
+} from './model'
+
+const org1Id = '00000000-0000-0000-0000-000000000001'
+
+beforeEach(async () => {
+  await db.execute(sql`TRUNCATE organization, biteship_areas CASCADE`)
+
+  const now = new Date()
+  await db.insert(organization).values({
+    id: org1Id,
+    name: 'Org 1',
+    slug: 'org-1',
+    createdAt: now,
+    updatedAt: now,
+  })
+
+  await db.insert(biteshipAreas).values([
+    {
+      areaId: 'area-1',
+      name: 'Cibis, Palmerah',
+      subdistrict: 'Palmerah',
+      district: 'Palmerah',
+      city: 'Jakarta Barat',
+      province: 'DKI Jakarta',
+      postalCode: '11480',
+    },
+    {
+      areaId: 'area-2',
+      name: 'Kebayoran Baru',
+      subdistrict: 'Kebayoran Baru',
+      district: 'Kebayoran Baru',
+      city: 'Jakarta Selatan',
+      province: 'DKI Jakarta',
+      postalCode: '12120',
+    },
+  ])
+})
 
 describe('validateCustomerInput', () => {
   it('returns null for valid input', () => {
@@ -36,5 +81,110 @@ describe('validateCustomerInput', () => {
       notes: null,
     }
     expect(validateCustomerInput(input)).toBeNull()
+  })
+})
+
+describe('customer address persistence', () => {
+  it('creates and returns an address with the customer', async () => {
+    const customerInput: CustomerInput & { orgId: string } = {
+      orgId: org1Id,
+      name: 'Acme Corp',
+      address: {
+        areaId: 'area-1',
+        areaName: 'Cibis, Palmerah',
+        streetAddress: 'Jl. Raya Palmerah No. 123',
+      },
+    }
+
+    await createCustomer(customerInput)
+
+    const customerRows = await db
+      .select({ id: customers.id, addressId: customers.addressId })
+      .from(customers)
+      .where(eq(customers.orgId, org1Id))
+      .limit(1)
+
+    const customerId = customerRows[0]?.id ?? ''
+    const addressId = customerRows[0]?.addressId ?? ''
+
+    expect(addressId).toBeTruthy()
+
+    const addressRows = await db
+      .select({
+        areaId: addresses.areaId,
+        areaName: addresses.areaName,
+        streetAddress: addresses.streetAddress,
+      })
+      .from(addresses)
+      .where(eq(addresses.id, addressId))
+      .limit(1)
+
+    expect(addressRows[0]).toMatchObject({
+      areaId: 'area-1',
+      areaName: 'Cibis, Palmerah',
+      streetAddress: 'Jl. Raya Palmerah No. 123',
+    })
+
+    const customer = await getCustomer(customerId, org1Id)
+    expect(customer?.address).toEqual({
+      areaId: 'area-1',
+      areaName: 'Cibis, Palmerah',
+      streetAddress: 'Jl. Raya Palmerah No. 123',
+    })
+  })
+
+  it('updates the existing address when editing a customer', async () => {
+    const customerInput: CustomerInput & { orgId: string } = {
+      orgId: org1Id,
+      name: 'Acme Corp',
+      address: {
+        areaId: 'area-1',
+        areaName: 'Cibis, Palmerah',
+        streetAddress: 'Jl. Raya Palmerah No. 123',
+      },
+    }
+
+    await createCustomer(customerInput)
+
+    const customerIdRows = await db
+      .select({ id: customers.id, addressId: customers.addressId })
+      .from(customers)
+      .where(eq(customers.orgId, org1Id))
+      .limit(1)
+
+    const customerId = customerIdRows[0]?.id ?? ''
+    const addressId = customerIdRows[0]?.addressId ?? ''
+
+    await updateCustomer(customerId, org1Id, {
+      name: 'Acme Corp',
+      address: {
+        areaId: 'area-2',
+        areaName: 'Kebayoran Baru',
+        streetAddress: 'Jl. Baru No. 456',
+      },
+    })
+
+    const updatedAddressRows = await db
+      .select({
+        areaId: addresses.areaId,
+        areaName: addresses.areaName,
+        streetAddress: addresses.streetAddress,
+      })
+      .from(addresses)
+      .where(eq(addresses.id, addressId))
+      .limit(1)
+
+    expect(updatedAddressRows[0]).toMatchObject({
+      areaId: 'area-2',
+      areaName: 'Kebayoran Baru',
+      streetAddress: 'Jl. Baru No. 456',
+    })
+
+    const customer = await getCustomer(customerId, org1Id)
+    expect(customer?.address).toEqual({
+      areaId: 'area-2',
+      areaName: 'Kebayoran Baru',
+      streetAddress: 'Jl. Baru No. 456',
+    })
   })
 })
