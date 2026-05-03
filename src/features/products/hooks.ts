@@ -1,5 +1,7 @@
 import {
+  keepPreviousData,
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
@@ -13,9 +15,10 @@ import {
 } from './server'
 
 export function useProductsList(filters: { orgId: string; search?: string }) {
-  return useSuspenseQuery({
+  return useQuery({
     queryKey: queryKeys.products.list(filters),
     queryFn: () => listProductsFn({ data: filters }),
+    placeholderData: keepPreviousData,
   })
 }
 

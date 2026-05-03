@@ -28,12 +28,12 @@ export const Route = createFileRoute('/_org/products/')({
 function ProductsList() {
   const ctx = Route.useRouteContext() as { org: { id: string } }
   const [search, setSearch] = useQueryState('q', parseAsString.withDefault(''))
-  const {
-    data: { rows, totalRows },
-  } = useProductsList({
+  const { data, isFetching } = useProductsList({
     orgId: ctx.org.id,
     search,
   })
+  const rows = data?.rows ?? []
+  const totalRows = data?.totalRows ?? 0
   const t = useTranslations('products')
   const dt = useTranslations('dataTable')
   const st = useTranslations('status')
@@ -123,7 +123,8 @@ function ProductsList() {
         columns={columns}
         data={rows}
         getRowId={(row) => row.id}
-        isLoading={false}
+        isRefetching={isFetching}
+        isLoading={rows.length === 0 && isFetching}
         labels={labels}
         onPageChange={() => {}}
         onPerPageChange={() => {}}

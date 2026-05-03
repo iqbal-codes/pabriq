@@ -24,12 +24,10 @@ export const Route = createFileRoute('/_org/orders/new')({
 
 function CreateOrder() {
   const ctx = Route.useRouteContext() as { org: { id: string } }
-  const {
-    data: { rows: customers },
-  } = useCustomersList({ orgId: ctx.org.id })
-  const {
-    data: { rows: products },
-  } = useProductsList({ orgId: ctx.org.id })
+  const { data: customersData } = useCustomersList({ orgId: ctx.org.id })
+  const { data: productsData } = useProductsList({ orgId: ctx.org.id })
+  const customers = customersData?.rows ?? []
+  const products = productsData?.rows ?? []
   const navigate = useNavigate()
   const t = useTranslations('orders')
   const pt = useTranslations('products')
