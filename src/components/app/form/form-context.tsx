@@ -6,6 +6,7 @@ import {
   NumberField,
   PasswordField,
   PhoneField,
+  PhotoUploadField,
   SelectField,
   TextareaField,
   TextField,
@@ -25,6 +26,7 @@ export const { useAppForm } = createFormHook({
     NumberField,
     PhoneField,
     AreaSearchField,
+    PhotoUploadField,
   },
   formComponents: {
     SubmitButton,

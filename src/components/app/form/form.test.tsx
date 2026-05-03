@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { useAppForm } from './form-context'
 import { FormActions, FormGrid, FormRoot, FormSection } from './form-layout'
@@ -91,6 +92,22 @@ describe('Form components', () => {
 
     await userEvent.type(input, '5000')
     expect(input).toHaveValue('5.000')
+  })
+
+  it('NumberField server-renders a numeric default value', () => {
+    function TestForm() {
+      const form = useAppForm({
+        defaultValues: { price: 5000 },
+      })
+
+      return (
+        <form.AppField name="price">
+          {(field) => <field.NumberField label="Price" />}
+        </form.AppField>
+      )
+    }
+
+    expect(renderToString(<TestForm />)).toContain('value="5.000"')
   })
 
   it('PhoneField stores raw digits and displays grouped formatting', async () => {
@@ -260,6 +277,10 @@ describe('form-utils', () => {
   describe('formatNumber', () => {
     it('formats number with Indonesian thousands separator', () => {
       expect(formatNumber('5000')).toBe('5.000')
+    })
+
+    it('formats numeric values from form defaults', () => {
+      expect(formatNumber(5000)).toBe('5.000')
     })
 
     it('returns empty string for empty input', () => {

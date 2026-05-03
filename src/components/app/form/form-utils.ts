@@ -1,5 +1,7 @@
-export function stripNonDigits(value: string): string {
-  return value.replace(/\D/g, '')
+type NumericDisplayValue = string | number
+
+export function stripNonDigits(value: NumericDisplayValue): string {
+  return String(value).replace(/\D/g, '')
 }
 
 const PHONE_GROUP = /^(\d{0,4})(\d{0,4})(\d{0,4})/
@@ -12,13 +14,15 @@ export function formatPhone(displayValue: string): string {
   return parts.join('-')
 }
 
-export function formatNumber(displayValue: string): string {
+export function formatNumber(displayValue: NumericDisplayValue): string {
   const digits = stripNonDigits(displayValue)
   if (!digits) return ''
   return new Intl.NumberFormat('id-ID').format(Number(digits))
 }
 
-export function stripNumberFormatting(displayValue: string): string {
+export function stripNumberFormatting(
+  displayValue: NumericDisplayValue,
+): string {
   return stripNonDigits(displayValue)
 }
 
