@@ -80,6 +80,7 @@ const id: Messages = {
     resetColumns: 'Atur ulang kolom',
     rowsSelected: '{selected} dari {total} dipilih',
     visibleRows: '{from}-{to} dari {total}',
+    loading: 'Memuat',
   },
   orders: {
     title: 'Pesanan',

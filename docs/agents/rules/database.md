@@ -17,7 +17,7 @@ Controls database access patterns, schema management, query construction, and te
 
 **Schema:** `src/db/schema.ts` — all table definitions using `pgTable` from `drizzle-orm/pg-core`. Every business table carries an `orgId` column referencing `organization.id` with `onDelete: 'cascade'`.
 
-**Database connection:** `src/db/index.ts` — uses real Postgres (`pg` Pool) when `DATABASE_URL` is set, otherwise falls back to PGlite (embedded Postgres) with seed DDL from `src/db/seed.ts`.
+**Database connection:** `src/db/index.ts` — connects to Postgres via `pg` Pool using the `DATABASE_URL` environment variable. `DATABASE_URL` is required in all environments.
 
 **Migrations:** `drizzle-kit` with config at `drizzle.config.ts`. Migrations live in `drizzle/`. Scripts:
 - `bun run db:generate` — generate migrations from schema changes.
@@ -44,7 +44,7 @@ import { orgFilter } from '#/lib/rls'
 
 - MUST import `db` from `#/db/index` for all database access.
 - MUST NOT use a raw `pg` Pool or `drizzle-orm/node-postgres` directly outside `src/db/index.ts`.
-- MUST use Drizzle's query builder (`db.select()`, `db.insert()`, `db.update()`, `db.delete()`) — MUST NOT use raw SQL strings except in `orgFilter` helper or seed DDL.
+- MUST use Drizzle's query builder (`db.select()`, `db.insert()`, `db.update()`, `db.delete()`) — MUST NOT use raw SQL strings except in `orgFilter` helper.
 - MUST filter every business table query by `orgId` — either directly or via `orgFilter` from `src/lib/rls.ts`.
 - MUST NOT trust a client-provided `orgId` for data access — org context must come from the authenticated session.
 - MUST use `crypto.randomUUID()` for new record IDs.
@@ -53,17 +53,15 @@ import { orgFilter } from '#/lib/rls'
 
 ## Allowed Exceptions
 
-- `src/db/seed.ts` contains raw SQL DDL strings — this is required for PGlite fallback initialization and must stay in sync with `src/db/schema.ts`.
 - `src/lib/rls.ts` uses raw SQL for `set_config` and `current_setting` — this is the established pattern for application-level RLS context.
-- `src/db/index.ts` uses raw `Pool` and `PGlite` constructors — this is the single authorized database connection factory.
+- `src/db/index.ts` uses raw `Pool` constructor — this is the single authorized database connection factory.
 
 ## Implementation Checklist
 
 1. Define the table in `src/db/schema.ts` using `pgTable`.
 2. Ensure the table has `orgId: text('org_id').notNull().references(() => organization.id, { onDelete: 'cascade' })`.
 3. Run `bun run db:generate` to create the migration.
-4. If using PGlite (no `DATABASE_URL`), update `src/db/seed.ts` with the new table DDL.
-5. Write server functions that filter queries by org.
+4. Write server functions that filter queries by org.
 
 ## Verification
 
@@ -81,4 +79,4 @@ Manual check: open the generated SQL migration — every new table must have an 
 - Importing `db` from a path other than `#/db/index`.
 - Trusting a client-provided `orgId` in a query instead of resolving org from the session.
 - Running `db:push` in production instead of using migrations.
-- Not updating `src/db/seed.ts` after a schema change, causing PGlite local dev to break.
+- Running tests without `.env.test` loaded — model tests require `DATABASE_URL`.

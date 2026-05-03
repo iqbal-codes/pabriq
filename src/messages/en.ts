@@ -77,6 +77,7 @@ export type Messages = {
     resetColumns: string
     rowsSelected: string
     visibleRows: string
+    loading: string
   }
   orders: {
     title: string
@@ -364,6 +365,7 @@ const en: Messages = {
     resetColumns: 'Reset columns',
     rowsSelected: '{selected} of {total} selected',
     visibleRows: '{from}-{to} of {total}',
+    loading: 'Loading',
   },
   orders: {
     title: 'Orders',

@@ -29,7 +29,7 @@ Defines the mandatory pre-commit and pre-PR verification steps, testing conventi
 **Supported test patterns:**
 
 - **Deep module unit tests:** Test pure functions without React — `src/features/pricing/engine.test.ts`, `src/features/permissions/model.test.ts`.
-- **Model integration tests:** Test server functions with PGlite — `src/features/products/model.test.ts`, `src/features/customers/model.test.ts`.
+- **Model integration tests:** Test server functions against the database — `src/features/products/model.test.ts`, `src/features/customers/model.test.ts`.
 - **Route guard tests:** Test `beforeLoad` with mock contexts — `src/routes/-route-guards.test.tsx`, `src/routes/_org/customers/-customer-routes.test.tsx`.
 - **Component tests:** Test UI components with `@testing-library/react` — `src/components/confirm-dialog.test.tsx`, `src/components/status-badge.test.tsx`, `src/components/app/page-shell/breadcrumbs.test.tsx`, `src/components/app/page-shell/page-header.test.tsx`, `src/components/app/page-shell/page-content.test.tsx`, `src/components/app/page-shell/empty-state.test.tsx`, `src/components/app/form/form.test.tsx`, `src/components/app/data-table/data-table.test.tsx`.
 
