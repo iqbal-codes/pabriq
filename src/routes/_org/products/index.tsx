@@ -8,10 +8,8 @@ import { DataTable, DataTableSearch } from '#/components/app/data-table'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { Badge } from '#/components/ui/badge'
-import {
-  type ListProductsResult,
-  listProductsFn,
-} from '#/features/products/server'
+import { useProductsList } from '#/features/products/hooks'
+import type { ProductRow } from '#/features/products/server'
 
 type ProductSearch = { q?: string }
 
@@ -24,25 +22,23 @@ export const Route = createFileRoute('/_org/products/')({
     pageTitle: 'products',
     primaryAction: { label: 'createProduct', href: '/products/new' },
   }),
-  loaderDeps: ({ search: { q } }) => ({ q }),
-  loader: async ({ context, deps }) => {
-    const ctx = context as { org: { id: string } }
-    const result = await listProductsFn({
-      data: { orgId: ctx.org.id, search: deps.q },
-    })
-    return result
-  },
   component: ProductsList,
 })
 
 function ProductsList() {
-  const { rows, totalRows } = Route.useLoaderData()
+  const ctx = Route.useRouteContext() as { org: { id: string } }
   const [search, setSearch] = useQueryState('q', parseAsString.withDefault(''))
+  const {
+    data: { rows, totalRows },
+  } = useProductsList({
+    orgId: ctx.org.id,
+    search,
+  })
   const t = useTranslations('products')
   const dt = useTranslations('dataTable')
   const st = useTranslations('status')
 
-  const columns: AppColumnDef<ListProductsResult['rows'][number]>[] = [
+  const columns: AppColumnDef<ProductRow>[] = [
     {
       accessorKey: 'primaryImageAssetId',
       header: t('noPhoto'),

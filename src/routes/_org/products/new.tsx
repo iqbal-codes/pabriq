@@ -9,7 +9,7 @@ import {
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { Separator } from '#/components/ui/separator'
-import { createProductFn } from '#/features/products/server'
+import { useCreateProduct } from '#/features/products/hooks'
 
 export const Route = createFileRoute('/_org/products/new')({
   beforeLoad: () => ({
@@ -22,6 +22,7 @@ export const Route = createFileRoute('/_org/products/new')({
 function NewProductPage() {
   const t = useTranslations('products')
   const navigate = useNavigate()
+  const createProduct = useCreateProduct()
 
   const form = useAppForm({
     defaultValues: {
@@ -34,7 +35,7 @@ function NewProductPage() {
       maxQuantity: undefined as number | undefined,
     },
     onSubmit: async ({ value }) => {
-      await createProductFn({ data: value })
+      await createProduct.mutateAsync(value)
       navigate({ to: '/products' })
     },
   })
