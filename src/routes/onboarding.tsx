@@ -1,13 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'use-intl'
 import {
   createR2UploaderAdapter,
   getAcceptedMimeTypes,
   getMaxBytes,
   PhotoGridUpload,
-  useUploadMachine,
 } from '#/components/app/asset-upload'
 import { useAppForm } from '#/components/app/form'
 import {
@@ -61,18 +60,14 @@ function OnboardingPage() {
   )
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([])
 
-  const adapter = createR2UploaderAdapter({
-    ownerType: 'organization',
-    usage: 'logo',
-  })
-
-  const machine = useUploadMachine(uploadItems, {
-    adapter,
-    onUploadComplete: (assetId) => {
-      setUploadedLogoAssetId(assetId)
-    },
-    onUploadError: () => {},
-  })
+  const adapter = useMemo(
+    () =>
+      createR2UploaderAdapter({
+        ownerType: 'organization',
+        usage: 'logo',
+      }),
+    [],
+  )
 
   const form = useAppForm({
     defaultValues: { name: '' },
@@ -130,7 +125,7 @@ function OnboardingPage() {
             <div className="mb-6">
               <p className="text-sm font-medium mb-2">{t('logoPhoto')}</p>
               <PhotoGridUpload
-                items={machine.items}
+                items={uploadItems}
                 onItemsChange={(items) => setUploadItems(items)}
                 config={{
                   ownerType: 'organization',

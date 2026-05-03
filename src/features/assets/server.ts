@@ -1,8 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { and, eq, sql } from 'drizzle-orm'
-import { db } from '#/db/index'
 import { assets, assetVariants } from '#/db/schema'
+import {
+  buildR2Key,
+  generateSignedDownloadUrl,
+  generateSignedUploadUrl,
+} from '#/lib/r2'
 import type { AssetKind, OwnerType, Usage, VariantKey } from './model'
 import { IMAGE_MIME_TYPES, USAGE_LIMITS, VIDEO_MIME_TYPES } from './model'
 
@@ -12,6 +16,7 @@ async function resolveOrgId(): Promise<string> {
   const session = await auth.api.getSession({ headers })
   if (!session) throw new Error('Not authenticated')
 
+  const { db } = await import('#/db/index')
   const { member } = await import('#/db/schema')
   const memberships = await db
     .select({ orgId: member.organizationId })
@@ -40,6 +45,7 @@ function getAssetKind(mimeType: string): AssetKind {
 }
 
 export type FinalizeUploadInput = {
+  assetId?: string
   draftId?: string
   ownerType: OwnerType
   ownerId?: string
@@ -100,6 +106,7 @@ export const finalizeUpload = createServerFn({ method: 'POST' })
     }> => {
       const orgId = await resolveOrgId()
       const userId = await resolveUserId()
+      const { db } = await import('#/db/index')
 
       const limits = USAGE_LIMITS[data.usage]
       if (data.sizeBytes > limits.maxBytes) {
@@ -135,7 +142,7 @@ export const finalizeUpload = createServerFn({ method: 'POST' })
         }
       }
 
-      const assetId = crypto.randomUUID()
+      const assetId = data.assetId ?? crypto.randomUUID()
       const now = new Date()
 
       const insertValues: {
@@ -211,10 +218,99 @@ export const finalizeUpload = createServerFn({ method: 'POST' })
     },
   )
 
+export type GetUploadUrlInput = {
+  fileName: string
+  fileType: string
+  fileSize: number
+  ownerType: OwnerType
+  ownerId?: string
+  usage: Usage
+}
+
+export const getUploadUrl = createServerFn({ method: 'POST' })
+  .inputValidator((input: unknown): GetUploadUrlInput => {
+    if (!input || typeof input !== 'object') {
+      throw new Error('Invalid input')
+    }
+    const obj = input as Record<string, unknown>
+
+    const ownerType = obj.ownerType as OwnerType
+    const usage = obj.usage as Usage
+    const fileName = obj.fileName as string
+    const fileType = obj.fileType as string
+    const fileSize = Number(obj.fileSize)
+
+    if (
+      ![
+        'product',
+        'customer',
+        'organization',
+        'order',
+        'productionTask',
+      ].includes(ownerType)
+    ) {
+      throw new Error('Invalid ownerType')
+    }
+    if (!['logo', 'profile', 'gallery', 'attachment'].includes(usage)) {
+      throw new Error('Invalid usage')
+    }
+    if (!fileName) throw new Error('fileName required')
+    if (!fileType) throw new Error('fileType required')
+    if (!fileSize || fileSize <= 0) throw new Error('Invalid fileSize')
+
+    return obj as GetUploadUrlInput
+  })
+  .handler(
+    async ({
+      data,
+    }): Promise<{ uploadUrl: string; storageKey: string; assetId: string }> => {
+      const orgId = await resolveOrgId()
+
+      const limits = USAGE_LIMITS[data.usage]
+      if (data.fileSize > limits.maxBytes) {
+        throw new Error(
+          `File size exceeds ${limits.maxBytes} bytes limit for ${data.usage}`,
+        )
+      }
+
+      const assetKind = getAssetKind(data.fileType)
+      if (!limits.kinds.includes(assetKind)) {
+        throw new Error(`${assetKind} not allowed for ${data.usage}`)
+      }
+
+      const parts = data.fileName.split('.')
+      const ext =
+        parts.length > 1 ? parts[parts.length - 1].toLowerCase() : 'bin'
+
+      const assetId = crypto.randomUUID()
+      const storageKey = buildR2Key(
+        orgId,
+        data.ownerType,
+        data.ownerId ?? 'draft',
+        assetId,
+        'original',
+        ext,
+      )
+
+      const { url } = await generateSignedUploadUrl(
+        storageKey,
+        data.fileType || 'application/octet-stream',
+        900,
+      )
+
+      return {
+        uploadUrl: url,
+        storageKey,
+        assetId,
+      }
+    },
+  )
+
 export const getAssetSignedUrl = createServerFn({ method: 'GET' })
   .inputValidator((input: { assetId: string; variantKey: VariantKey }) => input)
   .handler(async ({ data }): Promise<{ url: string; expiresAt: number }> => {
     await resolveOrgId()
+    const { db } = await import('#/db/index')
 
     const variant = await db
       .select()
@@ -226,8 +322,6 @@ export const getAssetSignedUrl = createServerFn({ method: 'GET' })
 
     const key = variant[0].storageKey
     const ttl = data.variantKey === 'original' ? 5 * 60 : 15 * 60
-    const expiresAt = Date.now() + ttl * 1000
 
-    const signedUrl = `https://mock-r2.example.com/${key}?expires=${expiresAt}`
-    return { url: signedUrl, expiresAt }
+    return generateSignedDownloadUrl(key, ttl)
   })

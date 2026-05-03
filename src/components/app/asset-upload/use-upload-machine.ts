@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import type { UploadItem } from '#/features/assets/upload-machine'
 import {
   createUploadItem,
@@ -37,24 +38,31 @@ export function useUploadMachine(
     onUploadError,
   } = options
   const [items, setItems] = useState<UploadItem[]>(initialItems)
+  const itemsRef = useRef<UploadItem[]>(initialItems)
   const uploadingRef = useRef<Set<string>>(new Set())
   const undoTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
   )
 
+  const setItemsState = useCallback((next: UploadItem[]) => {
+    itemsRef.current = next
+    setItems(next)
+  }, [])
+
   const updateItem = useCallback(
     (itemId: string, update: Partial<UploadItem>) => {
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === itemId ? { ...item, ...update } : item,
-        ),
+      const next = itemsRef.current.map((item) =>
+        item.id === itemId ? { ...item, ...update } : item,
       )
+      setItemsState(next)
     },
-    [],
+    [setItemsState],
   )
 
   const processQueue = useCallback(() => {
-    const pendingItems = items.filter((item) => item.status === 'pending')
+    const pendingItems = itemsRef.current.filter(
+      (item) => item.status === 'pending',
+    )
     const currentUploading = uploadingRef.current.size
 
     if (currentUploading >= maxConcurrency) return
@@ -66,14 +74,13 @@ export function useUploadMachine(
       uploadingRef.current.add(item.id)
       updateItem(item.id, { status: 'uploading', progress: 0 })
 
-      item.file.arrayBuffer().then(async () => {
+      void (async () => {
         try {
-          const result = await adapter.uploadFile({
-            ...item,
-            status: 'uploading',
-            progress: 50,
-          })
-          updateItem(item.id, { status: 'processing', progress: 75 })
+          const result = await adapter.uploadFile(
+            { ...item, status: 'uploading', progress: 0 },
+            (pct) => updateItem(item.id, { progress: pct }),
+          )
+          updateItem(item.id, { status: 'processing', progress: 85 })
           updateItem(item.id, {
             status: 'done',
             progress: 100,
@@ -88,32 +95,26 @@ export function useUploadMachine(
             err instanceof Error ? err.message : 'Upload failed'
           updateItem(item.id, { status: 'failed', error: errorMessage })
           uploadingRef.current.delete(item.id)
+          toast.error(errorMessage)
           onUploadError?.(item.id, errorMessage)
           processQueue()
         }
-      })
+      })()
     }
-  }, [
-    items,
-    maxConcurrency,
-    adapter,
-    updateItem,
-    onUploadComplete,
-    onUploadError,
-  ])
+  }, [maxConcurrency, adapter, updateItem, onUploadComplete, onUploadError])
 
   const addFiles = useCallback(
     (files: File[]) => {
       const newItems = files.map(createUploadItem)
-      setItems((prev) => [...prev, ...newItems])
+      setItemsState([...itemsRef.current, ...newItems])
       processQueue()
     },
-    [processQueue],
+    [processQueue, setItemsState],
   )
 
   const removeItem = useCallback(
     (itemId: string) => {
-      const item = items.find((i) => i.id === itemId)
+      const item = itemsRef.current.find((i) => i.id === itemId)
       if (!item) return
 
       if (item.assetId) {
@@ -122,15 +123,15 @@ export function useUploadMachine(
             await adapter.removeFile(item.assetId as string)
           } catch {}
           undoTimeoutsRef.current.delete(itemId)
-          setItems((prev) => prev.filter((i) => i.id !== itemId))
+          setItemsState(itemsRef.current.filter((i) => i.id !== itemId))
         }, UNDO_TIMEOUT_MS)
         undoTimeoutsRef.current.set(itemId, timeout)
         updateItem(itemId, { status: 'pending' })
       } else {
-        setItems((prev) => prev.filter((i) => i.id !== itemId))
+        setItemsState(itemsRef.current.filter((i) => i.id !== itemId))
       }
     },
-    [items, adapter, updateItem],
+    [adapter, updateItem, setItemsState],
   )
 
   const retryItem = useCallback(
@@ -142,8 +143,8 @@ export function useUploadMachine(
   )
 
   const clearFailed = useCallback(() => {
-    setItems((prev) => prev.filter((item) => item.status !== 'failed'))
-  }, [])
+    setItemsState(itemsRef.current.filter((item) => item.status !== 'failed'))
+  }, [setItemsState])
 
   return {
     items,

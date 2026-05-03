@@ -1,4 +1,5 @@
 import { CheckCircle, FileIcon, RefreshCw, X } from 'lucide-react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useTranslations } from 'use-intl'
 import { Button } from '#/components/ui/button'
@@ -86,6 +87,11 @@ function FileRow({
 
 export function FileListUpload(props: FileListUploadProps) {
   const t = useTranslations('assetUpload')
+  const onItemsChangeRef = useRef(props.onItemsChange)
+
+  useEffect(() => {
+    onItemsChangeRef.current = props.onItemsChange
+  }, [props.onItemsChange])
 
   const machineResult = useUploadMachine(props.items, {
     adapter: props.adapter,
@@ -95,16 +101,25 @@ export function FileListUpload(props: FileListUploadProps) {
 
   const { items, addFiles, removeItem, retryItem } = machineResult
 
-  const onDrop = (acceptedFiles: File[]) => {
-    const validFiles = acceptedFiles.filter(
-      (file) =>
-        file.size <= props.maxBytes &&
-        props.acceptedMimeTypes.includes(file.type),
-    )
-    if (validFiles.length > 0) {
-      addFiles(validFiles)
+  useEffect(() => {
+    if (onItemsChangeRef.current) {
+      onItemsChangeRef.current(items)
     }
-  }
+  }, [items])
+
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      const validFiles = acceptedFiles.filter(
+        (file) =>
+          file.size <= props.maxBytes &&
+          props.acceptedMimeTypes.includes(file.type),
+      )
+      if (validFiles.length > 0) {
+        addFiles(validFiles)
+      }
+    },
+    [addFiles, props.acceptedMimeTypes, props.maxBytes],
+  )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

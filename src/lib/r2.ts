@@ -56,6 +56,25 @@ export async function generateSignedDownloadUrl(
   return { url, expiresAt }
 }
 
+export async function generateSignedUploadUrl(
+  key: string,
+  contentType: string,
+  expiresInSeconds: number,
+): Promise<{ url: string; expiresAt: number }> {
+  const command = new PutObjectCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+    ContentType: contentType,
+  })
+
+  const url = await getSignedUrl(r2Client, command, {
+    expiresIn: expiresInSeconds,
+  })
+  const expiresAt = Date.now() + expiresInSeconds * 1000
+
+  return { url, expiresAt }
+}
+
 export function buildR2Key(
   orgId: string,
   ownerType: string,

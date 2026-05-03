@@ -2,7 +2,10 @@ import type { OwnerType, Usage } from '#/features/assets/model'
 import type { UploadItem } from '#/features/assets/upload-machine'
 
 export type UploaderAdapter = {
-  uploadFile: (item: UploadItem) => Promise<UploadResult>
+  uploadFile: (
+    item: UploadItem,
+    onProgress?: (pct: number) => void,
+  ) => Promise<UploadResult>
   removeFile: (assetId: string) => Promise<void>
 }
 

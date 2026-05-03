@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle, ImageIcon, RefreshCw, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useTranslations } from 'use-intl'
 import { Button } from '#/components/ui/button'
@@ -96,6 +96,11 @@ function PhotoThumbnail({
 
 export function PhotoGridUpload(props: PhotoGridUploadProps) {
   const t = useTranslations('assetUpload')
+  const onItemsChangeRef = useRef(props.onItemsChange)
+
+  useEffect(() => {
+    onItemsChangeRef.current = props.onItemsChange
+  }, [props.onItemsChange])
 
   const machineResult = useUploadMachine(props.items, {
     adapter: props.adapter,
@@ -106,21 +111,24 @@ export function PhotoGridUpload(props: PhotoGridUploadProps) {
   const { items, addFiles, removeItem, retryItem } = machineResult
 
   useEffect(() => {
-    if (props.onItemsChange) {
-      props.onItemsChange(items)
+    if (onItemsChangeRef.current) {
+      onItemsChangeRef.current(items)
     }
-  }, [items, props.onItemsChange])
+  }, [items])
 
-  const onDrop = (acceptedFiles: File[]) => {
-    const validFiles = acceptedFiles.filter(
-      (file) =>
-        file.size <= props.maxBytes &&
-        props.acceptedMimeTypes.includes(file.type),
-    )
-    if (validFiles.length > 0) {
-      addFiles(validFiles)
-    }
-  }
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      const validFiles = acceptedFiles.filter(
+        (file) =>
+          file.size <= props.maxBytes &&
+          props.acceptedMimeTypes.includes(file.type),
+      )
+      if (validFiles.length > 0) {
+        addFiles(validFiles)
+      }
+    },
+    [addFiles, props.acceptedMimeTypes, props.maxBytes],
+  )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
