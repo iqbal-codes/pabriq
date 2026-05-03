@@ -1,12 +1,10 @@
+import { sql } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '#/db/index'
 import {
   pricingBreakpoints as breakpointsTable,
   customers as customersTable,
-  orderLineItems as lineItemsTable,
-  orders as ordersTable,
   organization,
-  organizationProfiles,
   products as productsTable,
   productVariants as variantsTable,
 } from '#/db/schema'
@@ -17,14 +15,7 @@ const org1Id = '00000000-0000-0000-0000-000000000001'
 const org2Id = '00000000-0000-0000-0000-000000000002'
 
 beforeEach(async () => {
-  await db.delete(lineItemsTable)
-  await db.delete(ordersTable)
-  await db.delete(breakpointsTable)
-  await db.delete(variantsTable)
-  await db.delete(productsTable)
-  await db.delete(customersTable)
-  await db.delete(organizationProfiles)
-  await db.delete(organization)
+  await db.execute(sql`TRUNCATE organization, biteship_areas CASCADE`)
   const now = new Date()
   await db.insert(organization).values([
     {

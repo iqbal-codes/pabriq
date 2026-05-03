@@ -1,7 +1,8 @@
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '#/db/index'
 import {
+  biteshipAreas,
   customers as customersTable,
   orderLineItems,
   orders,
@@ -23,11 +24,7 @@ const order1Id = '00000000-0000-0000-0000-000000000004'
 const lineItem1Id = '00000000-0000-0000-0000-000000000005'
 
 beforeEach(async () => {
-  await db.delete(orderLineItems)
-  await db.delete(orders)
-  await db.delete(customersTable)
-  await db.delete(products)
-  await db.delete(organization)
+  await db.execute(sql`TRUNCATE organization, biteship_areas CASCADE`)
 
   const now = new Date()
   await db.insert(organization).values([
@@ -209,6 +206,18 @@ describe('updatePortalLineItem', () => {
 })
 
 describe('savePortalAddress', () => {
+  beforeEach(async () => {
+    await db.insert(biteshipAreas).values({
+      areaId: 'area-1',
+      name: 'Cibis, Palmerah',
+      subdistrict: 'Palmerah',
+      district: 'West Jakarta',
+      city: 'Jakarta',
+      province: 'DKI Jakarta',
+      postalCode: '11480',
+    })
+  })
+
   it('saves address and links to customer and order', async () => {
     const result = await savePortalAddress(
       order1Id,
