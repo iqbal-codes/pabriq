@@ -78,6 +78,7 @@ export type Messages = {
     rowsSelected: string
     visibleRows: string
     loading: string
+    filterAll: string
   }
   orders: {
     title: string
@@ -106,6 +107,7 @@ export type Messages = {
     customers: string
     createCustomer: string
     editCustomer: string
+    viewCustomer: string
     products: string
     newProduct: string
     editProduct: string
@@ -155,6 +157,7 @@ export type Messages = {
     title: string
     createCustomer: string
     editCustomer: string
+    viewCustomer: string
     customerInfo: string
     name: string
     email: string
@@ -367,6 +370,7 @@ const en: Messages = {
     rowsSelected: '{selected} of {total} selected',
     visibleRows: '{from}-{to} of {total}',
     loading: 'Loading',
+    filterAll: 'All',
   },
   orders: {
     title: 'Orders',
@@ -395,6 +399,7 @@ const en: Messages = {
     customers: 'Customers',
     createCustomer: 'Create Customer',
     editCustomer: 'Edit Customer',
+    viewCustomer: 'View Customer',
     products: 'Products',
     newProduct: 'New Product',
     editProduct: 'Edit Product',
@@ -444,6 +449,7 @@ const en: Messages = {
     title: 'Customers',
     createCustomer: 'Create Customer',
     editCustomer: 'Edit Customer',
+    viewCustomer: 'View Customer',
     customerInfo: 'Customer Information',
     name: 'Name',
     email: 'Email',

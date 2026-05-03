@@ -1,4 +1,14 @@
-import { and, desc, eq, ilike, or, type SQL, sql } from 'drizzle-orm'
+import {
+  type AnyColumn,
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm'
 import { customers as customersTable } from '#/db/schema'
 
 export type Customer = {
@@ -37,6 +47,15 @@ export type ListCustomersResult = {
   totalRows: number
 }
 
+export type ListCustomersParams = {
+  orgId: string
+  search?: string
+  status?: string
+  sort?: { field: string; direction: 'asc' | 'desc' } | null
+  page?: number
+  perPage?: number
+}
+
 export function validateCustomerInput(input: CustomerInput): string | null {
   if (!input.name || input.name.trim().length === 0) {
     return 'nameRequired'
@@ -49,15 +68,22 @@ async function getDb() {
   return db
 }
 
+const ALLOWED_SORT_FIELDS = new Set(['name', 'email', 'createdAt', 'active'])
+const SORT_COLUMNS: Record<string, AnyColumn> = {
+  name: customersTable.name,
+  email: customersTable.email,
+  createdAt: customersTable.createdAt,
+  active: customersTable.active,
+}
+
 export async function listCustomers(
-  orgId: string,
-  search?: string,
+  params: ListCustomersParams,
 ): Promise<ListCustomersResult> {
   const db = await getDb()
-  const conditions: SQL[] = [eq(customersTable.orgId, orgId)]
+  const conditions: SQL[] = [eq(customersTable.orgId, params.orgId)]
 
-  if (search?.trim()) {
-    const pattern = `%${search.trim()}%`
+  if (params.search?.trim()) {
+    const pattern = `%${params.search.trim()}%`
     conditions.push(
       or(
         ilike(customersTable.name, pattern),
@@ -67,7 +93,23 @@ export async function listCustomers(
     )
   }
 
+  if (params.status === 'active') {
+    conditions.push(eq(customersTable.active, true))
+  } else if (params.status === 'inactive') {
+    conditions.push(eq(customersTable.active, false))
+  }
+
   const allConditions = and(...conditions) as SQL
+
+  const orderBy =
+    params.sort && ALLOWED_SORT_FIELDS.has(params.sort.field)
+      ? params.sort.direction === 'asc'
+        ? asc(SORT_COLUMNS[params.sort.field])
+        : desc(SORT_COLUMNS[params.sort.field])
+      : desc(customersTable.createdAt)
+
+  const page = params.page ?? 1
+  const perPage = params.perPage ?? 25
 
   const rows = await db
     .select({
@@ -80,7 +122,9 @@ export async function listCustomers(
     })
     .from(customersTable)
     .where(allConditions)
-    .orderBy(desc(customersTable.createdAt))
+    .orderBy(orderBy)
+    .limit(perPage)
+    .offset((page - 1) * perPage)
 
   const countResult = await db
     .select({ count: sql<number>`count(*)` })

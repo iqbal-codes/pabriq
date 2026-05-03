@@ -22,6 +22,7 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as OrgProductsNewRouteImport } from './routes/_org/products/new'
 import { Route as OrgOrdersNewRouteImport } from './routes/_org/orders/new'
 import { Route as OrgCustomersNewRouteImport } from './routes/_org/customers/new'
+import { Route as OrgCustomersIdIndexRouteImport } from './routes/_org/customers/$id/index'
 import { Route as OrgCustomersIdEditRouteImport } from './routes/_org/customers/$id/edit'
 import { Route as ApiDocumentsOrdersIdQuotationRouteImport } from './routes/api/documents/orders/$id/quotation'
 
@@ -89,6 +90,11 @@ const OrgCustomersNewRoute = OrgCustomersNewRouteImport.update({
   path: '/customers/new',
   getParentRoute: () => OrgRoute,
 } as any)
+const OrgCustomersIdIndexRoute = OrgCustomersIdIndexRouteImport.update({
+  id: '/customers/$id/',
+  path: '/customers/$id/',
+  getParentRoute: () => OrgRoute,
+} as any)
 const OrgCustomersIdEditRoute = OrgCustomersIdEditRouteImport.update({
   id: '/customers/$id/edit',
   path: '/customers/$id/edit',
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/orders/': typeof OrgOrdersIndexRoute
   '/products/': typeof OrgProductsIndexRoute
   '/customers/$id/edit': typeof OrgCustomersIdEditRoute
+  '/customers/$id/': typeof OrgCustomersIdIndexRoute
   '/api/documents/orders/$id/quotation': typeof ApiDocumentsOrdersIdQuotationRoute
 }
 export interface FileRoutesByTo {
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/orders': typeof OrgOrdersIndexRoute
   '/products': typeof OrgProductsIndexRoute
   '/customers/$id/edit': typeof OrgCustomersIdEditRoute
+  '/customers/$id': typeof OrgCustomersIdIndexRoute
   '/api/documents/orders/$id/quotation': typeof ApiDocumentsOrdersIdQuotationRoute
 }
 export interface FileRoutesById {
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/_org/orders/': typeof OrgOrdersIndexRoute
   '/_org/products/': typeof OrgProductsIndexRoute
   '/_org/customers/$id/edit': typeof OrgCustomersIdEditRoute
+  '/_org/customers/$id/': typeof OrgCustomersIdIndexRoute
   '/api/documents/orders/$id/quotation': typeof ApiDocumentsOrdersIdQuotationRoute
 }
 export interface FileRouteTypes {
@@ -167,6 +176,7 @@ export interface FileRouteTypes {
     | '/orders/'
     | '/products/'
     | '/customers/$id/edit'
+    | '/customers/$id/'
     | '/api/documents/orders/$id/quotation'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/products'
     | '/customers/$id/edit'
+    | '/customers/$id'
     | '/api/documents/orders/$id/quotation'
   id:
     | '__root__'
@@ -200,6 +211,7 @@ export interface FileRouteTypes {
     | '/_org/orders/'
     | '/_org/products/'
     | '/_org/customers/$id/edit'
+    | '/_org/customers/$id/'
     | '/api/documents/orders/$id/quotation'
   fileRoutesById: FileRoutesById
 }
@@ -306,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgCustomersNewRouteImport
       parentRoute: typeof OrgRoute
     }
+    '/_org/customers/$id/': {
+      id: '/_org/customers/$id/'
+      path: '/customers/$id'
+      fullPath: '/customers/$id/'
+      preLoaderRoute: typeof OrgCustomersIdIndexRouteImport
+      parentRoute: typeof OrgRoute
+    }
     '/_org/customers/$id/edit': {
       id: '/_org/customers/$id/edit'
       path: '/customers/$id/edit'
@@ -332,6 +351,7 @@ interface OrgRouteChildren {
   OrgOrdersIndexRoute: typeof OrgOrdersIndexRoute
   OrgProductsIndexRoute: typeof OrgProductsIndexRoute
   OrgCustomersIdEditRoute: typeof OrgCustomersIdEditRoute
+  OrgCustomersIdIndexRoute: typeof OrgCustomersIdIndexRoute
 }
 
 const OrgRouteChildren: OrgRouteChildren = {
@@ -343,6 +363,7 @@ const OrgRouteChildren: OrgRouteChildren = {
   OrgOrdersIndexRoute: OrgOrdersIndexRoute,
   OrgProductsIndexRoute: OrgProductsIndexRoute,
   OrgCustomersIdEditRoute: OrgCustomersIdEditRoute,
+  OrgCustomersIdIndexRoute: OrgCustomersIdIndexRoute,
 }
 
 const OrgRouteWithChildren = OrgRoute._addFileChildren(OrgRouteChildren)

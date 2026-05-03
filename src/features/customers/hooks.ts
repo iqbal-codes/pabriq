@@ -1,10 +1,12 @@
 import {
+  keepPreviousData,
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { queryKeys } from '#/lib/query-keys'
-import type { CustomerInput } from './model'
+import type { CustomerInput, ListCustomersParams } from './model'
 import {
   createCustomerFn,
   getCustomerFn,
@@ -12,10 +14,11 @@ import {
   updateCustomerFn,
 } from './server'
 
-export function useCustomersList(filters: { orgId: string; search?: string }) {
-  return useSuspenseQuery({
+export function useCustomersList(filters: ListCustomersParams) {
+  return useQuery({
     queryKey: queryKeys.customers.list(filters),
     queryFn: () => listCustomersFn({ data: filters }),
+    placeholderData: keepPreviousData,
   })
 }
 

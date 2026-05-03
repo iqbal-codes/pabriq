@@ -81,6 +81,7 @@ const id: Messages = {
     rowsSelected: '{selected} dari {total} dipilih',
     visibleRows: '{from}-{to} dari {total}',
     loading: 'Memuat',
+    filterAll: 'Semua',
   },
   orders: {
     title: 'Pesanan',
@@ -109,6 +110,7 @@ const id: Messages = {
     customers: 'Pelanggan',
     createCustomer: 'Buat Pelanggan',
     editCustomer: 'Edit Pelanggan',
+    viewCustomer: 'Lihat Pelanggan',
     products: 'Produk',
     newProduct: 'Produk Baru',
     editProduct: 'Edit Produk',
@@ -158,6 +160,7 @@ const id: Messages = {
     title: 'Pelanggan',
     createCustomer: 'Buat Pelanggan',
     editCustomer: 'Edit Pelanggan',
+    viewCustomer: 'Lihat Pelanggan',
     customerInfo: 'Informasi Pelanggan',
     name: 'Nama',
     email: 'Email',

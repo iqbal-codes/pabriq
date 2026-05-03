@@ -1,6 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import type { Customer, CustomerInput, ListCustomersResult } from './model'
+import type {
+  Customer,
+  CustomerInput,
+  ListCustomersParams,
+  ListCustomersResult,
+} from './model'
 import {
   createCustomer,
   getCustomer,
@@ -28,9 +33,9 @@ async function resolveOrgId(): Promise<string> {
 }
 
 export const listCustomersFn = createServerFn({ method: 'GET' })
-  .inputValidator((data: { orgId: string; search?: string }) => data)
+  .inputValidator((data: ListCustomersParams) => data)
   .handler(async ({ data }): Promise<ListCustomersResult> => {
-    return listCustomers(data.orgId, data.search)
+    return listCustomers(data)
   })
 
 export const createCustomerFn = createServerFn({ method: 'POST' })

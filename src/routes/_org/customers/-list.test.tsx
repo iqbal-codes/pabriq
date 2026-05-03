@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { AppColumnDef, DataTableLabels } from '#/components/app/data-table'
 import { DataTable } from '#/components/app/data-table'
+import { TooltipProvider } from '#/components/ui/tooltip'
 
 type Customer = {
   id: string
@@ -56,19 +57,21 @@ function renderTable(
   overrides?: Partial<React.ComponentProps<typeof DataTable<Customer>>>,
 ) {
   return render(
-    <DataTable
-      columns={columns}
-      data={customers}
-      getRowId={(row) => row.id}
-      labels={labels}
-      onPageChange={() => {}}
-      onPerPageChange={() => {}}
-      page={1}
-      perPage={25}
-      tableId="customers-test"
-      totalRows={customers.length}
-      {...overrides}
-    />,
+    <TooltipProvider>
+      <DataTable
+        columns={columns}
+        data={customers}
+        getRowId={(row) => row.id}
+        labels={labels}
+        onPageChange={() => {}}
+        onPerPageChange={() => {}}
+        page={1}
+        perPage={25}
+        tableId="customers-test"
+        totalRows={customers.length}
+        {...overrides}
+      />
+    </TooltipProvider>,
   )
 }
 
