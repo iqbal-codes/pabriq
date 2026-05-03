@@ -5,12 +5,13 @@ import {
 } from '@tanstack/react-table'
 import type { LucideIcon } from 'lucide-react'
 import { AlertCircle, PackageOpen, RefreshCw, SearchX } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   EmptyState,
   type EmptyStateAction,
 } from '#/components/app/page-shell/empty-state'
 import { Button } from '#/components/ui/button'
+import { Checkbox } from '#/components/ui/checkbox'
 import { Skeleton } from '#/components/ui/skeleton'
 import {
   Table,
@@ -55,6 +56,7 @@ type DataTableProps<TData> = {
   onPageChange: (page: number) => void
   onPerPageChange: (perPage: number) => void
   onSortChange?: (sort: SortState | null) => void
+  enableRowSelection?: boolean
   page: number
   perPage: number
   sort?: SortState | null
@@ -93,6 +95,7 @@ export function DataTable<TData>({
   onPageChange,
   onPerPageChange,
   onSortChange,
+  enableRowSelection,
   page,
   perPage,
   sort,
@@ -120,34 +123,100 @@ export function DataTable<TData>({
   errorMessage,
 }: DataTableProps<TData>) {
   const allColumns = useMemo(() => {
-    const cols = [...columns]
+    const cols: AppColumnDef<TData>[] = []
+    if (enableRowSelection) {
+      cols.push({
+        id: 'select',
+        enableSorting: false,
+        enableHiding: false,
+        meta: { label: '', mobileRole: 'hidden' } as AppColumnMeta,
+        header: ({ table }) => (
+          <Checkbox
+            checked={table.getIsAllRowsSelected()}
+            onCheckedChange={(v) => table.toggleAllRowsSelected(!!v)}
+            aria-label="Select all"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            className="ml-2"
+            checked={row.getIsSelected()}
+            onCheckedChange={(v) => row.toggleSelected(!!v)}
+            aria-label="Select row"
+          />
+        ),
+      } as AppColumnDef<TData>)
+    }
+    cols.push(...columns)
     if (rowActions && !cols.find((c) => 'id' in c && c.id === 'actions')) {
       cols.push({
         id: 'actions',
         enableHiding: false,
         meta: { label: '', mobileRole: 'actions' } as unknown as AppColumnMeta,
+        header: ({ table }) => (
+          <div className="flex justify-end">
+            <DataTableViewOptions
+              columns={table.getAllLeafColumns().map((col) => ({
+                id: col.id,
+                label:
+                  (col.columnDef.meta as AppColumnMeta | undefined)?.label ||
+                  col.id,
+                getIsVisible: () => col.getIsVisible(),
+                getCanHide: () => col.getCanHide(),
+                toggleVisibility: () => col.toggleVisibility(),
+              }))}
+              labels={labels}
+            />
+          </div>
+        ),
         cell: ({ row }) => rowActions?.(row.original),
+      } as AppColumnDef<TData>)
+    } else {
+      cols.push({
+        id: 'column-visibility',
+        enableHiding: false,
+        meta: { label: '', mobileRole: 'hidden' } as AppColumnMeta,
+        header: ({ table }) => (
+          <div className="flex justify-end">
+            <DataTableViewOptions
+              columns={table.getAllLeafColumns().map((col) => ({
+                id: col.id,
+                label:
+                  (col.columnDef.meta as AppColumnMeta | undefined)?.label ||
+                  col.id,
+                getIsVisible: () => col.getIsVisible(),
+                getCanHide: () => col.getCanHide(),
+                toggleVisibility: () => col.toggleVisibility(),
+              }))}
+              labels={labels}
+            />
+          </div>
+        ),
       } as AppColumnDef<TData>)
     }
     return cols
-  }, [columns, rowActions])
+  }, [columns, rowActions, enableRowSelection, labels])
 
   const visibilityKey = `${tableId}`
-  const stored = useRef(getStoredVisibility(visibilityKey))
 
-  const defaultVisibility = useMemo(() => {
+  const [columnVisibility, setColumnVisibility] = useState<
+    Record<string, boolean>
+  >(() => {
+    const stored = getStoredVisibility(visibilityKey)
     const vis: Record<string, boolean> = {}
     for (const col of allColumns) {
       if ('accessorKey' in col || 'id' in col) {
         const id = 'accessorKey' in col ? col.accessorKey : col.id
         if (id && typeof id === 'string') {
           const def = col.enableHiding === false ? true : undefined
-          vis[id] = stored.current[id] ?? def ?? true
+          vis[id] = stored[id] ?? def ?? true
         }
       }
     }
     return vis
-  }, [allColumns])
+  })
+
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
 
   const table = useReactTable({
     data,
@@ -155,15 +224,22 @@ export function DataTable<TData>({
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => getRowId(row),
     state: {
-      columnVisibility: defaultVisibility,
+      columnVisibility,
+      ...(enableRowSelection ? { rowSelection } : {}),
     },
     onColumnVisibilityChange: (updater) => {
-      const next =
-        typeof updater === 'function'
-          ? updater(table.getState().columnVisibility)
-          : updater
-      setStoredVisibility(visibilityKey, next)
+      setColumnVisibility((prev) => {
+        const next = typeof updater === 'function' ? updater(prev) : updater
+        setStoredVisibility(visibilityKey, next)
+        return next
+      })
     },
+    ...(enableRowSelection
+      ? {
+          enableRowSelection: true,
+          onRowSelectionChange: setRowSelection,
+        }
+      : {}),
   })
 
   const handleSort = useCallback(
@@ -212,11 +288,11 @@ export function DataTable<TData>({
         if ('accessorKey' in col || 'id' in col) {
           const id = 'accessorKey' in col ? col.accessorKey : col.id
           if (id === 'select') return false
-          return defaultVisibility[id as string] !== false
+          return columnVisibility[id as string] !== false
         }
         return false
       }),
-    [allColumns, defaultVisibility],
+    [allColumns, columnVisibility],
   )
 
   if (error) {
@@ -229,23 +305,7 @@ export function DataTable<TData>({
         <div className="space-y-4">
           <DataTableToolbar
             toolbarStart={toolbarStart}
-            toolbarEnd={
-              <>
-                <DataTableViewOptions
-                  columns={table.getAllLeafColumns().map((col) => ({
-                    id: col.id,
-                    label:
-                      (col.columnDef.meta as AppColumnMeta | undefined)
-                        ?.label || col.id,
-                    getIsVisible: () => col.getIsVisible(),
-                    getCanHide: () => col.getCanHide(),
-                    toggleVisibility: () => col.toggleVisibility(),
-                  }))}
-                  labels={labels}
-                />
-                {toolbarEnd}
-              </>
-            }
+            toolbarEnd={toolbarEnd}
             slotContext={slotContext}
           />
           <div className="rounded-xl border bg-muted/50 p-1.5">
@@ -275,6 +335,7 @@ export function DataTable<TData>({
                     })}
                   </TableRow>
                 </TableHeader>
+
                 <TableBody>
                   <TableRow>
                     <TableCell
@@ -323,23 +384,7 @@ export function DataTable<TData>({
         <div className="space-y-4">
           <DataTableToolbar
             toolbarStart={toolbarStart}
-            toolbarEnd={
-              <>
-                <DataTableViewOptions
-                  columns={table.getAllLeafColumns().map((col) => ({
-                    id: col.id,
-                    label:
-                      (col.columnDef.meta as AppColumnMeta | undefined)
-                        ?.label || col.id,
-                    getIsVisible: () => col.getIsVisible(),
-                    getCanHide: () => col.getCanHide(),
-                    toggleVisibility: () => col.toggleVisibility(),
-                  }))}
-                  labels={labels}
-                />
-                {toolbarEnd}
-              </>
-            }
+            toolbarEnd={toolbarEnd}
             slotContext={slotContext}
           />
           <div className="hidden md:block">
@@ -354,7 +399,7 @@ export function DataTable<TData>({
                             'accessorKey' in col ? col.accessorKey : col.id
                           if (id === 'select') return null
                           const isHidden =
-                            defaultVisibility[id as string] === false
+                            columnVisibility[id as string] === false
                           if (isHidden) return null
                           return (
                             <TableHead key={id as string}>
@@ -375,7 +420,7 @@ export function DataTable<TData>({
                               'accessorKey' in col ? col.accessorKey : col.id
                             if (id === 'select') return null
                             const isHidden =
-                              defaultVisibility[id as string] === false
+                              columnVisibility[id as string] === false
                             if (isHidden) return null
                             return (
                               <TableCell key={id as string}>
@@ -417,23 +462,7 @@ export function DataTable<TData>({
         <div className="space-y-4">
           <DataTableToolbar
             toolbarStart={toolbarStart}
-            toolbarEnd={
-              <>
-                <DataTableViewOptions
-                  columns={table.getAllLeafColumns().map((col) => ({
-                    id: col.id,
-                    label:
-                      (col.columnDef.meta as AppColumnMeta | undefined)
-                        ?.label || col.id,
-                    getIsVisible: () => col.getIsVisible(),
-                    getCanHide: () => col.getCanHide(),
-                    toggleVisibility: () => col.toggleVisibility(),
-                  }))}
-                  labels={labels}
-                />
-                {toolbarEnd}
-              </>
-            }
+            toolbarEnd={toolbarEnd}
             slotContext={slotContext}
           />
           <div className="rounded-xl border bg-muted/50 p-1.5">
@@ -463,6 +492,7 @@ export function DataTable<TData>({
                     })}
                   </TableRow>
                 </TableHeader>
+
                 <TableBody>
                   <TableRow>
                     <TableCell
@@ -505,23 +535,7 @@ export function DataTable<TData>({
         <div className="space-y-4">
           <DataTableToolbar
             toolbarStart={toolbarStart}
-            toolbarEnd={
-              <>
-                <DataTableViewOptions
-                  columns={table.getAllLeafColumns().map((col) => ({
-                    id: col.id,
-                    label:
-                      (col.columnDef.meta as AppColumnMeta | undefined)
-                        ?.label || col.id,
-                    getIsVisible: () => col.getIsVisible(),
-                    getCanHide: () => col.getCanHide(),
-                    toggleVisibility: () => col.toggleVisibility(),
-                  }))}
-                  labels={labels}
-                />
-                {toolbarEnd}
-              </>
-            }
+            toolbarEnd={toolbarEnd}
             slotContext={slotContext}
           />
           <div className="rounded-xl border bg-muted/50 p-1.5">
@@ -551,6 +565,7 @@ export function DataTable<TData>({
                     })}
                   </TableRow>
                 </TableHeader>
+
                 <TableBody>
                   <TableRow>
                     <TableCell
@@ -604,137 +619,116 @@ export function DataTable<TData>({
       <div className="space-y-4">
         <DataTableToolbar
           toolbarStart={toolbarStart}
-          toolbarEnd={
-            <>
-              <DataTableViewOptions
-                columns={table.getAllLeafColumns().map((col) => ({
-                  id: col.id,
-                  label:
-                    (col.columnDef.meta as AppColumnMeta | undefined)?.label ||
-                    col.id,
-                  getIsVisible: () => col.getIsVisible(),
-                  getCanHide: () => col.getCanHide(),
-                  toggleVisibility: () => col.toggleVisibility(),
-                }))}
-                labels={labels}
-              />
-              {toolbarEnd}
-            </>
-          }
+          toolbarEnd={toolbarEnd}
           selectionToolbar={selectionToolbar}
           slotContext={slotContext}
         />
 
-        <div className="hidden md:block">
-          <div className="rounded-xl border bg-muted/50 p-1.5">
-            <div className="rounded-lg border bg-background">
-              <Table>
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow
-                      key={headerGroup.id}
-                      className="bg-muted/50 *:px-3 sm:*:px-4"
-                    >
-                      {headerGroup.headers.map((header) => {
-                        const meta = header.column.columnDef.meta as
-                          | AppColumnMeta
-                          | undefined
-                        return (
-                          <TableHead
-                            key={header.id}
-                            className={cn(
-                              meta?.align === 'end' && 'text-right',
-                              meta?.align === 'center' && 'text-center',
-                              meta?.headerClassName,
-                            )}
-                          >
-                            {header.column.getCanSort() && onSortChange ? (
-                              <button
-                                type="button"
-                                className="flex items-center gap-1 hover:text-foreground"
-                                onClick={() =>
-                                  handleSort(header.column.id as string)
-                                }
-                              >
-                                {flexRender(
+        <div className="relative">
+          <div className="hidden md:block">
+            <div className="rounded-xl border bg-muted/50 p-1.5">
+              <div className="rounded-lg border bg-background">
+                <Table>
+                  <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow
+                        key={headerGroup.id}
+                        className="bg-muted/50 *:px-3 sm:*:px-4"
+                      >
+                        {headerGroup.headers.map((header) => {
+                          const meta = header.column.columnDef.meta as
+                            | AppColumnMeta
+                            | undefined
+                          return (
+                            <TableHead
+                              key={header.id}
+                              className={cn(
+                                meta?.align === 'end' && 'text-right',
+                                meta?.align === 'center' && 'text-center',
+                                meta?.headerClassName,
+                              )}
+                            >
+                              {header.column.getCanSort() && onSortChange ? (
+                                <button
+                                  type="button"
+                                  className="flex items-center gap-1 hover:text-foreground"
+                                  onClick={() =>
+                                    handleSort(header.column.id as string)
+                                  }
+                                >
+                                  {flexRender(
+                                    header.column.columnDef.header,
+                                    header.getContext(),
+                                  )}
+                                  {sort?.field === header.column.id && (
+                                    <span className="text-xs">
+                                      {sort.direction === 'asc' ? '↑' : '↓'}
+                                    </span>
+                                  )}
+                                </button>
+                              ) : (
+                                flexRender(
                                   header.column.columnDef.header,
                                   header.getContext(),
-                                )}
-                                {sort?.field === header.column.id && (
-                                  <span className="text-xs">
-                                    {sort.direction === 'asc' ? '↑' : '↓'}
-                                  </span>
-                                )}
-                              </button>
-                            ) : (
-                              flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )
-                            )}
-                          </TableHead>
-                        )
-                      })}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {isRefetching && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={allColumns.length}
-                        className="text-center"
+                                )
+                              )}
+                            </TableHead>
+                          )
+                        })}
+                      </TableRow>
+                    ))}
+                  </TableHeader>
+                  <TableBody>
+                    {table.getRowModel().rows.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        data-state={row.getIsSelected() && 'selected'}
+                        onClick={() => onRowClick?.(row.original)}
+                        className={cn(onRowClick && 'cursor-pointer')}
                       >
-                        <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">
-                          <RefreshCw className="size-4 animate-spin" />
-                          {labels.loading}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      data-state={row.getIsSelected() && 'selected'}
-                      onClick={() => onRowClick?.(row.original)}
-                      className={cn(onRowClick && 'cursor-pointer')}
-                    >
-                      {row.getVisibleCells().map((cell) => {
-                        const meta = cell.column.columnDef.meta as
-                          | AppColumnMeta
-                          | undefined
-                        return (
-                          <TableCell
-                            key={cell.id}
-                            className={cn(
-                              meta?.align === 'end' && 'text-right',
-                              meta?.align === 'center' && 'text-center',
-                              meta?.cellClassName,
-                            )}
-                          >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext(),
-                            )}
-                          </TableCell>
-                        )
-                      })}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                        {row.getVisibleCells().map((cell) => {
+                          const meta = cell.column.columnDef.meta as
+                            | AppColumnMeta
+                            | undefined
+                          return (
+                            <TableCell
+                              key={cell.id}
+                              className={cn(
+                                meta?.align === 'end' && 'text-right',
+                                meta?.align === 'center' && 'text-center',
+                                meta?.cellClassName,
+                              )}
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext(),
+                              )}
+                            </TableCell>
+                          )
+                        })}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="space-y-3 md:hidden">
-          {table.getRowModel().rows.map((row) => (
-            <DataTableMobileCard
-              key={row.id}
-              row={row}
-              customCard={customMobileCard}
-            />
-          ))}
+          <div className="space-y-3 md:hidden">
+            {table.getRowModel().rows.map((row) => (
+              <DataTableMobileCard
+                key={row.id}
+                row={row}
+                customCard={customMobileCard}
+              />
+            ))}
+          </div>
+
+          {isRefetching && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/60 backdrop-blur-[1px]">
+              <RefreshCw className="size-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
         </div>
 
         <DataTablePagination

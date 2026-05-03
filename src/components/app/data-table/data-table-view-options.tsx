@@ -1,4 +1,4 @@
-import { EyeIcon } from 'lucide-react'
+import { Settings2 } from 'lucide-react'
 import { Button } from '#/components/ui/button'
 import {
   DropdownMenu,
@@ -37,9 +37,12 @@ export function DataTableViewOptions({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm">
-          <EyeIcon className="size-4" />
-          {labels.columnVisibility}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          tooltip={labels.columnVisibility}
+        >
+          <Settings2 className="size-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">

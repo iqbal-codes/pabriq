@@ -82,6 +82,15 @@ export function encodeSort(field: string, direction: 'asc' | 'desc'): string {
   return `${field}:${direction}`
 }
 
+export function decodeSort(encoded: string): SortState | null {
+  const idx = encoded.lastIndexOf(':')
+  if (idx === -1) return null
+  const field = encoded.slice(0, idx)
+  const direction = encoded.slice(idx + 1)
+  if (direction !== 'asc' && direction !== 'desc') return null
+  return { field, direction }
+}
+
 export type AppColumnDef<TData> = ColumnDef<TData> & {
   meta?: AppColumnMeta
 }

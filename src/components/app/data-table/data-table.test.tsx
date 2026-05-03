@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { TooltipProvider } from '#/components/ui/tooltip'
 import { DataTable } from './data-table'
 import { DataTableFilterSelect } from './data-table-filter-select'
 import { DataTableSearch } from './data-table-search'
@@ -56,19 +57,21 @@ function renderTable(
   overrides?: Partial<React.ComponentProps<typeof DataTable<Item>>>,
 ) {
   return render(
-    <DataTable
-      columns={columns}
-      data={data}
-      getRowId={(row) => row.id}
-      labels={labels}
-      onPageChange={vi.fn()}
-      onPerPageChange={vi.fn()}
-      page={1}
-      perPage={25}
-      tableId="test-table"
-      totalRows={data.length}
-      {...overrides}
-    />,
+    <TooltipProvider>
+      <DataTable
+        columns={columns}
+        data={data}
+        getRowId={(row) => row.id}
+        labels={labels}
+        onPageChange={vi.fn()}
+        onPerPageChange={vi.fn()}
+        page={1}
+        perPage={25}
+        tableId="test-table"
+        totalRows={data.length}
+        {...overrides}
+      />
+    </TooltipProvider>,
   )
 }
 

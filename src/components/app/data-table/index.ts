@@ -14,6 +14,7 @@ export type {
   SortState,
 } from './data-table-utils'
 export {
+  decodeSort,
   encodeSort,
   getStoredVisibility,
   removeStoredVisibility,
