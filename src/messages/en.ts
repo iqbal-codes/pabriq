@@ -155,6 +155,7 @@ export type Messages = {
     title: string
     createCustomer: string
     editCustomer: string
+    customerInfo: string
     name: string
     email: string
     phone: string
@@ -443,6 +444,7 @@ const en: Messages = {
     title: 'Customers',
     createCustomer: 'Create Customer',
     editCustomer: 'Edit Customer',
+    customerInfo: 'Customer Information',
     name: 'Name',
     email: 'Email',
     phone: 'Phone',

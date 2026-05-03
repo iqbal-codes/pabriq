@@ -158,6 +158,7 @@ const id: Messages = {
     title: 'Pelanggan',
     createCustomer: 'Buat Pelanggan',
     editCustomer: 'Edit Pelanggan',
+    customerInfo: 'Informasi Pelanggan',
     name: 'Nama',
     email: 'Email',
     phone: 'Telepon',
