@@ -19,7 +19,8 @@ export const generateOrderTokenFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { orderId: string }) => input)
   .handler(async ({ data }) => {
     const { generateOrderToken } = await import('./model')
-    return generateOrderToken(data.orderId)
+    const token = await generateOrderToken(data.orderId)
+    return { ok: true as const, token }
   })
 
 export const updatePortalLineItemFn = createServerFn({ method: 'POST' })

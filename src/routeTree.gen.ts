@@ -15,6 +15,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OrgRouteImport } from './routes/_org'
 import { Route as OrgIndexRouteImport } from './routes/_org/index'
 import { Route as OrderTokenRouteImport } from './routes/order.$token'
+import { Route as OrgSettingsRouteRouteImport } from './routes/_org/settings/route'
 import { Route as OrgSettingsIndexRouteImport } from './routes/_org/settings/index'
 import { Route as OrgProductsIndexRouteImport } from './routes/_org/products/index'
 import { Route as OrgOrdersIndexRouteImport } from './routes/_org/orders/index'
@@ -62,10 +63,15 @@ const OrderTokenRoute = OrderTokenRouteImport.update({
   path: '/order/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OrgSettingsIndexRoute = OrgSettingsIndexRouteImport.update({
-  id: '/settings/',
-  path: '/settings/',
+const OrgSettingsRouteRoute = OrgSettingsRouteRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => OrgRoute,
+} as any)
+const OrgSettingsIndexRoute = OrgSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OrgSettingsRouteRoute,
 } as any)
 const OrgProductsIndexRoute = OrgProductsIndexRouteImport.update({
   id: '/products/',
@@ -89,14 +95,14 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 } as any)
 const OrgSettingsProductionStagesRoute =
   OrgSettingsProductionStagesRouteImport.update({
-    id: '/settings/production-stages',
-    path: '/settings/production-stages',
-    getParentRoute: () => OrgRoute,
+    id: '/production-stages',
+    path: '/production-stages',
+    getParentRoute: () => OrgSettingsRouteRoute,
   } as any)
 const OrgSettingsGeneralRoute = OrgSettingsGeneralRouteImport.update({
-  id: '/settings/general',
-  path: '/settings/general',
-  getParentRoute: () => OrgRoute,
+  id: '/general',
+  path: '/general',
+  getParentRoute: () => OrgSettingsRouteRoute,
 } as any)
 const OrgProductsNewRoute = OrgProductsNewRouteImport.update({
   id: '/products/new',
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/settings': typeof OrgSettingsRouteRouteWithChildren
   '/order/$token': typeof OrderTokenRoute
   '/customers/new': typeof OrgCustomersNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
@@ -204,6 +211,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/_org/settings': typeof OrgSettingsRouteRouteWithChildren
   '/order/$token': typeof OrderTokenRoute
   '/_org/': typeof OrgIndexRoute
   '/_org/customers/new': typeof OrgCustomersNewRoute
@@ -231,6 +239,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/sign-in'
     | '/sign-up'
+    | '/settings'
     | '/order/$token'
     | '/customers/new'
     | '/orders/new'
@@ -279,6 +288,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/sign-in'
     | '/sign-up'
+    | '/_org/settings'
     | '/order/$token'
     | '/_org/'
     | '/_org/customers/new'
@@ -354,12 +364,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrderTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_org/settings': {
+      id: '/_org/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof OrgSettingsRouteRouteImport
+      parentRoute: typeof OrgRoute
+    }
     '/_org/settings/': {
       id: '/_org/settings/'
-      path: '/settings'
+      path: '/'
       fullPath: '/settings/'
       preLoaderRoute: typeof OrgSettingsIndexRouteImport
-      parentRoute: typeof OrgRoute
+      parentRoute: typeof OrgSettingsRouteRoute
     }
     '/_org/products/': {
       id: '/_org/products/'
@@ -391,17 +408,17 @@ declare module '@tanstack/react-router' {
     }
     '/_org/settings/production-stages': {
       id: '/_org/settings/production-stages'
-      path: '/settings/production-stages'
+      path: '/production-stages'
       fullPath: '/settings/production-stages'
       preLoaderRoute: typeof OrgSettingsProductionStagesRouteImport
-      parentRoute: typeof OrgRoute
+      parentRoute: typeof OrgSettingsRouteRoute
     }
     '/_org/settings/general': {
       id: '/_org/settings/general'
-      path: '/settings/general'
+      path: '/general'
       fullPath: '/settings/general'
       preLoaderRoute: typeof OrgSettingsGeneralRouteImport
-      parentRoute: typeof OrgRoute
+      parentRoute: typeof OrgSettingsRouteRoute
     }
     '/_org/products/new': {
       id: '/_org/products/new'
@@ -476,17 +493,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface OrgSettingsRouteRouteChildren {
+  OrgSettingsGeneralRoute: typeof OrgSettingsGeneralRoute
+  OrgSettingsProductionStagesRoute: typeof OrgSettingsProductionStagesRoute
+  OrgSettingsIndexRoute: typeof OrgSettingsIndexRoute
+}
+
+const OrgSettingsRouteRouteChildren: OrgSettingsRouteRouteChildren = {
+  OrgSettingsGeneralRoute: OrgSettingsGeneralRoute,
+  OrgSettingsProductionStagesRoute: OrgSettingsProductionStagesRoute,
+  OrgSettingsIndexRoute: OrgSettingsIndexRoute,
+}
+
+const OrgSettingsRouteRouteWithChildren =
+  OrgSettingsRouteRoute._addFileChildren(OrgSettingsRouteRouteChildren)
+
 interface OrgRouteChildren {
+  OrgSettingsRouteRoute: typeof OrgSettingsRouteRouteWithChildren
   OrgIndexRoute: typeof OrgIndexRoute
   OrgCustomersNewRoute: typeof OrgCustomersNewRoute
   OrgOrdersNewRoute: typeof OrgOrdersNewRoute
   OrgProductsNewRoute: typeof OrgProductsNewRoute
-  OrgSettingsGeneralRoute: typeof OrgSettingsGeneralRoute
-  OrgSettingsProductionStagesRoute: typeof OrgSettingsProductionStagesRoute
   OrgCustomersIndexRoute: typeof OrgCustomersIndexRoute
   OrgOrdersIndexRoute: typeof OrgOrdersIndexRoute
   OrgProductsIndexRoute: typeof OrgProductsIndexRoute
-  OrgSettingsIndexRoute: typeof OrgSettingsIndexRoute
   OrgCustomersIdEditRoute: typeof OrgCustomersIdEditRoute
   OrgOrdersIdEditRoute: typeof OrgOrdersIdEditRoute
   OrgProductsIdEditRoute: typeof OrgProductsIdEditRoute
@@ -496,16 +526,14 @@ interface OrgRouteChildren {
 }
 
 const OrgRouteChildren: OrgRouteChildren = {
+  OrgSettingsRouteRoute: OrgSettingsRouteRouteWithChildren,
   OrgIndexRoute: OrgIndexRoute,
   OrgCustomersNewRoute: OrgCustomersNewRoute,
   OrgOrdersNewRoute: OrgOrdersNewRoute,
   OrgProductsNewRoute: OrgProductsNewRoute,
-  OrgSettingsGeneralRoute: OrgSettingsGeneralRoute,
-  OrgSettingsProductionStagesRoute: OrgSettingsProductionStagesRoute,
   OrgCustomersIndexRoute: OrgCustomersIndexRoute,
   OrgOrdersIndexRoute: OrgOrdersIndexRoute,
   OrgProductsIndexRoute: OrgProductsIndexRoute,
-  OrgSettingsIndexRoute: OrgSettingsIndexRoute,
   OrgCustomersIdEditRoute: OrgCustomersIdEditRoute,
   OrgOrdersIdEditRoute: OrgOrdersIdEditRoute,
   OrgProductsIdEditRoute: OrgProductsIdEditRoute,

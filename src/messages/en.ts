@@ -69,6 +69,9 @@ export type Messages = {
     preview: string
     actions: string
   }
+  settings: {
+    comingSoon: string
+  }
   dataTable: {
     clearFilters: string
     columnVisibility: string
@@ -136,6 +139,17 @@ export type Messages = {
     addToOrder: string
     lineSubtotal: string
     maxQtyError: string
+    phone: string
+    email: string
+    copyPortalLink: string
+    linkCopied: string
+    generateLink: string
+    approve: string
+    reject: string
+    rejectReason: string
+    rejectReasonPlaceholder: string
+    orderApproved: string
+    orderRejected: string
   }
   breadcrumb: {
     dashboard: string
@@ -533,6 +547,17 @@ const en: Messages = {
     addToOrder: 'Add',
     lineSubtotal: 'Subtotal',
     maxQtyError: 'Max quantity is {max}',
+    phone: 'Phone',
+    email: 'Email',
+    copyPortalLink: 'Copy Portal Link',
+    linkCopied: 'Portal link copied',
+    generateLink: 'Generate Portal Link',
+    approve: 'Approve',
+    reject: 'Reject',
+    rejectReason: 'Rejection Reason',
+    rejectReasonPlaceholder: 'Enter reason for rejection',
+    orderApproved: 'Order approved',
+    orderRejected: 'Order rejected',
   },
   breadcrumb: {
     dashboard: 'Dashboard',
@@ -593,6 +618,9 @@ const en: Messages = {
     invoices: 'Invoices',
     production: 'Production',
     settings: 'Settings',
+  },
+  settings: {
+    comingSoon: 'General settings coming soon',
   },
   customers: {
     title: 'Customers',

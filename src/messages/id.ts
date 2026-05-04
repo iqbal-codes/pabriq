@@ -134,6 +134,17 @@ const id: Messages = {
     addToOrder: 'Tambah',
     lineSubtotal: 'Subtotal',
     maxQtyError: 'Kuantitas maksimal {max}',
+    phone: 'Telepon',
+    email: 'Email',
+    copyPortalLink: 'Salin Tautan Portal',
+    linkCopied: 'Tautan portal disalin',
+    generateLink: 'Buat Tautan Portal',
+    approve: 'Setujui',
+    reject: 'Tolak',
+    rejectReason: 'Alasan Penolakan',
+    rejectReasonPlaceholder: 'Masukkan alasan penolakan',
+    orderApproved: 'Pesanan disetujui',
+    orderRejected: 'Pesanan ditolak',
   },
   breadcrumb: {
     dashboard: 'Dasbor',
@@ -194,6 +205,9 @@ const id: Messages = {
     invoices: 'Faktur',
     production: 'Produksi',
     settings: 'Pengaturan',
+  },
+  settings: {
+    comingSoon: 'Pengaturan umum segera hadir',
   },
   customers: {
     title: 'Pelanggan',

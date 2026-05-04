@@ -18,6 +18,7 @@ export type Order = {
   notes: string | null
   total: number
   orderNumber: string | null
+  orderToken: string | null
   validUntil: Date | null
   approvedAt: Date | null
   approvedBy: string | null
@@ -83,6 +84,10 @@ export type UpdateDraftOrderResult = {
 export type GetOrderResult = {
   order: Order
   lineItems: OrderLineItem[]
+  customerName: string | null
+  customerPhone: string | null
+  customerPhotoAssetId: string | null
+  customerEmail: string | null
 }
 
 export type OrderRow = {
@@ -257,9 +262,31 @@ export async function getOrder(
     .where(eq(lineItemsTable.orderId, id))
     .orderBy(lineItemsTable.createdAt)
 
+  const customerRows = await db
+    .select({
+      name: customersTable.name,
+      phone: customersTable.phone,
+      photoAssetId: customersTable.photoAssetId,
+      email: customersTable.email,
+    })
+    .from(customersTable)
+    .where(
+      and(
+        eq(customersTable.id, orderRows[0].customerId),
+        eq(customersTable.orgId, orgId),
+      ),
+    )
+    .limit(1)
+
+  const customer = customerRows[0]
+
   return {
     order: orderRows[0] as Order,
     lineItems: itemRows as OrderLineItem[],
+    customerName: customer?.name ?? null,
+    customerPhone: customer?.phone ?? null,
+    customerPhotoAssetId: customer?.photoAssetId ?? null,
+    customerEmail: customer?.email ?? null,
   }
 }
 
@@ -370,6 +397,7 @@ export async function createDraftOrder(
       notes: input.notes ?? null,
       total: orderTotal,
       orderNumber,
+      orderToken: null,
       validUntil,
       approvedAt: null,
       approvedBy: null,

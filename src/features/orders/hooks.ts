@@ -6,9 +6,11 @@ import {
 import { queryKeys } from '#/lib/query-keys'
 import type { CreateDraftOrderInput, ListOrdersParams } from './model'
 import {
+  approveOrderFn,
   createDraftOrderFn,
   getOrderFn,
   listOrdersFn,
+  rejectOrderFn,
   updateDraftOrderFn,
 } from './server'
 
@@ -55,6 +57,33 @@ export function useUpdateDraftOrder() {
         notes?: string
       }>
     }) => updateDraftOrderFn({ data: input }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.lists() })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.orders.detail(variables.id),
+      })
+    },
+  })
+}
+
+export function useApproveOrder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { id: string }) => approveOrderFn({ data: input }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.lists() })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.orders.detail(variables.id),
+      })
+    },
+  })
+}
+
+export function useRejectOrder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { id: string; reason: string }) =>
+      rejectOrderFn({ data: input }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.orders.lists() })
       queryClient.invalidateQueries({
