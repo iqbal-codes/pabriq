@@ -8,6 +8,8 @@ import type {
   UpdateDraftOrderInput,
 } from './model'
 
+type MutationResult = { ok: true } | { ok: false; error: string }
+
 async function resolveOrgId(): Promise<string> {
   const { auth } = await import('#/lib/auth')
   const headers = getRequestHeaders()
@@ -79,4 +81,51 @@ export const getAssetsForLineItemFn = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const { getAssetsForLineItem } = await import('./model')
     return getAssetsForLineItem(data.lineItemId, data.orgId)
+  })
+
+export const approveOrderFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ data }): Promise<MutationResult> => {
+    const orgId = await resolveOrgId()
+    try {
+      const { auth } = await import('#/lib/auth')
+      const headers = getRequestHeaders()
+      const session = await auth.api.getSession({ headers })
+      const userId = session?.user.id ?? 'unknown'
+      const { approveOrder } = await import('./model')
+      await approveOrder(data.id, orgId, userId)
+      const { spawnTasksForApprovedOrder } = await import(
+        '#/features/production/spawner'
+      )
+      await spawnTasksForApprovedOrder(data.id, orgId)
+      return { ok: true }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
+  })
+
+export const rejectOrderFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: { id: string; reason: string }) => input)
+  .handler(async ({ data }): Promise<MutationResult> => {
+    const orgId = await resolveOrgId()
+    try {
+      const { auth } = await import('#/lib/auth')
+      const headers = getRequestHeaders()
+      const session = await auth.api.getSession({ headers })
+      const userId = session?.user.id ?? 'unknown'
+      const { rejectOrder } = await import('./model')
+      await rejectOrder(data.id, orgId, {
+        rejectedBy: userId,
+        reason: data.reason,
+      })
+      return { ok: true }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
   })

@@ -67,6 +67,7 @@ export type Messages = {
     confirm: string
     cancel: string
     preview: string
+    actions: string
   }
   dataTable: {
     clearFilters: string
@@ -152,6 +153,9 @@ export type Messages = {
     createOrder: string
     viewOrder: string
     editOrder: string
+    settings: string
+    general: string
+    productionStages: string
   }
   status: {
     draft: string
@@ -290,6 +294,71 @@ export type Messages = {
     areaNotFound: string
     defaultAddress: string
   }
+  production: {
+    title: string
+    kanbanTab: string
+    listTab: string
+    stagesTab: string
+    searchPlaceholder: string
+    allStages: string
+    queue: string
+    done: string
+    noTasks: string
+    taskDetail: string
+    specification: string
+    attachments: string
+    activity: string
+    comments: string
+    commentPlaceholder: string
+    send: string
+    startProduction: string
+    advanceTo: string
+    completeRequirements: string
+    requirementRequired: string
+    requirementOptional: string
+    uploadFile: string
+    requestReview: string
+    reviewAdvancement: string
+    approve: string
+    approveOrder: string
+    reject: string
+    rejectOrder: string
+    cancelOrder: string
+    reviewNotes: string
+    canceled: string
+    stageManagement: string
+    addStage: string
+    editStage: string
+    deleteStage: string
+    deleteStageConfirm: string
+    stageName: string
+    stageDescription: string
+    stageDescriptionPlaceholder: string
+    needApproval: string
+    needApprovalHint: string
+    active: string
+    inactive: string
+    requirements: string
+    addRequirement: string
+    requirementLabel: string
+    requirementType: string
+    requirementTypeText: string
+    requirementTypeNumber: string
+    requirementTypeUpload: string
+    required: string
+    optional: string
+    reorder: string
+    movedToStage: string
+    advancedFromQueue: string
+    advancementRequested: string
+    approved: string
+    rejected: string
+    savedRequirement: string
+    taskCompleted: string
+    orderApproved: string
+    orderRejected: string
+    pendingApproval: string
+  }
   portal: {
     title: string
     waitApproval: string
@@ -400,6 +469,7 @@ const en: Messages = {
     confirm: 'Confirm',
     cancel: 'Cancel',
     preview: 'Preview',
+    actions: 'Actions',
   },
   dataTable: {
     clearFilters: 'Clear filters',
@@ -480,6 +550,9 @@ const en: Messages = {
     createOrder: 'Create Order',
     viewOrder: 'View Order',
     editOrder: 'Edit Order',
+    settings: 'Settings',
+    general: 'General',
+    productionStages: 'Production Stages',
   },
   status: {
     draft: 'Draft',
@@ -618,6 +691,71 @@ const en: Messages = {
     orgAddressRequired: 'Please set your organization address to continue',
     areaNotFound: 'Area not found. Please check the area name.',
     defaultAddress: 'Default address',
+  },
+  production: {
+    title: 'Production',
+    kanbanTab: 'Kanban',
+    listTab: 'List',
+    stagesTab: 'Stages',
+    searchPlaceholder: 'Search orders...',
+    allStages: 'All Stages',
+    queue: 'Queue',
+    done: 'Done',
+    noTasks: 'No tasks yet',
+    taskDetail: 'Task Detail',
+    specification: 'Specification',
+    attachments: 'Attachments',
+    activity: 'Activity',
+    comments: 'Comments',
+    commentPlaceholder: 'Add a comment...',
+    send: 'Send',
+    startProduction: 'Start Production',
+    advanceTo: 'Advance to {stage}',
+    completeRequirements: 'Complete Requirements',
+    requirementRequired: 'Required',
+    requirementOptional: 'Optional',
+    uploadFile: 'Upload File',
+    requestReview: 'Request Review',
+    reviewAdvancement: 'Review Advancement',
+    approve: 'Approve & Advance',
+    approveOrder: 'Approve Order',
+    reject: 'Reject',
+    rejectOrder: 'Reject Order',
+    cancelOrder: 'Cancel Order',
+    reviewNotes: 'Review Notes',
+    canceled: 'Canceled',
+    stageManagement: 'Production Stages',
+    addStage: 'Add Stage',
+    editStage: 'Edit Stage',
+    deleteStage: 'Delete Stage',
+    deleteStageConfirm: 'Are you sure you want to delete this stage?',
+    stageName: 'Stage Name',
+    stageDescription: 'Description',
+    stageDescriptionPlaceholder: 'Describe this stage',
+    needApproval: 'Requires Approval',
+    needApprovalHint: 'Advancing past this stage requires admin approval',
+    active: 'Active',
+    inactive: 'Inactive',
+    requirements: 'Requirements',
+    addRequirement: 'Add Requirement',
+    requirementLabel: 'Label',
+    requirementType: 'Type',
+    requirementTypeText: 'Text',
+    requirementTypeNumber: 'Number',
+    requirementTypeUpload: 'Upload',
+    required: 'Required',
+    optional: 'Optional',
+    reorder: 'Reorder',
+    movedToStage: 'Moved to {stage}',
+    advancedFromQueue: 'Advanced from Queue',
+    advancementRequested: 'Advancement requested',
+    approved: 'Approved by {actor}',
+    rejected: 'Rejected by {actor}',
+    savedRequirement: 'Requirement saved',
+    taskCompleted: 'Task completed',
+    orderApproved: 'Order approved successfully',
+    orderRejected: 'Order rejected',
+    pendingApproval: 'Pending Approval',
   },
   portal: {
     title: 'Order Confirmation',

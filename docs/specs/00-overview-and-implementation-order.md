@@ -23,8 +23,7 @@ Reusable application components come first because feature slices depend on cons
 | 08 | Draft order management | #5 |
 | 09 | Customer token approval portal | #6 |
 | 10 | Order lifecycle approvals | #7 |
-| 11 | Workflow stages and task spawning | #8 |
-| 12 | Operator production kanban | #9 |
+| 11 | Production floor management and kanban board | #8, #9 |
 | 13 | Invoices and manual payments | #10 |
 | 14 | Dashboard, members, settings, activity | #11, #12, #13 |
 | 15 | Testing strategy | Cross-cutting acceptance for #2-#13 |

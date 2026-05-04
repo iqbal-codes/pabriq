@@ -206,6 +206,11 @@ export const orders = pgTable('orders', {
   orderToken: text('order_token').unique(),
   validUntil: timestamp('valid_until'),
   shippingAddress: json('shipping_address'),
+  approvedAt: timestamp('approved_at'),
+  approvedBy: text('approved_by'),
+  rejectedAt: timestamp('rejected_at'),
+  rejectedBy: text('rejected_by'),
+  rejectReason: text('reject_reason'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
@@ -276,12 +281,25 @@ export const payments = pgTable('payments', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
 
-export const workflowStages = pgTable('workflow_stages', {
+export type Requirement = {
+  id: string
+  label: string
+  type: 'text' | 'number' | 'upload'
+  required: boolean
+}
+
+export const productionStages = pgTable('production_stages', {
   id: text('id').primaryKey(),
   orgId: text('org_id')
     .notNull()
     .references(() => organization.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
+  description: text('description'),
+  needApproval: boolean('need_approval').notNull().default(false),
+  requirements: json('requirements')
+    .$type<Requirement[]>()
+    .notNull()
+    .default([]),
   orderIndex: integer('order_index').notNull().default(0),
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -296,15 +314,19 @@ export const productionTasks = pgTable('production_tasks', {
   orderId: text('order_id')
     .notNull()
     .references(() => orders.id, { onDelete: 'cascade' }),
-  stageId: text('stage_id')
-    .notNull()
-    .references(() => workflowStages.id, { onDelete: 'restrict' }),
-  status: text('status').notNull().default('pending'),
+  stageId: text('stage_id').references(() => productionStages.id, {
+    onDelete: 'restrict',
+  }),
+  status: text('status').notNull().default('queued'),
   context: json('context')
     .$type<{
       productName: string
       customerName: string
       requirements: string | null
+      requirementResponses?: Record<
+        string,
+        { assetIds?: string[]; value?: string }
+      >
     }>()
     .default({
       productName: '',
@@ -314,6 +336,26 @@ export const productionTasks = pgTable('production_tasks', {
   assignedTo: text('assigned_to'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+export const taskActivity = pgTable('task_activity', {
+  id: text('id').primaryKey(),
+  orgId: text('org_id')
+    .notNull()
+    .references(() => organization.id, { onDelete: 'cascade' }),
+  taskId: text('task_id')
+    .notNull()
+    .references(() => productionTasks.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(),
+  fromStageId: text('from_stage_id').references(() => productionStages.id, {
+    onDelete: 'set null',
+  }),
+  toStageId: text('to_stage_id').references(() => productionStages.id, {
+    onDelete: 'set null',
+  }),
+  data: json('data').$type<Record<string, unknown>>().default({}),
+  actorId: text('actor_id').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
 export const activityEvents = pgTable('activity_events', {

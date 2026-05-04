@@ -19,6 +19,11 @@ export type Order = {
   total: number
   orderNumber: string | null
   validUntil: Date | null
+  approvedAt: Date | null
+  approvedBy: string | null
+  rejectedAt: Date | null
+  rejectedBy: string | null
+  rejectReason: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -366,6 +371,11 @@ export async function createDraftOrder(
       total: orderTotal,
       orderNumber,
       validUntil,
+      approvedAt: null,
+      approvedBy: null,
+      rejectedAt: null,
+      rejectedBy: null,
+      rejectReason: null,
       createdAt: now,
       updatedAt: now,
     },
@@ -485,4 +495,59 @@ export async function updateDraftOrder(
     } as Order,
     lineItems: items,
   }
+}
+
+export async function approveOrder(
+  id: string,
+  orgId: string,
+  approvedBy: string,
+): Promise<void> {
+  const orderRows = await db
+    .select()
+    .from(ordersTable)
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.orgId, orgId)))
+    .limit(1)
+
+  if (orderRows.length === 0) throw new Error('Order not found')
+  if (orderRows[0].status !== 'pending')
+    throw new Error('Only pending orders can be approved')
+
+  const now = new Date()
+  await db
+    .update(ordersTable)
+    .set({
+      status: 'approved',
+      approvedAt: now,
+      approvedBy,
+      updatedAt: now,
+    })
+    .where(eq(ordersTable.id, id))
+}
+
+export async function rejectOrder(
+  id: string,
+  orgId: string,
+  rejectInfo: { rejectedBy: string; reason: string },
+): Promise<void> {
+  const orderRows = await db
+    .select()
+    .from(ordersTable)
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.orgId, orgId)))
+    .limit(1)
+
+  if (orderRows.length === 0) throw new Error('Order not found')
+  if (orderRows[0].status !== 'pending')
+    throw new Error('Only pending orders can be rejected')
+
+  const now = new Date()
+  await db
+    .update(ordersTable)
+    .set({
+      status: 'rejected',
+      rejectedAt: now,
+      rejectedBy: rejectInfo.rejectedBy,
+      rejectReason: rejectInfo.reason,
+      updatedAt: now,
+    })
+    .where(eq(ordersTable.id, id))
 }

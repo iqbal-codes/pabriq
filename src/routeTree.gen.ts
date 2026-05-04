@@ -15,10 +15,13 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OrgRouteImport } from './routes/_org'
 import { Route as OrgIndexRouteImport } from './routes/_org/index'
 import { Route as OrderTokenRouteImport } from './routes/order.$token'
+import { Route as OrgSettingsIndexRouteImport } from './routes/_org/settings/index'
 import { Route as OrgProductsIndexRouteImport } from './routes/_org/products/index'
 import { Route as OrgOrdersIndexRouteImport } from './routes/_org/orders/index'
 import { Route as OrgCustomersIndexRouteImport } from './routes/_org/customers/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as OrgSettingsProductionStagesRouteImport } from './routes/_org/settings/production-stages'
+import { Route as OrgSettingsGeneralRouteImport } from './routes/_org/settings/general'
 import { Route as OrgProductsNewRouteImport } from './routes/_org/products/new'
 import { Route as OrgOrdersNewRouteImport } from './routes/_org/orders/new'
 import { Route as OrgCustomersNewRouteImport } from './routes/_org/customers/new'
@@ -59,6 +62,11 @@ const OrderTokenRoute = OrderTokenRouteImport.update({
   path: '/order/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrgSettingsIndexRoute = OrgSettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => OrgRoute,
+} as any)
 const OrgProductsIndexRoute = OrgProductsIndexRouteImport.update({
   id: '/products/',
   path: '/products/',
@@ -78,6 +86,17 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
+} as any)
+const OrgSettingsProductionStagesRoute =
+  OrgSettingsProductionStagesRouteImport.update({
+    id: '/settings/production-stages',
+    path: '/settings/production-stages',
+    getParentRoute: () => OrgRoute,
+  } as any)
+const OrgSettingsGeneralRoute = OrgSettingsGeneralRouteImport.update({
+  id: '/settings/general',
+  path: '/settings/general',
+  getParentRoute: () => OrgRoute,
 } as any)
 const OrgProductsNewRoute = OrgProductsNewRouteImport.update({
   id: '/products/new',
@@ -140,10 +159,13 @@ export interface FileRoutesByFullPath {
   '/customers/new': typeof OrgCustomersNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
   '/products/new': typeof OrgProductsNewRoute
+  '/settings/general': typeof OrgSettingsGeneralRoute
+  '/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/customers/': typeof OrgCustomersIndexRoute
   '/orders/': typeof OrgOrdersIndexRoute
   '/products/': typeof OrgProductsIndexRoute
+  '/settings/': typeof OrgSettingsIndexRoute
   '/customers/$id/edit': typeof OrgCustomersIdEditRoute
   '/orders/$id/edit': typeof OrgOrdersIdEditRoute
   '/products/$id/edit': typeof OrgProductsIdEditRoute
@@ -161,10 +183,13 @@ export interface FileRoutesByTo {
   '/customers/new': typeof OrgCustomersNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
   '/products/new': typeof OrgProductsNewRoute
+  '/settings/general': typeof OrgSettingsGeneralRoute
+  '/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/customers': typeof OrgCustomersIndexRoute
   '/orders': typeof OrgOrdersIndexRoute
   '/products': typeof OrgProductsIndexRoute
+  '/settings': typeof OrgSettingsIndexRoute
   '/customers/$id/edit': typeof OrgCustomersIdEditRoute
   '/orders/$id/edit': typeof OrgOrdersIdEditRoute
   '/products/$id/edit': typeof OrgProductsIdEditRoute
@@ -184,10 +209,13 @@ export interface FileRoutesById {
   '/_org/customers/new': typeof OrgCustomersNewRoute
   '/_org/orders/new': typeof OrgOrdersNewRoute
   '/_org/products/new': typeof OrgProductsNewRoute
+  '/_org/settings/general': typeof OrgSettingsGeneralRoute
+  '/_org/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_org/customers/': typeof OrgCustomersIndexRoute
   '/_org/orders/': typeof OrgOrdersIndexRoute
   '/_org/products/': typeof OrgProductsIndexRoute
+  '/_org/settings/': typeof OrgSettingsIndexRoute
   '/_org/customers/$id/edit': typeof OrgCustomersIdEditRoute
   '/_org/orders/$id/edit': typeof OrgOrdersIdEditRoute
   '/_org/products/$id/edit': typeof OrgProductsIdEditRoute
@@ -207,10 +235,13 @@ export interface FileRouteTypes {
     | '/customers/new'
     | '/orders/new'
     | '/products/new'
+    | '/settings/general'
+    | '/settings/production-stages'
     | '/api/auth/$'
     | '/customers/'
     | '/orders/'
     | '/products/'
+    | '/settings/'
     | '/customers/$id/edit'
     | '/orders/$id/edit'
     | '/products/$id/edit'
@@ -228,10 +259,13 @@ export interface FileRouteTypes {
     | '/customers/new'
     | '/orders/new'
     | '/products/new'
+    | '/settings/general'
+    | '/settings/production-stages'
     | '/api/auth/$'
     | '/customers'
     | '/orders'
     | '/products'
+    | '/settings'
     | '/customers/$id/edit'
     | '/orders/$id/edit'
     | '/products/$id/edit'
@@ -250,10 +284,13 @@ export interface FileRouteTypes {
     | '/_org/customers/new'
     | '/_org/orders/new'
     | '/_org/products/new'
+    | '/_org/settings/general'
+    | '/_org/settings/production-stages'
     | '/api/auth/$'
     | '/_org/customers/'
     | '/_org/orders/'
     | '/_org/products/'
+    | '/_org/settings/'
     | '/_org/customers/$id/edit'
     | '/_org/orders/$id/edit'
     | '/_org/products/$id/edit'
@@ -317,6 +354,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrderTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_org/settings/': {
+      id: '/_org/settings/'
+      path: '/settings'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof OrgSettingsIndexRouteImport
+      parentRoute: typeof OrgRoute
+    }
     '/_org/products/': {
       id: '/_org/products/'
       path: '/products'
@@ -344,6 +388,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_org/settings/production-stages': {
+      id: '/_org/settings/production-stages'
+      path: '/settings/production-stages'
+      fullPath: '/settings/production-stages'
+      preLoaderRoute: typeof OrgSettingsProductionStagesRouteImport
+      parentRoute: typeof OrgRoute
+    }
+    '/_org/settings/general': {
+      id: '/_org/settings/general'
+      path: '/settings/general'
+      fullPath: '/settings/general'
+      preLoaderRoute: typeof OrgSettingsGeneralRouteImport
+      parentRoute: typeof OrgRoute
     }
     '/_org/products/new': {
       id: '/_org/products/new'
@@ -423,9 +481,12 @@ interface OrgRouteChildren {
   OrgCustomersNewRoute: typeof OrgCustomersNewRoute
   OrgOrdersNewRoute: typeof OrgOrdersNewRoute
   OrgProductsNewRoute: typeof OrgProductsNewRoute
+  OrgSettingsGeneralRoute: typeof OrgSettingsGeneralRoute
+  OrgSettingsProductionStagesRoute: typeof OrgSettingsProductionStagesRoute
   OrgCustomersIndexRoute: typeof OrgCustomersIndexRoute
   OrgOrdersIndexRoute: typeof OrgOrdersIndexRoute
   OrgProductsIndexRoute: typeof OrgProductsIndexRoute
+  OrgSettingsIndexRoute: typeof OrgSettingsIndexRoute
   OrgCustomersIdEditRoute: typeof OrgCustomersIdEditRoute
   OrgOrdersIdEditRoute: typeof OrgOrdersIdEditRoute
   OrgProductsIdEditRoute: typeof OrgProductsIdEditRoute
@@ -439,9 +500,12 @@ const OrgRouteChildren: OrgRouteChildren = {
   OrgCustomersNewRoute: OrgCustomersNewRoute,
   OrgOrdersNewRoute: OrgOrdersNewRoute,
   OrgProductsNewRoute: OrgProductsNewRoute,
+  OrgSettingsGeneralRoute: OrgSettingsGeneralRoute,
+  OrgSettingsProductionStagesRoute: OrgSettingsProductionStagesRoute,
   OrgCustomersIndexRoute: OrgCustomersIndexRoute,
   OrgOrdersIndexRoute: OrgOrdersIndexRoute,
   OrgProductsIndexRoute: OrgProductsIndexRoute,
+  OrgSettingsIndexRoute: OrgSettingsIndexRoute,
   OrgCustomersIdEditRoute: OrgCustomersIdEditRoute,
   OrgOrdersIdEditRoute: OrgOrdersIdEditRoute,
   OrgProductsIdEditRoute: OrgProductsIdEditRoute,

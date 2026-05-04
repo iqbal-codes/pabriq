@@ -50,6 +50,27 @@
       "when": 1746720000000,
       "tag": "0010_remove_biteship_area_fk",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1746720000001,
+      "tag": "0011_add_order_audit_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1746720000002,
+      "tag": "0012_add_pricing_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1746720000003,
+      "tag": "0013_production_floor",
+      "breakpoints": true
     }
   ]
 }

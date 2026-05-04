@@ -31,3 +31,7 @@ export function canManageCustomers(role: Role): boolean {
 export function canViewProduction(role: Role): boolean {
   return role === 'owner' || role === 'admin'
 }
+
+export function canManageStages(role: Role): boolean {
+  return role === 'owner' || role === 'admin'
+}
