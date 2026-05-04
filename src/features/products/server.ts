@@ -147,6 +147,27 @@ export const createProductFn = createServerFn({ method: 'POST' })
     }
   })
 
+export const listBreakpointsFn = createServerFn({ method: 'GET' })
+  .inputValidator((input: { productId: string }) => input)
+  .handler(
+    async ({
+      data,
+    }): Promise<Array<{ minQuantity: number; unitPrice: number }>> => {
+      const { db } = await import('#/db/index')
+      const { pricingBreakpoints } = await import('#/db/schema')
+      const { eq, asc } = await import('drizzle-orm')
+      const rows = await db
+        .select({
+          minQuantity: pricingBreakpoints.minQuantity,
+          unitPrice: pricingBreakpoints.unitPrice,
+        })
+        .from(pricingBreakpoints)
+        .where(eq(pricingBreakpoints.productId, data.productId))
+        .orderBy(asc(pricingBreakpoints.minQuantity))
+      return rows
+    },
+  )
+
 export const updateProductFn = createServerFn({ method: 'POST' })
   .inputValidator((input: Omit<UpdateProductInput, 'orgId'>) => input)
   .handler(async ({ data }): Promise<MutationResult> => {

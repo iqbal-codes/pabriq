@@ -18,9 +18,13 @@ vi.mock('#/features/products/hooks', () => ({
       active: true,
       orgId: 'org-1',
       primaryImageAssetId: null,
+      pricingMode: 'interpolated',
       createdAt: new Date(),
       updatedAt: new Date(),
     },
+  }),
+  useProductBreakpoints: () => ({
+    data: [] as Array<{ minQuantity: number; unitPrice: number }>,
   }),
   useUpdateProduct: () => ({
     mutateAsync: vi.fn().mockResolvedValue({ ok: true }),

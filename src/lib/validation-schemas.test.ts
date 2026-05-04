@@ -11,6 +11,8 @@ describe('productFormSchema', () => {
       productionDays: 1,
       minQuantity: 1,
       maxQuantity: null,
+      pricingMode: 'interpolated',
+      pricingBreakpoints: [],
     })
     expect(result.success).toBe(false)
   })
@@ -24,6 +26,8 @@ describe('productFormSchema', () => {
       productionDays: 3,
       minQuantity: 1,
       maxQuantity: 100,
+      pricingMode: 'interpolated',
+      pricingBreakpoints: [{ minQuantity: 1, unitPrice: 50000 }],
     })
     expect(result.success).toBe(true)
   })
@@ -37,6 +41,8 @@ describe('productFormSchema', () => {
       productionDays: 1,
       minQuantity: 1,
       maxQuantity: undefined,
+      pricingMode: 'step',
+      pricingBreakpoints: [],
     })
     expect(result.success).toBe(true)
   })

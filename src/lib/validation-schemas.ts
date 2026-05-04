@@ -3,6 +3,11 @@ import { z } from 'zod'
 export const emailSchema = z.email()
 export const phoneNumberSchema = z.string().regex(/^\d{8,16}$/)
 
+export const pricingBreakpointSchema = z.object({
+  minQuantity: z.number().min(1, 'Min quantity must be at least 1'),
+  unitPrice: z.number().min(0, 'Unit price must not be negative'),
+})
+
 export const productFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string(),
@@ -11,6 +16,20 @@ export const productFormSchema = z.object({
   productionDays: z.number(),
   minQuantity: z.number(),
   maxQuantity: z.union([z.number(), z.undefined()]),
+  pricingMode: z.enum(['interpolated', 'step']),
+  pricingBreakpoints: z
+    .array(pricingBreakpointSchema)
+    .superRefine((bps, ctx) => {
+      for (let i = 1; i < bps.length; i++) {
+        if (bps[i].minQuantity <= bps[i - 1].minQuantity) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Must be greater than ${bps[i - 1].minQuantity}`,
+            path: [i, 'minQuantity'],
+          })
+        }
+      }
+    }),
 })
 
 export const customerFormSchema = z.object({

@@ -96,6 +96,53 @@ describe('calculateUnitPrice', () => {
     })
   })
 
+  it('uses step pricing when mode is step', () => {
+    const result = calculateUnitPrice({
+      quantity: 5,
+      breakpoints: [
+        { minQuantity: 1, unitPrice: 10 },
+        { minQuantity: 10, unitPrice: 8 },
+      ],
+      mode: 'step',
+    })
+
+    expect(result).toEqual({
+      unitPrice: { amount: 10, currency: 'USD' },
+      lineTotal: { amount: 50, currency: 'USD' },
+    })
+  })
+
+  it('uses step pricing for quantity above max breakpoint', () => {
+    const result = calculateUnitPrice({
+      quantity: 20,
+      breakpoints: [
+        { minQuantity: 1, unitPrice: 10 },
+        { minQuantity: 10, unitPrice: 8 },
+      ],
+      mode: 'step',
+    })
+
+    expect(result).toEqual({
+      unitPrice: { amount: 8, currency: 'USD' },
+      lineTotal: { amount: 160, currency: 'USD' },
+    })
+  })
+
+  it('uses interpolation by default when mode is not set', () => {
+    const result = calculateUnitPrice({
+      quantity: 5,
+      breakpoints: [
+        { minQuantity: 1, unitPrice: 10 },
+        { minQuantity: 10, unitPrice: 8 },
+      ],
+    })
+
+    expect(result).toEqual({
+      unitPrice: { amount: 9.11, currency: 'USD' },
+      lineTotal: { amount: 45.55, currency: 'USD' },
+    })
+  })
+
   it('supports custom currency', () => {
     const result = calculateUnitPrice({
       quantity: 1,

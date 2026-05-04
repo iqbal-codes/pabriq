@@ -4,12 +4,13 @@ import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { Badge } from '#/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
-import { useProduct } from '#/features/products/hooks'
+import { useProduct, useProductBreakpoints } from '#/features/products/hooks'
 import { Route } from '#/routes/_org/products/$id/index'
 
 export function ViewProductPage() {
   const { id } = Route.useParams()
   const product = useProduct(id).data
+  const breakpoints = useProductBreakpoints(id).data ?? []
   const t = useTranslations('products')
   const ct = useTranslations('common')
   const st = useTranslations('status')
@@ -108,7 +109,51 @@ export function ViewProductPage() {
                 </p>
                 <p className="font-medium">{product.maxQuantity ?? '\u2014'}</p>
               </div>
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {t('pricing.interpolate')}
+                </p>
+                <p className="font-medium">
+                  {product.pricingMode === 'interpolated'
+                    ? t('pricing.interpolateOn')
+                    : t('pricing.interpolateOff')}
+                </p>
+              </div>
             </div>
+            {breakpoints.length > 0 && (
+              <div>
+                <p className="text-sm font-medium mb-2">
+                  {t('pricing.breakpoints')}
+                </p>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-muted-foreground border-b">
+                      <th className="text-left py-1 pr-4">
+                        {t('pricing.minQuantity')}
+                      </th>
+                      <th className="text-left py-1">
+                        {t('pricing.unitPrice')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {breakpoints.map((bp, i) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: breakpoints don't have stable IDs
+                      <tr key={i} className="border-b last:border-0">
+                        <td className="py-1 pr-4">{bp.minQuantity}</td>
+                        <td className="py-1">
+                          {new Intl.NumberFormat('id-ID', {
+                            style: 'currency',
+                            currency: 'IDR',
+                            minimumFractionDigits: 0,
+                          }).format(bp.unitPrice)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

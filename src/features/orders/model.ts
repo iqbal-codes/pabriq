@@ -1,6 +1,7 @@
-import { and, desc, eq, ilike, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, or, type SQL, sql } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
+  assets as assetsTable,
   customers as customersTable,
   orderLineItems as lineItemsTable,
   orders as ordersTable,
@@ -16,7 +17,7 @@ export type Order = {
   status: string
   notes: string | null
   total: number
-  quoteNumber: string | null
+  orderNumber: string | null
   validUntil: Date | null
   createdAt: Date
   updatedAt: Date
@@ -27,20 +28,21 @@ export type OrderLineItem = {
   orgId: string
   orderId: string
   productId: string
-  variantId: string | null
   quantity: number
   unitPrice: number
   total: number
+  name: string | null
   notes: string | null
   createdAt: Date
   updatedAt: Date
 }
 
 export type LineItemInput = {
+  id?: string
   productId: string
-  variantId?: string
   quantity: number
   unitPrice?: number
+  name?: string
   notes?: string
 }
 
@@ -50,7 +52,25 @@ export type CreateDraftOrderInput = {
   lineItems: LineItemInput[]
 }
 
+export type UpdateDraftOrderInput = {
+  customerId: string
+  notes?: string
+  lineItems: Array<{
+    id?: string
+    productId: string
+    quantity: number
+    unitPrice?: number
+    name?: string
+    notes?: string
+  }>
+}
+
 export type CreateDraftOrderResult = {
+  order: Order
+  lineItems: OrderLineItem[]
+}
+
+export type UpdateDraftOrderResult = {
   order: Order
   lineItems: OrderLineItem[]
 }
@@ -65,8 +85,17 @@ export type OrderRow = {
   customerName: string
   status: string
   total: number
-  quoteNumber: string | null
+  orderNumber: string | null
   createdAt: Date
+}
+
+export type ListOrdersParams = {
+  orgId: string
+  search?: string
+  status?: string
+  sort?: { field: string; direction: 'asc' | 'desc' } | null
+  page?: number
+  perPage?: number
 }
 
 export type ListOrdersResult = {
@@ -74,25 +103,130 @@ export type ListOrdersResult = {
   totalRows: number
 }
 
-export async function listOrders(orgId: string): Promise<ListOrdersResult> {
+function generateId(): string {
+  return crypto.randomUUID()
+}
+
+async function generateOrderNumber(orgId: string): Promise<string> {
+  const year = new Date().getFullYear()
+  const prefix = `ORD-${year}-`
+
+  const existingRows = await db
+    .select({ orderNumber: ordersTable.orderNumber })
+    .from(ordersTable)
+    .where(
+      and(
+        eq(ordersTable.orgId, orgId),
+        ilike(ordersTable.orderNumber, `${prefix}%`),
+      ),
+    )
+    .orderBy(desc(ordersTable.orderNumber))
+    .limit(1)
+
+  const nextNum =
+    existingRows.length > 0 && existingRows[0].orderNumber
+      ? Number.parseInt(existingRows[0].orderNumber.split('-')[2] ?? '0', 10) +
+        1
+      : 1
+
+  return `${prefix}${String(nextNum).padStart(3, '0')}`
+}
+
+async function computeLineItemPricing(
+  productId: string,
+  quantity: number,
+  unitPrice?: number,
+): Promise<{ unitPrice: number; total: number }> {
+  const breakpoints = await listBreakpoints(productId)
+  const result = calculateUnitPrice({
+    quantity,
+    breakpoints: breakpoints as Breakpoint[],
+    manualUnitPrice: unitPrice,
+  })
+
+  if ('code' in result) {
+    throw new Error(result.message)
+  }
+
+  return {
+    unitPrice: result.unitPrice.amount,
+    total: result.lineTotal.amount,
+  }
+}
+
+const ALLOWED_SORT_FIELDS = new Set([
+  'orderNumber',
+  'customerName',
+  'status',
+  'total',
+  'createdAt',
+])
+
+export async function listOrders(
+  params: ListOrdersParams,
+): Promise<ListOrdersResult> {
+  const conditions: SQL[] = [eq(ordersTable.orgId, params.orgId)]
+
+  if (params.search?.trim()) {
+    const pattern = `%${params.search.trim()}%`
+    conditions.push(
+      or(
+        ilike(ordersTable.orderNumber, pattern),
+        ilike(customersTable.name, pattern),
+      ) as SQL,
+    )
+  }
+
+  if (params.status) {
+    conditions.push(eq(ordersTable.status, params.status))
+  }
+
+  const allConditions = and(...conditions) as SQL
+
+  const page = params.page ?? 1
+  const perPage = params.perPage ?? 25
+
+  const sortCol =
+    params.sort && ALLOWED_SORT_FIELDS.has(params.sort.field)
+      ? params.sort.field === 'orderNumber'
+        ? ordersTable.orderNumber
+        : params.sort.field === 'customerName'
+          ? customersTable.name
+          : params.sort.field === 'status'
+            ? ordersTable.status
+            : params.sort.field === 'total'
+              ? ordersTable.total
+              : ordersTable.createdAt
+      : ordersTable.createdAt
+
+  const sortDir =
+    params.sort && ALLOWED_SORT_FIELDS.has(params.sort.field)
+      ? params.sort.direction === 'asc'
+        ? asc(sortCol)
+        : desc(sortCol)
+      : desc(ordersTable.createdAt)
+
   const rows = await db
     .select({
       id: ordersTable.id,
       customerName: customersTable.name,
       status: ordersTable.status,
       total: ordersTable.total,
-      quoteNumber: ordersTable.quoteNumber,
+      orderNumber: ordersTable.orderNumber,
       createdAt: ordersTable.createdAt,
     })
     .from(ordersTable)
     .innerJoin(customersTable, eq(ordersTable.customerId, customersTable.id))
-    .where(eq(ordersTable.orgId, orgId))
-    .orderBy(desc(ordersTable.createdAt))
+    .where(allConditions)
+    .orderBy(sortDir)
+    .limit(perPage)
+    .offset((page - 1) * perPage)
 
   const countResult = await db
     .select({ count: sql<number>`count(*)` })
     .from(ordersTable)
-    .where(eq(ordersTable.orgId, orgId))
+    .innerJoin(customersTable, eq(ordersTable.customerId, customersTable.id))
+    .where(allConditions)
 
   return {
     rows,
@@ -124,6 +258,30 @@ export async function getOrder(
   }
 }
 
+export async function getAssetsForLineItem(
+  lineItemId: string,
+  orgId: string,
+): Promise<Array<{ id: string; originalFilename: string; mimeType: string }>> {
+  const rows = await db
+    .select({
+      id: assetsTable.id,
+      originalFilename: assetsTable.originalFilename,
+      mimeType: assetsTable.mimeType,
+    })
+    .from(assetsTable)
+    .where(
+      and(
+        eq(assetsTable.orgId, orgId),
+        eq(assetsTable.ownerType, 'order'),
+        eq(assetsTable.ownerId, lineItemId),
+        eq(assetsTable.status, 'active'),
+      ),
+    )
+    .orderBy(assetsTable.createdAt)
+
+  return rows
+}
+
 export async function createDraftOrder(
   orgId: string,
   input: CreateDraftOrderInput,
@@ -141,7 +299,7 @@ export async function createDraftOrder(
   if (customerRows.length === 0) throw new Error('Customer not found')
 
   const now = new Date()
-  const orderId = crypto.randomUUID()
+  const orderId = generateId()
   const items: OrderLineItem[] = []
 
   for (const li of input.lineItems) {
@@ -155,27 +313,22 @@ export async function createDraftOrder(
     if (productRows.length === 0) throw new Error('Product not found')
     if (!productRows[0].active) throw new Error('Product is not active')
 
-    const breakpoints = await listBreakpoints(li.productId, li.variantId)
-    const pricingResult = calculateUnitPrice({
-      quantity: li.quantity,
-      breakpoints: breakpoints as Breakpoint[],
-      manualUnitPrice: li.unitPrice,
-    })
+    const pricing = await computeLineItemPricing(
+      li.productId,
+      li.quantity,
+      li.unitPrice,
+    )
 
-    if ('code' in pricingResult) {
-      throw new Error(pricingResult.message)
-    }
-
-    const itemId = crypto.randomUUID()
+    const itemId = li.id ?? generateId()
     items.push({
       id: itemId,
       orgId,
       orderId,
       productId: li.productId,
-      variantId: li.variantId ?? null,
       quantity: li.quantity,
-      unitPrice: pricingResult.unitPrice.amount,
-      total: pricingResult.lineTotal.amount,
+      unitPrice: pricing.unitPrice,
+      total: pricing.total,
+      name: li.name ?? null,
       notes: li.notes ?? null,
       createdAt: now,
       updatedAt: now,
@@ -183,30 +336,7 @@ export async function createDraftOrder(
   }
 
   const orderTotal = items.reduce((sum, i) => sum + i.total, 0)
-
-  const year = new Date().getFullYear()
-  const quotePrefix = `QT-${year}-`
-  const existingQuoteRows = await db
-    .select({ quoteNumber: ordersTable.quoteNumber })
-    .from(ordersTable)
-    .where(
-      and(
-        eq(ordersTable.orgId, orgId),
-        ilike(ordersTable.quoteNumber, `${quotePrefix}%`),
-      ),
-    )
-    .orderBy(desc(ordersTable.quoteNumber))
-    .limit(1)
-
-  const nextNum =
-    existingQuoteRows.length > 0 && existingQuoteRows[0].quoteNumber
-      ? Number.parseInt(
-          existingQuoteRows[0].quoteNumber.split('-')[2] ?? '0',
-          10,
-        ) + 1
-      : 1
-  const quoteNumber = `${quotePrefix}${String(nextNum).padStart(3, '0')}`
-
+  const orderNumber = await generateOrderNumber(orgId)
   const validUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
 
   await db.insert(ordersTable).values({
@@ -216,7 +346,7 @@ export async function createDraftOrder(
     status: 'draft',
     notes: input.notes ?? null,
     total: orderTotal,
-    quoteNumber,
+    orderNumber,
     validUntil,
     createdAt: now,
     updatedAt: now,
@@ -234,7 +364,7 @@ export async function createDraftOrder(
       status: 'draft',
       notes: input.notes ?? null,
       total: orderTotal,
-      quoteNumber,
+      orderNumber,
       validUntil,
       createdAt: now,
       updatedAt: now,
@@ -243,123 +373,116 @@ export async function createDraftOrder(
   }
 }
 
-export type UpdateLineItemInput = {
-  quantity: number
-  unitPrice?: number
-}
-
-export async function updateLineItem(
-  itemId: string,
+export async function updateDraftOrder(
+  id: string,
   orgId: string,
-  input: UpdateLineItemInput,
-): Promise<OrderLineItem> {
-  const itemRows = await db
-    .select()
-    .from(lineItemsTable)
-    .where(and(eq(lineItemsTable.id, itemId), eq(lineItemsTable.orgId, orgId)))
-    .limit(1)
-
-  if (itemRows.length === 0) throw new Error('Line item not found')
-
-  const item = itemRows[0] as OrderLineItem
-
+  input: UpdateDraftOrderInput,
+): Promise<UpdateDraftOrderResult> {
   const orderRows = await db
-    .select({ status: ordersTable.status })
+    .select()
     .from(ordersTable)
-    .where(eq(ordersTable.id, item.orderId))
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.orgId, orgId)))
     .limit(1)
 
   if (orderRows.length === 0) throw new Error('Order not found')
   if (orderRows[0].status !== 'draft')
     throw new Error('Can only modify draft orders')
 
-  const breakpoints = await listBreakpoints(
-    item.productId,
-    item.variantId ?? undefined,
-  )
-  const pricingResult = calculateUnitPrice({
-    quantity: input.quantity,
-    breakpoints: breakpoints as Breakpoint[],
-    manualUnitPrice: input.unitPrice,
-  })
+  const customerRows = await db
+    .select({ id: customersTable.id })
+    .from(customersTable)
+    .where(
+      and(
+        eq(customersTable.id, input.customerId),
+        eq(customersTable.orgId, orgId),
+      ),
+    )
+    .limit(1)
+  if (customerRows.length === 0) throw new Error('Customer not found')
 
-  if ('code' in pricingResult) {
-    throw new Error(pricingResult.message)
+  // Validate all products
+  for (const li of input.lineItems) {
+    const productRows = await db
+      .select({ id: productsTable.id, active: productsTable.active })
+      .from(productsTable)
+      .where(
+        and(eq(productsTable.id, li.productId), eq(productsTable.orgId, orgId)),
+      )
+      .limit(1)
+    if (productRows.length === 0) throw new Error('Product not found')
+    // For existing drafts, allow already-selected inactive products
+    if (!productRows[0].active) {
+      const existingItems = await db
+        .select({ id: lineItemsTable.id })
+        .from(lineItemsTable)
+        .where(
+          and(
+            eq(lineItemsTable.orderId, id),
+            eq(lineItemsTable.productId, li.productId),
+          ),
+        )
+        .limit(1)
+      // If this product is new (not in existing items), reject
+      if (existingItems.length === 0) {
+        throw new Error('Cannot add inactive product')
+      }
+    }
   }
 
   const now = new Date()
-  await db
-    .update(lineItemsTable)
-    .set({
-      quantity: input.quantity,
-      unitPrice: pricingResult.unitPrice.amount,
-      total: pricingResult.lineTotal.amount,
+
+  // Delete existing line items
+  await db.delete(lineItemsTable).where(eq(lineItemsTable.orderId, id))
+
+  // Insert new line items
+  const items: OrderLineItem[] = []
+  for (const li of input.lineItems) {
+    const pricing = await computeLineItemPricing(
+      li.productId,
+      li.quantity,
+      li.unitPrice,
+    )
+
+    const itemId = li.id ?? generateId()
+    items.push({
+      id: itemId,
+      orgId,
+      orderId: id,
+      productId: li.productId,
+      quantity: li.quantity,
+      unitPrice: pricing.unitPrice,
+      total: pricing.total,
+      name: li.name ?? null,
+      notes: li.notes ?? null,
+      createdAt: now,
       updatedAt: now,
     })
-    .where(eq(lineItemsTable.id, itemId))
+  }
 
-  const allItems = await db
-    .select()
-    .from(lineItemsTable)
-    .where(eq(lineItemsTable.orderId, item.orderId))
-
-  const orderTotal = allItems.reduce(
-    (sum, i) => sum + (i as OrderLineItem).total,
-    0,
-  )
+  const orderTotal = items.reduce((sum, i) => sum + i.total, 0)
 
   await db
     .update(ordersTable)
-    .set({ total: orderTotal, updatedAt: now })
-    .where(eq(ordersTable.id, item.orderId))
+    .set({
+      customerId: input.customerId,
+      notes: input.notes ?? null,
+      total: orderTotal,
+      updatedAt: now,
+    })
+    .where(eq(ordersTable.id, id))
 
-  const updatedRows = await db
-    .select()
-    .from(lineItemsTable)
-    .where(eq(lineItemsTable.id, itemId))
-    .limit(1)
+  if (items.length > 0) {
+    await db.insert(lineItemsTable).values(items)
+  }
 
-  return updatedRows[0] as OrderLineItem
-}
-
-export async function removeLineItem(
-  itemId: string,
-  orgId: string,
-): Promise<void> {
-  const itemRows = await db
-    .select()
-    .from(lineItemsTable)
-    .where(and(eq(lineItemsTable.id, itemId), eq(lineItemsTable.orgId, orgId)))
-    .limit(1)
-
-  if (itemRows.length === 0) throw new Error('Line item not found')
-
-  const item = itemRows[0] as OrderLineItem
-
-  const orderRows = await db
-    .select({ status: ordersTable.status })
-    .from(ordersTable)
-    .where(eq(ordersTable.id, item.orderId))
-    .limit(1)
-
-  if (orderRows.length === 0) throw new Error('Order not found')
-  if (orderRows[0].status !== 'draft')
-    throw new Error('Can only modify draft orders')
-
-  await db.delete(lineItemsTable).where(eq(lineItemsTable.id, itemId))
-
-  const remaining = await db
-    .select()
-    .from(lineItemsTable)
-    .where(eq(lineItemsTable.orderId, item.orderId))
-
-  const orderTotal = remaining.reduce(
-    (sum, i) => sum + (i as OrderLineItem).total,
-    0,
-  )
-
-  await db
-    .update(ordersTable)
-    .set({ total: orderTotal, updatedAt: new Date() })
-    .where(eq(ordersTable.id, item.orderId))
+  return {
+    order: {
+      ...orderRows[0],
+      customerId: input.customerId,
+      notes: input.notes ?? null,
+      total: orderTotal,
+      updatedAt: now,
+    } as Order,
+    lineItems: items,
+  }
 }

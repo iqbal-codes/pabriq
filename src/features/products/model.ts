@@ -3,7 +3,6 @@ import { db } from '#/db/index'
 import {
   pricingBreakpoints as breakpointsTable,
   products as productsTable,
-  productVariants as variantsTable,
 } from '#/db/schema'
 
 export type Product = {
@@ -18,6 +17,7 @@ export type Product = {
   productionDays: number
   minQuantity: number
   maxQuantity: number | null
+  pricingMode: 'interpolated' | 'step'
   createdAt: Date
   updatedAt: Date
 }
@@ -32,6 +32,8 @@ export type CreateProductInput = {
   productionDays?: number
   minQuantity?: number
   maxQuantity?: number
+  pricingMode?: 'interpolated' | 'step'
+  pricingBreakpoints?: Array<{ minQuantity: number; unitPrice: number }>
 }
 
 export type UpdateProductInput = {
@@ -46,6 +48,8 @@ export type UpdateProductInput = {
   minQuantity?: number
   maxQuantity?: number | null
   active?: boolean
+  pricingMode?: 'interpolated' | 'step'
+  pricingBreakpoints?: Array<{ minQuantity: number; unitPrice: number }>
 }
 
 export type ProductListOptions = {
@@ -103,10 +107,24 @@ export async function createProduct(
     productionDays: input.productionDays ?? 1,
     minQuantity: input.minQuantity ?? 1,
     maxQuantity: input.maxQuantity ?? null,
+    pricingMode: input.pricingMode ?? 'interpolated',
     active: true,
     createdAt: now,
     updatedAt: now,
   })
+
+  if (input.pricingBreakpoints && input.pricingBreakpoints.length > 0) {
+    const breakpoints = input.pricingBreakpoints.map((bp) => ({
+      id: generateId(),
+      orgId: input.orgId,
+      productId: id,
+      minQuantity: bp.minQuantity,
+      unitPrice: bp.unitPrice,
+      createdAt: now,
+      updatedAt: now,
+    }))
+    await db.insert(breakpointsTable).values(breakpoints)
+  }
 
   const rows = await db
     .select()
@@ -134,6 +152,7 @@ export async function updateProduct(
   if (input.minQuantity !== undefined) updates.minQuantity = input.minQuantity
   if (input.maxQuantity !== undefined) updates.maxQuantity = input.maxQuantity
   if (input.active !== undefined) updates.active = input.active
+  if (input.pricingMode !== undefined) updates.pricingMode = input.pricingMode
 
   await db
     .update(productsTable)
@@ -141,6 +160,25 @@ export async function updateProduct(
     .where(
       and(eq(productsTable.id, input.id), eq(productsTable.orgId, input.orgId)),
     )
+
+  if (input.pricingBreakpoints !== undefined) {
+    await db
+      .delete(breakpointsTable)
+      .where(eq(breakpointsTable.productId, input.id))
+
+    if (input.pricingBreakpoints.length > 0) {
+      const breakpoints = input.pricingBreakpoints.map((bp) => ({
+        id: generateId(),
+        orgId: input.orgId,
+        productId: input.id,
+        minQuantity: bp.minQuantity,
+        unitPrice: bp.unitPrice,
+        createdAt: now,
+        updatedAt: now,
+      }))
+      await db.insert(breakpointsTable).values(breakpoints)
+    }
+  }
 
   const rows = await db
     .select()
@@ -202,101 +240,10 @@ export async function deleteProduct(id: string, orgId: string): Promise<void> {
     .where(and(eq(productsTable.id, id), eq(productsTable.orgId, orgId)))
 }
 
-export type ProductVariant = {
-  id: string
-  orgId: string
-  productId: string
-  name: string
-  attributes: Record<string, string>
-  active: boolean
-  createdAt: Date
-  updatedAt: Date
-}
-
-export type CreateVariantInput = {
-  orgId: string
-  productId: string
-  name: string
-  attributes?: Record<string, string>
-}
-
-export async function createVariant(
-  input: CreateVariantInput,
-): Promise<ProductVariant> {
-  const id = generateId()
-  const now = new Date()
-  await db.insert(variantsTable).values({
-    id,
-    orgId: input.orgId,
-    productId: input.productId,
-    name: input.name,
-    attributes: input.attributes ?? {},
-    active: true,
-    createdAt: now,
-    updatedAt: now,
-  })
-
-  const rows = await db
-    .select()
-    .from(variantsTable)
-    .where(eq(variantsTable.id, id))
-    .limit(1)
-
-  return rows[0] as ProductVariant
-}
-
-export async function listVariants(
-  productId: string,
-): Promise<ProductVariant[]> {
-  const rows = await db
-    .select()
-    .from(variantsTable)
-    .where(eq(variantsTable.productId, productId))
-    .orderBy(asc(variantsTable.createdAt))
-
-  return rows as ProductVariant[]
-}
-
-export async function updateVariant(input: {
-  id: string
-  orgId: string
-  name?: string
-  attributes?: Record<string, string>
-  active?: boolean
-}): Promise<ProductVariant> {
-  const now = new Date()
-  const updates: Record<string, unknown> = { updatedAt: now }
-  if (input.name !== undefined) updates.name = input.name
-  if (input.attributes !== undefined) updates.attributes = input.attributes
-  if (input.active !== undefined) updates.active = input.active
-
-  await db
-    .update(variantsTable)
-    .set(updates)
-    .where(
-      and(eq(variantsTable.id, input.id), eq(variantsTable.orgId, input.orgId)),
-    )
-
-  const rows = await db
-    .select()
-    .from(variantsTable)
-    .where(eq(variantsTable.id, input.id))
-    .limit(1)
-
-  return rows[0] as ProductVariant
-}
-
-export async function deleteVariant(id: string, orgId: string): Promise<void> {
-  await db
-    .delete(variantsTable)
-    .where(and(eq(variantsTable.id, id), eq(variantsTable.orgId, orgId)))
-}
-
 export type PricingBreakpoint = {
   id: string
   orgId: string
   productId: string
-  variantId: string | null
   minQuantity: number
   unitPrice: number
   createdAt: Date
@@ -306,7 +253,6 @@ export type PricingBreakpoint = {
 export type CreateBreakpointInput = {
   orgId: string
   productId: string
-  variantId?: string
   minQuantity: number
   unitPrice: number
 }
@@ -320,7 +266,6 @@ export async function createBreakpoint(
     id,
     orgId: input.orgId,
     productId: input.productId,
-    variantId: input.variantId ?? null,
     minQuantity: input.minQuantity,
     unitPrice: input.unitPrice,
     createdAt: now,
@@ -338,18 +283,11 @@ export async function createBreakpoint(
 
 export async function listBreakpoints(
   productId: string,
-  variantId?: string,
 ): Promise<PricingBreakpoint[]> {
-  const conditions = [eq(breakpointsTable.productId, productId)]
-
-  if (variantId !== undefined) {
-    conditions.push(eq(breakpointsTable.variantId, variantId))
-  }
-
   const rows = await db
     .select()
     .from(breakpointsTable)
-    .where(and(...conditions))
+    .where(eq(breakpointsTable.productId, productId))
     .orderBy(asc(breakpointsTable.minQuantity))
 
   return rows as PricingBreakpoint[]

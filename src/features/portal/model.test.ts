@@ -81,7 +81,7 @@ beforeEach(async () => {
       customerId: customer1Id,
       status: 'draft',
       total: 10000,
-      quoteNumber: 'QT-2026-001',
+      orderNumber: 'ORD-2026-001',
       createdAt: now,
       updatedAt: now,
     },
@@ -131,7 +131,7 @@ describe('getPortalOrder', () => {
     if (result.ok) {
       expect(result.order.id).toBe(order1Id)
       expect(result.order.status).toBe('draft')
-      expect(result.order.quoteNumber).toBe('QT-2026-001')
+      expect(result.order.orderNumber).toBe('ORD-2026-001')
     }
   })
 

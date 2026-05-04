@@ -49,7 +49,6 @@ export async function generateQuotationPdf(
     orderLineItems,
     customers,
     products,
-    productVariants,
     organizationProfiles: profiles,
   } = await import('#/db/schema')
 
@@ -76,7 +75,6 @@ export async function generateQuotationPdf(
       .select({
         itemId: orderLineItems.id,
         productId: orderLineItems.productId,
-        variantId: orderLineItems.variantId,
         quantity: orderLineItems.quantity,
         unitPrice: orderLineItems.unitPrice,
         total: orderLineItems.total,
@@ -96,31 +94,17 @@ export async function generateQuotationPdf(
     logoAssetId: null,
   }
 
-  const variantIds = [
-    ...new Set(itemRows.map((i) => i.variantId).filter(Boolean)),
-  ] as string[]
-
-  const [productRows, variantRows] = await Promise.all([
+  const [productRows] = await Promise.all([
     db
       .select({ id: products.id, name: products.name })
       .from(products)
       .where(and(eq(products.orgId, orgId))),
-    variantIds.length > 0
-      ? db
-          .select({ id: productVariants.id, name: productVariants.name })
-          .from(productVariants)
-          .where(and(eq(productVariants.orgId, orgId)))
-      : Promise.resolve([]),
   ])
 
   const productMap = new Map(productRows.map((p) => [p.id, p.name]))
-  const variantMap = new Map(variantRows.map((v) => [v.id, v.name]))
 
   const lineItems = itemRows.map((item) => ({
     productName: productMap.get(item.productId) ?? 'Unknown Product',
-    variantName: item.variantId
-      ? (variantMap.get(item.variantId) ?? null)
-      : null,
     quantity: item.quantity,
     unitPrice: item.unitPrice,
     total: item.total,
@@ -129,7 +113,7 @@ export async function generateQuotationPdf(
   const pdfData: QuotationPdfData = {
     orgName: profile.displayName ?? 'Workshop',
     orgPhone: profile.phone ?? null,
-    quoteNumber: order.quoteNumber ?? 'QT-????-???',
+    quoteNumber: order.orderNumber ?? 'ORD-????-???',
     createdAt: order.createdAt,
     validUntil: order.validUntil ?? null,
     customer: {

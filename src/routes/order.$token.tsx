@@ -46,9 +46,9 @@ function PendingView({ order }: { order: PortalOrder }) {
           <CheckCircle2 className="h-12 w-12 text-green-500" />
         </div>
         <h1 className="text-xl font-semibold">{t('waitApproval')}</h1>
-        {order.quoteNumber && (
+        {order.orderNumber && (
           <p className="mt-2 text-sm text-gray-500">
-            Order: {order.quoteNumber}
+            Order: {order.orderNumber}
           </p>
         )}
       </div>
@@ -132,8 +132,8 @@ function OrderSummary({ order }: { order: PortalOrder }) {
         <div className="rounded-lg border bg-white p-6">
           <div className="mb-6">
             <h1 className="text-xl font-semibold">{t('orderSummary')}</h1>
-            {order.quoteNumber && (
-              <p className="text-sm text-gray-500">{order.quoteNumber}</p>
+            {order.orderNumber && (
+              <p className="text-sm text-gray-500">{order.orderNumber}</p>
             )}
             {order.status && (
               <span className="mt-2 inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">

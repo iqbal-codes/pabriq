@@ -1,5 +1,8 @@
+import { Plus, Trash2 } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { FormGrid, FormSection, withForm } from '#/components/app/form'
+import { Button } from '#/components/ui/button'
+import { Switch } from '#/components/ui/switch'
 
 export const ProductFormFields = withForm({
   defaultValues: {
@@ -10,6 +13,8 @@ export const ProductFormFields = withForm({
     productionDays: 1,
     minQuantity: 1,
     maxQuantity: undefined as number | undefined,
+    pricingMode: 'interpolated' as 'interpolated' | 'step',
+    pricingBreakpoints: [] as Array<{ minQuantity: number; unitPrice: number }>,
   },
   render: function Render({ form }) {
     const t = useTranslations('products')
@@ -51,6 +56,107 @@ export const ProductFormFields = withForm({
               {(field) => <field.NumberField label={t('maxQuantity')} />}
             </form.AppField>
           </FormGrid>
+
+          {/* Pricing mode toggle */}
+          <form.AppField name="pricingMode">
+            {(field) => (
+              <div className="mt-4 flex items-center justify-between rounded-lg border p-3">
+                <div className="space-y-0.5">
+                  <span className="text-sm font-medium">
+                    {t('pricing.interpolate')}
+                  </span>
+                  <p className="text-xs text-muted-foreground">
+                    {field.state.value === 'interpolated'
+                      ? t('pricing.interpolateOn')
+                      : t('pricing.interpolateOff')}
+                  </p>
+                </div>
+                <Switch
+                  checked={field.state.value === 'interpolated'}
+                  onCheckedChange={(checked) =>
+                    field.handleChange(checked ? 'interpolated' : 'step')
+                  }
+                />
+              </div>
+            )}
+          </form.AppField>
+
+          {/* Pricing breakpoints */}
+          <div className="mt-6">
+            <form.AppField name="pricingBreakpoints" mode="array">
+              {(breakpointsField) => (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium">
+                      {t('pricing.breakpoints')}
+                    </h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const current = breakpointsField.state.value
+                        const baseQty = form.state.values.minQuantity ?? 1
+                        const nextMinQty =
+                          current.length > 0
+                            ? current[current.length - 1].minQuantity + 1
+                            : baseQty + 1
+                        breakpointsField.pushValue({
+                          minQuantity: nextMinQty,
+                          unitPrice: 0,
+                        })
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      {t('pricing.addBreakpoint')}
+                    </Button>
+                  </div>
+                  {breakpointsField.state.value.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {t('pricing.noBreakpoints')}
+                    </p>
+                  ) : (
+                    breakpointsField.state.value.map((_, i) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: index is stable key for TanStack Form array
+                      <div key={i} className="flex items-end gap-3">
+                        <div className="flex-1">
+                          <form.AppField
+                            name={`pricingBreakpoints[${i}].minQuantity`}
+                          >
+                            {(field) => (
+                              <field.NumberField
+                                label={t('pricing.minQuantity')}
+                              />
+                            )}
+                          </form.AppField>
+                        </div>
+                        <div className="flex-1">
+                          <form.AppField
+                            name={`pricingBreakpoints[${i}].unitPrice`}
+                          >
+                            {(field) => (
+                              <field.NumberField
+                                label={t('pricing.unitPrice')}
+                              />
+                            )}
+                          </form.AppField>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => breakpointsField.removeValue(i)}
+                          className="mb-0.5"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </form.AppField>
+          </div>
         </FormSection>
       </>
     )

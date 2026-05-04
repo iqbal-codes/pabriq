@@ -6,7 +6,6 @@ import {
   customers as customersTable,
   organization,
   products as productsTable,
-  productVariants as variantsTable,
 } from '#/db/schema'
 import { createDraftOrder } from '#/features/orders/model'
 import { generateQuotationPdf } from './server'
@@ -58,21 +57,11 @@ describe('generateQuotationPdf', () => {
       createdAt: now,
       updatedAt: now,
     })
-    await db.insert(variantsTable).values({
-      id: 'var-1',
-      orgId: org1Id,
-      productId: 'prod-1',
-      name: 'Large',
-      active: true,
-      createdAt: now,
-      updatedAt: now,
-    })
     await db.insert(breakpointsTable).values([
       {
         id: 'bp-1',
         orgId: org1Id,
         productId: 'prod-1',
-        variantId: 'var-1',
         minQuantity: 1,
         unitPrice: 150000,
         createdAt: now,
@@ -82,7 +71,7 @@ describe('generateQuotationPdf', () => {
 
     const orderResult = await createDraftOrder(org1Id, {
       customerId: 'cust-1',
-      lineItems: [{ productId: 'prod-1', variantId: 'var-1', quantity: 2 }],
+      lineItems: [{ productId: 'prod-1', quantity: 2 }],
     })
 
     const buffer = await generateQuotationPdf(org1Id, orderResult.order.id)

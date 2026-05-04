@@ -13,6 +13,7 @@ export type PricingInput = {
   breakpoints: Breakpoint[]
   manualUnitPrice?: number
   currency?: string
+  mode?: 'interpolated' | 'step'
 }
 
 export type PricingSuccess = {
@@ -81,6 +82,15 @@ export function calculateUnitPrice(input: PricingInput): PricingResult {
       }
 
       const prev = sorted[i - 1]
+
+      if (input.mode === 'step') {
+        const total = roundMoney(prev.unitPrice * input.quantity)
+        return {
+          unitPrice: { amount: prev.unitPrice, currency },
+          lineTotal: { amount: total, currency },
+        }
+      }
+
       const t =
         (input.quantity - prev.minQuantity) /
         (bp.minQuantity - prev.minQuantity)

@@ -6,14 +6,12 @@ import {
   customers as customersTable,
   organization,
   products as productsTable,
-  productVariants as variantsTable,
 } from '#/db/schema'
 import {
   createDraftOrder,
   getOrder,
   listOrders,
-  removeLineItem,
-  updateLineItem,
+  updateDraftOrder,
 } from './model'
 
 const org1Id = '00000000-0000-0000-0000-000000000001'
@@ -64,23 +62,11 @@ describe('createDraftOrder', () => {
         updatedAt: now,
       },
     ])
-    await db.insert(variantsTable).values([
-      {
-        id: 'var-1',
-        orgId: org1Id,
-        productId: 'prod-1',
-        name: 'Large',
-        active: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    ])
     await db.insert(breakpointsTable).values([
       {
         id: 'bp-1',
         orgId: org1Id,
         productId: 'prod-1',
-        variantId: 'var-1',
         minQuantity: 1,
         unitPrice: 15,
         createdAt: now,
@@ -90,7 +76,6 @@ describe('createDraftOrder', () => {
         id: 'bp-2',
         orgId: org1Id,
         productId: 'prod-1',
-        variantId: 'var-1',
         minQuantity: 50,
         unitPrice: 10,
         createdAt: now,
@@ -102,14 +87,15 @@ describe('createDraftOrder', () => {
       customerId: 'cust-1',
       notes: 'Rush order',
       lineItems: [
-        { productId: 'prod-1', variantId: 'var-1', quantity: 10 },
-        { productId: 'prod-1', variantId: 'var-1', quantity: 60 },
+        { productId: 'prod-1', quantity: 10 },
+        { productId: 'prod-1', quantity: 60 },
       ],
     })
 
     expect(result.order.status).toBe('draft')
     expect(result.order.customerId).toBe('cust-1')
     expect(result.order.notes).toBe('Rush order')
+    expect(result.order.orderNumber).toMatch(/^ORD-\d{4}-\d{3}$/)
 
     expect(result.lineItems).toHaveLength(2)
     expect(result.lineItems[0].unitPrice).toBeCloseTo(14.08, 2)
@@ -220,7 +206,7 @@ describe('createDraftOrder', () => {
     expect(fetched?.lineItems[0].quantity).toBe(3)
   })
 
-  it('updates a line item quantity and recalculates totals', async () => {
+  it('updates a draft order with full snapshot', async () => {
     const now = new Date()
 
     await db.insert(customersTable).values([
@@ -242,6 +228,14 @@ describe('createDraftOrder', () => {
         createdAt: now,
         updatedAt: now,
       },
+      {
+        id: 'prod-5b',
+        orgId: org1Id,
+        name: 'Badge',
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
     ])
     await db.insert(breakpointsTable).values([
       {
@@ -256,9 +250,9 @@ describe('createDraftOrder', () => {
       {
         id: 'bp-7',
         orgId: org1Id,
-        productId: 'prod-5',
-        minQuantity: 100,
-        unitPrice: 2,
+        productId: 'prod-5b',
+        minQuantity: 1,
+        unitPrice: 5,
         createdAt: now,
         updatedAt: now,
       },
@@ -269,85 +263,28 @@ describe('createDraftOrder', () => {
       lineItems: [{ productId: 'prod-5', quantity: 10 }],
     })
 
-    const itemId = created.lineItems[0].id
-    const updated = await updateLineItem(itemId, org1Id, { quantity: 200 })
+    expect(created.lineItems).toHaveLength(1)
 
-    expect(updated.quantity).toBe(200)
-    expect(updated.unitPrice).toBe(2)
-    expect(updated.total).toBe(400)
-
-    const fetched = await getOrder(created.order.id, org1Id)
-    expect(fetched?.order.total).toBe(400)
-  })
-
-  it('removes a line item and recalculates order total', async () => {
-    const now = new Date()
-
-    await db.insert(customersTable).values([
-      {
-        id: 'cust-6',
-        orgId: org1Id,
-        name: 'Foxtrot Co',
-        active: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    ])
-    await db.insert(productsTable).values([
-      {
-        id: 'prod-6a',
-        orgId: org1Id,
-        name: 'Item A',
-        active: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-      {
-        id: 'prod-6b',
-        orgId: org1Id,
-        name: 'Item B',
-        active: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    ])
-    await db.insert(breakpointsTable).values([
-      {
-        id: 'bp-8',
-        orgId: org1Id,
-        productId: 'prod-6a',
-        minQuantity: 1,
-        unitPrice: 10,
-        createdAt: now,
-        updatedAt: now,
-      },
-      {
-        id: 'bp-9',
-        orgId: org1Id,
-        productId: 'prod-6b',
-        minQuantity: 1,
-        unitPrice: 20,
-        createdAt: now,
-        updatedAt: now,
-      },
-    ])
-
-    const created = await createDraftOrder(org1Id, {
-      customerId: 'cust-6',
+    const updated = await updateDraftOrder(created.order.id, org1Id, {
+      customerId: 'cust-5',
+      notes: 'Updated order',
       lineItems: [
-        { productId: 'prod-6a', quantity: 2 },
-        { productId: 'prod-6b', quantity: 1 },
+        { productId: 'prod-5', quantity: 200 },
+        { productId: 'prod-5b', quantity: 5 },
       ],
     })
 
-    expect(created.lineItems).toHaveLength(2)
-    expect(created.order.total).toBeCloseTo(40, 2)
-
-    await removeLineItem(created.lineItems[1].id, org1Id)
+    expect(updated.order.notes).toBe('Updated order')
+    expect(updated.lineItems).toHaveLength(2)
+    expect(updated.lineItems[0].unitPrice).toBe(2)
+    expect(updated.lineItems[0].total).toBe(400)
+    expect(updated.lineItems[1].unitPrice).toBe(5)
+    expect(updated.lineItems[1].total).toBe(25)
+    expect(updated.order.total).toBe(425)
 
     const fetched = await getOrder(created.order.id, org1Id)
-    expect(fetched?.lineItems).toHaveLength(1)
-    expect(fetched?.order.total).toBeCloseTo(20, 2)
+    expect(fetched?.lineItems).toHaveLength(2)
+    expect(fetched?.order.total).toBe(425)
   })
 
   it('lists orders scoped to org with customer name', async () => {
@@ -431,7 +368,7 @@ describe('createDraftOrder', () => {
       lineItems: [{ productId: 'prod-7o', quantity: 1 }],
     })
 
-    const result = await listOrders(org1Id)
+    const result = await listOrders({ orgId: org1Id })
 
     expect(result.rows).toHaveLength(2)
     expect(result.totalRows).toBe(2)
@@ -442,7 +379,7 @@ describe('createDraftOrder', () => {
   })
 
   it('does not leak orders across orgs', async () => {
-    const org2Result = await listOrders(org2Id)
+    const org2Result = await listOrders({ orgId: org2Id })
 
     expect(org2Result.rows).toHaveLength(0)
     expect(org2Result.totalRows).toBe(0)

@@ -23,8 +23,10 @@ import { Route as OrgProductsNewRouteImport } from './routes/_org/products/new'
 import { Route as OrgOrdersNewRouteImport } from './routes/_org/orders/new'
 import { Route as OrgCustomersNewRouteImport } from './routes/_org/customers/new'
 import { Route as OrgProductsIdIndexRouteImport } from './routes/_org/products/$id/index'
+import { Route as OrgOrdersIdIndexRouteImport } from './routes/_org/orders/$id/index'
 import { Route as OrgCustomersIdIndexRouteImport } from './routes/_org/customers/$id/index'
 import { Route as OrgProductsIdEditRouteImport } from './routes/_org/products/$id/edit'
+import { Route as OrgOrdersIdEditRouteImport } from './routes/_org/orders/$id/edit'
 import { Route as OrgCustomersIdEditRouteImport } from './routes/_org/customers/$id/edit'
 import { Route as ApiDocumentsOrdersIdQuotationRouteImport } from './routes/api/documents/orders/$id/quotation'
 
@@ -97,6 +99,11 @@ const OrgProductsIdIndexRoute = OrgProductsIdIndexRouteImport.update({
   path: '/products/$id/',
   getParentRoute: () => OrgRoute,
 } as any)
+const OrgOrdersIdIndexRoute = OrgOrdersIdIndexRouteImport.update({
+  id: '/orders/$id/',
+  path: '/orders/$id/',
+  getParentRoute: () => OrgRoute,
+} as any)
 const OrgCustomersIdIndexRoute = OrgCustomersIdIndexRouteImport.update({
   id: '/customers/$id/',
   path: '/customers/$id/',
@@ -105,6 +112,11 @@ const OrgCustomersIdIndexRoute = OrgCustomersIdIndexRouteImport.update({
 const OrgProductsIdEditRoute = OrgProductsIdEditRouteImport.update({
   id: '/products/$id/edit',
   path: '/products/$id/edit',
+  getParentRoute: () => OrgRoute,
+} as any)
+const OrgOrdersIdEditRoute = OrgOrdersIdEditRouteImport.update({
+  id: '/orders/$id/edit',
+  path: '/orders/$id/edit',
   getParentRoute: () => OrgRoute,
 } as any)
 const OrgCustomersIdEditRoute = OrgCustomersIdEditRouteImport.update({
@@ -133,8 +145,10 @@ export interface FileRoutesByFullPath {
   '/orders/': typeof OrgOrdersIndexRoute
   '/products/': typeof OrgProductsIndexRoute
   '/customers/$id/edit': typeof OrgCustomersIdEditRoute
+  '/orders/$id/edit': typeof OrgOrdersIdEditRoute
   '/products/$id/edit': typeof OrgProductsIdEditRoute
   '/customers/$id/': typeof OrgCustomersIdIndexRoute
+  '/orders/$id/': typeof OrgOrdersIdIndexRoute
   '/products/$id/': typeof OrgProductsIdIndexRoute
   '/api/documents/orders/$id/quotation': typeof ApiDocumentsOrdersIdQuotationRoute
 }
@@ -152,8 +166,10 @@ export interface FileRoutesByTo {
   '/orders': typeof OrgOrdersIndexRoute
   '/products': typeof OrgProductsIndexRoute
   '/customers/$id/edit': typeof OrgCustomersIdEditRoute
+  '/orders/$id/edit': typeof OrgOrdersIdEditRoute
   '/products/$id/edit': typeof OrgProductsIdEditRoute
   '/customers/$id': typeof OrgCustomersIdIndexRoute
+  '/orders/$id': typeof OrgOrdersIdIndexRoute
   '/products/$id': typeof OrgProductsIdIndexRoute
   '/api/documents/orders/$id/quotation': typeof ApiDocumentsOrdersIdQuotationRoute
 }
@@ -173,8 +189,10 @@ export interface FileRoutesById {
   '/_org/orders/': typeof OrgOrdersIndexRoute
   '/_org/products/': typeof OrgProductsIndexRoute
   '/_org/customers/$id/edit': typeof OrgCustomersIdEditRoute
+  '/_org/orders/$id/edit': typeof OrgOrdersIdEditRoute
   '/_org/products/$id/edit': typeof OrgProductsIdEditRoute
   '/_org/customers/$id/': typeof OrgCustomersIdIndexRoute
+  '/_org/orders/$id/': typeof OrgOrdersIdIndexRoute
   '/_org/products/$id/': typeof OrgProductsIdIndexRoute
   '/api/documents/orders/$id/quotation': typeof ApiDocumentsOrdersIdQuotationRoute
 }
@@ -194,8 +212,10 @@ export interface FileRouteTypes {
     | '/orders/'
     | '/products/'
     | '/customers/$id/edit'
+    | '/orders/$id/edit'
     | '/products/$id/edit'
     | '/customers/$id/'
+    | '/orders/$id/'
     | '/products/$id/'
     | '/api/documents/orders/$id/quotation'
   fileRoutesByTo: FileRoutesByTo
@@ -213,8 +233,10 @@ export interface FileRouteTypes {
     | '/orders'
     | '/products'
     | '/customers/$id/edit'
+    | '/orders/$id/edit'
     | '/products/$id/edit'
     | '/customers/$id'
+    | '/orders/$id'
     | '/products/$id'
     | '/api/documents/orders/$id/quotation'
   id:
@@ -233,8 +255,10 @@ export interface FileRouteTypes {
     | '/_org/orders/'
     | '/_org/products/'
     | '/_org/customers/$id/edit'
+    | '/_org/orders/$id/edit'
     | '/_org/products/$id/edit'
     | '/_org/customers/$id/'
+    | '/_org/orders/$id/'
     | '/_org/products/$id/'
     | '/api/documents/orders/$id/quotation'
   fileRoutesById: FileRoutesById
@@ -349,6 +373,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgProductsIdIndexRouteImport
       parentRoute: typeof OrgRoute
     }
+    '/_org/orders/$id/': {
+      id: '/_org/orders/$id/'
+      path: '/orders/$id'
+      fullPath: '/orders/$id/'
+      preLoaderRoute: typeof OrgOrdersIdIndexRouteImport
+      parentRoute: typeof OrgRoute
+    }
     '/_org/customers/$id/': {
       id: '/_org/customers/$id/'
       path: '/customers/$id'
@@ -361,6 +392,13 @@ declare module '@tanstack/react-router' {
       path: '/products/$id/edit'
       fullPath: '/products/$id/edit'
       preLoaderRoute: typeof OrgProductsIdEditRouteImport
+      parentRoute: typeof OrgRoute
+    }
+    '/_org/orders/$id/edit': {
+      id: '/_org/orders/$id/edit'
+      path: '/orders/$id/edit'
+      fullPath: '/orders/$id/edit'
+      preLoaderRoute: typeof OrgOrdersIdEditRouteImport
       parentRoute: typeof OrgRoute
     }
     '/_org/customers/$id/edit': {
@@ -389,8 +427,10 @@ interface OrgRouteChildren {
   OrgOrdersIndexRoute: typeof OrgOrdersIndexRoute
   OrgProductsIndexRoute: typeof OrgProductsIndexRoute
   OrgCustomersIdEditRoute: typeof OrgCustomersIdEditRoute
+  OrgOrdersIdEditRoute: typeof OrgOrdersIdEditRoute
   OrgProductsIdEditRoute: typeof OrgProductsIdEditRoute
   OrgCustomersIdIndexRoute: typeof OrgCustomersIdIndexRoute
+  OrgOrdersIdIndexRoute: typeof OrgOrdersIdIndexRoute
   OrgProductsIdIndexRoute: typeof OrgProductsIdIndexRoute
 }
 
@@ -403,8 +443,10 @@ const OrgRouteChildren: OrgRouteChildren = {
   OrgOrdersIndexRoute: OrgOrdersIndexRoute,
   OrgProductsIndexRoute: OrgProductsIndexRoute,
   OrgCustomersIdEditRoute: OrgCustomersIdEditRoute,
+  OrgOrdersIdEditRoute: OrgOrdersIdEditRoute,
   OrgProductsIdEditRoute: OrgProductsIdEditRoute,
   OrgCustomersIdIndexRoute: OrgCustomersIdIndexRoute,
+  OrgOrdersIdIndexRoute: OrgOrdersIdIndexRoute,
   OrgProductsIdIndexRoute: OrgProductsIdIndexRoute,
 }
 

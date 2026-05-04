@@ -5,17 +5,13 @@ import { organization } from '#/db/schema'
 import {
   createBreakpoint,
   createProduct,
-  createVariant,
   deleteBreakpoint,
   deleteProduct,
-  deleteVariant,
   getProduct,
   listBreakpoints,
   listProducts,
-  listVariants,
   updateBreakpoint,
   updateProduct,
-  updateVariant,
 } from './model'
 
 const org1Id = '00000000-0000-0000-0000-000000000001'
@@ -180,99 +176,6 @@ describe('products', () => {
   })
 })
 
-describe('variants', () => {
-  it('creates a variant on a product', async () => {
-    const product = await createProduct({ orgId: org1Id, name: 'T-Shirt' })
-
-    const variant = await createVariant({
-      orgId: org1Id,
-      productId: product.id,
-      name: 'Large',
-      attributes: { size: 'L', color: 'Red' },
-    })
-
-    expect(variant.id).toBeDefined()
-    expect(variant.name).toBe('Large')
-    expect(variant.productId).toBe(product.id)
-    expect(variant.orgId).toBe(org1Id)
-    expect(variant.active).toBe(true)
-  })
-
-  it('lists variants for a product', async () => {
-    const product = await createProduct({ orgId: org1Id, name: 'T-Shirt' })
-    await createVariant({ orgId: org1Id, productId: product.id, name: 'S' })
-    await createVariant({ orgId: org1Id, productId: product.id, name: 'M' })
-    await createVariant({ orgId: org1Id, productId: product.id, name: 'L' })
-
-    const variants = await listVariants(product.id)
-
-    expect(variants).toHaveLength(3)
-    expect(variants.map((v) => v.name)).toEqual(['S', 'M', 'L'])
-  })
-
-  it('updates a variant', async () => {
-    const product = await createProduct({ orgId: org1Id, name: 'T-Shirt' })
-    const variant = await createVariant({
-      orgId: org1Id,
-      productId: product.id,
-      name: 'Small',
-    })
-
-    const updated = await updateVariant({
-      id: variant.id,
-      orgId: org1Id,
-      name: 'Extra Small',
-    })
-
-    expect(updated.name).toBe('Extra Small')
-  })
-
-  it('toggles variant active status', async () => {
-    const product = await createProduct({ orgId: org1Id, name: 'T-Shirt' })
-    const variant = await createVariant({
-      orgId: org1Id,
-      productId: product.id,
-      name: 'Limited',
-    })
-    expect(variant.active).toBe(true)
-
-    const deactivated = await updateVariant({
-      id: variant.id,
-      orgId: org1Id,
-      active: false,
-    })
-    expect(deactivated.active).toBe(false)
-  })
-
-  it('deletes a variant', async () => {
-    const product = await createProduct({ orgId: org1Id, name: 'T-Shirt' })
-    const variant = await createVariant({
-      orgId: org1Id,
-      productId: product.id,
-      name: 'Delete Me',
-    })
-
-    await deleteVariant(variant.id, org1Id)
-
-    const variants = await listVariants(product.id)
-    expect(variants).toHaveLength(0)
-  })
-
-  it('does not delete variant from wrong org', async () => {
-    const product = await createProduct({ orgId: org1Id, name: 'T-Shirt' })
-    const variant = await createVariant({
-      orgId: org1Id,
-      productId: product.id,
-      name: 'Safe',
-    })
-
-    await deleteVariant(variant.id, org2Id)
-
-    const variants = await listVariants(product.id)
-    expect(variants).toHaveLength(1)
-  })
-})
-
 describe('pricing breakpoints', () => {
   it('creates a breakpoint on a product', async () => {
     const product = await createProduct({ orgId: org1Id, name: 'Widget' })
@@ -288,26 +191,6 @@ describe('pricing breakpoints', () => {
     expect(bp.minQuantity).toBe(1)
     expect(bp.unitPrice).toBe(10)
     expect(bp.productId).toBe(product.id)
-    expect(bp.variantId).toBeNull()
-  })
-
-  it('creates variant-specific breakpoints', async () => {
-    const product = await createProduct({ orgId: org1Id, name: 'Widget' })
-    const variant = await createVariant({
-      orgId: org1Id,
-      productId: product.id,
-      name: 'Premium',
-    })
-
-    const bp = await createBreakpoint({
-      orgId: org1Id,
-      productId: product.id,
-      variantId: variant.id,
-      minQuantity: 1,
-      unitPrice: 15,
-    })
-
-    expect(bp.variantId).toBe(variant.id)
   })
 
   it('lists breakpoints sorted by minQuantity', async () => {
@@ -372,42 +255,75 @@ describe('pricing breakpoints', () => {
     expect(bps).toHaveLength(0)
   })
 
-  it('filters breakpoints by variant', async () => {
-    const product = await createProduct({ orgId: org1Id, name: 'Widget' })
-    const v1 = await createVariant({
+  it('creates a product with breakpoints', async () => {
+    const product = await createProduct({
       orgId: org1Id,
-      productId: product.id,
-      name: 'Basic',
-    })
-    const v2 = await createVariant({
-      orgId: org1Id,
-      productId: product.id,
-      name: 'Premium',
+      name: 'Widget',
+      pricingBreakpoints: [
+        { minQuantity: 1, unitPrice: 10 },
+        { minQuantity: 10, unitPrice: 8 },
+      ],
     })
 
-    await createBreakpoint({
+    const bps = await listBreakpoints(product.id)
+    expect(bps).toHaveLength(2)
+    expect(bps[0].minQuantity).toBe(1)
+    expect(bps[0].unitPrice).toBe(10)
+    expect(bps[1].minQuantity).toBe(10)
+    expect(bps[1].unitPrice).toBe(8)
+  })
+
+  it('creates a product with step pricing mode', async () => {
+    const product = await createProduct({
       orgId: org1Id,
-      productId: product.id,
-      variantId: v1.id,
-      minQuantity: 1,
-      unitPrice: 10,
-    })
-    await createBreakpoint({
-      orgId: org1Id,
-      productId: product.id,
-      variantId: v2.id,
-      minQuantity: 1,
-      unitPrice: 20,
-    })
-    await createBreakpoint({
-      orgId: org1Id,
-      productId: product.id,
-      minQuantity: 1,
-      unitPrice: 5,
+      name: 'Step Priced',
+      pricingMode: 'step',
     })
 
-    const v1bps = await listBreakpoints(product.id, v1.id)
-    expect(v1bps).toHaveLength(1)
-    expect(v1bps[0].unitPrice).toBe(10)
+    expect(product.pricingMode).toBe('step')
+  })
+
+  it('updates a product and syncs breakpoints', async () => {
+    const product = await createProduct({
+      orgId: org1Id,
+      name: 'Widget',
+      pricingBreakpoints: [
+        { minQuantity: 1, unitPrice: 10 },
+        { minQuantity: 10, unitPrice: 8 },
+      ],
+    })
+
+    const updated = await updateProduct({
+      id: product.id,
+      orgId: org1Id,
+      pricingMode: 'step',
+      pricingBreakpoints: [{ minQuantity: 1, unitPrice: 12 }],
+    })
+
+    expect(updated.pricingMode).toBe('step')
+
+    const bps = await listBreakpoints(product.id)
+    expect(bps).toHaveLength(1)
+    expect(bps[0].unitPrice).toBe(12)
+  })
+
+  it('clears breakpoints when empty array is provided', async () => {
+    const product = await createProduct({
+      orgId: org1Id,
+      name: 'Widget',
+      pricingBreakpoints: [
+        { minQuantity: 1, unitPrice: 10 },
+        { minQuantity: 10, unitPrice: 8 },
+      ],
+    })
+
+    await updateProduct({
+      id: product.id,
+      orgId: org1Id,
+      pricingBreakpoints: [],
+    })
+
+    const bps = await listBreakpoints(product.id)
+    expect(bps).toHaveLength(0)
   })
 })

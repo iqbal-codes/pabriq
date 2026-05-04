@@ -94,13 +94,21 @@ export type Messages = {
     title: string
     createOrder: string
     editOrder: string
+    viewOrder: string
     customer: string
     status: string
     total: string
+    orderNumber: string
+    validUntil: string
     notes: string
+    lineItemNotes: string
+    lineItemName: string
     quantity: string
     unitPrice: string
+    totalLabel: string
     lineItems: string
+    summary: string
+    attachments: string
     save: string
     saving: string
     orderCreated: string
@@ -126,6 +134,8 @@ export type Messages = {
     editProduct: string
     orders: string
     createOrder: string
+    viewOrder: string
+    editOrder: string
   }
   status: {
     draft: string
@@ -135,6 +145,7 @@ export type Messages = {
     in_delivery: string
     completed: string
     cancelled: string
+    rejected: string
     active: string
     inactive: string
     paid: string
@@ -233,14 +244,6 @@ export type Messages = {
     noPhoto: string
     viewProduct: string
     editProduct: string
-    variant: {
-      title: string
-      name: string
-      namePlaceholder: string
-      add: string
-      noVariants: string
-      attributes: string
-    }
     pricing: {
       title: string
       breakpoints: string
@@ -249,6 +252,9 @@ export type Messages = {
       addBreakpoint: string
       noBreakpoints: string
       preview: string
+      interpolate: string
+      interpolateOn: string
+      interpolateOff: string
     }
   }
   address: {
@@ -405,13 +411,21 @@ const en: Messages = {
     title: 'Orders',
     createOrder: 'Create Order',
     editOrder: 'Edit Order',
+    viewOrder: 'View Order',
     customer: 'Customer',
     status: 'Status',
     total: 'Total',
+    orderNumber: 'Order Number',
+    validUntil: 'Valid Until',
     notes: 'Notes',
+    lineItemNotes: 'Item Notes',
+    lineItemName: 'Item Name',
     quantity: 'Quantity',
     unitPrice: 'Unit Price',
+    totalLabel: 'Total',
     lineItems: 'Line Items',
+    summary: 'Order Summary',
+    attachments: 'Attachments',
     save: 'Save',
     saving: 'Saving...',
     orderCreated: 'Order created successfully',
@@ -437,6 +451,8 @@ const en: Messages = {
     editProduct: 'Edit Product',
     orders: 'Orders',
     createOrder: 'Create Order',
+    viewOrder: 'View Order',
+    editOrder: 'Edit Order',
   },
   status: {
     draft: 'Draft',
@@ -446,6 +462,7 @@ const en: Messages = {
     in_delivery: 'In Delivery',
     completed: 'Completed',
     cancelled: 'Cancelled',
+    rejected: 'Rejected',
     active: 'Active',
     inactive: 'Inactive',
     paid: 'Paid',
@@ -544,14 +561,6 @@ const en: Messages = {
     noPhoto: 'No photo',
     viewProduct: 'View Product',
     editProduct: 'Edit Product',
-    variant: {
-      title: 'Variants',
-      name: 'Variant Name',
-      namePlaceholder: 'e.g. Large',
-      add: 'Add Variant',
-      noVariants: 'No variants configured',
-      attributes: 'Attributes',
-    },
     pricing: {
       title: 'Pricing',
       breakpoints: 'Pricing Breakpoints',
@@ -560,6 +569,10 @@ const en: Messages = {
       addBreakpoint: 'Add Breakpoint',
       noBreakpoints: 'No pricing breakpoints configured',
       preview: 'Pricing Preview',
+      interpolate: 'Interpolate pricing',
+      interpolateOn:
+        'Prices are calculated using linear interpolation between breakpoints',
+      interpolateOff: 'Prices use the nearest lower breakpoint (step pricing)',
     },
   },
   address: {

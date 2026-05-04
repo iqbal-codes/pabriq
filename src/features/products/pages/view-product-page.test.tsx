@@ -19,9 +19,16 @@ vi.mock('#/features/products/hooks', () => ({
       active: true,
       orgId: 'org-1',
       primaryImageAssetId: null,
+      pricingMode: 'interpolated',
       createdAt: new Date(),
       updatedAt: new Date(),
     },
+  }),
+  useProductBreakpoints: () => ({
+    data: [
+      { minQuantity: 1, unitPrice: 50000 },
+      { minQuantity: 10, unitPrice: 45000 },
+    ],
   }),
 }))
 
@@ -73,6 +80,14 @@ function TestWrapper() {
             maxQuantity: 'Max. Quantity',
             active: 'Active',
             inactive: 'Inactive',
+            pricing: {
+              interpolate: 'Interpolate pricing',
+              interpolateOn: 'Prices use linear interpolation',
+              interpolateOff: 'Prices use step pricing',
+              breakpoints: 'Pricing Breakpoints',
+              unitPrice: 'Unit Price',
+              minQuantity: 'Min. Quantity',
+            },
           },
           common: {
             back: 'Back',

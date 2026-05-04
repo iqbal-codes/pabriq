@@ -12,13 +12,11 @@ import type { ShippingAddress } from '#/features/address/model'
 export type PortalLineItem = {
   id: string
   productName: string
-  variantName: string | null
   quantity: number
   unitPrice: number
   total: number
   name: string | null
   notes: string | null
-  assetId: string | null
   createdAt: Date
 }
 
@@ -26,7 +24,7 @@ export type PortalOrder = {
   id: string
   orgId: string
   status: string
-  quoteNumber: string | null
+  orderNumber: string | null
   total: number
   shippingAddress: ShippingAddress | null
   customerId: string
@@ -105,13 +103,11 @@ export async function getPortalOrder(
   const items: PortalLineItem[] = itemRows.map((item) => ({
     id: item.id,
     productName: productMap.get(item.productId) ?? 'Unknown',
-    variantName: item.variantId ?? null,
     quantity: item.quantity,
     unitPrice: item.unitPrice,
     total: item.total,
     name: item.name ?? null,
     notes: item.notes ?? null,
-    assetId: item.assetId ?? null,
     createdAt: item.createdAt,
   }))
 
@@ -121,7 +117,7 @@ export async function getPortalOrder(
       id: order.id,
       orgId: order.orgId,
       status: order.status,
-      quoteNumber: order.quoteNumber,
+      orderNumber: order.orderNumber,
       total: order.total,
       shippingAddress: order.shippingAddress as ShippingAddress | null,
       customerId: order.customerId,

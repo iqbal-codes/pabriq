@@ -12,7 +12,6 @@ export interface QuotationPdfData {
   }
   lineItems: Array<{
     productName: string
-    variantName: string | null
     quantity: number
     unitPrice: number
     total: number

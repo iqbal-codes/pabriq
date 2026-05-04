@@ -237,9 +237,6 @@ export function QuotationDocument({ data }: QuotationDocumentProps) {
           <Text style={[styles.tableHeaderCell, styles.colProduct]}>
             Produk
           </Text>
-          <Text style={[styles.tableHeaderCell, styles.colVariant]}>
-            Varian
-          </Text>
           <Text style={[styles.tableHeaderCell, styles.colQty]}>Qty</Text>
           <Text style={[styles.tableHeaderCell, styles.colUnit]}>
             Harga Satuan
@@ -249,14 +246,11 @@ export function QuotationDocument({ data }: QuotationDocumentProps) {
 
         {data.lineItems.map((item) => (
           <View
-            key={`${item.productName}-${item.variantName ?? 'none'}-${item.quantity}-${item.unitPrice}`}
+            key={`${item.productName}-${item.quantity}-${item.unitPrice}`}
             style={styles.tableRow}
           >
             <Text style={[styles.tableCell, styles.colProduct]}>
               {item.productName}
-            </Text>
-            <Text style={[styles.tableCell, styles.colVariant]}>
-              {item.variantName ?? '-'}
             </Text>
             <Text style={[styles.tableCell, styles.colQty]}>
               {item.quantity}

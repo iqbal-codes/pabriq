@@ -12,6 +12,8 @@ export const queryKeys = {
     }) => [...queryKeys.products.lists(), filters] as const,
     details: () => [...queryKeys.products.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.products.details(), id] as const,
+    breakpoints: (productId: string) =>
+      [...queryKeys.products.all, 'breakpoints', productId] as const,
   },
   customers: {
     all: ['customers'] as const,
@@ -24,8 +26,14 @@ export const queryKeys = {
   orders: {
     all: ['orders'] as const,
     lists: () => [...queryKeys.orders.all, 'list'] as const,
-    list: (filters: { orgId: string }) =>
-      [...queryKeys.orders.lists(), filters] as const,
+    list: (filters: {
+      orgId: string
+      search?: string
+      status?: string
+      sort?: { field: string; direction: 'asc' | 'desc' } | null
+      page?: number
+      perPage?: number
+    }) => [...queryKeys.orders.lists(), filters] as const,
     details: () => [...queryKeys.orders.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.orders.details(), id] as const,
   },

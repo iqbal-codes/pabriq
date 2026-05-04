@@ -4,16 +4,15 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { queryKeys } from '#/lib/query-keys'
-import type { CreateDraftOrderInput, UpdateLineItemInput } from './model'
+import type { CreateDraftOrderInput, ListOrdersParams } from './model'
 import {
   createDraftOrderFn,
   getOrderFn,
   listOrdersFn,
-  removeLineItemFn,
-  updateLineItemFn,
+  updateDraftOrderFn,
 } from './server'
 
-export function useOrdersList(filters: { orgId: string }) {
+export function useOrdersList(filters: ListOrdersParams) {
   return useSuspenseQuery({
     queryKey: queryKeys.orders.list(filters),
     queryFn: () => listOrdersFn({ data: filters }),
@@ -39,27 +38,28 @@ export function useCreateDraftOrder() {
   })
 }
 
-export function useUpdateLineItem() {
+export function useUpdateDraftOrder() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (
-      input: { itemId: string; orgId: string } & UpdateLineItemInput,
-    ) => updateLineItemFn({ data: input }),
-    onSuccess: () => {
+    mutationFn: (input: {
+      id: string
+      orgId: string
+      customerId: string
+      notes?: string
+      lineItems: Array<{
+        id?: string
+        productId: string
+        quantity: number
+        unitPrice?: number
+        name?: string
+        notes?: string
+      }>
+    }) => updateDraftOrderFn({ data: input }),
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.orders.lists() })
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders.details() })
-    },
-  })
-}
-
-export function useRemoveLineItem() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (input: { itemId: string; orgId: string }) =>
-      removeLineItemFn({ data: input }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders.lists() })
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders.details() })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.orders.detail(variables.id),
+      })
     },
   })
 }

@@ -14,6 +14,11 @@ function TestWrapper() {
       productionDays: 1,
       minQuantity: 1,
       maxQuantity: undefined as number | undefined,
+      pricingMode: 'interpolated' as 'interpolated' | 'step',
+      pricingBreakpoints: [] as Array<{
+        minQuantity: number
+        unitPrice: number
+      }>,
     },
   })
 
@@ -34,6 +39,16 @@ function TestWrapper() {
           minQuantity: 'Min. Quantity',
           maxQuantity: 'Max. Quantity',
           pricingAndOrders: 'Pricing & Orders',
+          pricing: {
+            breakpoints: 'Pricing Breakpoints',
+            addBreakpoint: 'Add Breakpoint',
+            noBreakpoints: 'No pricing breakpoints configured',
+            unitPrice: 'Unit Price',
+            minQuantity: 'Min. Quantity',
+            interpolate: 'Interpolate pricing',
+            interpolateOn: 'Prices use linear interpolation',
+            interpolateOff: 'Prices use step pricing',
+          },
         },
       }}
     >

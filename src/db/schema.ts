@@ -157,21 +157,7 @@ export const products = pgTable('products', {
   productionDays: integer('production_days').notNull().default(1),
   minQuantity: integer('min_quantity').notNull().default(1),
   maxQuantity: integer('max_quantity'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-})
-
-export const productVariants = pgTable('product_variants', {
-  id: text('id').primaryKey(),
-  orgId: text('org_id')
-    .notNull()
-    .references(() => organization.id, { onDelete: 'cascade' }),
-  productId: text('product_id')
-    .notNull()
-    .references(() => products.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  attributes: json('attributes').$type<Record<string, string>>().default({}),
-  active: boolean('active').notNull().default(true),
+  pricingMode: text('pricing_mode').notNull().default('interpolated'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
@@ -184,9 +170,6 @@ export const pricingBreakpoints = pgTable('pricing_breakpoints', {
   productId: text('product_id')
     .notNull()
     .references(() => products.id, { onDelete: 'cascade' }),
-  variantId: text('variant_id').references(() => productVariants.id, {
-    onDelete: 'set null',
-  }),
   minQuantity: integer('min_quantity').notNull().default(1),
   unitPrice: real('unit_price').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -219,7 +202,7 @@ export const orders = pgTable('orders', {
   status: text('status').notNull().default('draft'),
   notes: text('notes'),
   total: real('total').notNull().default(0),
-  quoteNumber: text('quote_number'),
+  orderNumber: text('order_number'),
   orderToken: text('order_token').unique(),
   validUntil: timestamp('valid_until'),
   shippingAddress: json('shipping_address'),
@@ -238,17 +221,11 @@ export const orderLineItems = pgTable('order_line_items', {
   productId: text('product_id')
     .notNull()
     .references(() => products.id, { onDelete: 'restrict' }),
-  variantId: text('variant_id').references(() => productVariants.id, {
-    onDelete: 'set null',
-  }),
   quantity: integer('quantity').notNull().default(1),
   unitPrice: real('unit_price').notNull(),
   total: real('total').notNull(),
   name: text('name'),
   notes: text('notes'),
-  assetId: text('asset_id').references(() => assets.id, {
-    onDelete: 'set null',
-  }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
@@ -326,13 +303,11 @@ export const productionTasks = pgTable('production_tasks', {
   context: json('context')
     .$type<{
       productName: string
-      variantName: string | null
       customerName: string
       requirements: string | null
     }>()
     .default({
       productName: '',
-      variantName: null,
       customerName: '',
       requirements: null,
     }),

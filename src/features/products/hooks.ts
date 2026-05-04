@@ -14,6 +14,7 @@ import type {
 import {
   createProductFn,
   getProductFn,
+  listBreakpointsFn,
   listProductsFn,
   updateProductFn,
 } from './server'
@@ -41,6 +42,13 @@ export function useCreateProduct() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() })
     },
+  })
+}
+
+export function useProductBreakpoints(productId: string) {
+  return useQuery({
+    queryKey: queryKeys.products.breakpoints(productId),
+    queryFn: () => listBreakpointsFn({ data: { productId } }),
   })
 }
 

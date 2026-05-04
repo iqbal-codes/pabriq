@@ -2,10 +2,10 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import type {
   CreateDraftOrderInput,
-  CreateDraftOrderResult,
   GetOrderResult,
+  ListOrdersParams,
   ListOrdersResult,
-  UpdateLineItemInput,
+  UpdateDraftOrderInput,
 } from './model'
 
 async function resolveOrgId(): Promise<string> {
@@ -28,10 +28,10 @@ async function resolveOrgId(): Promise<string> {
 }
 
 export const listOrdersFn = createServerFn({ method: 'GET' })
-  .inputValidator((data: { orgId: string }) => data)
+  .inputValidator((data: ListOrdersParams) => data)
   .handler(async ({ data }): Promise<ListOrdersResult> => {
     const { listOrders } = await import('./model')
-    return listOrders(data.orgId)
+    return listOrders(data)
   })
 
 export const getOrderFn = createServerFn({ method: 'GET' })
@@ -45,7 +45,7 @@ export const createDraftOrderFn = createServerFn({ method: 'POST' })
   .inputValidator(
     (input: Omit<CreateDraftOrderInput, 'orgId'> & { orgId: string }) => input,
   )
-  .handler(async ({ data }): Promise<CreateDraftOrderResult> => {
+  .handler(async ({ data }) => {
     const orgId = await resolveOrgId()
     const { createDraftOrder } = await import('./model')
     return createDraftOrder(orgId, {
@@ -55,23 +55,28 @@ export const createDraftOrderFn = createServerFn({ method: 'POST' })
     })
   })
 
-export const updateLineItemFn = createServerFn({ method: 'POST' })
+export const updateDraftOrderFn = createServerFn({ method: 'POST' })
   .inputValidator(
-    (input: { itemId: string; orgId: string } & UpdateLineItemInput) => input,
+    (
+      input: { id: string; orgId: string } & Omit<
+        UpdateDraftOrderInput,
+        'orgId'
+      >,
+    ) => input,
   )
   .handler(async ({ data }) => {
     const orgId = await resolveOrgId()
-    const { updateLineItem } = await import('./model')
-    return updateLineItem(data.itemId, orgId, {
-      quantity: data.quantity,
-      unitPrice: data.unitPrice,
+    const { updateDraftOrder } = await import('./model')
+    return updateDraftOrder(data.id, orgId, {
+      customerId: data.customerId,
+      notes: data.notes,
+      lineItems: data.lineItems,
     })
   })
 
-export const removeLineItemFn = createServerFn({ method: 'POST' })
-  .inputValidator((input: { itemId: string; orgId: string }) => input)
+export const getAssetsForLineItemFn = createServerFn({ method: 'GET' })
+  .inputValidator((input: { lineItemId: string; orgId: string }) => input)
   .handler(async ({ data }) => {
-    const orgId = await resolveOrgId()
-    const { removeLineItem } = await import('./model')
-    return removeLineItem(data.itemId, orgId)
+    const { getAssetsForLineItem } = await import('./model')
+    return getAssetsForLineItem(data.lineItemId, data.orgId)
   })
