@@ -90,6 +90,11 @@ export type Messages = {
     cancelFilters: string
     activeFilters: string
   }
+  combobox: {
+    searchPlaceholder: string
+    noResults: string
+    loading: string
+  }
   orders: {
     title: string
     createOrder: string
@@ -630,6 +635,11 @@ const en: Messages = {
     statusCancelled: 'Cancelled',
     required: 'This field is required',
     areaRequired: 'Please select an area',
+  },
+  combobox: {
+    searchPlaceholder: 'Search...',
+    noResults: 'No results found',
+    loading: 'Searching...',
   },
 }
 

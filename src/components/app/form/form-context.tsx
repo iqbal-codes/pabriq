@@ -3,6 +3,7 @@ import { FormError } from './form-error'
 import {
   AddressField,
   AreaSearchField,
+  ComboboxField,
   EmailField,
   FileUploadField,
   NumberField,
@@ -21,6 +22,7 @@ export const { fieldContext, formContext, useFieldContext, useFormContext } =
 export const { useAppForm, withForm } = createFormHook({
   fieldComponents: {
     AddressField,
+    ComboboxField,
     TextField,
     EmailField,
     PasswordField,

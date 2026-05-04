@@ -1,11 +1,14 @@
 export type { AddressValue } from './address-field'
 export { AddressField } from './address-field'
 export { AreaSearchField } from './area-search-field'
+export { ComboboxField } from './combobox-field'
 export { EmailField } from './email-field'
 export type { FileUploadFieldProps } from './file-upload-field'
 export { FileUploadField } from './file-upload-field'
 export type {
   AreaSearchFieldProps,
+  ComboboxFieldProps,
+  ComboboxOption,
   FieldProps,
   NumberFieldCallbacks,
   SelectOption,

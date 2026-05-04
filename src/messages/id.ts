@@ -319,6 +319,11 @@ const id: Messages = {
     required: 'Kolom ini wajib diisi',
     areaRequired: 'Silakan pilih area',
   },
+  combobox: {
+    searchPlaceholder: 'Cari...',
+    noResults: 'Hasil tidak ditemukan',
+    loading: 'Mencari...',
+  },
 }
 
 export default id
