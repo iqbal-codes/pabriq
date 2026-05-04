@@ -1,29 +1,30 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import { and, desc, eq, ilike, type SQL, sql } from 'drizzle-orm'
+import {
+  type AnyColumn,
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  type SQL,
+  sql,
+} from 'drizzle-orm'
 import {
   pricingBreakpoints as breakpointsTable,
   products as productsTable,
 } from '#/db/schema'
-import type { CreateProductInput, Product, UpdateProductInput } from './model'
+import type {
+  CreateProductInput,
+  ListProductsParams,
+  ListProductsResult,
+  Product,
+  UpdateProductInput,
+} from './model'
 
-export type ProductRow = {
-  id: string
-  name: string
-  description: string | null
-  active: boolean
-  primaryImageAssetId: string | null
-  basePrice: number
-  productionDays: number
-  minQuantity: number
-  maxQuantity: number | null
-  minDiscountPrice: number | null
-}
+export type { ListProductsResult, ProductRow } from './model'
 
-export type ListProductsResult = {
-  rows: ProductRow[]
-  totalRows: number
-}
+export type MutationResult = { ok: true } | { ok: false; error: string }
 
 async function resolveOrgId(): Promise<string> {
   const { auth } = await import('#/lib/auth')
@@ -33,19 +34,34 @@ async function resolveOrgId(): Promise<string> {
 
   const { db } = await import('#/db/index')
   const { member } = await import('#/db/schema')
-  const { eq } = await import('drizzle-orm')
+  const { eq: eq2 } = await import('drizzle-orm')
   const memberships = await db
     .select({ orgId: member.organizationId })
     .from(member)
-    .where(eq(member.userId, session.user.id))
+    .where(eq2(member.userId, session.user.id))
     .limit(1)
 
   if (memberships.length === 0) throw new Error('No organization')
   return memberships[0].orgId
 }
 
+const ALLOWED_SORT_FIELDS = new Set([
+  'name',
+  'basePrice',
+  'productionDays',
+  'createdAt',
+  'active',
+])
+const SORT_COLUMNS: Record<string, AnyColumn> = {
+  name: productsTable.name,
+  basePrice: productsTable.basePrice,
+  productionDays: productsTable.productionDays,
+  createdAt: productsTable.createdAt,
+  active: productsTable.active,
+}
+
 export const listProductsFn = createServerFn({ method: 'GET' })
-  .inputValidator((data: { orgId: string; search?: string }) => data)
+  .inputValidator((data: ListProductsParams) => data)
   .handler(async ({ data }): Promise<ListProductsResult> => {
     const { db } = await import('#/db/index')
     const conditions: SQL[] = [eq(productsTable.orgId, data.orgId)]
@@ -55,7 +71,23 @@ export const listProductsFn = createServerFn({ method: 'GET' })
       conditions.push(ilike(productsTable.name, pattern) as SQL)
     }
 
+    if (data.status === 'active') {
+      conditions.push(eq(productsTable.active, true))
+    } else if (data.status === 'inactive') {
+      conditions.push(eq(productsTable.active, false))
+    }
+
     const allConditions = and(...conditions) as SQL
+
+    const orderBy =
+      data.sort && ALLOWED_SORT_FIELDS.has(data.sort.field)
+        ? data.sort.direction === 'asc'
+          ? asc(SORT_COLUMNS[data.sort.field])
+          : desc(SORT_COLUMNS[data.sort.field])
+        : desc(productsTable.createdAt)
+
+    const page = data.page ?? 1
+    const perPage = data.perPage ?? 25
 
     const rows = await db
       .select({
@@ -76,7 +108,9 @@ export const listProductsFn = createServerFn({ method: 'GET' })
       })
       .from(productsTable)
       .where(allConditions)
-      .orderBy(desc(productsTable.createdAt))
+      .orderBy(orderBy)
+      .limit(perPage)
+      .offset((page - 1) * perPage)
 
     const countResult = await db
       .select({ count: sql<number>`count(*)` })
@@ -99,16 +133,32 @@ export const getProductFn = createServerFn({ method: 'GET' })
 
 export const createProductFn = createServerFn({ method: 'POST' })
   .inputValidator((input: Omit<CreateProductInput, 'orgId'>) => input)
-  .handler(async ({ data }): Promise<Product> => {
+  .handler(async ({ data }): Promise<MutationResult> => {
     const orgId = await resolveOrgId()
-    const { createProduct } = await import('./model')
-    return createProduct({ ...data, orgId })
+    try {
+      const { createProduct } = await import('./model')
+      await createProduct({ ...data, orgId })
+      return { ok: true }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
   })
 
 export const updateProductFn = createServerFn({ method: 'POST' })
-  .inputValidator((input: UpdateProductInput) => input)
-  .handler(async ({ data }): Promise<Product> => {
+  .inputValidator((input: Omit<UpdateProductInput, 'orgId'>) => input)
+  .handler(async ({ data }): Promise<MutationResult> => {
     const orgId = await resolveOrgId()
-    const { updateProduct } = await import('./model')
-    return updateProduct({ ...data, orgId })
+    try {
+      const { updateProduct } = await import('./model')
+      await updateProduct({ ...data, orgId })
+      return { ok: true }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
   })

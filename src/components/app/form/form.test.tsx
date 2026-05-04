@@ -77,7 +77,7 @@ describe('Form components', () => {
   it('NumberField stores raw digits and displays Indonesian formatting', async () => {
     function TestForm() {
       const form = useAppForm({
-        defaultValues: { price: '' },
+        defaultValues: { price: 0 },
       })
 
       return (

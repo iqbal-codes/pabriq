@@ -1,0 +1,61 @@
+import { render, screen } from '@testing-library/react'
+import { IntlProvider } from 'use-intl'
+import { describe, expect, it } from 'vitest'
+import { useAppForm } from '#/components/app/form'
+import { ProductFormFields } from './product-form-fields'
+
+function TestWrapper() {
+  const form = useAppForm({
+    defaultValues: {
+      name: '',
+      description: '',
+      productionNotes: '',
+      basePrice: 0,
+      productionDays: 1,
+      minQuantity: 1,
+      maxQuantity: undefined as number | undefined,
+    },
+  })
+
+  return (
+    <IntlProvider
+      locale="en"
+      messages={{
+        products: {
+          productInfo: 'Product Information',
+          name: 'Product Name',
+          namePlaceholder: 'e.g. Custom T-Shirt',
+          description: 'Description',
+          descriptionPlaceholder: 'Describe the product',
+          productionNotes: 'Production Notes',
+          productionNotesPlaceholder: 'Special instructions',
+          basePrice: 'Base Price',
+          productionDays: 'Production Days',
+          minQuantity: 'Min. Quantity',
+          maxQuantity: 'Max. Quantity',
+          pricingAndOrders: 'Pricing & Orders',
+        },
+      }}
+    >
+      <ProductFormFields form={form} />
+    </IntlProvider>
+  )
+}
+
+describe('ProductFormFields', () => {
+  it('renders all section titles', () => {
+    render(<TestWrapper />)
+    expect(screen.getByText('Product Information')).toBeDefined()
+    expect(screen.getByText('Pricing & Orders')).toBeDefined()
+  })
+
+  it('renders all field labels', () => {
+    render(<TestWrapper />)
+    expect(screen.getByText('Product Name')).toBeDefined()
+    expect(screen.getByText('Description')).toBeDefined()
+    expect(screen.getByText('Base Price')).toBeDefined()
+    expect(screen.getByText('Production Days')).toBeDefined()
+    expect(screen.getByText('Min. Quantity')).toBeDefined()
+    expect(screen.getByText('Max. Quantity')).toBeDefined()
+  })
+})

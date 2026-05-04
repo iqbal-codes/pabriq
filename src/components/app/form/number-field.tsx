@@ -13,11 +13,10 @@ export function NumberField({
   onValueChange,
   onBlurValue,
 }: FieldProps & NumberFieldCallbacks) {
-  const field = useFieldContext<string>()
+  const field = useFieldContext<number>()
   const error = firstError(field.state.meta.errors)
-  const displayValue = field.state.value
-    ? formatNumber(field.state.value)
-    : field.state.value
+  const displayValue =
+    field.state.value != null ? formatNumber(field.state.value) : ''
 
   return (
     <div data-invalid={!!error}>
@@ -40,7 +39,8 @@ export function NumberField({
           value={displayValue}
           onChange={(e) => {
             const raw = stripNumberFormatting(e.target.value)
-            field.handleChange(raw)
+            const numValue = raw ? Number(raw) : 0
+            field.handleChange(numValue)
             onValueChange?.({
               rawValue: raw,
               displayValue: e.target.value,

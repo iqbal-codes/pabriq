@@ -56,6 +56,33 @@ export type ProductListOptions = {
   sortDir?: 'asc' | 'desc'
 }
 
+export type ListProductsParams = {
+  orgId: string
+  search?: string
+  status?: string
+  sort?: { field: string; direction: 'asc' | 'desc' } | null
+  page?: number
+  perPage?: number
+}
+
+export type ListProductsResult = {
+  rows: ProductRow[]
+  totalRows: number
+}
+
+export type ProductRow = {
+  id: string
+  name: string
+  description: string | null
+  active: boolean
+  primaryImageAssetId: string | null
+  basePrice: number
+  productionDays: number
+  minQuantity: number
+  maxQuantity: number | null
+  minDiscountPrice: number | null
+}
+
 function generateId(): string {
   return crypto.randomUUID()
 }

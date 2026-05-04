@@ -12,16 +12,16 @@ export type FieldProps = {
 
 export type SelectOption = { value: string; label: string }
 
-export type NumberFieldCallbacks = {
+export type NumberFieldCallbacks<TValue = number> = {
   onValueChange?: (params: {
     rawValue: string
     displayValue: string
-    field: ReturnType<typeof useFieldContext<string>>
+    field: ReturnType<typeof useFieldContext<TValue>>
   }) => void
   onBlurValue?: (params: {
     rawValue: string
     displayValue: string
-    field: ReturnType<typeof useFieldContext<string>>
+    field: ReturnType<typeof useFieldContext<TValue>>
   }) => void
 }
 

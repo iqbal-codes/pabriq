@@ -206,6 +206,8 @@ export type Messages = {
     title: string
     createTitle: string
     editTitle: string
+    productInfo: string
+    pricingAndOrders: string
     name: string
     namePlaceholder: string
     description: string
@@ -515,6 +517,8 @@ const en: Messages = {
     title: 'Products',
     createTitle: 'New Product',
     editTitle: 'Edit Product',
+    productInfo: 'Product Information',
+    pricingAndOrders: 'Pricing & Orders',
     name: 'Product Name',
     namePlaceholder: 'e.g. Custom T-Shirt',
     description: 'Description',

@@ -22,7 +22,9 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as OrgProductsNewRouteImport } from './routes/_org/products/new'
 import { Route as OrgOrdersNewRouteImport } from './routes/_org/orders/new'
 import { Route as OrgCustomersNewRouteImport } from './routes/_org/customers/new'
+import { Route as OrgProductsIdIndexRouteImport } from './routes/_org/products/$id/index'
 import { Route as OrgCustomersIdIndexRouteImport } from './routes/_org/customers/$id/index'
+import { Route as OrgProductsIdEditRouteImport } from './routes/_org/products/$id/edit'
 import { Route as OrgCustomersIdEditRouteImport } from './routes/_org/customers/$id/edit'
 import { Route as ApiDocumentsOrdersIdQuotationRouteImport } from './routes/api/documents/orders/$id/quotation'
 
@@ -90,9 +92,19 @@ const OrgCustomersNewRoute = OrgCustomersNewRouteImport.update({
   path: '/customers/new',
   getParentRoute: () => OrgRoute,
 } as any)
+const OrgProductsIdIndexRoute = OrgProductsIdIndexRouteImport.update({
+  id: '/products/$id/',
+  path: '/products/$id/',
+  getParentRoute: () => OrgRoute,
+} as any)
 const OrgCustomersIdIndexRoute = OrgCustomersIdIndexRouteImport.update({
   id: '/customers/$id/',
   path: '/customers/$id/',
+  getParentRoute: () => OrgRoute,
+} as any)
+const OrgProductsIdEditRoute = OrgProductsIdEditRouteImport.update({
+  id: '/products/$id/edit',
+  path: '/products/$id/edit',
   getParentRoute: () => OrgRoute,
 } as any)
 const OrgCustomersIdEditRoute = OrgCustomersIdEditRouteImport.update({
@@ -121,7 +133,9 @@ export interface FileRoutesByFullPath {
   '/orders/': typeof OrgOrdersIndexRoute
   '/products/': typeof OrgProductsIndexRoute
   '/customers/$id/edit': typeof OrgCustomersIdEditRoute
+  '/products/$id/edit': typeof OrgProductsIdEditRoute
   '/customers/$id/': typeof OrgCustomersIdIndexRoute
+  '/products/$id/': typeof OrgProductsIdIndexRoute
   '/api/documents/orders/$id/quotation': typeof ApiDocumentsOrdersIdQuotationRoute
 }
 export interface FileRoutesByTo {
@@ -138,7 +152,9 @@ export interface FileRoutesByTo {
   '/orders': typeof OrgOrdersIndexRoute
   '/products': typeof OrgProductsIndexRoute
   '/customers/$id/edit': typeof OrgCustomersIdEditRoute
+  '/products/$id/edit': typeof OrgProductsIdEditRoute
   '/customers/$id': typeof OrgCustomersIdIndexRoute
+  '/products/$id': typeof OrgProductsIdIndexRoute
   '/api/documents/orders/$id/quotation': typeof ApiDocumentsOrdersIdQuotationRoute
 }
 export interface FileRoutesById {
@@ -157,7 +173,9 @@ export interface FileRoutesById {
   '/_org/orders/': typeof OrgOrdersIndexRoute
   '/_org/products/': typeof OrgProductsIndexRoute
   '/_org/customers/$id/edit': typeof OrgCustomersIdEditRoute
+  '/_org/products/$id/edit': typeof OrgProductsIdEditRoute
   '/_org/customers/$id/': typeof OrgCustomersIdIndexRoute
+  '/_org/products/$id/': typeof OrgProductsIdIndexRoute
   '/api/documents/orders/$id/quotation': typeof ApiDocumentsOrdersIdQuotationRoute
 }
 export interface FileRouteTypes {
@@ -176,7 +194,9 @@ export interface FileRouteTypes {
     | '/orders/'
     | '/products/'
     | '/customers/$id/edit'
+    | '/products/$id/edit'
     | '/customers/$id/'
+    | '/products/$id/'
     | '/api/documents/orders/$id/quotation'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -193,7 +213,9 @@ export interface FileRouteTypes {
     | '/orders'
     | '/products'
     | '/customers/$id/edit'
+    | '/products/$id/edit'
     | '/customers/$id'
+    | '/products/$id'
     | '/api/documents/orders/$id/quotation'
   id:
     | '__root__'
@@ -211,7 +233,9 @@ export interface FileRouteTypes {
     | '/_org/orders/'
     | '/_org/products/'
     | '/_org/customers/$id/edit'
+    | '/_org/products/$id/edit'
     | '/_org/customers/$id/'
+    | '/_org/products/$id/'
     | '/api/documents/orders/$id/quotation'
   fileRoutesById: FileRoutesById
 }
@@ -318,11 +342,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgCustomersNewRouteImport
       parentRoute: typeof OrgRoute
     }
+    '/_org/products/$id/': {
+      id: '/_org/products/$id/'
+      path: '/products/$id'
+      fullPath: '/products/$id/'
+      preLoaderRoute: typeof OrgProductsIdIndexRouteImport
+      parentRoute: typeof OrgRoute
+    }
     '/_org/customers/$id/': {
       id: '/_org/customers/$id/'
       path: '/customers/$id'
       fullPath: '/customers/$id/'
       preLoaderRoute: typeof OrgCustomersIdIndexRouteImport
+      parentRoute: typeof OrgRoute
+    }
+    '/_org/products/$id/edit': {
+      id: '/_org/products/$id/edit'
+      path: '/products/$id/edit'
+      fullPath: '/products/$id/edit'
+      preLoaderRoute: typeof OrgProductsIdEditRouteImport
       parentRoute: typeof OrgRoute
     }
     '/_org/customers/$id/edit': {
@@ -351,7 +389,9 @@ interface OrgRouteChildren {
   OrgOrdersIndexRoute: typeof OrgOrdersIndexRoute
   OrgProductsIndexRoute: typeof OrgProductsIndexRoute
   OrgCustomersIdEditRoute: typeof OrgCustomersIdEditRoute
+  OrgProductsIdEditRoute: typeof OrgProductsIdEditRoute
   OrgCustomersIdIndexRoute: typeof OrgCustomersIdIndexRoute
+  OrgProductsIdIndexRoute: typeof OrgProductsIdIndexRoute
 }
 
 const OrgRouteChildren: OrgRouteChildren = {
@@ -363,7 +403,9 @@ const OrgRouteChildren: OrgRouteChildren = {
   OrgOrdersIndexRoute: OrgOrdersIndexRoute,
   OrgProductsIndexRoute: OrgProductsIndexRoute,
   OrgCustomersIdEditRoute: OrgCustomersIdEditRoute,
+  OrgProductsIdEditRoute: OrgProductsIdEditRoute,
   OrgCustomersIdIndexRoute: OrgCustomersIdIndexRoute,
+  OrgProductsIdIndexRoute: OrgProductsIdIndexRoute,
 }
 
 const OrgRouteWithChildren = OrgRoute._addFileChildren(OrgRouteChildren)

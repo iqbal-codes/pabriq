@@ -210,6 +210,8 @@ const id: Messages = {
     title: 'Produk',
     createTitle: 'Produk Baru',
     editTitle: 'Edit Produk',
+    productInfo: 'Informasi Produk',
+    pricingAndOrders: 'Harga & Pesanan',
     name: 'Nama Produk',
     namePlaceholder: 'Cth. Kaos Kustom',
     description: 'Deskripsi',

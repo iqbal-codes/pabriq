@@ -16,7 +16,7 @@ export function PhoneField({
   autoComplete = 'tel',
   onValueChange,
   onBlurValue,
-}: FieldProps & NumberFieldCallbacks) {
+}: FieldProps & NumberFieldCallbacks<string>) {
   const field = useFieldContext<string>()
   const error = firstError(field.state.meta.errors)
   const displayValue = field.state.value

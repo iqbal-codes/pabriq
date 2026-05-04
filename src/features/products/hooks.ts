@@ -6,7 +6,11 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { queryKeys } from '#/lib/query-keys'
-import type { CreateProductInput, UpdateProductInput } from './model'
+import type {
+  CreateProductInput,
+  ListProductsParams,
+  UpdateProductInput,
+} from './model'
 import {
   createProductFn,
   getProductFn,
@@ -14,7 +18,7 @@ import {
   updateProductFn,
 } from './server'
 
-export function useProductsList(filters: { orgId: string; search?: string }) {
+export function useProductsList(filters: ListProductsParams) {
   return useQuery({
     queryKey: queryKeys.products.list(filters),
     queryFn: () => listProductsFn({ data: filters }),
@@ -43,7 +47,8 @@ export function useCreateProduct() {
 export function useUpdateProduct() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: UpdateProductInput) => updateProductFn({ data: input }),
+    mutationFn: (input: Omit<UpdateProductInput, 'orgId'>) =>
+      updateProductFn({ data: input }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() })
       queryClient.invalidateQueries({

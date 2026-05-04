@@ -65,7 +65,7 @@ describe('useCreateProduct', () => {
   })
 
   it('calls createProductFn with input data', async () => {
-    mockCreateProductFn.mockResolvedValue({ id: 'new-id' })
+    mockCreateProductFn.mockResolvedValue({ ok: true })
 
     const { result } = renderHook(() => useCreateProduct(), {
       wrapper: createWrapper(),
@@ -78,5 +78,17 @@ describe('useCreateProduct', () => {
         data: { name: 'Test' },
       })
     })
+  })
+
+  it('resolves with { ok: true } on success', async () => {
+    mockCreateProductFn.mockResolvedValue({ ok: true })
+
+    const { result } = renderHook(() => useCreateProduct(), {
+      wrapper: createWrapper(),
+    })
+
+    const promise = result.current.mutateAsync({ name: 'Test' } as never)
+
+    await expect(promise).resolves.toEqual({ ok: true })
   })
 })
