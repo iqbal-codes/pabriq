@@ -34,7 +34,7 @@ export function CreateCustomerDialog({
           name: value.name,
           phone: value.phone || undefined,
         })
-        if ('id' in result) {
+        if ('id' in result && typeof result.id === 'string') {
           onSelect(result.id)
           setOpen(false)
           form.reset()

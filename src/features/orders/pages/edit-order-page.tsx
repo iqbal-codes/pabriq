@@ -36,6 +36,7 @@ export function EditOrderPage() {
           unitPrice: String(li.unitPrice),
           name: li.name ?? '',
           notes: li.notes ?? '',
+          attachments: [] as string[],
         })) ?? [],
     },
     onSubmit: async ({ value }) => {
