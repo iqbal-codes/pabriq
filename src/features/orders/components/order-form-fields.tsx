@@ -1,18 +1,16 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Plus, UserPlus } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
-import {
-  createR2UploaderAdapter,
-  getAcceptedMimeTypes,
-  getMaxBytes,
-  PhotoGridUpload,
-} from '#/components/app/asset-upload'
 import { FormGrid, FormSection, withForm } from '#/components/app/form'
+import { formatNumber } from '#/components/app/form/form-utils'
 import { Button } from '#/components/ui/button'
-import type { UploadItem } from '#/features/assets/upload-machine'
-import { getAssetsForLineItemFn } from '#/features/orders/server'
+import { Skeleton } from '#/components/ui/skeleton'
+import type { CustomerRow } from '#/features/customers/model'
+import { useProductPrice } from '#/features/products/hooks'
+import type { ProductRow } from '#/features/products/model'
+import { CreateCustomerDialog } from './create-customer-dialog'
+import { ProductSelectDialog } from './product-select-dialog'
 
 export type OrderFormValues = {
   customerId: string
@@ -24,33 +22,44 @@ export type OrderFormValues = {
     unitPrice: string
     name: string
     notes: string
+    attachments: string[]
   }>
 }
 
 export const defaultOrderValues = (): OrderFormValues => ({
   customerId: '',
   notes: '',
-  lineItems: [
-    {
-      id: crypto.randomUUID(),
-      productId: '',
-      quantity: '1',
-      unitPrice: '',
-      name: '',
-      notes: '',
-    },
-  ],
+  lineItems: [],
 })
 
 export const OrderFormFields = withForm({
   defaultValues: defaultOrderValues(),
   props: {} as {
-    customers: Array<{ id: string; name: string; active: boolean }>
-    products: Array<{ id: string; name: string; active: boolean }>
+    customers: CustomerRow[]
+    products: ProductRow[]
     orgId: string
   },
-  render: function Render({ form, customers, products, orgId }) {
+  render: function Render({ form, customers, products, orgId: _orgId }) {
     const t = useTranslations('orders')
+
+    function handleAddProduct(product: ProductRow, unitPrice: string) {
+      form.setFieldValue('lineItems', [
+        ...form.state.values.lineItems,
+        {
+          id: crypto.randomUUID(),
+          productId: product.id,
+          quantity: String(product.minQuantity),
+          unitPrice,
+          name: product.name,
+          notes: '',
+          attachments: [],
+        },
+      ])
+    }
+
+    function handleCustomerSelect(customerId: string) {
+      form.setFieldValue('customerId', customerId)
+    }
 
     return (
       <form.Subscribe
@@ -65,21 +74,66 @@ export const OrderFormFields = withForm({
               (customer) =>
                 customer.active || customer.id === selectedCustomerId,
             )
-            .map((customer) => ({ value: customer.id, label: customer.name }))
+            .map((customer) => ({
+              value: customer.id,
+              label: customer.name,
+              ...customer,
+            }))
+
+          const total = lineItems.reduce((sum, item) => {
+            const qty = parseInt(item.quantity, 10) || 0
+            const price = parseFloat(item.unitPrice) || 0
+            return sum + qty * price
+          }, 0)
 
           return (
             <>
               <FormSection title={t('summary')}>
-                <FormGrid>
-                  <form.AppField name="customerId">
-                    {(field) => (
-                      <field.SelectField
-                        label={t('customer')}
-                        placeholder={t('customer')}
-                        options={customerOptions}
-                      />
-                    )}
-                  </form.AppField>
+                <FormGrid columns={1}>
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <form.AppField name="customerId">
+                        {(field) => (
+                          <field.ComboboxField
+                            label={t('customer')}
+                            placeholder={t('customer')}
+                            options={customerOptions}
+                            itemRender={(option) => {
+                              const customer = option as unknown as CustomerRow
+                              return (
+                                <div className="flex flex-row items-center gap-2">
+                                  <AssetImage
+                                    assetId={customer.photoAssetId}
+                                    assetKind="image"
+                                    className="rounded-full"
+                                  />
+                                  <div className="flex flex-col">
+                                    <span>{customer.name}</span>
+                                    <span className="text-muted-foreground">
+                                      {customer.phone}
+                                    </span>
+                                  </div>
+                                </div>
+                              )
+                            }}
+                          />
+                        )}
+                      </form.AppField>
+                    </div>
+                    <CreateCustomerDialog
+                      onSelect={handleCustomerSelect}
+                      trigger={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="shrink-0"
+                        >
+                          <UserPlus className="size-4" />
+                        </Button>
+                      }
+                    />
+                  </div>
                   <form.AppField name="notes">
                     {(field) => <field.TextareaField label={t('notes')} />}
                   </form.AppField>
@@ -88,30 +142,22 @@ export const OrderFormFields = withForm({
 
               <FormSection title={t('lineItems')}>
                 <form.AppField name="lineItems" mode="array">
-                  {(lineItemsField) => (
+                  {() => (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="text-sm font-medium">
                           {t('lineItems')}
                         </h3>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            lineItemsField.pushValue({
-                              id: crypto.randomUUID(),
-                              productId: '',
-                              quantity: '1',
-                              unitPrice: '',
-                              name: '',
-                              notes: '',
-                            })
+                        <ProductSelectDialog
+                          products={products}
+                          onSelect={handleAddProduct}
+                          trigger={
+                            <Button type="button" variant="outline" size="sm">
+                              <Plus className="mr-1 size-4" />
+                              {t('addItem')}
+                            </Button>
                           }
-                        >
-                          <Plus className="mr-1 h-4 w-4" />
-                          {t('addLineItem')}
-                        </Button>
+                        />
                       </div>
 
                       {lineItems.map((item, i) => (
@@ -121,9 +167,21 @@ export const OrderFormFields = withForm({
                           index={i}
                           item={item}
                           products={products}
-                          orgId={orgId}
                         />
                       ))}
+
+                      {lineItems.length > 0 && (
+                        <div className="flex justify-end border-t pt-4">
+                          <div className="text-right">
+                            <span className="text-sm text-muted-foreground">
+                              {t('orderTotal')}
+                            </span>
+                            <p className="text-xl font-semibold">
+                              Rp {formatNumber(total)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </form.AppField>
@@ -143,119 +201,99 @@ function LineItemRow({
   index,
   item,
   products,
-  orgId,
 }: {
   form: FormType
   index: number
   item: OrderFormValues['lineItems'][number]
-  products: Array<{ id: string; name: string; active: boolean }>
-  orgId: string
+  products: ProductRow[]
 }) {
   const t = useTranslations('orders')
-  const pt = useTranslations('products')
-  const queryClient = useQueryClient()
-  const [uploadItems, setUploadItems] = useState<UploadItem[]>([])
 
-  const productOptions = useMemo(
-    () =>
-      products
-        .filter((p) => p.active || p.id === item.productId)
-        .map((p) => ({ value: p.id, label: p.name })),
+  const product = useMemo(
+    () => products.find((p) => p.id === item.productId),
     [products, item.productId],
   )
 
-  const adapter = useMemo(
-    () =>
-      createR2UploaderAdapter({
-        ownerType: 'order',
-        ownerId: item.id,
-        usage: 'attachment',
-      }),
-    [item.id],
+  const [committedQty, setCommittedQty] = useState(
+    () => parseInt(item.quantity, 10) || 0,
   )
 
-  const { data: assets } = useQuery({
-    queryKey: ['order-attachments', item.id],
-    queryFn: () =>
-      getAssetsForLineItemFn({ data: { lineItemId: item.id, orgId } }),
-  })
+  const { isFetching, data: priceResult } = useProductPrice(
+    item.productId,
+    committedQty,
+    product?.pricingMode,
+  )
+
+  useEffect(() => {
+    if (!priceResult?.ok) return
+    const newPrice = String(priceResult.unitPrice)
+    if (newPrice !== item.unitPrice) {
+      form.setFieldValue(`lineItems[${index}].unitPrice`, newPrice)
+    }
+  }, [priceResult, form, index, item.unitPrice])
+
+  const displayPrice = item.unitPrice
+    ? `Rp ${formatNumber(item.unitPrice)}`
+    : 'Rp 0'
+  const qtyNum = parseInt(item.quantity, 10) || 0
+  const priceNum = parseFloat(item.unitPrice) || 0
+  const subtotal = qtyNum * priceNum
 
   return (
     <div className="space-y-3 rounded-lg border p-4">
-      <div className="flex items-start gap-3">
-        <div className="flex-1">
-          <form.AppField name={`lineItems[${index}].productId`}>
+      <div className="flex gap-3">
+        <FormGrid columns={3}>
+          <form.AppField name={`lineItems[${index}].name`}>
             {(field) => (
-              <field.SelectField
-                label={pt('title')}
-                placeholder={pt('title')}
-                options={productOptions}
+              <field.TextField
+                label={t('lineItemName')}
+                placeholder={product?.name ?? ''}
               />
             )}
           </form.AppField>
-        </div>
-        <div className="w-24">
-          <form.AppField name={`lineItems[${index}].quantity`}>
-            {(field) => <field.NumberField label={t('quantity')} />}
+          <form.AppField
+            name={`lineItems[${index}].quantity`}
+            validators={{
+              onChange: ({ value }) => {
+                const p = products.find((pr) => pr.id === item.productId)
+                if (p?.maxQuantity != null && Number(value) > p.maxQuantity) {
+                  return t('maxQtyError', { max: p.maxQuantity })
+                }
+                return undefined
+              },
+            }}
+          >
+            {(field) => (
+              <field.NumberField
+                label={t('quantity')}
+                onBlurValue={({ rawValue }) => {
+                  const qty = rawValue ? Number(rawValue) : 0
+                  setCommittedQty(qty)
+                }}
+              />
+            )}
           </form.AppField>
-        </div>
-        <div className="w-28">
-          <form.AppField name={`lineItems[${index}].unitPrice`}>
-            {(field) => <field.NumberField label={t('unitPrice')} />}
-          </form.AppField>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={() =>
-            form.setFieldValue(
-              'lineItems',
-              form.state.values.lineItems.filter((_, idx) => idx !== index),
-            )
-          }
-          disabled={form.state.values.lineItems.length <= 1}
-          className="mt-5"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <form.AppField name={`lineItems[${index}].name`}>
-          {(field) => <field.TextField label={t('lineItemName')} />}
-        </form.AppField>
-        <form.AppField name={`lineItems[${index}].notes`}>
-          {(field) => <field.TextareaField label={t('lineItemNotes')} />}
-        </form.AppField>
-      </div>
-
-      <div className="space-y-2">
-        <div className="text-sm font-medium">{t('attachments')}</div>
-        {assets?.map((asset) => (
-          <div key={asset.id} className="flex items-center gap-2">
-            <AssetImage
-              assetId={asset.id}
-              assetKind={asset.mimeType.startsWith('image/') ? 'image' : 'file'}
-              className="size-12 rounded object-cover"
-            />
-            <span className="text-sm">{asset.originalFilename}</span>
+          <div className="flex flex-col flex-1 mt-1">
+            <span className="text-sm font-medium">{t('unitPrice')}</span>
+            {isFetching ? (
+              <Skeleton className="mt-1 h-9 w-full" />
+            ) : (
+              <p className="mt-1 rounded-md border bg-muted px-3 py-2 text-sm h-9">
+                {displayPrice}
+              </p>
+            )}
           </div>
-        ))}
-        <PhotoGridUpload
-          items={uploadItems}
-          onItemsChange={setUploadItems}
-          config={{ ownerType: 'order', ownerId: item.id, usage: 'attachment' }}
-          adapter={adapter}
-          acceptedMimeTypes={getAcceptedMimeTypes('attachment')}
-          maxBytes={getMaxBytes('attachment')}
-          onUploadComplete={() => {
-            setUploadItems([])
-            void queryClient.invalidateQueries({
-              queryKey: ['order-attachments', item.id],
-            })
-          }}
-        />
+        </FormGrid>
+      </div>
+      <form.AppField name={`lineItems[${index}].notes`}>
+        {(field) => <field.TextareaField label={t('specification')} />}
+      </form.AppField>
+      <form.AppField name={`lineItems[${index}].attachments`}>
+        {(field) => <field.FileUploadField label={t('attachments')} />}
+      </form.AppField>
+
+      <div className="text-right text-sm text-muted-foreground">
+        {t('lineSubtotal')}: Rp {formatNumber(subtotal)}
       </div>
     </div>
   )

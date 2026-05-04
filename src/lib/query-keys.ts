@@ -14,6 +14,8 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.products.details(), id] as const,
     breakpoints: (productId: string) =>
       [...queryKeys.products.all, 'breakpoints', productId] as const,
+    pricing: (productId: string, quantity: number) =>
+      [...queryKeys.products.all, 'pricing', productId, quantity] as const,
   },
   customers: {
     all: ['customers'] as const,

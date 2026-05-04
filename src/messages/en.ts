@@ -124,6 +124,17 @@ export type Messages = {
     noResults: string
     addLineItem: string
     removeLineItem: string
+    createCustomer: string
+    customerNamePlaceholder: string
+    customerPhonePlaceholder: string
+    addItem: string
+    specification: string
+    selectProduct: string
+    orderTotal: string
+    searchProducts: string
+    addToOrder: string
+    lineSubtotal: string
+    maxQtyError: string
   }
   breadcrumb: {
     dashboard: string
@@ -441,6 +452,17 @@ const en: Messages = {
     noResults: 'No orders match your search',
     addLineItem: 'Add Line Item',
     removeLineItem: 'Remove',
+    createCustomer: 'Create Customer',
+    customerNamePlaceholder: 'Enter customer name',
+    customerPhonePlaceholder: 'Enter phone number',
+    addItem: 'Add Item',
+    specification: 'Specification',
+    selectProduct: 'Select Product',
+    orderTotal: 'Order Total',
+    searchProducts: 'Search products...',
+    addToOrder: 'Add',
+    lineSubtotal: 'Subtotal',
+    maxQtyError: 'Max quantity is {max}',
   },
   breadcrumb: {
     dashboard: 'Dashboard',

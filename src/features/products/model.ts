@@ -85,6 +85,7 @@ export type ProductRow = {
   minQuantity: number
   maxQuantity: number | null
   minDiscountPrice: number | null
+  pricingMode: 'step' | 'interpolated'
 }
 
 function generateId(): string {

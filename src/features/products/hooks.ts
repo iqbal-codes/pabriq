@@ -12,6 +12,7 @@ import type {
   UpdateProductInput,
 } from './model'
 import {
+  calculateProductPriceFn,
   createProductFn,
   getProductFn,
   listBreakpointsFn,
@@ -49,6 +50,25 @@ export function useProductBreakpoints(productId: string) {
   return useQuery({
     queryKey: queryKeys.products.breakpoints(productId),
     queryFn: () => listBreakpointsFn({ data: { productId } }),
+  })
+}
+
+type ProductPriceResult =
+  | { ok: true; unitPrice: number; total: number }
+  | { ok: false; error: string }
+
+export function useProductPrice(
+  productId: string,
+  quantity: number,
+  pricingMode?: 'interpolated' | 'step',
+) {
+  return useQuery({
+    queryKey: queryKeys.products.pricing(productId, quantity),
+    queryFn: () =>
+      calculateProductPriceFn({
+        data: { productId, quantity, pricingMode },
+      }) as Promise<ProductPriceResult>,
+    enabled: quantity > 0 && !!productId,
   })
 }
 

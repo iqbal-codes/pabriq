@@ -100,6 +100,7 @@ export const listProductsFn = createServerFn({ method: 'GET' })
         productionDays: productsTable.productionDays,
         minQuantity: productsTable.minQuantity,
         maxQuantity: productsTable.maxQuantity,
+        pricingMode: sql<'interpolated' | 'step'>`${productsTable.pricingMode}`,
         minDiscountPrice: sql<number | null>`(
           SELECT MIN(b.unit_price)
           FROM ${breakpointsTable} b
@@ -167,6 +168,71 @@ export const listBreakpointsFn = createServerFn({ method: 'GET' })
       return rows
     },
   )
+
+export const calculateProductPriceFn = createServerFn({ method: 'GET' })
+  .inputValidator(
+    (input: {
+      productId: string
+      quantity: number
+      pricingMode?: 'interpolated' | 'step'
+    }) => input,
+  )
+  .handler(async ({ data }) => {
+    const { db } = await import('#/db/index')
+    const { pricingBreakpoints, products: productsTable } = await import(
+      '#/db/schema'
+    )
+    const { eq, asc } = await import('drizzle-orm')
+
+    const rows = await db
+      .select({
+        minQuantity: pricingBreakpoints.minQuantity,
+        unitPrice: pricingBreakpoints.unitPrice,
+      })
+      .from(pricingBreakpoints)
+      .where(eq(pricingBreakpoints.productId, data.productId))
+      .orderBy(asc(pricingBreakpoints.minQuantity))
+
+    const [product] = await db
+      .select({
+        basePrice: productsTable.basePrice,
+        minQuantity: productsTable.minQuantity,
+      })
+      .from(productsTable)
+      .where(eq(productsTable.id, data.productId))
+      .limit(1)
+
+    if (!product) {
+      return { ok: false as const, error: 'Product not found' }
+    }
+
+    const hasExplicitAtMinQty = rows.some(
+      (r) => r.minQuantity === product.minQuantity,
+    )
+    if (!hasExplicitAtMinQty) {
+      rows.unshift({
+        minQuantity: product.minQuantity,
+        unitPrice: product.basePrice,
+      })
+    }
+
+    const { calculateUnitPrice } = await import('#/features/pricing/engine')
+    const result = calculateUnitPrice({
+      quantity: data.quantity,
+      breakpoints: rows,
+      mode: data.pricingMode ?? 'interpolated',
+    })
+
+    if ('code' in result) {
+      return { ok: false as const, error: result.message }
+    }
+
+    return {
+      ok: true as const,
+      unitPrice: result.unitPrice.amount,
+      total: result.lineTotal.amount,
+    }
+  })
 
 export const updateProductFn = createServerFn({ method: 'POST' })
   .inputValidator((input: Omit<UpdateProductInput, 'orgId'>) => input)
