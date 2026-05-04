@@ -3,7 +3,7 @@ import { Eye, Pencil, Users } from 'lucide-react'
 import { parseAsInteger, parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { useTranslations } from 'use-intl'
-import { AssetImage } from '#/components/app/asset-image'
+import { AvatarPhoto } from '#/components/app/avatar-photo'
 import type {
   AppColumnDef,
   DataTableFiltersConfig,
@@ -130,10 +130,9 @@ export function CustomersListPage() {
       size: 48,
       enableSorting: false,
       cell: ({ row }) => (
-        <AssetImage
+        <AvatarPhoto
           assetId={row.original.photoAssetId}
-          assetKind="image"
-          className="rounded-full"
+          name={row.original.name}
         />
       ),
     },

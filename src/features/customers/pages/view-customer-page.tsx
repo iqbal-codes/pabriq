@@ -1,5 +1,5 @@
 import { useTranslations } from 'use-intl'
-import { AssetImage } from '#/components/app/asset-image'
+import { AvatarPhoto } from '#/components/app/avatar-photo'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { Badge } from '#/components/ui/badge'
@@ -33,10 +33,10 @@ export function ViewCustomerPage() {
         }}
       />
       <div className="flex items-center gap-4 mb-6">
-        <AssetImage
+        <AvatarPhoto
           assetId={customer.photoAssetId}
-          assetKind="image"
-          className="rounded-full"
+          name={customer.name}
+          className="size-16"
         />
         <div>
           <h1 className="text-2xl font-semibold">{customer.name}</h1>

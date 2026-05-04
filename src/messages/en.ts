@@ -229,6 +229,8 @@ export type Messages = {
     minQuantity: string
     maxQuantity: string
     noPhoto: string
+    viewProduct: string
+    editProduct: string
     variant: {
       title: string
       name: string
@@ -536,6 +538,8 @@ const en: Messages = {
     minQuantity: 'Min. Quantity',
     maxQuantity: 'Max. Quantity',
     noPhoto: 'No photo',
+    viewProduct: 'View Product',
+    editProduct: 'Edit Product',
     variant: {
       title: 'Variants',
       name: 'Variant Name',

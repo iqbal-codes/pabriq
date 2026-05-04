@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Package, X, ZoomIn } from 'lucide-react'
+import { Package, X } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { Button } from '#/components/ui/button'
@@ -83,7 +83,7 @@ export function AssetImage({ assetId, assetKind, className }: AssetImageProps) {
           variant="ghost"
           aria-label={previewLabel}
           className={cn(
-            'group relative inline-flex overflow-hidden bg-transparent p-0 shadow-none transition-transform duration-150 hover:scale-[1.02] hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            'group relative inline-flex h-10 w-10 shrink-0 overflow-hidden bg-transparent p-0 shadow-none transition-transform duration-150 hover:scale-[1.02] hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
             className,
           )}
         >
@@ -109,13 +109,6 @@ export function AssetImage({ assetId, assetKind, className }: AssetImageProps) {
               )}
             />
           )}
-          <span
-            className={cn(
-              'pointer-events-none absolute top-1 right-1 inline-flex rounded-full bg-background/80 p-1 text-foreground shadow-sm backdrop-blur transition-opacity opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-visible:opacity-100',
-            )}
-          >
-            <ZoomIn className="size-3.5" />
-          </span>
         </Button>
       </DialogTrigger>
       <DialogContent

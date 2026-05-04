@@ -233,6 +233,8 @@ const id: Messages = {
     minQuantity: 'Min. Kuantitas',
     maxQuantity: 'Maks. Kuantitas',
     noPhoto: 'Tanpa foto',
+    viewProduct: 'Lihat Produk',
+    editProduct: 'Edit Produk',
     variant: {
       title: 'Varian',
       name: 'Nama Varian',
