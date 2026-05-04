@@ -6,7 +6,6 @@ config({ path: ['.env.local', '.env'] })
 if (!process.env.DATABASE_URL) {
   console.warn(
     '\n  DATABASE_URL not set — drizzle-kit requires a real Postgres instance.\n' +
-      '  The app uses PGlite (embedded Postgres) for local dev automatically.\n' +
       '  Set DATABASE_URL in .env.local to use drizzle-kit.\n',
   )
 }

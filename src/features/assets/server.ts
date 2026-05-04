@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import { assets, assetVariants } from '#/db/schema'
 import {
   buildR2Key,
@@ -352,4 +352,32 @@ export const getAssetSignedUrl = createServerFn({ method: 'GET' })
     const ttl = data.variantKey === 'original' ? 5 * 60 : 15 * 60
 
     return generateSignedDownloadUrl(key, ttl)
+  })
+
+export type AssetMetadata = {
+  id: string
+  originalFilename: string
+  mimeType: string
+  sizeBytes: number
+  assetKind: string
+}
+
+export const getAssetsMetadata = createServerFn({ method: 'GET' })
+  .inputValidator((input: { assetIds: string[] }) => input)
+  .handler(async ({ data }): Promise<AssetMetadata[]> => {
+    const orgId = await resolveOrgId()
+    const { db } = await import('#/db/index')
+
+    const rows = await db
+      .select({
+        id: assets.id,
+        originalFilename: assets.originalFilename,
+        mimeType: assets.mimeType,
+        sizeBytes: assets.sizeBytes,
+        assetKind: assets.assetKind,
+      })
+      .from(assets)
+      .where(and(eq(assets.orgId, orgId), inArray(assets.id, data.assetIds)))
+
+    return rows
   })

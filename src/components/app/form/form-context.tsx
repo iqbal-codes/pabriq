@@ -4,6 +4,7 @@ import {
   AddressField,
   AreaSearchField,
   EmailField,
+  FileUploadField,
   NumberField,
   PasswordField,
   PhoneField,
@@ -29,6 +30,7 @@ export const { useAppForm, withForm } = createFormHook({
     PhoneField,
     AreaSearchField,
     PhotoUploadField,
+    FileUploadField,
   },
   formComponents: {
     SubmitButton,

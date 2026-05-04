@@ -243,7 +243,7 @@ describe('createDraftOrder', () => {
         orgId: org1Id,
         productId: 'prod-5',
         minQuantity: 1,
-        unitPrice: 3,
+        unitPrice: 2,
         createdAt: now,
         updatedAt: now,
       },
