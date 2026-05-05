@@ -10,6 +10,13 @@ import {
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
 
+export type PortalAsset = {
+  id: string
+  originalFilename: string
+  mimeType: string
+  sizeBytes: number
+}
+
 export type PortalLineItem = {
   id: string
   productName: string
@@ -19,6 +26,7 @@ export type PortalLineItem = {
   name: string | null
   notes: string | null
   assetIds: string[]
+  assets: PortalAsset[]
   createdAt: Date
 }
 
@@ -32,6 +40,7 @@ export type PortalOrder = {
   customerId: string | null
   customerName: string | null
   customerPhone: string | null
+  customerIsWni: boolean | null
   lineItems: PortalLineItem[]
   createdAt: Date
   rejectReason?: string | null
@@ -90,6 +99,7 @@ export async function getPortalOrder(
             id: customers.id,
             name: customers.name,
             phone: customers.phone,
+            isWni: customers.isWni,
           })
           .from(customers)
           .where(
@@ -118,7 +128,13 @@ export async function getPortalOrder(
   const assetRows =
     lineItemIds.length > 0
       ? await db
-          .select({ id: assets.id, ownerId: assets.ownerId })
+          .select({
+            id: assets.id,
+            ownerId: assets.ownerId,
+            originalFilename: assets.originalFilename,
+            mimeType: assets.mimeType,
+            sizeBytes: assets.sizeBytes,
+          })
           .from(assets)
           .where(
             and(
@@ -130,11 +146,21 @@ export async function getPortalOrder(
       : []
 
   const assetIdsByLineItem = new Map<string, string[]>()
+  const assetsByLineItem = new Map<string, PortalAsset[]>()
   for (const asset of assetRows) {
     if (!asset.ownerId) continue
-    const existing = assetIdsByLineItem.get(asset.ownerId) ?? []
-    existing.push(asset.id)
-    assetIdsByLineItem.set(asset.ownerId, existing)
+    const idList = assetIdsByLineItem.get(asset.ownerId) ?? []
+    idList.push(asset.id)
+    assetIdsByLineItem.set(asset.ownerId, idList)
+
+    const assetList = assetsByLineItem.get(asset.ownerId) ?? []
+    assetList.push({
+      id: asset.id,
+      originalFilename: asset.originalFilename,
+      mimeType: asset.mimeType,
+      sizeBytes: asset.sizeBytes,
+    })
+    assetsByLineItem.set(asset.ownerId, assetList)
   }
 
   const items: PortalLineItem[] = itemRows.map((item) => ({
@@ -146,6 +172,7 @@ export async function getPortalOrder(
     name: item.name ?? null,
     notes: item.notes ?? null,
     assetIds: assetIdsByLineItem.get(item.id) ?? [],
+    assets: assetsByLineItem.get(item.id) ?? [],
     createdAt: item.createdAt,
   }))
 
@@ -161,6 +188,7 @@ export async function getPortalOrder(
       customerId: order.customerId,
       customerName: customer?.name ?? null,
       customerPhone: customer?.phone ?? null,
+      customerIsWni: customer?.isWni ?? null,
       lineItems: items,
       createdAt: order.createdAt,
       rejectReason: order.rejectReason ?? null,
@@ -324,7 +352,6 @@ export type SavePortalAddressResult =
 export async function savePortalAddress(
   orderId: string,
   addressData: ShippingAddress,
-  isWni: boolean,
 ): Promise<SavePortalAddressResult> {
   const orderRows = await db
     .select({ orgId: orders.orgId, customerId: orders.customerId })
@@ -337,6 +364,16 @@ export async function savePortalAddress(
   }
 
   const { orgId, customerId } = orderRows[0]
+
+  const isWni = customerId
+    ? ((
+        await db
+          .select({ isWni: customers.isWni })
+          .from(customers)
+          .where(and(eq(customers.id, customerId), eq(customers.orgId, orgId)))
+          .limit(1)
+      )[0]?.isWni ?? true)
+    : true
 
   const addressId = crypto.randomUUID()
   await db.insert(addresses).values({

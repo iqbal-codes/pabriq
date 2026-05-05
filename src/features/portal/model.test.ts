@@ -418,15 +418,11 @@ describe('updatePortalLineItem', () => {
 
 describe('savePortalAddress', () => {
   it('saves address and links to customer and order', async () => {
-    const result = await savePortalAddress(
-      order1Id,
-      {
-        areaId: 'area-1',
-        areaName: 'Cibis, Palmerah',
-        streetAddress: 'Jl. Raya Palmerah No. 123',
-      },
-      true,
-    )
+    const result = await savePortalAddress(order1Id, {
+      areaId: 'area-1',
+      areaName: 'Cibis, Palmerah',
+      streetAddress: 'Jl. Raya Palmerah No. 123',
+    })
     expect(result.ok).toBe(true)
     if (result.ok) {
       const addressId = result.addressId

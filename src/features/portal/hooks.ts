@@ -61,7 +61,6 @@ export function useSavePortalAddress() {
       areaId: string
       areaName: string
       streetAddress: string
-      isWni: boolean
     }) => savePortalAddressFn({ data: input }),
   })
 }

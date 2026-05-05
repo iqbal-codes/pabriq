@@ -117,18 +117,13 @@ export const savePortalAddressFn = createServerFn({ method: 'POST' })
       areaId: string
       areaName: string
       streetAddress: string
-      isWni: boolean
     }) => input,
   )
   .handler(async ({ data }) => {
     const { savePortalAddress } = await import('./model')
-    return savePortalAddress(
-      data.orderId,
-      {
-        areaId: data.areaId,
-        areaName: data.areaName,
-        streetAddress: data.streetAddress,
-      },
-      data.isWni,
-    )
+    return savePortalAddress(data.orderId, {
+      areaId: data.areaId,
+      areaName: data.areaName,
+      streetAddress: data.streetAddress,
+    })
   })

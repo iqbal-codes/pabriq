@@ -1,0 +1,104 @@
+import type { UploadItem } from '#/features/assets/upload-machine'
+import {
+  portalFinalizeUploadFn,
+  portalGetUploadUrlFn,
+} from '#/features/portal/server'
+import type { AssetUploadConfig, UploaderAdapter, UploadResult } from './types'
+
+async function computeSha256(data: ArrayBuffer): Promise<string> {
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+function uploadToSignedUrl(
+  uploadUrl: string,
+  data: ArrayBuffer,
+  contentType: string,
+  onProgress?: (pct: number) => void,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+
+    xhr.upload.addEventListener('progress', (event) => {
+      if (!event.lengthComputable || event.total <= 0 || !onProgress) return
+      onProgress(Math.round((event.loaded / event.total) * 100))
+    })
+
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve()
+        return
+      }
+      reject(new Error(`Upload failed with status ${xhr.status}`))
+    })
+
+    xhr.addEventListener('error', () => {
+      reject(new Error('Network upload failed'))
+    })
+
+    xhr.open('PUT', uploadUrl)
+    xhr.setRequestHeader('Content-Type', contentType)
+    xhr.send(data)
+  })
+}
+
+export function createPortalR2UploaderAdapter(
+  config: AssetUploadConfig & { token: string },
+): UploaderAdapter {
+  return {
+    async uploadFile(
+      item: UploadItem,
+      onProgress?: (pct: number) => void,
+    ): Promise<UploadResult> {
+      const arrayBuffer = await item.file.arrayBuffer()
+      onProgress?.(5)
+
+      const checksumSha256 = await computeSha256(arrayBuffer)
+      onProgress?.(10)
+
+      const contentType = item.file.type || 'application/octet-stream'
+
+      const { uploadUrl, storageKey, assetId } = await portalGetUploadUrlFn({
+        data: {
+          token: config.token,
+          fileName: item.file.name,
+          fileType: contentType,
+          fileSize: item.file.size,
+          lineItemId: config.ownerId ?? '',
+        },
+      })
+
+      await uploadToSignedUrl(uploadUrl, arrayBuffer, contentType, (pct) => {
+        onProgress?.(10 + Math.round(pct * 0.7))
+      })
+
+      const result = await portalFinalizeUploadFn({
+        data: {
+          token: config.token,
+          lineItemId: config.ownerId ?? '',
+          assetId,
+          originalFilename: item.file.name,
+          mimeType: contentType,
+          sizeBytes: item.file.size,
+          checksumSha256,
+          storageKey,
+        },
+      })
+
+      return {
+        assetId: result.assetId,
+        variants: result.variants.map((v) => ({
+          variantKey: v.variantKey,
+          storageKey: v.storageKey,
+          mimeType: v.mimeType,
+          sizeBytes: v.sizeBytes,
+        })),
+      }
+    },
+
+    async removeFile(_assetId: string): Promise<void> {
+      // portal does not support file removal
+    },
+  }
+}
