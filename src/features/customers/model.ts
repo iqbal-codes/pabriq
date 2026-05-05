@@ -25,6 +25,7 @@ export type Customer = {
   phone: string | null
   notes: string | null
   active: boolean
+  isWni: boolean
   photoAssetId: string | null
   address: ShippingAddress | null
   createdAt: Date
@@ -37,6 +38,7 @@ export type CustomerInput = {
   phone?: string | null
   notes?: string | null
   active?: boolean
+  isWni?: boolean
   photoAssetId?: string | null
   address?: ShippingAddress | null
 }
@@ -95,13 +97,19 @@ async function persistCustomerAddress(
   orgId: string,
   addressId: string | null,
   address: ShippingAddress | null,
+  isWni: boolean,
 ): Promise<string | null> {
   if (!address) {
     return null
   }
 
   if (addressId) {
-    const updateResult = await updateAddressFn(addressId, address)
+    const updateResult = await updateAddressFn(addressId, {
+      ...address,
+      isWni,
+      areaId: isWni ? address.areaId : undefined,
+      areaName: isWni ? address.areaName : undefined,
+    })
     if (updateResult.ok) {
       return addressId
     }
@@ -109,9 +117,10 @@ async function persistCustomerAddress(
 
   const createResult = await createAddressFn({
     orgId,
-    areaId: address.areaId,
-    areaName: address.areaName,
+    areaId: isWni ? address.areaId : undefined,
+    areaName: isWni ? address.areaName : undefined,
     streetAddress: address.streetAddress,
+    isWni,
   })
 
   if (!createResult.ok) {
@@ -205,7 +214,13 @@ export async function createCustomer(
 
   const db = await getDb()
   const address = normalizeAddress(input.address)
-  const addressId = await persistCustomerAddress(input.orgId, null, address)
+  const isWni = input.isWni ?? true
+  const addressId = await persistCustomerAddress(
+    input.orgId,
+    null,
+    address,
+    isWni,
+  )
 
   await db.insert(customersTable).values({
     id: crypto.randomUUID(),
@@ -215,6 +230,7 @@ export async function createCustomer(
     phone: input.phone?.trim() ?? null,
     notes: input.notes?.trim() ?? null,
     active: input.active ?? true,
+    isWni,
     photoAssetId: input.photoAssetId ?? null,
     addressId,
   })
@@ -242,10 +258,12 @@ export async function updateCustomer(
   }
 
   const address = normalizeAddress(input.address)
+  const isWni = input.isWni ?? true
   const addressId = await persistCustomerAddress(
     orgId,
     existing[0].addressId,
     address,
+    isWni,
   )
 
   await db
@@ -256,6 +274,7 @@ export async function updateCustomer(
       phone: input.phone?.trim() ?? null,
       notes: input.notes?.trim() ?? null,
       active: input.active ?? true,
+      isWni,
       photoAssetId: input.photoAssetId ?? null,
       addressId,
       updatedAt: new Date(),
@@ -289,6 +308,7 @@ export async function getCustomer(
     phone: customer.phone,
     notes: customer.notes,
     active: customer.active,
+    isWni: customer.isWni,
     photoAssetId: customer.photoAssetId,
     address: address
       ? {

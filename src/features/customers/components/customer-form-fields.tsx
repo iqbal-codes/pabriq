@@ -1,5 +1,7 @@
+import { useStore } from '@tanstack/react-form'
 import { useTranslations } from 'use-intl'
 import { FormGrid, FormSection, withForm } from '#/components/app/form'
+import { Switch } from '#/components/ui/switch'
 
 export const CustomerFormFields = withForm({
   defaultValues: {
@@ -8,6 +10,7 @@ export const CustomerFormFields = withForm({
     phone: '',
     notes: '',
     active: true as boolean,
+    isWni: true as boolean,
     photoAssetId: null as string | null,
     address: {
       areaId: '',
@@ -18,6 +21,7 @@ export const CustomerFormFields = withForm({
   render: function Render({ form }) {
     const t = useTranslations('customers')
     const at = useTranslations('address')
+    const isWni = useStore(form.store, (state) => state.values.isWni)
 
     return (
       <>
@@ -42,8 +46,30 @@ export const CustomerFormFields = withForm({
         </FormSection>
         <FormSection title={at('title')}>
           <FormGrid columns={1}>
+            <form.AppField name="isWni">
+              {(field) => (
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <span className="text-sm font-medium">
+                    {field.state.value ? at('isWni') : at('isWna')}
+                  </span>
+                  <Switch
+                    checked={field.state.value}
+                    onCheckedChange={(checked) => {
+                      field.handleChange(checked)
+                      if (!checked) {
+                        form.setFieldValue('address', {
+                          ...form.state.values.address,
+                          areaId: '',
+                          areaName: '',
+                        })
+                      }
+                    }}
+                  />
+                </div>
+              )}
+            </form.AppField>
             <form.AppField name="address">
-              {(field) => <field.AddressField />}
+              {(field) => <field.AddressField showAreaSearch={isWni} />}
             </form.AppField>
           </FormGrid>
         </FormSection>

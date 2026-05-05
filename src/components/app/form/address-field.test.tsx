@@ -104,4 +104,30 @@ describe('AddressField', () => {
     renderWithProviders(<TestFormWithArea />)
     expect(screen.getByText('Jakarta Pusat')).toBeDefined()
   })
+
+  it('hides area picker when disabled', () => {
+    function TestFormWithoutAreaSearch() {
+      const form = useAppForm({
+        defaultValues: {
+          address: {
+            areaId: '',
+            areaName: '',
+            streetAddress: '',
+          } satisfies AddressValue,
+        },
+      })
+
+      return (
+        <form.AppField name="address">
+          {(field) => <field.AddressField showAreaSearch={false} />}
+        </form.AppField>
+      )
+    }
+
+    renderWithProviders(<TestFormWithoutAreaSearch />)
+    expect(screen.queryByText('Search subdistrict...')).toBeNull()
+    expect(
+      screen.getByPlaceholderText('e.g. Jl. Raya Bogor No. 123'),
+    ).toBeDefined()
+  })
 })

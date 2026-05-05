@@ -56,6 +56,7 @@ describe('customerFormSchema', () => {
       phone: '',
       notes: '',
       active: true,
+      isWni: true,
       photoAssetId: null,
       address: {
         areaId: '',

@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from '#/db/index'
 import { addresses, biteshipAreas, organization } from '#/db/schema'
@@ -81,6 +81,36 @@ describe('createAddressFn', () => {
     })
 
     expect(result.ok).toBe(true)
+  })
+
+  it('clears area when updating WNA address', async () => {
+    const addrId = crypto.randomUUID()
+    await db.insert(addresses).values({
+      id: addrId,
+      orgId: org1Id,
+      areaId: 'area-1',
+      areaName: 'Cibis, Palmerah',
+      streetAddress: 'Old Street',
+      isDefault: false,
+    })
+
+    const updateResult = await updateAddressFn(addrId, {
+      isWni: false,
+      streetAddress: 'New Street',
+    })
+
+    expect(updateResult.ok).toBe(true)
+
+    const rows = await db
+      .select({ areaId: addresses.areaId, areaName: addresses.areaName })
+      .from(addresses)
+      .where(eq(addresses.id, addrId))
+      .limit(1)
+
+    expect(rows[0]).toMatchObject({
+      areaId: null,
+      areaName: null,
+    })
   })
 
   it('rejects address without orgId', async () => {

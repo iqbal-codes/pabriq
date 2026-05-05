@@ -24,6 +24,7 @@ export function EditCustomerPage() {
       phone: customer?.phone ?? '',
       notes: customer?.notes ?? '',
       active: customer?.active ?? true,
+      isWni: customer?.isWni ?? true,
       photoAssetId: customer?.photoAssetId ?? null,
       address: customer?.address ?? {
         areaId: '',

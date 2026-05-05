@@ -89,6 +89,7 @@ describe('customer address persistence', () => {
     const customerInput: CustomerInput & { orgId: string } = {
       orgId: org1Id,
       name: 'Acme Corp',
+      isWni: true,
       address: {
         areaId: 'area-1',
         areaName: 'Cibis, Palmerah',
@@ -130,6 +131,47 @@ describe('customer address persistence', () => {
       areaId: 'area-1',
       areaName: 'Cibis, Palmerah',
       streetAddress: 'Jl. Raya Palmerah No. 123',
+    })
+    expect(customer?.isWni).toBe(true)
+  })
+
+  it('saves WNA customer without an area', async () => {
+    const customerInput: CustomerInput & { orgId: string } = {
+      orgId: org1Id,
+      name: 'Foreign Customer',
+      isWni: false,
+      address: {
+        areaId: '',
+        areaName: '',
+        streetAddress: '123 Foreign Street',
+      },
+    }
+
+    await createCustomer(customerInput)
+
+    const customerRows = await db
+      .select({
+        id: customers.id,
+        isWni: customers.isWni,
+        addressId: customers.addressId,
+      })
+      .from(customers)
+      .where(eq(customers.orgId, org1Id))
+      .limit(1)
+
+    expect(customerRows[0]).toMatchObject({
+      isWni: false,
+    })
+
+    const addressRows = await db
+      .select({ areaId: addresses.areaId, areaName: addresses.areaName })
+      .from(addresses)
+      .where(eq(addresses.id, customerRows[0]?.addressId ?? ''))
+      .limit(1)
+
+    expect(addressRows[0]).toMatchObject({
+      areaId: null,
+      areaName: null,
     })
   })
 

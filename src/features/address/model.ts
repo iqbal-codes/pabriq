@@ -73,8 +73,8 @@ export async function createAddressFn(
   await db.insert(addresses).values({
     id: addressId,
     orgId: input.orgId,
-    areaId: input.areaId ?? null,
-    areaName: input.areaName ?? null,
+    areaId: input.isWni === false ? null : (input.areaId ?? null),
+    areaName: input.isWni === false ? null : (input.areaName ?? null),
     streetAddress: input.streetAddress ?? null,
     isDefault: shouldSetDefault,
   })
@@ -98,7 +98,18 @@ export async function updateAddressFn(
   }
 
   const currentAreaId = existing[0].areaId
-  const newAreaId = input.areaId !== undefined ? input.areaId : currentAreaId
+  const newAreaId =
+    input.isWni === false
+      ? null
+      : input.areaId !== undefined
+        ? input.areaId
+        : currentAreaId
+  const newAreaName =
+    input.isWni === false
+      ? null
+      : input.areaName !== undefined
+        ? input.areaName
+        : existing[0].areaName
   const isWni = input.isWni !== undefined ? input.isWni : true
 
   if (isWni !== false && !newAreaId) {
@@ -123,7 +134,7 @@ export async function updateAddressFn(
     .update(addresses)
     .set({
       areaId: newAreaId,
-      areaName: input.areaName ?? existing[0].areaName,
+      areaName: newAreaName,
       streetAddress: input.streetAddress ?? existing[0].streetAddress,
       isDefault: shouldSetDefault,
       updatedAt: new Date(),

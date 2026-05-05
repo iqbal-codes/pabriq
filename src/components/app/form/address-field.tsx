@@ -36,7 +36,8 @@ export function AddressField({
   optional,
   optionalLabel,
   disabled,
-}: FieldProps) {
+  showAreaSearch = true,
+}: FieldProps & { showAreaSearch?: boolean }) {
   const field = useFieldContext<AddressValue>()
   const error = firstError(field.state.meta.errors)
   const t = useTranslations('address')
@@ -103,78 +104,80 @@ export function AddressField({
         </span>
       )}
       <div className="space-y-3 mt-1">
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              className="w-full justify-between font-normal"
-              disabled={disabled}
+        {showAreaSearch && (
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-full justify-between font-normal"
+                disabled={disabled}
+              >
+                {selectedArea ? (
+                  <span className="truncate">{selectedArea.name}</span>
+                ) : (
+                  <span className="text-muted-foreground">
+                    {t('areaSearchPlaceholder')}
+                  </span>
+                )}
+                <XIcon
+                  className="size-4 opacity-50"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleClear()
+                  }}
+                />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="p-0"
+              style={{ width: 'var(--radix-popper-anchor-width)' }}
+              align="start"
             >
-              {selectedArea ? (
-                <span className="truncate">{selectedArea.name}</span>
-              ) : (
-                <span className="text-muted-foreground">
-                  {t('areaSearchPlaceholder')}
-                </span>
-              )}
-              <XIcon
-                className="size-4 opacity-50"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleClear()
-                }}
-              />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="p-0"
-            style={{ width: 'var(--radix-popper-anchor-width)' }}
-            align="start"
-          >
-            <Command shouldFilter={false}>
-              <CommandInput
-                placeholder={t('areaSearchPlaceholder')}
-                className="w-full"
-                value={query}
-                onValueChange={handleSearch}
-              />
-              <CommandList>
-                {isFetching && (
-                  <div className="flex items-center justify-center gap-2 px-3 py-6 text-sm text-muted-foreground">
-                    <Spinner className="size-4" />
-                    <span>{t('searchingAreas')}</span>
-                  </div>
-                )}
-                {!isFetching && !query && (
-                  <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-                    {t('startTypingToSearch')}
-                  </div>
-                )}
-                {!isFetching && query && results.length === 0 && (
-                  <CommandEmpty>{t('noResults')}</CommandEmpty>
-                )}
-                {!isFetching && query && results.length > 0 && (
-                  <CommandGroup>
-                    {results.map((area) => (
-                      <CommandItem
-                        key={area.id}
-                        value={area.id}
-                        onSelect={handleSelect}
-                      >
-                        <div className="flex flex-col">
-                          <span>{area.name}</span>
-                        </div>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                )}
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+              <Command shouldFilter={false}>
+                <CommandInput
+                  placeholder={t('areaSearchPlaceholder')}
+                  className="w-full"
+                  value={query}
+                  onValueChange={handleSearch}
+                />
+                <CommandList>
+                  {isFetching && (
+                    <div className="flex items-center justify-center gap-2 px-3 py-6 text-sm text-muted-foreground">
+                      <Spinner className="size-4" />
+                      <span>{t('searchingAreas')}</span>
+                    </div>
+                  )}
+                  {!isFetching && !query && (
+                    <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+                      {t('startTypingToSearch')}
+                    </div>
+                  )}
+                  {!isFetching && query && results.length === 0 && (
+                    <CommandEmpty>{t('noResults')}</CommandEmpty>
+                  )}
+                  {!isFetching && query && results.length > 0 && (
+                    <CommandGroup>
+                      {results.map((area) => (
+                        <CommandItem
+                          key={area.id}
+                          value={area.id}
+                          onSelect={handleSelect}
+                        >
+                          <div className="flex flex-col">
+                            <span>{area.name}</span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  )}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        )}
 
         <Textarea
           value={value.streetAddress}

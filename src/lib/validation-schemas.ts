@@ -38,6 +38,7 @@ export const customerFormSchema = z.object({
   phone: z.union([z.literal(''), phoneNumberSchema]),
   notes: z.string(),
   active: z.boolean(),
+  isWni: z.boolean(),
   photoAssetId: z.string().nullable(),
   address: z.object({
     areaId: z.string(),

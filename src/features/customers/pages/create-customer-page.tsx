@@ -22,6 +22,7 @@ export function CreateCustomerPage() {
       phone: '',
       notes: '',
       active: true as boolean,
+      isWni: true as boolean,
       photoAssetId: null as string | null,
       address: {
         areaId: '',
