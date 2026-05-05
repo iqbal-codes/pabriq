@@ -46,7 +46,7 @@ export function useUpdateDraftOrder() {
     mutationFn: (input: {
       id: string
       orgId: string
-      customerId: string
+      customerId: string | null
       notes?: string
       lineItems: Array<{
         id?: string

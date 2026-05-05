@@ -13,7 +13,7 @@ import { listBreakpoints } from '#/features/products/model'
 export type Order = {
   id: string
   orgId: string
-  customerId: string
+  customerId: string | null
   status: string
   notes: string | null
   total: number
@@ -53,13 +53,13 @@ export type LineItemInput = {
 }
 
 export type CreateDraftOrderInput = {
-  customerId: string
+  customerId: string | null
   notes?: string
   lineItems: LineItemInput[]
 }
 
 export type UpdateDraftOrderInput = {
-  customerId: string
+  customerId: string | null
   notes?: string
   lineItems: Array<{
     id?: string
@@ -92,7 +92,7 @@ export type GetOrderResult = {
 
 export type OrderRow = {
   id: string
-  customerName: string
+  customerName: string | null
   status: string
   total: number
   orderNumber: string | null
@@ -226,7 +226,7 @@ export async function listOrders(
       createdAt: ordersTable.createdAt,
     })
     .from(ordersTable)
-    .innerJoin(customersTable, eq(ordersTable.customerId, customersTable.id))
+    .leftJoin(customersTable, eq(ordersTable.customerId, customersTable.id))
     .where(allConditions)
     .orderBy(sortDir)
     .limit(perPage)
@@ -235,7 +235,7 @@ export async function listOrders(
   const countResult = await db
     .select({ count: sql<number>`count(*)` })
     .from(ordersTable)
-    .innerJoin(customersTable, eq(ordersTable.customerId, customersTable.id))
+    .leftJoin(customersTable, eq(ordersTable.customerId, customersTable.id))
     .where(allConditions)
 
   return {
@@ -262,23 +262,25 @@ export async function getOrder(
     .where(eq(lineItemsTable.orderId, id))
     .orderBy(lineItemsTable.createdAt)
 
-  const customerRows = await db
-    .select({
-      name: customersTable.name,
-      phone: customersTable.phone,
-      photoAssetId: customersTable.photoAssetId,
-      email: customersTable.email,
-    })
-    .from(customersTable)
-    .where(
-      and(
-        eq(customersTable.id, orderRows[0].customerId),
-        eq(customersTable.orgId, orgId),
-      ),
-    )
-    .limit(1)
-
-  const customer = customerRows[0]
+  const customer = orderRows[0].customerId
+    ? (
+        await db
+          .select({
+            name: customersTable.name,
+            phone: customersTable.phone,
+            photoAssetId: customersTable.photoAssetId,
+            email: customersTable.email,
+          })
+          .from(customersTable)
+          .where(
+            and(
+              eq(customersTable.id, orderRows[0].customerId),
+              eq(customersTable.orgId, orgId),
+            ),
+          )
+          .limit(1)
+      )[0]
+    : null
 
   return {
     order: orderRows[0] as Order,
@@ -318,17 +320,17 @@ export async function createDraftOrder(
   orgId: string,
   input: CreateDraftOrderInput,
 ): Promise<CreateDraftOrderResult> {
-  const customerRows = await db
-    .select({ id: customersTable.id })
-    .from(customersTable)
-    .where(
-      and(
-        eq(customersTable.id, input.customerId),
-        eq(customersTable.orgId, orgId),
-      ),
-    )
-    .limit(1)
-  if (customerRows.length === 0) throw new Error('Customer not found')
+  const customerId = input.customerId?.trim() || null
+  if (customerId) {
+    const customerRows = await db
+      .select({ id: customersTable.id })
+      .from(customersTable)
+      .where(
+        and(eq(customersTable.id, customerId), eq(customersTable.orgId, orgId)),
+      )
+      .limit(1)
+    if (customerRows.length === 0) throw new Error('Customer not found')
+  }
 
   const now = new Date()
   const orderId = generateId()
@@ -374,7 +376,7 @@ export async function createDraftOrder(
   await db.insert(ordersTable).values({
     id: orderId,
     orgId,
-    customerId: input.customerId,
+    customerId,
     status: 'draft',
     notes: input.notes ?? null,
     total: orderTotal,
@@ -392,7 +394,7 @@ export async function createDraftOrder(
     order: {
       id: orderId,
       orgId,
-      customerId: input.customerId,
+      customerId,
       status: 'draft',
       notes: input.notes ?? null,
       total: orderTotal,
@@ -426,17 +428,17 @@ export async function updateDraftOrder(
   if (orderRows[0].status !== 'draft')
     throw new Error('Can only modify draft orders')
 
-  const customerRows = await db
-    .select({ id: customersTable.id })
-    .from(customersTable)
-    .where(
-      and(
-        eq(customersTable.id, input.customerId),
-        eq(customersTable.orgId, orgId),
-      ),
-    )
-    .limit(1)
-  if (customerRows.length === 0) throw new Error('Customer not found')
+  const customerId = input.customerId?.trim() || null
+  if (customerId) {
+    const customerRows = await db
+      .select({ id: customersTable.id })
+      .from(customersTable)
+      .where(
+        and(eq(customersTable.id, customerId), eq(customersTable.orgId, orgId)),
+      )
+      .limit(1)
+    if (customerRows.length === 0) throw new Error('Customer not found')
+  }
 
   // Validate all products
   for (const li of input.lineItems) {
@@ -502,7 +504,7 @@ export async function updateDraftOrder(
   await db
     .update(ordersTable)
     .set({
-      customerId: input.customerId,
+      customerId,
       notes: input.notes ?? null,
       total: orderTotal,
       updatedAt: now,
@@ -516,7 +518,7 @@ export async function updateDraftOrder(
   return {
     order: {
       ...orderRows[0],
-      customerId: input.customerId,
+      customerId,
       notes: input.notes ?? null,
       total: orderTotal,
       updatedAt: now,

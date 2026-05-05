@@ -4,11 +4,16 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { queryKeys } from '#/lib/query-keys'
-import type { UpdatePortalLineItemInput } from './model'
+import type {
+  ConfirmPortalOrderInput,
+  UpdatePortalLineItemInput,
+} from './model'
 import {
   confirmPortalOrderFn,
   generateOrderTokenFn,
   getPortalOrderFn,
+  portalFinalizeUploadFn,
+  portalGetUploadUrlFn,
   savePortalAddressFn,
   updatePortalLineItemFn,
 } from './server'
@@ -23,7 +28,7 @@ export function usePortalOrder(token: string) {
 export function useConfirmPortalOrder() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: { orderId: string }) =>
+    mutationFn: (input: ConfirmPortalOrderInput) =>
       confirmPortalOrderFn({ data: input }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.portal.all })
@@ -58,5 +63,32 @@ export function useSavePortalAddress() {
       streetAddress: string
       isWni: boolean
     }) => savePortalAddressFn({ data: input }),
+  })
+}
+
+export function usePortalGetUploadUrl() {
+  return useMutation({
+    mutationFn: (input: {
+      token: string
+      fileName: string
+      fileType: string
+      fileSize: number
+      lineItemId: string
+    }) => portalGetUploadUrlFn({ data: input }),
+  })
+}
+
+export function usePortalFinalizeUpload() {
+  return useMutation({
+    mutationFn: (input: {
+      token: string
+      lineItemId: string
+      assetId: string
+      originalFilename: string
+      mimeType: string
+      sizeBytes: number
+      checksumSha256?: string
+      storageKey: string
+    }) => portalFinalizeUploadFn({ data: input }),
   })
 }

@@ -2,11 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { assets, assetVariants } from '#/db/schema'
-import {
-  buildR2Key,
-  generateSignedDownloadUrl,
-  generateSignedUploadUrl,
-} from '#/lib/r2'
+import { generateSignedDownloadUrl } from '#/lib/r2'
 import type { AssetKind, OwnerType, Usage, VariantKey } from './model'
 import { IMAGE_MIME_TYPES, USAGE_LIMITS, VIDEO_MIME_TYPES } from './model'
 
@@ -265,44 +261,16 @@ export const getUploadUrl = createServerFn({ method: 'POST' })
       data,
     }): Promise<{ uploadUrl: string; storageKey: string; assetId: string }> => {
       const orgId = await resolveOrgId()
-
-      const limits = USAGE_LIMITS[data.usage]
-      if (data.fileSize > limits.maxBytes) {
-        throw new Error(
-          `File size exceeds ${limits.maxBytes} bytes limit for ${data.usage}`,
-        )
-      }
-
-      const assetKind = getAssetKind(data.fileType)
-      if (!limits.kinds.includes(assetKind)) {
-        throw new Error(`${assetKind} not allowed for ${data.usage}`)
-      }
-
-      const parts = data.fileName.split('.')
-      const ext =
-        parts.length > 1 ? parts[parts.length - 1].toLowerCase() : 'bin'
-
-      const assetId = crypto.randomUUID()
-      const storageKey = buildR2Key(
+      const { buildUploadUrl } = await import('./model')
+      return buildUploadUrl(
         orgId,
         data.ownerType,
         data.ownerId ?? 'draft',
-        assetId,
-        'original',
-        ext,
+        data.fileName,
+        data.fileType,
+        data.fileSize,
+        data.usage,
       )
-
-      const { url } = await generateSignedUploadUrl(
-        storageKey,
-        data.fileType || 'application/octet-stream',
-        900,
-      )
-
-      return {
-        uploadUrl: url,
-        storageKey,
-        assetId,
-      }
     },
   )
 

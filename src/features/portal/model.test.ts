@@ -2,6 +2,9 @@ import { eq, sql } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '#/db/index'
 import {
+  addresses,
+  assets,
+  assetVariants,
   biteshipAreas,
   customers as customersTable,
   orderLineItems,
@@ -22,6 +25,10 @@ const customer1Id = '00000000-0000-0000-0000-000000000002'
 const product1Id = '00000000-0000-0000-0000-000000000003'
 const order1Id = '00000000-0000-0000-0000-000000000004'
 const lineItem1Id = '00000000-0000-0000-0000-000000000005'
+const asset1Id = '00000000-0000-0000-0000-000000000010'
+const guestOrderId = '00000000-0000-0000-0000-000000000011'
+const matchedCustomerId = '00000000-0000-0000-0000-000000000012'
+const createdCustomerId = '00000000-0000-0000-0000-000000000013'
 
 beforeEach(async () => {
   await db.execute(sql`TRUNCATE organization, biteship_areas CASCADE`)
@@ -100,6 +107,32 @@ beforeEach(async () => {
       updatedAt: now,
     },
   ])
+
+  await db.insert(assets).values({
+    id: asset1Id,
+    orgId: org1Id,
+    ownerType: 'order',
+    ownerId: lineItem1Id,
+    usage: 'attachment',
+    assetKind: 'image',
+    originalFilename: 'test.png',
+    mimeType: 'image/png',
+    sizeBytes: 1024,
+    uploadedByUserId: 'system',
+    status: 'active',
+    createdAt: now,
+    updatedAt: now,
+  })
+
+  await db.insert(assetVariants).values({
+    id: crypto.randomUUID(),
+    assetId: asset1Id,
+    variantKey: 'original',
+    storageKey: 'test/key/original.png',
+    mimeType: 'image/png',
+    sizeBytes: 1024,
+    createdAt: now,
+  })
 })
 
 describe('generateOrderToken', () => {
@@ -155,13 +188,27 @@ describe('getPortalOrder', () => {
       expect(result.order.lineItems[0].quantity).toBe(1)
     }
   })
+
+  it('returns line items with assetIds', async () => {
+    await db
+      .update(orderLineItems)
+      .set({ assetId: asset1Id })
+      .where(eq(orderLineItems.id, lineItem1Id))
+
+    const token = await generateOrderToken(order1Id)
+    const result = await getPortalOrder(token)
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.order.lineItems[0].assetIds).toContain(asset1Id)
+    }
+  })
 })
 
 describe('confirmPortalOrder', () => {
   it('transitions draft order to pending', async () => {
     const token = await generateOrderToken(order1Id)
     await getPortalOrder(token)
-    const result = await confirmPortalOrder(order1Id)
+    const result = await confirmPortalOrder({ orderId: order1Id })
     expect(result.ok).toBe(true)
 
     const rows = await db
@@ -173,7 +220,7 @@ describe('confirmPortalOrder', () => {
   })
 
   it('returns notFound for unknown order', async () => {
-    const result = await confirmPortalOrder('unknown-id')
+    const result = await confirmPortalOrder({ orderId: 'unknown-id' })
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.error).toBe('notFound')
   })
@@ -183,9 +230,132 @@ describe('confirmPortalOrder', () => {
       .update(orders)
       .set({ status: 'pending' })
       .where(eq(orders.id, order1Id))
-    const result = await confirmPortalOrder(order1Id)
+    const result = await confirmPortalOrder({ orderId: order1Id })
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.error).toBe('notDraft')
+  })
+
+  it('matches an existing customer by phone and keeps their name', async () => {
+    const now = new Date()
+
+    await db.insert(orders).values({
+      id: guestOrderId,
+      orgId: org1Id,
+      customerId: null,
+      status: 'draft',
+      total: 0,
+      orderNumber: 'ORD-2026-002',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(customersTable).values({
+      id: matchedCustomerId,
+      orgId: org1Id,
+      name: 'Existing Guest',
+      phone: '082233445566',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    const result = await confirmPortalOrder({
+      orderId: guestOrderId,
+      guestName: 'Portal Guest',
+      guestPhone: '0822-3344-5566',
+    })
+
+    expect(result.ok).toBe(true)
+
+    const orderRows = await db
+      .select({ customerId: orders.customerId })
+      .from(orders)
+      .where(eq(orders.id, guestOrderId))
+      .limit(1)
+    expect(orderRows[0]?.customerId).toBe(matchedCustomerId)
+
+    const customerRows = await db
+      .select({ name: customersTable.name })
+      .from(customersTable)
+      .where(eq(customersTable.id, matchedCustomerId))
+      .limit(1)
+    expect(customerRows[0]?.name).toBe('Existing Guest')
+  })
+
+  it('backfills an empty customer name from the portal input', async () => {
+    const now = new Date()
+
+    await db.insert(orders).values({
+      id: '00000000-0000-0000-0000-000000000014',
+      orgId: org1Id,
+      customerId: null,
+      status: 'draft',
+      total: 0,
+      orderNumber: 'ORD-2026-004',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(customersTable).values({
+      id: '00000000-0000-0000-0000-000000000015',
+      orgId: org1Id,
+      name: '',
+      phone: '081100220033',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    const result = await confirmPortalOrder({
+      orderId: '00000000-0000-0000-0000-000000000014',
+      guestName: 'Filled In Name',
+      guestPhone: '0811 0022 0033',
+    })
+
+    expect(result.ok).toBe(true)
+
+    const customerRows = await db
+      .select({ name: customersTable.name })
+      .from(customersTable)
+      .where(eq(customersTable.phone, '081100220033'))
+      .limit(1)
+    expect(customerRows[0]?.name).toBe('Filled In Name')
+  })
+
+  it('creates a customer when no matching phone exists', async () => {
+    const now = new Date()
+
+    await db.insert(orders).values({
+      id: createdCustomerId,
+      orgId: org1Id,
+      customerId: null,
+      status: 'draft',
+      total: 0,
+      orderNumber: 'ORD-2026-003',
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    const result = await confirmPortalOrder({
+      orderId: createdCustomerId,
+      guestName: 'New Portal Guest',
+      guestPhone: '0899 1111 2222',
+    })
+
+    expect(result.ok).toBe(true)
+
+    const orderRows = await db
+      .select({ customerId: orders.customerId })
+      .from(orders)
+      .where(eq(orders.id, createdCustomerId))
+      .limit(1)
+    expect(orderRows[0]?.customerId).toBeTruthy()
+
+    const customerRows = await db
+      .select({ name: customersTable.name, phone: customersTable.phone })
+      .from(customersTable)
+      .where(eq(customersTable.id, orderRows[0]?.customerId ?? ''))
+      .limit(1)
+    expect(customerRows[0]?.name).toBe('New Portal Guest')
+    expect(customerRows[0]?.phone).toBe('0899 1111 2222')
   })
 })
 
@@ -204,6 +374,37 @@ describe('updatePortalLineItem', () => {
       .limit(1)
     expect(rows[0]?.name).toBe('Custom Name')
     expect(rows[0]?.notes).toBe('Custom notes')
+  })
+
+  it('updates assetId', async () => {
+    const result = await updatePortalLineItem(lineItem1Id, {
+      assetId: asset1Id,
+    })
+    expect(result.ok).toBe(true)
+
+    const rows = await db
+      .select({ assetId: orderLineItems.assetId })
+      .from(orderLineItems)
+      .where(eq(orderLineItems.id, lineItem1Id))
+      .limit(1)
+    expect(rows[0]?.assetId).toBe(asset1Id)
+  })
+
+  it('can clear assetId by setting null', async () => {
+    await db
+      .update(orderLineItems)
+      .set({ assetId: asset1Id })
+      .where(eq(orderLineItems.id, lineItem1Id))
+
+    const result = await updatePortalLineItem(lineItem1Id, { assetId: null })
+    expect(result.ok).toBe(true)
+
+    const rows = await db
+      .select({ assetId: orderLineItems.assetId })
+      .from(orderLineItems)
+      .where(eq(orderLineItems.id, lineItem1Id))
+      .limit(1)
+    expect(rows[0]?.assetId).toBeNull()
   })
 
   it('returns notFound for unknown item', async () => {
@@ -244,6 +445,39 @@ describe('savePortalAddress', () => {
         .where(eq(orders.id, order1Id))
         .limit(1)
       expect(orderRows[0]?.shippingAddress).toBeTruthy()
+    }
+  })
+})
+
+describe('getPortalCustomerAddress', () => {
+  it('returns null when customer has no saved address', async () => {
+    const { getPortalCustomerAddress } = await import('./model')
+    const result = await getPortalCustomerAddress(customer1Id, org1Id)
+    expect(result).toBeNull()
+  })
+
+  it('returns saved address for customer', async () => {
+    const addressId = '00000000-0000-0000-0000-000000000020'
+    await db.insert(addresses).values({
+      id: addressId,
+      orgId: org1Id,
+      areaId: 'area-1',
+      areaName: 'Cibis, Palmerah',
+      streetAddress: 'Jl. Sudirman No. 456',
+      isDefault: true,
+    })
+
+    await db
+      .update(customersTable)
+      .set({ addressId })
+      .where(eq(customersTable.id, customer1Id))
+
+    const { getPortalCustomerAddress } = await import('./model')
+    const result = await getPortalCustomerAddress(customer1Id, org1Id)
+    expect(result).not.toBeNull()
+    if (result) {
+      expect(result.areaId).toBe('area-1')
+      expect(result.streetAddress).toBe('Jl. Sudirman No. 456')
     }
   })
 })

@@ -196,9 +196,9 @@ export const orders = pgTable('orders', {
   orgId: text('org_id')
     .notNull()
     .references(() => organization.id, { onDelete: 'cascade' }),
-  customerId: text('customer_id')
-    .notNull()
-    .references(() => customers.id, { onDelete: 'restrict' }),
+  customerId: text('customer_id').references(() => customers.id, {
+    onDelete: 'restrict',
+  }),
   status: text('status').notNull().default('draft'),
   notes: text('notes'),
   total: real('total').notNull().default(0),
@@ -231,6 +231,9 @@ export const orderLineItems = pgTable('order_line_items', {
   total: real('total').notNull(),
   name: text('name'),
   notes: text('notes'),
+  assetId: text('asset_id').references(() => assets.id, {
+    onDelete: 'set null',
+  }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })

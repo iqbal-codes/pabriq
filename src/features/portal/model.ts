@@ -1,7 +1,8 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   addresses,
+  assets,
   customers,
   orderLineItems,
   orders,
@@ -17,6 +18,7 @@ export type PortalLineItem = {
   total: number
   name: string | null
   notes: string | null
+  assetIds: string[]
   createdAt: Date
 }
 
@@ -27,11 +29,18 @@ export type PortalOrder = {
   orderNumber: string | null
   total: number
   shippingAddress: ShippingAddress | null
-  customerId: string
-  customerName: string
+  customerId: string | null
+  customerName: string | null
   customerPhone: string | null
   lineItems: PortalLineItem[]
   createdAt: Date
+  rejectReason?: string | null
+}
+
+export type ConfirmPortalOrderInput = {
+  orderId: string
+  guestName?: string
+  guestPhone?: string
 }
 
 export type PortalOrderResult =
@@ -74,19 +83,24 @@ export async function getPortalOrder(
   }
 
   const order = orderRows[0]
-  const customerRows = await db
-    .select({
-      id: customers.id,
-      name: customers.name,
-      phone: customers.phone,
-    })
-    .from(customers)
-    .where(
-      and(eq(customers.id, order.customerId), eq(customers.orgId, order.orgId)),
-    )
-    .limit(1)
-
-  const customer = customerRows[0]
+  const customer = order.customerId
+    ? (
+        await db
+          .select({
+            id: customers.id,
+            name: customers.name,
+            phone: customers.phone,
+          })
+          .from(customers)
+          .where(
+            and(
+              eq(customers.id, order.customerId),
+              eq(customers.orgId, order.orgId),
+            ),
+          )
+          .limit(1)
+      )[0]
+    : null
 
   const itemRows = await db
     .select()
@@ -100,6 +114,29 @@ export async function getPortalOrder(
 
   const productMap = new Map(productRows.map((p) => [p.id, p.name]))
 
+  const lineItemIds = itemRows.map((item) => item.id)
+  const assetRows =
+    lineItemIds.length > 0
+      ? await db
+          .select({ id: assets.id, ownerId: assets.ownerId })
+          .from(assets)
+          .where(
+            and(
+              eq(assets.ownerType, 'order'),
+              inArray(assets.ownerId, lineItemIds),
+              eq(assets.status, 'active'),
+            ),
+          )
+      : []
+
+  const assetIdsByLineItem = new Map<string, string[]>()
+  for (const asset of assetRows) {
+    if (!asset.ownerId) continue
+    const existing = assetIdsByLineItem.get(asset.ownerId) ?? []
+    existing.push(asset.id)
+    assetIdsByLineItem.set(asset.ownerId, existing)
+  }
+
   const items: PortalLineItem[] = itemRows.map((item) => ({
     id: item.id,
     productName: productMap.get(item.productId) ?? 'Unknown',
@@ -108,6 +145,7 @@ export async function getPortalOrder(
     total: item.total,
     name: item.name ?? null,
     notes: item.notes ?? null,
+    assetIds: assetIdsByLineItem.get(item.id) ?? [],
     createdAt: item.createdAt,
   }))
 
@@ -121,37 +159,126 @@ export async function getPortalOrder(
       total: order.total,
       shippingAddress: order.shippingAddress as ShippingAddress | null,
       customerId: order.customerId,
-      customerName: customer?.name ?? 'Unknown',
+      customerName: customer?.name ?? null,
       customerPhone: customer?.phone ?? null,
       lineItems: items,
       createdAt: order.createdAt,
+      rejectReason: order.rejectReason ?? null,
     },
   }
 }
 
+function normalizePhone(value: string): string {
+  return value.replace(/\D/g, '')
+}
+
+async function findCustomerByPhone(
+  database: Pick<typeof db, 'select'>,
+  orgId: string,
+  phone: string,
+) {
+  const rows = await database
+    .select({
+      id: customers.id,
+      name: customers.name,
+      phone: customers.phone,
+    })
+    .from(customers)
+    .where(eq(customers.orgId, orgId))
+
+  const targetPhone = normalizePhone(phone)
+  return (
+    rows.find((row) => normalizePhone(row.phone ?? '') === targetPhone) ?? null
+  )
+}
+
 export async function confirmPortalOrder(
-  orderId: string,
+  input: ConfirmPortalOrderInput,
 ): Promise<PortalConfirmResult> {
-  const orderRows = await db
-    .select({ status: orders.status })
-    .from(orders)
-    .where(eq(orders.id, orderId))
-    .limit(1)
+  try {
+    const now = new Date()
 
-  if (orderRows.length === 0) {
-    return { ok: false, error: 'notFound' }
+    await db.transaction(async (tx) => {
+      const orderRows = await tx
+        .select({
+          id: orders.id,
+          orgId: orders.orgId,
+          status: orders.status,
+          customerId: orders.customerId,
+        })
+        .from(orders)
+        .where(eq(orders.id, input.orderId))
+        .limit(1)
+
+      if (orderRows.length === 0) {
+        throw new Error('notFound')
+      }
+
+      const order = orderRows[0]
+      if (order.status !== 'draft') {
+        throw new Error('notDraft')
+      }
+
+      let customerId = order.customerId
+
+      if (!customerId) {
+        const guestName = input.guestName?.trim() ?? ''
+        const guestPhone = input.guestPhone?.trim() ?? ''
+
+        if (!guestName || !guestPhone) {
+          throw new Error('guestInfoRequired')
+        }
+
+        const matchedCustomer = await findCustomerByPhone(
+          tx,
+          order.orgId,
+          guestPhone,
+        )
+
+        if (matchedCustomer) {
+          customerId = matchedCustomer.id
+          if (!matchedCustomer.name.trim()) {
+            await tx
+              .update(customers)
+              .set({ name: guestName, updatedAt: now })
+              .where(
+                and(
+                  eq(customers.id, matchedCustomer.id),
+                  eq(customers.orgId, order.orgId),
+                ),
+              )
+          }
+        } else {
+          customerId = crypto.randomUUID()
+          await tx.insert(customers).values({
+            id: customerId,
+            orgId: order.orgId,
+            name: guestName,
+            phone: guestPhone,
+            active: true,
+            createdAt: now,
+            updatedAt: now,
+          })
+        }
+      }
+
+      await tx
+        .update(orders)
+        .set({
+          customerId,
+          status: 'pending',
+          updatedAt: now,
+        })
+        .where(eq(orders.id, input.orderId))
+    })
+
+    return { ok: true }
+  } catch (error: unknown) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }
   }
-
-  if (orderRows[0].status !== 'draft') {
-    return { ok: false, error: 'notDraft' }
-  }
-
-  await db
-    .update(orders)
-    .set({ status: 'pending', updatedAt: new Date() })
-    .where(eq(orders.id, orderId))
-
-  return { ok: true }
 }
 
 export type UpdatePortalLineItemInput = {
@@ -221,10 +348,12 @@ export async function savePortalAddress(
     isDefault: false,
   })
 
-  await db
-    .update(customers)
-    .set({ addressId, isWni, updatedAt: new Date() })
-    .where(and(eq(customers.id, customerId), eq(customers.orgId, orgId)))
+  if (customerId) {
+    await db
+      .update(customers)
+      .set({ addressId, isWni, updatedAt: new Date() })
+      .where(and(eq(customers.id, customerId), eq(customers.orgId, orgId)))
+  }
 
   await db
     .update(orders)
@@ -232,4 +361,44 @@ export async function savePortalAddress(
     .where(eq(orders.id, orderId))
 
   return { ok: true, addressId }
+}
+
+export async function getPortalCustomerAddress(
+  customerId: string,
+  orgId: string,
+): Promise<ShippingAddress | null> {
+  const customerRows = await db
+    .select({ addressId: customers.addressId })
+    .from(customers)
+    .where(and(eq(customers.id, customerId), eq(customers.orgId, orgId)))
+    .limit(1)
+
+  if (!customerRows[0]?.addressId) {
+    return null
+  }
+
+  const addressRows = await db
+    .select({
+      areaId: addresses.areaId,
+      areaName: addresses.areaName,
+      streetAddress: addresses.streetAddress,
+    })
+    .from(addresses)
+    .where(eq(addresses.id, customerRows[0].addressId))
+    .limit(1)
+
+  if (!addressRows[0]) {
+    return null
+  }
+
+  const addr = addressRows[0]
+  if (!addr.areaId || !addr.areaName || !addr.streetAddress) {
+    return null
+  }
+
+  return {
+    areaId: addr.areaId,
+    areaName: addr.areaName,
+    streetAddress: addr.streetAddress,
+  }
 }

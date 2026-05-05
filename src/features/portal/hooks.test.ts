@@ -62,4 +62,25 @@ describe('useConfirmPortalOrder', () => {
       })
     })
   })
+
+  it('passes guest details to confirmPortalOrderFn', async () => {
+    mockConfirmPortalOrderFn.mockResolvedValue({ ok: true })
+    const { result } = renderHook(() => useConfirmPortalOrder(), {
+      wrapper: createWrapper(),
+    })
+    result.current.mutate({
+      orderId: 'ord-1',
+      guestName: 'Guest User',
+      guestPhone: '081234567890',
+    })
+    await waitFor(() => {
+      expect(mockConfirmPortalOrderFn).toHaveBeenCalledWith({
+        data: {
+          orderId: 'ord-1',
+          guestName: 'Guest User',
+          guestPhone: '081234567890',
+        },
+      })
+    })
+  })
 })

@@ -105,6 +105,44 @@ describe('createDraftOrder', () => {
     expect(result.order.total).toBeCloseTo(740.8, 2)
   })
 
+  it('creates a draft order without a customer', async () => {
+    const now = new Date()
+
+    await db.insert(productsTable).values([
+      {
+        id: 'prod-guest-1',
+        orgId: org1Id,
+        name: 'Poster',
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(breakpointsTable).values([
+      {
+        id: 'bp-guest-1',
+        orgId: org1Id,
+        productId: 'prod-guest-1',
+        minQuantity: 1,
+        unitPrice: 20,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    const result = await createDraftOrder(org1Id, {
+      customerId: null,
+      lineItems: [{ productId: 'prod-guest-1', quantity: 2 }],
+    })
+
+    expect(result.order.customerId).toBeNull()
+    expect(result.order.total).toBe(40)
+
+    const list = await listOrders({ orgId: org1Id })
+    expect(list.rows).toHaveLength(1)
+    expect(list.rows[0]?.customerName).toBeNull()
+  })
+
   it('creates a draft order with manual price override', async () => {
     const now = new Date()
 
@@ -285,6 +323,55 @@ describe('createDraftOrder', () => {
     const fetched = await getOrder(created.order.id, org1Id)
     expect(fetched?.lineItems).toHaveLength(2)
     expect(fetched?.order.total).toBe(425)
+  })
+
+  it('can clear the customer from a draft order', async () => {
+    const now = new Date()
+
+    await db.insert(customersTable).values([
+      {
+        id: 'cust-guest-clear',
+        orgId: org1Id,
+        name: 'Clear Me',
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(productsTable).values([
+      {
+        id: 'prod-clear',
+        orgId: org1Id,
+        name: 'Card',
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(breakpointsTable).values([
+      {
+        id: 'bp-clear',
+        orgId: org1Id,
+        productId: 'prod-clear',
+        minQuantity: 1,
+        unitPrice: 4,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    const created = await createDraftOrder(org1Id, {
+      customerId: 'cust-guest-clear',
+      lineItems: [{ productId: 'prod-clear', quantity: 1 }],
+    })
+
+    const updated = await updateDraftOrder(created.order.id, org1Id, {
+      customerId: null,
+      lineItems: [{ productId: 'prod-clear', quantity: 2 }],
+    })
+
+    expect(updated.order.customerId).toBeNull()
+    expect(updated.order.total).toBe(8)
   })
 
   it('lists orders scoped to org with customer name', async () => {

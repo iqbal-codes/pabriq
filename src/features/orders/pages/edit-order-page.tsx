@@ -41,12 +41,12 @@ export function EditOrderPage() {
     },
     onSubmit: async ({ value }) => {
       const validItems = value.lineItems.filter((i) => i.productId)
-      if (validItems.length === 0 || !value.customerId) return
+      if (validItems.length === 0) return
 
       await updateOrder.mutateAsync({
         id,
         orgId: ctx.org.id,
-        customerId: value.customerId,
+        customerId: value.customerId || null,
         notes: value.notes || undefined,
         lineItems: validItems.map((i) => ({
           id: i.id,

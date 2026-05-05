@@ -150,6 +150,7 @@ export type Messages = {
     rejectReasonPlaceholder: string
     orderApproved: string
     orderRejected: string
+    guestCustomer: string
   }
   breadcrumb: {
     dashboard: string
@@ -389,18 +390,24 @@ export type Messages = {
     attachment: string
     addAttachment: string
     shippingAddress: string
+    orderNumber: string
+    noShippingAddress: string
     orderTotal: string
     submit: string
     submitting: string
+    customerInfo: string
     guestName: string
     guestNamePlaceholder: string
     guestPhone: string
     guestPhonePlaceholder: string
+    guestCustomer: string
     copyLink: string
     linkCopied: string
     downloadInvoice: string
     contactAdmin: string
+    confirmFailed: string
     notFound: string
+    completedThanks: string
     statusDraft: string
     statusPending: string
     statusApproved: string
@@ -558,6 +565,7 @@ const en: Messages = {
     rejectReasonPlaceholder: 'Enter reason for rejection',
     orderApproved: 'Order approved',
     orderRejected: 'Order rejected',
+    guestCustomer: 'Guest',
   },
   breadcrumb: {
     dashboard: 'Dashboard',
@@ -802,18 +810,24 @@ const en: Messages = {
     attachment: 'Attachment',
     addAttachment: 'Add attachment',
     shippingAddress: 'Shipping Address',
+    orderNumber: 'Order Number',
+    noShippingAddress: 'No shipping address provided',
     orderTotal: 'Order Total',
     submit: 'Confirm Order',
     submitting: 'Submitting...',
+    customerInfo: 'Customer Information',
     guestName: 'Full Name',
     guestNamePlaceholder: 'Enter your full name',
     guestPhone: 'Phone Number',
     guestPhonePlaceholder: 'Enter your phone number',
+    guestCustomer: 'Guest',
     copyLink: 'Copy Link',
     linkCopied: 'Link copied!',
     downloadInvoice: 'Download Invoice',
     contactAdmin: 'Contact Admin via WhatsApp',
+    confirmFailed: 'Could not confirm the order. Please try again.',
     notFound: 'Order not found',
+    completedThanks: 'Thanks for your order.',
     statusDraft: 'Pending Confirmation',
     statusPending: 'Awaiting Approval',
     statusApproved: 'Approved',

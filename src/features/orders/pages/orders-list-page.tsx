@@ -149,6 +149,9 @@ export function OrdersListPage() {
       accessorKey: 'customerName',
       header: t('customer'),
       meta: { label: t('customer'), mobileRole: 'meta' },
+      cell: ({ row }) => (
+        <span>{row.original.customerName ?? t('guestCustomer')}</span>
+      ),
     },
     {
       accessorKey: 'status',

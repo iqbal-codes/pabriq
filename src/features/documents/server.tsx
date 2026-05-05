@@ -63,6 +63,9 @@ export async function generateQuotationPdf(
   }
 
   const order = orderRows[0]
+  if (!order.customerId) {
+    throw new Error('Customer not found')
+  }
 
   const [customerRows, profileRows, itemRows] = await Promise.all([
     db

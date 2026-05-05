@@ -233,7 +233,9 @@ export function ViewOrderPage() {
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="font-medium">{customerName ?? '—'}</p>
+                <p className="font-medium">
+                  {customerName ?? t('guestCustomer')}
+                </p>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                   {customerPhone && (
                     <span className="flex items-center gap-1">
