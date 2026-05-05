@@ -108,7 +108,7 @@ export function DraftView({
 
   return (
     <FormRoot form={form}>
-      <div className="min-h-screen bg-muted py-8">
+      <div className="min-h-screen bg-muted py-4">
         <div className="mx-auto max-w-2xl px-4">
           <h1 className="mb-6 text-xl font-semibold text-foreground">
             {t('title')}
@@ -238,9 +238,8 @@ export function DraftView({
                 </div>
               </div>
             </div>
-
             <form.AppForm>
-              <form.SubmitButton>
+              <form.SubmitButton className="w-full">
                 {isSubmitting ? t('submitting') : t('submit')}
               </form.SubmitButton>
             </form.AppForm>

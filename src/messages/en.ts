@@ -40,6 +40,7 @@ export type Messages = {
       undo: string
     }
     states: {
+      uploaded: string
       uploading: string
       processing: string
       failed: string
@@ -462,6 +463,7 @@ const en: Messages = {
       undo: 'Undo',
     },
     states: {
+      uploaded: 'Uploaded',
       uploading: 'Uploading...',
       processing: 'Processing...',
       failed: 'Failed',

@@ -42,6 +42,7 @@ const id: Messages = {
       undo: 'Batalkan',
     },
     states: {
+      uploaded: 'Tersimpan',
       uploading: 'Mengunggah...',
       processing: 'Memproses...',
       failed: 'Gagal',
