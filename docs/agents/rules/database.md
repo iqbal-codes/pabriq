@@ -1,5 +1,9 @@
 # Database Rules
 
+> **Reference:** [`../boilerplate/database.md`](../boilerplate/database.md) — schema conventions, Drizzle query examples, RLS usage.
+> **Reference:** [`../boilerplate/database.md`](../boilerplate/database.md#search-patterns) — search patterns, batch operations, column narrowing.
+> **Rules:** [`./query-patterns.md`](./query-patterns.md) — search optimization, N+1 prevention.
+
 ## Purpose
 
 Controls database access patterns, schema management, query construction, and tenant isolation.

@@ -1,5 +1,7 @@
 # Verification Rules
 
+> **Reference:** [`../boilerplate/testing.md`](../boilerplate/testing.md) — test patterns with code examples, file placement.
+
 ## Purpose
 
 Defines the mandatory pre-commit and pre-PR verification steps, testing conventions, and quality gates.

@@ -1,7 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  // Optional Context7 MCP example for current documentation research.
-  // Set CONTEXT7_API_KEY in your environment if your Context7 account requires it.
   "mcp": {
     "shadcn": {
       "type": "local",
@@ -14,16 +12,7 @@
       "enabled": true
     }
   },
-  "instructions": [
-    "AGENTS.md",
-    "docs/agents/rules/typescript.md",
-    "docs/agents/rules/ui.md",
-    "docs/agents/rules/i18n.md",
-    "docs/agents/rules/server-functions.md",
-    "docs/agents/rules/database.md",
-    "docs/agents/rules/auth.md",
-    "docs/agents/rules/verification.md"
-  ],
+  "instructions": ["AGENTS.md"],
   "compaction": {
     "auto": true,
     "prune": true,

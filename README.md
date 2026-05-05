@@ -1,6 +1,6 @@
 # TanStack BaseStack
 
-Opinionated SaaS boilerplate built on [TanStack Start](https://tanstack.com/start) (React 19, Vite, file-based router) with auth, database, and monitoring pre-configured.
+Opinionated SaaS boilerplate built on [TanStack Start](https://tanstack.com/start) (React 19, Vite, file-based router) with auth, database, i18n, and full component system pre-configured.
 
 ## Quick Start
 
@@ -16,15 +16,18 @@ bun run dev                   # http://localhost:3000
 |---|---|
 | Framework | TanStack Start + React 19 |
 | Router | TanStack Router (file-based) |
-| Auth | Better Auth (email/password) |
+| Auth | Better Auth (email/password + orgs) |
 | Database | Neon Postgres + Drizzle ORM |
-| UI | Tailwind CSS v4 + shadcn/ui |
+| UI | Tailwind CSS v4 + shadcn/ui (New York) |
+| Icons | lucide-react |
 | Forms | TanStack Form |
 | Data fetching | TanStack Query + server functions |
 | Client state | TanStack Store + TanStack DB |
+| URL state | nuqs |
+| i18n | use-intl (en/id) |
 | Monitoring | Sentry |
-| i18n | use-intl |
 | Lint/format | Biome |
+| Tests | Vitest + happy-dom + testing-library |
 
 ## Commands
 
@@ -32,13 +35,14 @@ bun run dev                   # http://localhost:3000
 bun install          # install dependencies
 bun run dev          # start dev server (port 3000)
 bun run build        # production build
-bun run check        # lint + format check
-bun run test         # run tests
+bun run check        # lint + format (Biome)
+bun run typecheck    # TypeScript check
+bun run test         # run tests (Vitest)
 
 # Database
 bun run db:generate  # generate drizzle migrations
 bun run db:migrate   # apply migrations
-bun run db:push      # push schema directly
+bun run db:push      # push schema directly (dev only)
 bun run db:studio    # open drizzle studio
 ```
 
@@ -53,40 +57,53 @@ Copy `.env.example` to `.env.local`:
 | `BETTER_AUTH_SECRET` | Yes | 32+ char secret (`bunx @better-auth/cli@latest secret`) |
 | `BETTER_AUTH_URL` | Yes | App URL (default: `http://localhost:3000`) |
 | `SENTRY_DSN` | No | Sentry project DSN |
-| `SENTRY_ENVIRONMENT` | No | `development`, `preview`, or `production` |
-
-Neon Launchpad can provision temporary credentials during development.
-
-## Routes
-
-| Path | Description |
-|---|---|
-| `/` | Redirects to `/admin` |
-| `/sign-in` | Sign in form |
-| `/sign-up` | Sign up form |
-| `/admin` | Protected layout with sidebar |
-| `/admin/` | Overview (seed data) |
-| `/admin/users` | User management |
-| `/admin/system` | System health |
 
 ## Project Structure
 
 ```
 src/
-├── db/schema.ts           # Drizzle schema (auth tables)
-├── features/
-│   ├── auth/AuthForm.tsx  # Sign-in / sign-up form
-│   └── admin/model.ts     # Types, seed data, server fn, store, DB collection
-├── routes/                # File-based routes
-├── components/            # Shared UI (shadcn)
-├── lib/                   # Auth client, i18n utils
-└── messages/              # use-intl translation files
+├── components/
+│   ├── app/              # Reusable app components
+│   │   ├── form/         # Form system (TanStack Form)
+│   │   ├── data-table/   # DataTable (TanStack Table)
+│   │   ├── page-shell/   # PageHeader, PageContent, Breadcrumbs, EmptyState
+│   │   └── asset-upload/ # Upload dropzone, grid, list
+│   └── ui/               # 57 shadcn/ui primitives
+├── db/                   # Drizzle schema + client + RLS
+├── features/<name>/      # model.ts + server.ts + hooks.ts
+├── lib/                  # Auth, i18n, query client, R2, RLS, logger
+├── messages/             # use-intl translations (en.ts, id.ts)
+├── routes/               # File-based routes
+├── router.tsx            # Router creation (i18n rewrites)
+└── styles.css            # Tailwind v4 + CSS variables
 ```
 
-The admin dashboard renders static seed data out of the box — no database credentials needed for local preview. Connect Neon Postgres to enable full persistence.
+## Routes
+
+| Path | Description |
+|---|---|
+| `/sign-in` | Sign-in form (validated redirect param) |
+| `/sign-up` | Sign-up form |
+| `/onboarding` | Org creation with logo upload |
+| `/_org/` | Protected workspace with sidebar layout |
+| `/_org/dashboard` | Dashboard |
+| `/api/auth/$` | Better Auth handler |
+
+## Key Patterns
+
+| Pattern | Location |
+|---|---|
+| Form system | `src/components/app/form/` — `useAppForm`, field components, layout |
+| Data table | `src/components/app/data-table/` — filters, pagination, mobile cards |
+| Server functions | `src/features/*/server.ts` — `createServerFn` with org resolution |
+| Permission guards | `src/features/permissions/model.ts` — `canManageProducts(role)` |
+| Query key factory | `src/lib/query-keys.ts` — structured, type-safe keys |
+| Application RLS | `src/lib/rls.ts` — `orgFilter('org_id')` |
+| URL search params | `useQueryState` from nuqs (NOT `useSearchParams`) |
 
 ## See Also
 
-- `AGENTS.md` — project context, architecture decisions, gotchas
+- `docs/boilerplate.md` — **comprehensive reference** for all components, patterns, and architecture
+- `AGENTS.md` — behavioral guidelines and project context
 - `CONTEXT.md` — domain language and architectural boundaries
-- `docs/agents/` — agent skill configuration
+- `docs/agents/` — agent skill configuration and rule files

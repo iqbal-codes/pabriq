@@ -82,6 +82,20 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## 6. Agent skills
 
+### Loading topic knowledge
+
+Use the `skill` tool to load domain-specific knowledge on-demand. Each skill combines non-negotiables (rules) with reference (patterns/code):
+
+| Skill                | When to load                                                   |
+| -------------------- | -------------------------------------------------------------- |
+| `ui-system`          | Building or modifying UI, forms, data tables, sidebar, styling |
+| `server-logic`       | Writing server functions, feature modules, routes              |
+| `data-layer`         | Writing DB queries, search/filter endpoints, migrations        |
+| `auth`               | Sign-in/sign-up flows, session checks, permission guards       |
+| `i18n`               | Adding translations, locale handling, user-facing text         |
+| `testing`            | Writing tests, running verification pipeline before commit     |
+| `project-foundation` | Understanding the stack, config, utilities                     |
+
 ### Issue tracker
 
 Issues in GitHub Issues via `gh` CLI. See `docs/agents/issue-tracker.md`.
@@ -94,20 +108,55 @@ Default: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wo
 
 Single-context: `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain.md`.
 
-## 7. Context Loading
+## 7. Code Best Practices
 
-Before coding or reviewing, load only the docs relevant to the task:
+### TypeScript
 
-- TypeScript/types → `docs/agents/rules/typescript.md`
-- UI/components/forms → `docs/agents/rules/ui.md`
-- i18n/translations → `docs/agents/rules/i18n.md`
-- Data fetching/server functions → `docs/agents/rules/server-functions.md`
-- Database/schema/migrations → `docs/agents/rules/database.md`
-- Auth/session/guards → `docs/agents/rules/auth.md`
-- Deployment/env/Sentry → `docs/agents/rules/deployment.md`
-- Issues/triage/domain docs → `docs/agents/*.md`
+- MUST NOT use `any` in authored source (exceptions: routeTree.gen.ts, Drizzle `as SQL`, route context casts, catch `err: unknown` narrowed to Error)
+- MUST NOT use non-null assertions (`!`)
+- MUST use `verbatimModuleSyntax`-compliant imports: `import type` for type-only bindings
+- MUST use `#/` prefix for all internal imports
+- MUST prefer explicit return type annotations on exported functions
+- MUST use `as const` for fixed tuples/lists and literal types
+- Use discriminated unions for state machines and API response types
+- Use utility types (`Partial`, `Pick`, `Omit`, `Record`) over creating types from scratch
 
-If a required doc does not exist, proceed using this file and mention the missing doc in the final report.
+### DRY (Don't Repeat Yourself)
+
+- 3+ identical code blocks → extract into a shared function/module
+- 2+ identical UI patterns → extract into a reusable component
+
+### KISS (Keep It Simple)
+
+- Prefer the simplest solution that works. No speculative abstractions.
+- Flat structures over nested ones. Simple conditionals over clever one-liners.
+- Short functions preferred (< 20 lines). One function = one concern.
+
+### YAGNI (You Ain't Gonna Need It)
+
+- No code for hypothetical future requirements
+- No flexibility/configurability hooks until a concrete use case exists
+
+### Error Handling
+
+- Validate input at every server boundary (`.inputValidator()` with Zod for mutations)
+- Use discriminated union return types: `{ ok: true, data: T } | { ok: false, error: string }`
+- Don't swallow errors — surface them with meaningful messages
+- TypeScript ≠ runtime safety — validate external inputs at system boundaries
+- Catch at the right level, not globally
+
+### Naming & Structure
+
+- Booleans: prefix with `is*`, `has*`, `can*` (e.g. `isActive`, `canManageProducts`)
+- Functions: verb phrases (`getOrder`, `createCustomer`, `formatPhone`), not nouns
+- Components: PascalCase filenames, one component per file, default export
+- Types: PascalCase for interfaces/types, camelCase for variables/functions/props
+
+### Boy Scout Rule
+
+- Leave code cleaner than you found it — rename confusing vars, extract long functions, remove dead imports on files you touched
+- Continuous small refactoring compounds into a healthier codebase over time
+- Readability over conciseness — code is read far more often than it's written
 
 ## 8. Non-Negotiable Project Rules
 

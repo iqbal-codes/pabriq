@@ -1,5 +1,8 @@
 # Server Functions Rules
 
+> **Reference:** [`../boilerplate/server-functions.md`](../boilerplate/server-functions.md) — standard pattern, org resolution code, logger middleware.
+> **Reference:** [`../boilerplate/feature-module.md`](../boilerplate/feature-module.md) — model/server/hooks blueprint, query key factory.
+
 ## Purpose
 
 Controls how server-side business logic is exposed to the client, enforcing the use of `createServerFn` for all internal API calls.
@@ -44,10 +47,12 @@ const result = await listCustomers({ data: { orgId: ctx.org.id, search: deps.q }
 ## Non-Negotiable Rules
 
 - MUST use `createServerFn` for all internal API requests. MUST NOT use raw `fetch` to call internal backend logic.
-- MUST validate input with `.inputValidator()` — never trust raw client input.
-- MUST resolve organization context from the authenticated session, not from a client-provided `orgId` parameter unless the caller is already scoped to that org via route context.
+- MUST validate input with `.inputValidator()` — never trust raw client input. For mutation endpoints, use a Zod schema inside `.inputValidator()` for runtime validation.
+- MUST resolve organization context from the authenticated session, not from a client-provided `orgId` parameter. Even when the caller passes `ctx.org.id` (resolved by route guard), the server function MUST re-verify org membership from the session — never trust client-provided `orgId`.
 - MUST use `.handler()` with an explicit return type — never leave the return type as inferred `Promise<any>`.
 - MUST use `getRequestHeaders()` from `@tanstack/react-start/server` when calling Better Auth or resolving headers.
+- MUST narrow column selection in `db.select()` — use `db.select({ col1: table.col1, col2: table.col2 })` instead of `db.select()` to avoid fetching unused columns.
+- MUST NOT use `LIKE '%term%'` or `ILIKE '%term%'` without a corresponding `pg_trgm` GIN index to prevent sequential scans.
 
 ## Allowed Exceptions
 
@@ -58,10 +63,12 @@ const result = await listCustomers({ data: { orgId: ctx.org.id, search: deps.q }
 
 1. Place the server function in the relevant feature module (e.g. `src/features/<name>/model.ts` or `server.ts`).
 2. Export the function with `createServerFn({ method: 'GET' | 'POST' })`.
-3. Add `.inputValidator()` for any function that accepts client input.
+3. Add `.inputValidator()` for any function that accepts client input. For mutations, use a Zod schema inside `.inputValidator()` for runtime validation.
 4. Add `.handler()` with an explicit return type.
 5. Resolve authentication via `auth.api.getSession({ headers: getRequestHeaders() })`.
-6. Resolve org context from the session (membership lookup), not from the client.
+6. Resolve org context from the session (membership lookup), not from the client — even when the caller already resolved it.
+7. Narrow column selection in every `db.select()` to only the fields you need.
+8. Check search queries: `%term%` patterns need `pg_trgm` + GIN index; prefix-only `term%` can use B-tree.
 
 ## Verification
 
@@ -79,3 +86,5 @@ Build catches server-function-level errors (e.g. missing exports, invalid handle
 - Accepting `orgId` from client input when the org should be resolved from the session.
 - Calling `auth.api.getSession` without importing `#/lib/auth` dynamically inside the handler (avoids bundling the entire auth instance for server-only code).
 - Forgetting to use `getRequestHeaders()` and instead trying to access headers directly from a request object that isn't available in a `createServerFn`.
+- Using `db.select()` without narrowing columns — fetches all table columns even when only a subset is needed.
+- Using `LIKE '%term%'` without a `pg_trgm` GIN index — causes sequential scans at scale.

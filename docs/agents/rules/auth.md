@@ -1,5 +1,7 @@
 # Auth Rules
 
+> **Reference:** [`../boilerplate/auth.md`](../boilerplate/auth.md) — code examples, permission table, session/guard patterns.
+
 ## Purpose
 
 Controls authentication, organization membership, access control, route guards, and session management.

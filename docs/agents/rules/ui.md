@@ -1,5 +1,11 @@
 # UI Rules
 
+> **Reference:** [`../boilerplate/components.md`](../boilerplate/components.md) — UI primitives table, app component props.
+> **Reference:** [`../boilerplate/form-system.md`](../boilerplate/form-system.md) — form field components, array fields, withForm.
+> **Reference:** [`../boilerplate/data-table.md`](../boilerplate/data-table.md) — DataTable filter types, sub-components, state handling.
+> **Reference:** [`../boilerplate/routing.md`](../boilerplate/routing.md) — route structure, nuqs usage, router config.
+> **Reference:** [`../boilerplate/sidebar-navigation.md`](../boilerplate/sidebar-navigation.md) — sidebar layout, nav items pattern.
+
 ## Purpose
 
 Controls UI component composition, widget library usage, form implementation, and URL search-param handling.
@@ -17,8 +23,10 @@ Controls UI component composition, widget library usage, form implementation, an
 
 **App-level components:** Reusable patterns in `src/components/app/`:
 - `page-shell/` — `PageHeader`, `PageContent`, `PageActions`, `EmptyState`, `Breadcrumbs` with `src/components/app/page-shell/page-shell-types.ts`
-- `form/` — `FormRoot`, `FormSection`, `FormGrid`, `FormActions`, field components (`TextField`, `EmailField`, `PasswordField`, `TextareaField`, `SelectField`, `NumberField`, `PhoneField`), `SubmitButton`, `FormError`
-- `data-table/` — `DataTable` wrapper around `@tanstack/react-table`, with search, pagination, toolbar, view options, mobile cards
+- `form/` — `FormRoot`, `FormSection`, `FormGrid`, `FormActions`, field components (`TextField`, `EmailField`, `PasswordField`, `TextareaField`, `SelectField`, `NumberField`, `PhoneField`, `ComboboxField`, `AddressField`, `AreaSearchField`, `PhotoUploadField`, `FileUploadField`), `SubmitButton`, `FormError`. Uses `useAppForm` from `form-context.tsx` (created via `createFormHook`).
+- `data-table/` — `DataTable` wrapper around `@tanstack/react-table`, with search, pagination, toolbar, view options, mobile cards, filter panel (chips, combobox, date, custom)
+- `asset-upload/` — `AssetUploadDropzone`, `PhotoGridUpload`, `FileListUpload`, upload machine hook, R2 adapter
+- Other app components: `AssetImage`, `AvatarPhoto`, `StatusBadge`, `ConfirmDialog`, `ThemeToggle`, `LanguageToggle`
 
 **Forms:** Uses TanStack Form via `useAppForm` from `src/components/app/form/form-context.tsx`. The hook `useAppForm` is created with `createFormHook` and registers project-specific field components and form components. Example usage pattern:
 
