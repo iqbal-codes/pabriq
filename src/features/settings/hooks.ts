@@ -1,0 +1,21 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { UpdateOrgSettingsInput } from './server'
+import { getOrgSettingsFn, updateOrgSettingsFn } from './server'
+
+export function useOrgSettings() {
+  return useQuery({
+    queryKey: ['settings', 'org'],
+    queryFn: () => getOrgSettingsFn(),
+  })
+}
+
+export function useUpdateOrgSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: UpdateOrgSettingsInput) =>
+      updateOrgSettingsFn({ data: input }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings', 'org'] })
+    },
+  })
+}
