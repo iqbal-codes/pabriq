@@ -15,6 +15,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OrgRouteImport } from './routes/_org'
 import { Route as OrgIndexRouteImport } from './routes/_org/index'
 import { Route as OrderTokenRouteImport } from './routes/order.$token'
+import { Route as InviteAcceptRouteImport } from './routes/invite/accept'
 import { Route as OrgSettingsRouteRouteImport } from './routes/_org/settings/route'
 import { Route as OrgSettingsIndexRouteImport } from './routes/_org/settings/index'
 import { Route as OrgProductsIndexRouteImport } from './routes/_org/products/index'
@@ -22,7 +23,9 @@ import { Route as OrgProductionIndexRouteImport } from './routes/_org/production
 import { Route as OrgOrdersIndexRouteImport } from './routes/_org/orders/index'
 import { Route as OrgCustomersIndexRouteImport } from './routes/_org/customers/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as OrgSettingsProfileRouteImport } from './routes/_org/settings/profile'
 import { Route as OrgSettingsProductionStagesRouteImport } from './routes/_org/settings/production-stages'
+import { Route as OrgSettingsMembersRouteImport } from './routes/_org/settings/members'
 import { Route as OrgSettingsGeneralRouteImport } from './routes/_org/settings/general'
 import { Route as OrgProductsNewRouteImport } from './routes/_org/products/new'
 import { Route as OrgOrdersNewRouteImport } from './routes/_org/orders/new'
@@ -64,6 +67,11 @@ const OrderTokenRoute = OrderTokenRouteImport.update({
   path: '/order/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InviteAcceptRoute = InviteAcceptRouteImport.update({
+  id: '/invite/accept',
+  path: '/invite/accept',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrgSettingsRouteRoute = OrgSettingsRouteRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -99,12 +107,22 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrgSettingsProfileRoute = OrgSettingsProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => OrgSettingsRouteRoute,
+} as any)
 const OrgSettingsProductionStagesRoute =
   OrgSettingsProductionStagesRouteImport.update({
     id: '/production-stages',
     path: '/production-stages',
     getParentRoute: () => OrgSettingsRouteRoute,
   } as any)
+const OrgSettingsMembersRoute = OrgSettingsMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => OrgSettingsRouteRoute,
+} as any)
 const OrgSettingsGeneralRoute = OrgSettingsGeneralRouteImport.update({
   id: '/general',
   path: '/general',
@@ -168,12 +186,15 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/settings': typeof OrgSettingsRouteRouteWithChildren
+  '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
   '/customers/new': typeof OrgCustomersNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
   '/products/new': typeof OrgProductsNewRoute
   '/settings/general': typeof OrgSettingsGeneralRoute
+  '/settings/members': typeof OrgSettingsMembersRoute
   '/settings/production-stages': typeof OrgSettingsProductionStagesRoute
+  '/settings/profile': typeof OrgSettingsProfileRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/customers/': typeof OrgCustomersIndexRoute
   '/orders/': typeof OrgOrdersIndexRoute
@@ -192,13 +213,16 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
   '/': typeof OrgIndexRoute
   '/customers/new': typeof OrgCustomersNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
   '/products/new': typeof OrgProductsNewRoute
   '/settings/general': typeof OrgSettingsGeneralRoute
+  '/settings/members': typeof OrgSettingsMembersRoute
   '/settings/production-stages': typeof OrgSettingsProductionStagesRoute
+  '/settings/profile': typeof OrgSettingsProfileRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/customers': typeof OrgCustomersIndexRoute
   '/orders': typeof OrgOrdersIndexRoute
@@ -220,13 +244,16 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/_org/settings': typeof OrgSettingsRouteRouteWithChildren
+  '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
   '/_org/': typeof OrgIndexRoute
   '/_org/customers/new': typeof OrgCustomersNewRoute
   '/_org/orders/new': typeof OrgOrdersNewRoute
   '/_org/products/new': typeof OrgProductsNewRoute
   '/_org/settings/general': typeof OrgSettingsGeneralRoute
+  '/_org/settings/members': typeof OrgSettingsMembersRoute
   '/_org/settings/production-stages': typeof OrgSettingsProductionStagesRoute
+  '/_org/settings/profile': typeof OrgSettingsProfileRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_org/customers/': typeof OrgCustomersIndexRoute
   '/_org/orders/': typeof OrgOrdersIndexRoute
@@ -249,12 +276,15 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/settings'
+    | '/invite/accept'
     | '/order/$token'
     | '/customers/new'
     | '/orders/new'
     | '/products/new'
     | '/settings/general'
+    | '/settings/members'
     | '/settings/production-stages'
+    | '/settings/profile'
     | '/api/auth/$'
     | '/customers/'
     | '/orders/'
@@ -273,13 +303,16 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/sign-in'
     | '/sign-up'
+    | '/invite/accept'
     | '/order/$token'
     | '/'
     | '/customers/new'
     | '/orders/new'
     | '/products/new'
     | '/settings/general'
+    | '/settings/members'
     | '/settings/production-stages'
+    | '/settings/profile'
     | '/api/auth/$'
     | '/customers'
     | '/orders'
@@ -300,13 +333,16 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/_org/settings'
+    | '/invite/accept'
     | '/order/$token'
     | '/_org/'
     | '/_org/customers/new'
     | '/_org/orders/new'
     | '/_org/products/new'
     | '/_org/settings/general'
+    | '/_org/settings/members'
     | '/_org/settings/production-stages'
+    | '/_org/settings/profile'
     | '/api/auth/$'
     | '/_org/customers/'
     | '/_org/orders/'
@@ -327,6 +363,7 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  InviteAcceptRoute: typeof InviteAcceptRoute
   OrderTokenRoute: typeof OrderTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiDocumentsOrdersIdQuotationRoute: typeof ApiDocumentsOrdersIdQuotationRoute
@@ -374,6 +411,13 @@ declare module '@tanstack/react-router' {
       path: '/order/$token'
       fullPath: '/order/$token'
       preLoaderRoute: typeof OrderTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/accept': {
+      id: '/invite/accept'
+      path: '/invite/accept'
+      fullPath: '/invite/accept'
+      preLoaderRoute: typeof InviteAcceptRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_org/settings': {
@@ -425,11 +469,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_org/settings/profile': {
+      id: '/_org/settings/profile'
+      path: '/profile'
+      fullPath: '/settings/profile'
+      preLoaderRoute: typeof OrgSettingsProfileRouteImport
+      parentRoute: typeof OrgSettingsRouteRoute
+    }
     '/_org/settings/production-stages': {
       id: '/_org/settings/production-stages'
       path: '/production-stages'
       fullPath: '/settings/production-stages'
       preLoaderRoute: typeof OrgSettingsProductionStagesRouteImport
+      parentRoute: typeof OrgSettingsRouteRoute
+    }
+    '/_org/settings/members': {
+      id: '/_org/settings/members'
+      path: '/members'
+      fullPath: '/settings/members'
+      preLoaderRoute: typeof OrgSettingsMembersRouteImport
       parentRoute: typeof OrgSettingsRouteRoute
     }
     '/_org/settings/general': {
@@ -514,13 +572,17 @@ declare module '@tanstack/react-router' {
 
 interface OrgSettingsRouteRouteChildren {
   OrgSettingsGeneralRoute: typeof OrgSettingsGeneralRoute
+  OrgSettingsMembersRoute: typeof OrgSettingsMembersRoute
   OrgSettingsProductionStagesRoute: typeof OrgSettingsProductionStagesRoute
+  OrgSettingsProfileRoute: typeof OrgSettingsProfileRoute
   OrgSettingsIndexRoute: typeof OrgSettingsIndexRoute
 }
 
 const OrgSettingsRouteRouteChildren: OrgSettingsRouteRouteChildren = {
   OrgSettingsGeneralRoute: OrgSettingsGeneralRoute,
+  OrgSettingsMembersRoute: OrgSettingsMembersRoute,
   OrgSettingsProductionStagesRoute: OrgSettingsProductionStagesRoute,
+  OrgSettingsProfileRoute: OrgSettingsProfileRoute,
   OrgSettingsIndexRoute: OrgSettingsIndexRoute,
 }
 
@@ -570,6 +632,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  InviteAcceptRoute: InviteAcceptRoute,
   OrderTokenRoute: OrderTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiDocumentsOrdersIdQuotationRoute: ApiDocumentsOrdersIdQuotationRoute,
