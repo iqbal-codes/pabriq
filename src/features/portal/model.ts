@@ -349,6 +349,55 @@ export type SavePortalAddressResult =
     }
   | { ok: false; error: string }
 
+export async function removePortalAsset(
+  token: string,
+  assetId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const orderRows = await db
+    .select({ id: orders.id, orgId: orders.orgId })
+    .from(orders)
+    .where(eq(orders.orderToken, token))
+    .limit(1)
+
+  if (orderRows.length === 0) {
+    return { ok: false, error: 'notFound' }
+  }
+
+  const lineItemRows = await db
+    .select({ id: orderLineItems.id })
+    .from(orderLineItems)
+    .where(eq(orderLineItems.orderId, orderRows[0].id))
+
+  const lineItemIds = lineItemRows.map((item) => item.id)
+  if (lineItemIds.length === 0) {
+    return { ok: false, error: 'notFound' }
+  }
+
+  const updated = await db
+    .update(assets)
+    .set({
+      status: 'deleted',
+      deletedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(assets.id, assetId),
+        eq(assets.orgId, orderRows[0].orgId),
+        eq(assets.ownerType, 'order'),
+        eq(assets.status, 'active'),
+        inArray(assets.ownerId, lineItemIds),
+      ),
+    )
+    .returning({ id: assets.id })
+
+  if (updated.length === 0) {
+    return { ok: false, error: 'notFound' }
+  }
+
+  return { ok: true }
+}
+
 export async function savePortalAddress(
   orderId: string,
   addressData: ShippingAddress,

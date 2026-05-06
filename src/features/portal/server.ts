@@ -110,6 +110,13 @@ export const updatePortalLineItemFn = createServerFn({ method: 'POST' })
     })
   })
 
+export const portalRemoveUploadFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: { token: string; assetId: string }) => input)
+  .handler(async ({ data }) => {
+    const { removePortalAsset } = await import('./model')
+    return removePortalAsset(data.token, data.assetId)
+  })
+
 export const savePortalAddressFn = createServerFn({ method: 'POST' })
   .inputValidator(
     (input: {

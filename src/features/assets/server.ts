@@ -345,7 +345,44 @@ export const getAssetsMetadata = createServerFn({ method: 'GET' })
         assetKind: assets.assetKind,
       })
       .from(assets)
-      .where(and(eq(assets.orgId, orgId), inArray(assets.id, data.assetIds)))
+      .where(
+        and(
+          eq(assets.orgId, orgId),
+          eq(assets.status, 'active'),
+          inArray(assets.id, data.assetIds),
+        ),
+      )
 
     return rows
   })
+
+export const deleteAsset = createServerFn({ method: 'POST' })
+  .inputValidator((input: { assetId: string }) => input)
+  .handler(
+    async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
+      const orgId = await resolveOrgId()
+      const { db } = await import('#/db/index')
+
+      const updated = await db
+        .update(assets)
+        .set({
+          status: 'deleted',
+          deletedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(assets.id, data.assetId),
+            eq(assets.orgId, orgId),
+            eq(assets.status, 'active'),
+          ),
+        )
+        .returning({ id: assets.id })
+
+      if (updated.length === 0) {
+        return { ok: false, error: 'notFound' }
+      }
+
+      return { ok: true }
+    },
+  )

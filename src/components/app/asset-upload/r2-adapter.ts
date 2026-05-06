@@ -1,5 +1,9 @@
 import { USAGE_LIMITS } from '#/features/assets/model'
-import { finalizeUpload, getUploadUrl } from '#/features/assets/server'
+import {
+  deleteAsset,
+  finalizeUpload,
+  getUploadUrl,
+} from '#/features/assets/server'
 import type { UploadItem } from '#/features/assets/upload-machine'
 import type { AssetUploadConfig, UploaderAdapter, UploadResult } from './types'
 
@@ -100,8 +104,11 @@ export function createR2UploaderAdapter(
       }
     },
 
-    async removeFile(_assetId: string): Promise<void> {
-      // TODO: implement removal via cleanup job
+    async removeFile(assetId: string): Promise<void> {
+      const result = await deleteAsset({ data: { assetId } })
+      if (!result.ok) {
+        throw new Error(result.error)
+      }
     },
   }
 }

@@ -16,6 +16,7 @@ import {
   confirmPortalOrder,
   generateOrderToken,
   getPortalOrder,
+  removePortalAsset,
   savePortalAddress,
   updatePortalLineItem,
 } from './model'
@@ -442,6 +443,23 @@ describe('savePortalAddress', () => {
         .limit(1)
       expect(orderRows[0]?.shippingAddress).toBeTruthy()
     }
+  })
+})
+
+describe('removePortalAsset', () => {
+  it('marks a portal asset as deleted', async () => {
+    const token = await generateOrderToken(order1Id)
+
+    const result = await removePortalAsset(token, asset1Id)
+    expect(result.ok).toBe(true)
+
+    const rows = await db
+      .select({ status: assets.status })
+      .from(assets)
+      .where(eq(assets.id, asset1Id))
+      .limit(1)
+
+    expect(rows[0]?.status).toBe('deleted')
   })
 })
 

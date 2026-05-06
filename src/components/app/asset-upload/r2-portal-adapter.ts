@@ -2,6 +2,7 @@ import type { UploadItem } from '#/features/assets/upload-machine'
 import {
   portalFinalizeUploadFn,
   portalGetUploadUrlFn,
+  portalRemoveUploadFn,
 } from '#/features/portal/server'
 import type { AssetUploadConfig, UploaderAdapter, UploadResult } from './types'
 
@@ -97,8 +98,16 @@ export function createPortalR2UploaderAdapter(
       }
     },
 
-    async removeFile(_assetId: string): Promise<void> {
-      // portal does not support file removal
+    async removeFile(assetId: string): Promise<void> {
+      const result = await portalRemoveUploadFn({
+        data: {
+          token: config.token,
+          assetId,
+        },
+      })
+      if (!result.ok) {
+        throw new Error(result.error)
+      }
     },
   }
 }
