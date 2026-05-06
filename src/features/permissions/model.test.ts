@@ -23,8 +23,8 @@ function expectPermissions(fn: (role: Role) => boolean, allowed: Role[]) {
 }
 
 describe('canManageMembers', () => {
-  it('allows only owner', () => {
-    expectPermissions(canManageMembers, ['owner'])
+  it('allows owner and admin', () => {
+    expectPermissions(canManageMembers, ['owner', 'admin'])
   })
 })
 

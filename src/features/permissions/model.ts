@@ -1,7 +1,7 @@
 export type Role = 'owner' | 'admin' | 'member'
 
 export function canManageMembers(role: Role): boolean {
-  return role === 'owner'
+  return role === 'owner' || role === 'admin'
 }
 
 export function canManageProducts(role: Role): boolean {
