@@ -27,6 +27,7 @@ function createMockTask(overrides: Partial<BoardTask['task']> = {}): BoardTask {
       stageId: 'stage-1',
       status: 'queued',
       taskNumber: 'TSK-5',
+      lineItemId: 'line-item-1',
       context: {
         productName: 'Custom T-Shirt',
         customerName: 'Acme Corp',

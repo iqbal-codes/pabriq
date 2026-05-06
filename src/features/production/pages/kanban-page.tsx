@@ -104,6 +104,7 @@ export function KanbanPage() {
       {selectedTaskId && (
         <TaskDetailModal
           taskId={selectedTaskId}
+          orgId={ctx.org.id}
           open={!!selectedTaskId}
           onOpenChange={(open) => {
             if (!open) setSelectedTaskId(null)

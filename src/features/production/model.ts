@@ -50,6 +50,7 @@ export type ProductionTask = {
   stageId: string | null
   status: string
   taskNumber: string | null
+  lineItemId: string | null
   context: Record<string, string | number | boolean | null> | null
   assignedTo: string | null
   createdAt: Date

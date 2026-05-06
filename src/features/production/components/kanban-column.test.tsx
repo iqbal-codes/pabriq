@@ -26,6 +26,7 @@ function createTask(id: string): BoardTask {
       stageId: stage.id,
       status: 'in_progress',
       taskNumber: `TSK-${id}`,
+      lineItemId: 'line-item-1',
       context: { productName: `Product ${id}`, customerName: 'Acme Corp' },
       assignedTo: null,
       createdAt: new Date(),

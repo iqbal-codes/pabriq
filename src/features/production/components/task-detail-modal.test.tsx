@@ -41,6 +41,7 @@ vi.mock('../hooks', () => {
         stageId: taskStatusMap[taskId] === 'queued' ? null : 'stage-1',
         status: taskStatusMap[taskId] ?? 'in_progress',
         taskNumber: 'TSK-5',
+        lineItemId: 'line-item-1',
         context: {
           productName: 'Custom T-Shirt',
           customerName: 'Acme Corp',
@@ -94,6 +95,7 @@ function renderModal(taskId = 'task-1') {
       <IntlProvider locale="en" messages={enMessages}>
         <TaskDetailModal
           taskId={taskId}
+          orgId="org-1"
           open={true}
           onOpenChange={onOpenChange}
         />

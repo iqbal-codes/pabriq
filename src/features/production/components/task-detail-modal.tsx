@@ -1,5 +1,7 @@
+import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslations } from 'use-intl'
+import { AssetFileList } from '#/components/app/asset-file'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import {
@@ -10,6 +12,7 @@ import {
 } from '#/components/ui/dialog'
 import { Input } from '#/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
+import { getAssetsForLineItemFn } from '#/features/orders/server'
 import {
   useStages,
   useTaskActivities,
@@ -19,6 +22,7 @@ import {
 
 type Props = {
   taskId: string
+  orgId: string
   open: boolean
   onOpenChange: (open: boolean) => void
   canApprove?: boolean
@@ -27,6 +31,7 @@ type Props = {
 
 export function TaskDetailModal({
   taskId,
+  orgId,
   open,
   onOpenChange,
   canApprove = false,
@@ -37,6 +42,17 @@ export function TaskDetailModal({
   const { data: activities } = useTaskActivities(taskId)
   const { data: stages } = useStages()
   const { advanceTask, saveComment } = useTaskMutations()
+  const { data: lineItemAssets } = useQuery({
+    queryKey: ['order-assets', task?.lineItemId ?? ''],
+    queryFn: () => {
+      const lineItemId = task?.lineItemId
+      if (!lineItemId) throw new Error('No line item')
+      return getAssetsForLineItemFn({
+        data: { lineItemId, orgId },
+      })
+    },
+    enabled: !!task?.lineItemId,
+  })
 
   const [commentText, setCommentText] = useState('')
 
@@ -116,6 +132,20 @@ export function TaskDetailModal({
                   {t('specification')}
                 </span>
                 <p className="text-sm mt-0.5">{spec}</p>
+              </div>
+            )}
+
+            {lineItemAssets && lineItemAssets.length > 0 && (
+              <div>
+                <span className="text-muted-foreground text-xs">
+                  Attachments
+                </span>
+                <AssetFileList
+                  assetIds={lineItemAssets.map((a) => a.id)}
+                  layout="list"
+                  showSize
+                  className="mt-2"
+                />
               </div>
             )}
           </TabsContent>

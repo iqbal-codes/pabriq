@@ -12,7 +12,7 @@ function getCtx(
   key: string,
 ): string {
   const val = ctx?.[key]
-  return val != null ? String(val) : ''
+  return val != null && val !== '' ? String(val) : '-'
 }
 
 export function KanbanTaskCard({ task, onClick }: Props) {
@@ -28,13 +28,13 @@ export function KanbanTaskCard({ task, onClick }: Props) {
 
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-shadow"
+      className="cursor-pointer hover:shadow-md transition-shadow gap-0! py-0!"
       onClick={() => onClick?.(taskData.id)}
     >
       <CardContent className="p-3 space-y-1">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-xs font-semibold">
-            {taskData.taskNumber}
+            {taskData.taskNumber || '-'}
           </span>
           <Badge variant="secondary" className="text-[10px] leading-3">
             {taskData.status}
