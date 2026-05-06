@@ -1,24 +1,24 @@
-import { useTranslations } from 'use-intl'
-import type { BoardTask, Stage } from '../model'
-import { KanbanColumn } from './kanban-column'
+import { useTranslations } from "use-intl";
+import type { BoardTask, Stage } from "../model";
+import { KanbanColumn } from "./kanban-column";
 
 type Props = {
-  stages: Stage[]
+  stages: Stage[];
   boardData: {
-    queued: BoardTask[]
-    stages: Map<string, BoardTask[]>
-    done: BoardTask[]
-  }
-  onClickCard?: (taskId: string) => void
-}
+    queued: BoardTask[];
+    stages: Map<string, BoardTask[]>;
+    done: BoardTask[];
+  };
+  onClickCard?: (taskId: string) => void;
+};
 
 export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
-  const t = useTranslations('production')
+  const t = useTranslations("production");
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
+    <div className="flex gap-4 overflow-x-auto pb-4 px-4">
       <KanbanColumn
-        title={t('queue')}
+        title={t("queue")}
         count={boardData.queued.length}
         tasks={boardData.queued}
         onClickCard={onClickCard}
@@ -37,11 +37,11 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
         ))}
 
       <KanbanColumn
-        title={t('done')}
+        title={t("done")}
         count={boardData.done.length}
         tasks={boardData.done}
         onClickCard={onClickCard}
       />
     </div>
-  )
+  );
 }

@@ -1,5 +1,6 @@
 import {
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
@@ -11,6 +12,7 @@ import type {
 import {
   confirmPortalOrderFn,
   generateOrderTokenFn,
+  getOrderTasksTimelineFn,
   getPortalOrderFn,
   portalFinalizeUploadFn,
   portalGetUploadUrlFn,
@@ -22,6 +24,14 @@ export function usePortalOrder(token: string) {
   return useSuspenseQuery({
     queryKey: queryKeys.portal.order(token),
     queryFn: () => getPortalOrderFn({ data: { token } }),
+  })
+}
+
+export function useOrderTimeline(token: string) {
+  return useQuery({
+    queryKey: queryKeys.portal.timeline(token),
+    queryFn: () => getOrderTasksTimelineFn({ data: { token } }),
+    enabled: !!token,
   })
 }
 

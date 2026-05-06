@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   addresses,
@@ -6,7 +6,10 @@ import {
   customers,
   orderLineItems,
   orders,
+  productionStages,
+  productionTasks,
   products,
+  taskActivity,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
 
@@ -487,4 +490,74 @@ export async function getPortalCustomerAddress(
     areaName: addr.areaName,
     streetAddress: addr.streetAddress,
   }
+}
+
+export type OrderTaskEvent = {
+  id: string
+  taskId: string
+  taskNumber: string | null
+  productName: string
+  type: string
+  fromStageName: string | null
+  toStageName: string | null
+  createdAt: Date
+}
+
+export async function getOrderTasksTimeline(
+  token: string,
+): Promise<OrderTaskEvent[]> {
+  const orderResult = await getPortalOrder(token)
+  if (!orderResult.ok) throw new Error('Invalid token')
+
+  const allStages = await db
+    .select({ id: productionStages.id, name: productionStages.name })
+    .from(productionStages)
+    .where(eq(productionStages.orgId, orderResult.order.orgId))
+
+  const stageNameMap = new Map(allStages.map((s) => [s.id, s.name]))
+
+  const tasks = await db
+    .select({ id: productionTasks.id, taskNumber: productionTasks.taskNumber })
+    .from(productionTasks)
+    .where(eq(productionTasks.orderId, orderResult.order.id))
+
+  if (tasks.length === 0) return []
+
+  const activities = await db
+    .select({
+      id: taskActivity.id,
+      taskId: taskActivity.taskId,
+      type: taskActivity.type,
+      fromStageId: taskActivity.fromStageId,
+      toStageId: taskActivity.toStageId,
+      createdAt: taskActivity.createdAt,
+    })
+    .from(taskActivity)
+    .where(
+      and(
+        inArray(
+          taskActivity.taskId,
+          tasks.map((t) => t.id),
+        ),
+        eq(taskActivity.type, 'stage_transition'),
+      ),
+    )
+    .orderBy(desc(taskActivity.createdAt))
+
+  const taskMap = new Map(tasks.map((t) => [t.id, t]))
+
+  return activities.map((act) => ({
+    id: act.id,
+    taskId: act.taskId,
+    taskNumber: taskMap.get(act.taskId)?.taskNumber ?? null,
+    productName: '',
+    type: act.type,
+    fromStageName: act.fromStageId
+      ? (stageNameMap.get(act.fromStageId) ?? null)
+      : null,
+    toStageName: act.toStageId
+      ? (stageNameMap.get(act.toStageId) ?? null)
+      : null,
+    createdAt: act.createdAt,
+  }))
 }

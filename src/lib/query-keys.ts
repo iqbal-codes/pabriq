@@ -48,6 +48,8 @@ export const queryKeys = {
     all: ['portal'] as const,
     order: (token: string) =>
       [...queryKeys.portal.all, 'order', token] as const,
+    timeline: (token: string) =>
+      [...queryKeys.portal.all, 'timeline', token] as const,
   },
   address: {
     all: ['address'] as const,

@@ -1,9 +1,24 @@
 import { CheckCircle2 } from 'lucide-react'
 import { useTranslations } from 'use-intl'
+import { OrderTimeline } from '../components/order-timeline'
+import { useOrderTimeline } from '../hooks'
 import type { PortalOrder } from '../model'
 
-export function ProgressView({ order }: { order: PortalOrder }) {
+export function ProgressView({
+  order,
+  token,
+}: {
+  order: PortalOrder
+  token: string
+}) {
   const t = useTranslations('portal')
+  const { data: timelineEvents } = useOrderTimeline(
+    order.status === 'production' ||
+      order.status === 'in_delivery' ||
+      order.status === 'completed'
+      ? token
+      : '',
+  )
 
   const statusLabel: Record<string, string> = {
     approved: t('statusApproved'),
@@ -41,6 +56,13 @@ export function ProgressView({ order }: { order: PortalOrder }) {
               <p className="text-sm text-secondary-foreground">
                 {t('completedThanks')}
               </p>
+            </div>
+          )}
+
+          {timelineEvents && timelineEvents.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-sm font-semibold mb-3">{t('status')}</h2>
+              <OrderTimeline events={timelineEvents} />
             </div>
           )}
 

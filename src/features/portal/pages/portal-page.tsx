@@ -28,5 +28,5 @@ export function PortalPage({ token }: PortalPageProps) {
   if (order.status === 'pending') return <PendingView order={order} />
   if (order.status === 'draft') return <DraftView order={order} token={token} />
   if (order.status === 'rejected') return <RejectedView order={order} />
-  return <ProgressView order={order} />
+  return <ProgressView order={order} token={token} />
 }

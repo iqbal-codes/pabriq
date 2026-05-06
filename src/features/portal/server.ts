@@ -134,3 +134,10 @@ export const savePortalAddressFn = createServerFn({ method: 'POST' })
       streetAddress: data.streetAddress,
     })
   })
+
+export const getOrderTasksTimelineFn = createServerFn({ method: 'GET' })
+  .inputValidator((input: { token: string }) => input)
+  .handler(async ({ data }) => {
+    const { getOrderTasksTimeline } = await import('./model')
+    return getOrderTasksTimeline(data.token)
+  })
