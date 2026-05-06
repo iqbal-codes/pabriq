@@ -1,3 +1,4 @@
+import { ArrowDown, ArrowUp } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { Button } from '#/components/ui/button'
@@ -84,7 +85,7 @@ export function StageList({ stages, loading }: Props) {
                       onClick={() => handleMoveUp(i)}
                       disabled={i === 0}
                     >
-                      ↑
+                      <ArrowUp className="size-4" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -92,7 +93,7 @@ export function StageList({ stages, loading }: Props) {
                       onClick={() => handleMoveDown(i)}
                       disabled={i === stages.length - 1}
                     >
-                      ↓
+                      <ArrowDown className="size-4" />
                     </Button>
                   </div>
                 </TableCell>

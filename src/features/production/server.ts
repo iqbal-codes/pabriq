@@ -14,13 +14,32 @@ async function resolveOrgId(): Promise<string> {
   const { member } = await import('#/db/schema')
   const { eq } = await import('drizzle-orm')
   const memberships = await db
-    .select({ orgId: member.organizationId })
+    .select({ orgId: member.organizationId, role: member.role })
     .from(member)
     .where(eq(member.userId, session.user.id))
     .limit(1)
 
   if (memberships.length === 0) throw new Error('No organization')
   return memberships[0].orgId
+}
+
+async function resolveOrgAndRole(): Promise<{ orgId: string; role: string }> {
+  const { auth } = await import('#/lib/auth')
+  const headers = getRequestHeaders()
+  const session = await auth.api.getSession({ headers })
+  if (!session) throw new Error('Not authenticated')
+
+  const { db } = await import('#/db/index')
+  const { member } = await import('#/db/schema')
+  const { eq } = await import('drizzle-orm')
+  const memberships = await db
+    .select({ orgId: member.organizationId, role: member.role })
+    .from(member)
+    .where(eq(member.userId, session.user.id))
+    .limit(1)
+
+  if (memberships.length === 0) throw new Error('No organization')
+  return { orgId: memberships[0].orgId, role: memberships[0].role }
 }
 
 export const listStagesFn = createServerFn({ method: 'GET' }).handler(
@@ -144,7 +163,7 @@ export const advanceTaskFn = createServerFn({ method: 'POST' })
 export const approveTaskAdvanceFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { taskId: string; reviewNotes?: string }) => input)
   .handler(async ({ data }) => {
-    const orgId = await resolveOrgId()
+    const { orgId, role } = await resolveOrgAndRole()
     const { auth } = await import('#/lib/auth')
     const headers = getRequestHeaders()
     const session = await auth.api.getSession({ headers })
@@ -153,6 +172,7 @@ export const approveTaskAdvanceFn = createServerFn({ method: 'POST' })
       data.taskId,
       orgId,
       session?.user.id ?? 'unknown',
+      role,
       data.reviewNotes,
     )
   })
@@ -160,7 +180,7 @@ export const approveTaskAdvanceFn = createServerFn({ method: 'POST' })
 export const rejectTaskAdvanceFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { taskId: string; reviewNotes?: string }) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
-    const orgId = await resolveOrgId()
+    const { orgId, role } = await resolveOrgAndRole()
     try {
       const { auth } = await import('#/lib/auth')
       const headers = getRequestHeaders()
@@ -170,6 +190,7 @@ export const rejectTaskAdvanceFn = createServerFn({ method: 'POST' })
         data.taskId,
         orgId,
         session?.user.id ?? 'unknown',
+        role,
         data.reviewNotes,
       )
       return { ok: true }

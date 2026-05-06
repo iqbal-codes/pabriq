@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 import {
   canAdvanceProductionTask,
   canApproveOrders,
+  canApproveProductionTask,
   canCreateOrders,
   canManageCustomers,
   canManageInvoices,
   canManageMembers,
   canManageProducts,
+  canManageStages,
   canViewProduction,
   type Role,
 } from './model'
@@ -51,14 +53,26 @@ describe('canManageInvoices', () => {
 })
 
 describe('canAdvanceProductionTask', () => {
+  it('allows owner, admin, and member', () => {
+    expectPermissions(canAdvanceProductionTask, ['owner', 'admin', 'member'])
+  })
+})
+
+describe('canApproveProductionTask', () => {
   it('allows owner and admin', () => {
-    expectPermissions(canAdvanceProductionTask, ['owner', 'admin'])
+    expectPermissions(canApproveProductionTask, ['owner', 'admin'])
   })
 })
 
 describe('canViewProduction', () => {
+  it('allows owner, admin, and member', () => {
+    expectPermissions(canViewProduction, ['owner', 'admin', 'member'])
+  })
+})
+
+describe('canManageStages', () => {
   it('allows owner and admin', () => {
-    expectPermissions(canViewProduction, ['owner', 'admin'])
+    expectPermissions(canManageStages, ['owner', 'admin'])
   })
 })
 

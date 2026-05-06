@@ -371,6 +371,7 @@ describe('task advancement', () => {
       taskId,
       org1Id,
       'admin-1',
+      'admin',
       'Looks good',
     )
 
@@ -397,7 +398,13 @@ describe('task advancement', () => {
 
     await advanceTask(taskId, org1Id, 'operator-1')
 
-    await rejectTaskAdvance(taskId, org1Id, 'admin-1', 'Need better photos')
+    await rejectTaskAdvance(
+      taskId,
+      org1Id,
+      'admin-1',
+      'admin',
+      'Need better photos',
+    )
 
     const task = await db
       .select()
@@ -467,5 +474,43 @@ describe('task advancement', () => {
     const commentActivity = activities.find((a) => a.type === 'comment')
     expect(commentActivity).toBeDefined()
     expect(commentActivity?.data).toEqual({ text: 'Need client logo' })
+  })
+
+  it('rejects member approval of pending advancement', async () => {
+    await createStage({
+      orgId: org1Id,
+      name: 'Design',
+      orderIndex: 0,
+      needApproval: true,
+    })
+    await createStage({ orgId: org1Id, name: 'Production', orderIndex: 1 })
+
+    const { taskId } = await seedTask(org1Id)
+    await advanceTask(taskId, org1Id, 'operator-1')
+
+    const result = await approveTaskAdvance(
+      taskId,
+      org1Id,
+      'operator-1',
+      'member',
+    )
+
+    expect(result.ok).toBe(false)
+  })
+
+  it('rejects member rejection of pending advancement', async () => {
+    await createStage({
+      orgId: org1Id,
+      name: 'Design',
+      orderIndex: 0,
+      needApproval: true,
+    })
+
+    const { taskId } = await seedTask(org1Id)
+    await advanceTask(taskId, org1Id, 'operator-1')
+
+    await expect(
+      rejectTaskAdvance(taskId, org1Id, 'operator-1', 'member'),
+    ).rejects.toThrow('Not authorized')
   })
 })

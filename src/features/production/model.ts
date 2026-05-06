@@ -6,6 +6,7 @@ import {
   productionStages as stagesTable,
   productionTasks as tasksTable,
 } from '#/db/schema'
+import { canApproveProductionTask } from '#/features/permissions/model'
 
 export type { Requirement } from '#/db/schema'
 
@@ -319,8 +320,12 @@ export async function approveTaskAdvance(
   taskId: string,
   orgId: string,
   actorId: string,
+  actorRole: string,
   reviewNotes?: string,
 ): Promise<AdvanceTaskResult> {
+  if (!canApproveProductionTask(actorRole as 'owner' | 'admin' | 'member')) {
+    return { ok: false, error: 'Not authorized to approve' }
+  }
   const taskRows = await db
     .select()
     .from(tasksTable)
@@ -396,8 +401,12 @@ export async function rejectTaskAdvance(
   taskId: string,
   orgId: string,
   actorId: string,
+  actorRole: string,
   reviewNotes?: string,
 ): Promise<void> {
+  if (!canApproveProductionTask(actorRole as 'owner' | 'admin' | 'member')) {
+    throw new Error('Not authorized')
+  }
   const taskRows = await db
     .select()
     .from(tasksTable)

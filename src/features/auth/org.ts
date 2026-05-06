@@ -21,6 +21,7 @@ export const listUserOrgs = createServerFn({ method: 'GET' }).handler(
         name: organizationTable.name,
         slug: organizationTable.slug,
         logo: organizationProfiles.logoAssetId,
+        role: member.role,
       })
       .from(member)
       .innerJoin(
@@ -38,6 +39,7 @@ export const listUserOrgs = createServerFn({ method: 'GET' }).handler(
       name: m.name,
       slug: m.slug,
       logo: m.logo,
+      role: m.role as 'owner' | 'admin' | 'member',
     }))
   },
 )

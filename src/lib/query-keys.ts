@@ -54,4 +54,13 @@ export const queryKeys = {
     areas: (query: string) =>
       [...queryKeys.address.all, 'areas', query] as const,
   },
+  production: {
+    all: ['production'] as const,
+    stages: () => [...queryKeys.production.all, 'stages'] as const,
+    board: (filters: { orgId: string; stageId?: string; search?: string }) =>
+      [...queryKeys.production.all, 'board', filters] as const,
+    task: (id: string) => [...queryKeys.production.all, 'task', id] as const,
+    activities: (taskId: string) =>
+      [...queryKeys.production.all, 'activities', taskId] as const,
+  },
 }
