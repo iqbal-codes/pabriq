@@ -5,7 +5,7 @@ import {
 } from '@tanstack/react-table'
 import type { LucideIcon } from 'lucide-react'
 import { AlertCircle, PackageOpen, RefreshCw, SearchX, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   EmptyState,
   type EmptyStateAction,
@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '#/components/ui/table'
+import { useIsMobile } from '#/hooks/use-mobile'
 import { cn } from '#/lib/utils'
 import { DataTableProvider } from './data-table-context'
 import { DataTableFilterPanel } from './data-table-filter-panel'
@@ -134,7 +135,106 @@ export function DataTable<TData>({
   errorMessage,
   filters,
 }: DataTableProps<TData>) {
+  const isMobile = useIsMobile()
+  const prevIsMobileRef = useRef(isMobile)
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
+
+  const [displayData, setDisplayData] = useState<TData[]>(data)
+  const accumulatedDataRef = useRef<TData[]>([])
+  const lastAccumulatedPageRef = useRef(page)
+  const seenIdsRef = useRef<Set<string>>(new Set())
+  const lastDataRef = useRef<TData[]>([])
+
+  useEffect(() => {
+    if (!isMobile) {
+      accumulatedDataRef.current = data
+      setDisplayData(data)
+      lastAccumulatedPageRef.current = page
+      seenIdsRef.current = new Set(data.map(getRowId))
+      lastDataRef.current = data
+      return
+    }
+
+    if (data === lastDataRef.current && page === lastAccumulatedPageRef.current)
+      return
+
+    if (
+      data === lastDataRef.current &&
+      page !== lastAccumulatedPageRef.current
+    ) {
+      lastDataRef.current = data
+      return
+    }
+
+    lastDataRef.current = data
+
+    const hasNewItems = data.some(
+      (item) => !seenIdsRef.current.has(getRowId(item)),
+    )
+
+    if (hasNewItems && page === lastAccumulatedPageRef.current + 1) {
+      accumulatedDataRef.current = [...accumulatedDataRef.current, ...data]
+      lastAccumulatedPageRef.current = page
+    } else if (page !== lastAccumulatedPageRef.current) {
+      accumulatedDataRef.current = data
+      lastAccumulatedPageRef.current = page
+    } else {
+      accumulatedDataRef.current = data
+    }
+
+    seenIdsRef.current = new Set(accumulatedDataRef.current.map(getRowId))
+    setDisplayData([...accumulatedDataRef.current])
+  }, [isMobile, page, data, getRowId])
+
+  useEffect(() => {
+    if (prevIsMobileRef.current !== isMobile) {
+      prevIsMobileRef.current = isMobile
+      if (page !== 1) {
+        onPageChange(1)
+      }
+    }
+  }, [isMobile, page, onPageChange])
+
+  const sentinelRef = useRef<HTMLDivElement>(null)
+  const loadingMoreRef = useRef(false)
+
+  useEffect(() => {
+    if (!isMobile) {
+      loadingMoreRef.current = false
+      return
+    }
+    if (page * perPage >= totalRows) return
+    if (isRefetching || isLoading) {
+      loadingMoreRef.current = true
+      return
+    }
+    loadingMoreRef.current = false
+
+    const el = sentinelRef.current
+    if (!el) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting && !loadingMoreRef.current) {
+          loadingMoreRef.current = true
+          onPageChange(page + 1)
+        }
+      },
+      { rootMargin: '400px' },
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [
+    isMobile,
+    page,
+    perPage,
+    totalRows,
+    isRefetching,
+    isLoading,
+    onPageChange,
+  ])
+
   const filterLabels = useMemo(
     () => ({
       filters: labels.filters ?? 'Filters',
@@ -247,8 +347,10 @@ export function DataTable<TData>({
 
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
 
+  const tableData = isMobile ? displayData : data
+
   const table = useReactTable({
-    data,
+    data: tableData,
     columns: allColumns as AppColumnDef<TData>[],
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => getRowId(row),
@@ -295,9 +397,9 @@ export function DataTable<TData>({
       selectedRowIds,
       selectedRows: table.getSelectedRowModel().rows.map((r) => r.original),
       totalRows,
-      visibleRows: data,
+      visibleRows: isMobile ? displayData : data,
     }),
-    [table, selectedRowIds, totalRows, data],
+    [table, selectedRowIds, totalRows, isMobile, displayData, data],
   )
 
   useEffect(() => {
@@ -369,7 +471,7 @@ export function DataTable<TData>({
       <DataTableProvider
         tableId={tableId}
         totalRows={totalRows}
-        visibleRows={data}
+        visibleRows={displayData}
       >
         <div className="space-y-4">
           <DataTableToolbar
@@ -449,7 +551,7 @@ export function DataTable<TData>({
       <DataTableProvider
         tableId={tableId}
         totalRows={totalRows}
-        visibleRows={data}
+        visibleRows={displayData}
       >
         <div className="space-y-4">
           <DataTableToolbar
@@ -528,7 +630,7 @@ export function DataTable<TData>({
       <DataTableProvider
         tableId={tableId}
         totalRows={totalRows}
-        visibleRows={data}
+        visibleRows={displayData}
       >
         <div className="space-y-4">
           <DataTableToolbar
@@ -602,7 +704,7 @@ export function DataTable<TData>({
       <DataTableProvider
         tableId={tableId}
         totalRows={totalRows}
-        visibleRows={data}
+        visibleRows={displayData}
       >
         <div className="space-y-4">
           <DataTableToolbar
@@ -687,7 +789,7 @@ export function DataTable<TData>({
     <DataTableProvider
       tableId={tableId}
       totalRows={totalRows}
-      visibleRows={data}
+      visibleRows={displayData}
     >
       <div className="space-y-4">
         <DataTableToolbar
@@ -796,21 +898,31 @@ export function DataTable<TData>({
           </div>
 
           {isRefetching && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/60 backdrop-blur-[1px]">
+            <div className="absolute inset-0 z-10 hidden md:flex items-center justify-center rounded-xl bg-background/60 backdrop-blur-[1px]">
               <RefreshCw className="size-6 animate-spin text-muted-foreground" />
             </div>
           )}
         </div>
 
-        <DataTablePagination
-          labels={labels}
-          page={page}
-          perPage={perPage}
-          totalRows={totalRows}
-          onPageChange={onPageChange}
-          onPerPageChange={onPerPageChange}
-          disabled={isRefetching}
-        />
+        <div className="hidden md:block">
+          <DataTablePagination
+            labels={labels}
+            page={page}
+            perPage={perPage}
+            totalRows={totalRows}
+            onPageChange={onPageChange}
+            onPerPageChange={onPerPageChange}
+            disabled={isRefetching}
+          />
+        </div>
+
+        {isMobile && (
+          <div ref={sentinelRef} className="flex justify-center py-4">
+            {isRefetching && (
+              <RefreshCw className="size-5 animate-spin text-muted-foreground" />
+            )}
+          </div>
+        )}
       </div>
       {filters && (
         <DataTableFilterPanel

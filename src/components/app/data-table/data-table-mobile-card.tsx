@@ -1,5 +1,4 @@
-import type { Row } from '@tanstack/react-table'
-import { Badge } from '#/components/ui/badge'
+import { flexRender, type Row } from '@tanstack/react-table'
 import { Card } from '#/components/ui/card'
 import type { AppColumnMeta } from './data-table-utils'
 
@@ -32,45 +31,67 @@ export function DataTableMobileCard<TData>({
   })
 
   return (
-    <Card className="p-4">
+    <Card className="p-4 gap-3!">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           {titleCol && (
             <div className="text-sm font-medium">
-              {titleCol.renderValue() as React.ReactNode}
+              {flexRender(
+                titleCol.column.columnDef.cell,
+                titleCol.getContext(),
+              )}
             </div>
           )}
           {subtitleCol && (
             <div className="mt-0.5 text-xs text-muted-foreground">
-              {subtitleCol.renderValue() as React.ReactNode}
+              {flexRender(
+                subtitleCol.column.columnDef.cell,
+                subtitleCol.getContext(),
+              )}
             </div>
           )}
         </div>
         {badgeCol && (
-          <Badge variant="outline">
-            {badgeCol.renderValue() as React.ReactNode}
-          </Badge>
+          <div className="shrink-0">
+            {flexRender(badgeCol.column.columnDef.cell, badgeCol.getContext())}
+          </div>
         )}
       </div>
       {metaCols.length > 0 && (
-        <div className="mt-2 grid grid-cols-2 gap-1 text-xs text-muted-foreground">
-          {metaCols.map((col) => (
-            <div key={col.id}>{col.renderValue() as React.ReactNode}</div>
-          ))}
+        <div className="space-y-1">
+          {metaCols.map((col) => {
+            const meta = col.column.columnDef.meta as AppColumnMeta | undefined
+            const label = meta?.label ?? col.column.id
+            return (
+              <div
+                key={col.id}
+                className="flex flex-row justify-between items-center"
+              >
+                <div className="text-muted-foreground text-sm">{label}</div>
+                <div className="text-sm">
+                  {flexRender(col.column.columnDef.cell, col.getContext())}
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
       {row.getVisibleCells().find((c) => {
         const meta = c.column.columnDef.meta as AppColumnMeta | undefined
         return meta?.mobileRole === 'actions'
       }) && (
-        <div className="mt-2 flex justify-end gap-1">
+        <div className="flex justify-end gap-1">
           {row
             .getVisibleCells()
             .filter((c) => {
               const meta = c.column.columnDef.meta as AppColumnMeta | undefined
               return meta?.mobileRole === 'actions'
             })
-            .map((c) => c.renderValue() as React.ReactNode)}
+            .map((c) => (
+              <div key={c.id}>
+                {flexRender(c.column.columnDef.cell, c.getContext())}
+              </div>
+            ))}
         </div>
       )}
     </Card>

@@ -18,6 +18,11 @@ import {
   setStoredVisibility,
 } from './data-table-utils'
 
+const mockUseIsMobile = vi.fn(() => false)
+vi.mock('#/hooks/use-mobile', () => ({
+  useIsMobile: () => mockUseIsMobile(),
+}))
+
 type Item = { id: string; name: string; status: string }
 
 const columns: AppColumnDef<Item>[] = [
@@ -496,7 +501,7 @@ describe('DataTable - row actions', () => {
         </button>
       ),
     })
-    expect(screen.getByText('Edit Alpha')).toBeDefined()
+    expect(screen.getAllByText('Edit Alpha').length).toBeGreaterThanOrEqual(1)
   })
 })
 
@@ -513,5 +518,179 @@ describe('encodeSort', () => {
   it('encodes field and direction', () => {
     expect(encodeSort('name', 'asc')).toBe('name:asc')
     expect(encodeSort('createdAt', 'desc')).toBe('createdAt:desc')
+  })
+})
+
+describe('DataTable - mobile infinite scroll', () => {
+  beforeEach(() => {
+    mockUseIsMobile.mockReturnValue(true)
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        observe = vi.fn()
+        disconnect = vi.fn()
+        unobserve = vi.fn()
+      },
+    )
+  })
+
+  afterEach(() => {
+    mockUseIsMobile.mockReturnValue(false)
+    vi.unstubAllGlobals()
+  })
+
+  it('accumulates data on sequential page changes', () => {
+    const page1Data = [{ id: '1', name: 'Alpha', status: 'active' }]
+    const page2Data = [{ id: '2', name: 'Beta', status: 'inactive' }]
+    const { rerender } = render(
+      <TooltipProvider>
+        <DataTable
+          columns={columns}
+          data={page1Data}
+          getRowId={(row) => row.id}
+          labels={labels}
+          onPageChange={vi.fn()}
+          onPerPageChange={vi.fn()}
+          page={1}
+          perPage={25}
+          tableId="test-table"
+          totalRows={2}
+        />
+      </TooltipProvider>,
+    )
+
+    expect(screen.getAllByText('Alpha').length).toBeGreaterThanOrEqual(1)
+    expect(screen.queryAllByText('Beta').length).toBe(0)
+
+    rerender(
+      <TooltipProvider>
+        <DataTable
+          columns={columns}
+          data={page2Data}
+          getRowId={(row) => row.id}
+          labels={labels}
+          onPageChange={vi.fn()}
+          onPerPageChange={vi.fn()}
+          page={2}
+          perPage={25}
+          tableId="test-table"
+          totalRows={2}
+        />
+      </TooltipProvider>,
+    )
+
+    expect(screen.getAllByText('Alpha').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Beta').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('resets accumulated data on non-sequential page change', () => {
+    const page3Data = [{ id: '3', name: 'Gamma', status: 'active' }]
+    const page1Data = [{ id: '1', name: 'Alpha', status: 'active' }]
+    const { rerender } = render(
+      <TooltipProvider>
+        <DataTable
+          columns={columns}
+          data={page3Data}
+          getRowId={(row) => row.id}
+          labels={labels}
+          onPageChange={vi.fn()}
+          onPerPageChange={vi.fn()}
+          page={3}
+          perPage={25}
+          tableId="test-table"
+          totalRows={1}
+        />
+      </TooltipProvider>,
+    )
+
+    expect(screen.getAllByText('Gamma').length).toBeGreaterThanOrEqual(1)
+
+    rerender(
+      <TooltipProvider>
+        <DataTable
+          columns={columns}
+          data={page1Data}
+          getRowId={(row) => row.id}
+          labels={labels}
+          onPageChange={vi.fn()}
+          onPerPageChange={vi.fn()}
+          page={1}
+          perPage={25}
+          tableId="test-table"
+          totalRows={1}
+        />
+      </TooltipProvider>,
+    )
+
+    expect(screen.getAllByText('Alpha').length).toBeGreaterThanOrEqual(1)
+    expect(screen.queryAllByText('Gamma').length).toBe(0)
+  })
+
+  it('shows bottom spinner on mobile while refetching', () => {
+    const { container } = render(
+      <TooltipProvider>
+        <DataTable
+          columns={columns}
+          data={data}
+          getRowId={(row) => row.id}
+          labels={labels}
+          isRefetching
+          onPageChange={vi.fn()}
+          onPerPageChange={vi.fn()}
+          page={1}
+          perPage={25}
+          tableId="test-table"
+          totalRows={data.length}
+        />
+      </TooltipProvider>,
+    )
+
+    const spinners = container.querySelectorAll('.animate-spin')
+    expect(spinners.length).toBeGreaterThanOrEqual(1)
+  })
+})
+
+describe('DataTable - breakpoint reset', () => {
+  it('resets page to 1 when switching to mobile', () => {
+    mockUseIsMobile.mockReturnValue(false)
+    const onPageChange = vi.fn()
+    const { rerender } = render(
+      <TooltipProvider>
+        <DataTable
+          columns={columns}
+          data={data}
+          getRowId={(row) => row.id}
+          labels={labels}
+          onPageChange={onPageChange}
+          onPerPageChange={vi.fn()}
+          page={3}
+          perPage={25}
+          tableId="test-table"
+          totalRows={data.length}
+        />
+      </TooltipProvider>,
+    )
+
+    expect(onPageChange).not.toHaveBeenCalled()
+
+    mockUseIsMobile.mockReturnValue(true)
+    rerender(
+      <TooltipProvider>
+        <DataTable
+          columns={columns}
+          data={data}
+          getRowId={(row) => row.id}
+          labels={labels}
+          onPageChange={onPageChange}
+          onPerPageChange={vi.fn()}
+          page={3}
+          perPage={25}
+          tableId="test-table"
+          totalRows={data.length}
+        />
+      </TooltipProvider>,
+    )
+
+    expect(onPageChange).toHaveBeenCalledWith(1)
   })
 })
