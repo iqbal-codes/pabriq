@@ -15,11 +15,16 @@ export const Route = createFileRoute('/_org/settings')({
 function SettingsLayout() {
   const t = useTranslations('breadcrumb')
   const pt = useTranslations('production')
+  const st = useTranslations('settings')
   const { pathname } = useLocation()
 
-  const activeTab = pathname.includes('/settings/production-stages')
-    ? 'stages'
-    : 'general'
+  const activeTab = pathname.includes('/settings/members')
+    ? 'members'
+    : pathname.includes('/settings/profile')
+      ? 'profile'
+      : pathname.includes('/settings/production-stages')
+        ? 'stages'
+        : 'general'
 
   return (
     <PageContent>
@@ -27,6 +32,12 @@ function SettingsLayout() {
         <TabsList>
           <TabsTrigger value="general" asChild>
             <Link to="/settings/general">{t('general')}</Link>
+          </TabsTrigger>
+          <TabsTrigger value="members" asChild>
+            <Link to="/settings/members">{st('members')}</Link>
+          </TabsTrigger>
+          <TabsTrigger value="profile" asChild>
+            <Link to="/settings/profile">{st('profile')}</Link>
           </TabsTrigger>
           <TabsTrigger value="stages" asChild>
             <Link to="/settings/production-stages">
