@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { FileIcon, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
+import { AssetImage } from '#/components/app/asset-image'
 import type { UploaderAdapter } from '#/components/app/asset-upload'
 import {
   createPortalR2UploaderAdapter,
@@ -11,7 +13,7 @@ import {
   getMaxBytes,
 } from '#/components/app/asset-upload'
 import { Button } from '#/components/ui/button'
-import type { OwnerType, Usage } from '#/features/assets/model'
+import type { AssetKind, OwnerType, Usage } from '#/features/assets/model'
 import type { AssetMetadata } from '#/features/assets/server'
 import { getAssetsMetadata } from '#/features/assets/server'
 import type { UploadItem } from '#/features/assets/upload-machine'
@@ -40,18 +42,28 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+function getAssetKindFromMimeType(mimeType: string): string {
+  if (mimeType.startsWith('image/')) return 'image'
+  if (mimeType.startsWith('video/')) return 'video'
+  return 'file'
+}
+
 function ExistingFileRow({
   metadata,
   onRemove,
 }: {
   metadata: AssetMetadata
-  onRemove: () => void
+  onRemove: () => Promise<void>
 }) {
   const t = useTranslations('assetUpload')
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border p-3">
-      <FileIcon className="h-5 w-5 text-muted-foreground" />
+    <div className="flex items-center gap-3 rounded-lg border py-2 pr-2 pl-3">
+      <AssetImage
+        assetId={metadata.id}
+        assetKind={metadata.assetKind as AssetKind}
+        className="rounded-lg"
+      />
       <div className="flex-1 min-w-0">
         <p className="truncate text-sm font-medium">
           {metadata.originalFilename}
@@ -63,8 +75,8 @@ function ExistingFileRow({
           <span className="text-xs text-green-600">{t('states.uploaded')}</span>
         </div>
       </div>
-      <Button variant="ghost" size="sm" onClick={onRemove}>
-        <X className="h-4 w-4" />
+      <Button variant="ghost" size="icon-lg" onClick={() => void onRemove()}>
+        <X />
       </Button>
     </div>
   )
@@ -92,6 +104,7 @@ function FileUploadFieldBase({
   const field = useFieldContext<string[]>()
   const error = firstError(field.state.meta.errors)
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([])
+  const [optimisticAssets, setOptimisticAssets] = useState<AssetMetadata[]>([])
   const assetIds = field.state.value ?? []
 
   const mimeTypes = acceptedMimeTypes ?? getAcceptedMimeTypes(usage)
@@ -101,14 +114,54 @@ function FileUploadFieldBase({
     queryKey: [...queryKey, assetIds],
     queryFn: () => getAssetsMetadata({ data: { assetIds } }),
     enabled: assetIds.length > 0,
+    placeholderData: (previousData) => previousData,
   })
 
-  function handleUploadComplete(assetId: string) {
-    field.handleChange([...assetIds, assetId])
+  const displayedAssets = useMemo(() => {
+    const assetsById = new Map(
+      existingAssets?.map((asset) => [asset.id, asset]),
+    )
+    for (const asset of optimisticAssets) {
+      if (!assetsById.has(asset.id)) {
+        assetsById.set(asset.id, asset)
+      }
+    }
+
+    return assetIds
+      .map((assetId) => assetsById.get(assetId))
+      .filter((asset): asset is AssetMetadata => asset !== undefined)
+  }, [assetIds, existingAssets, optimisticAssets])
+
+  function handleUploadComplete(upload: { assetId: string; file: File }) {
+    setOptimisticAssets((current) => [
+      ...current.filter((asset) => asset.id !== upload.assetId),
+      {
+        id: upload.assetId,
+        originalFilename: upload.file.name,
+        mimeType: upload.file.type || 'application/octet-stream',
+        sizeBytes: upload.file.size,
+        assetKind: getAssetKindFromMimeType(upload.file.type),
+      },
+    ])
+
+    field.handleChange([...(field.state.value ?? []), upload.assetId])
   }
 
-  function handleRemoveAsset(index: number) {
-    field.handleChange(assetIds.filter((_, i) => i !== index))
+  async function handleRemoveAsset(
+    assetId: string,
+    index: number,
+  ): Promise<void> {
+    try {
+      await adapter.removeFile(assetId)
+      setOptimisticAssets((current) =>
+        current.filter((asset) => asset.id !== assetId),
+      )
+      field.handleChange(
+        (field.state.value ?? []).filter((_, i) => i !== index),
+      )
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : String(error))
+    }
   }
 
   return (
@@ -122,18 +175,19 @@ function FileUploadFieldBase({
           adapter={adapter}
           acceptedMimeTypes={mimeTypes}
           maxBytes={maxBytes}
+          keepCompletedItems={false}
           onUploadComplete={handleUploadComplete}
           disabled={disabled}
         />
-        {existingAssets && existingAssets.length > 0 && (
+        {displayedAssets.length > 0 && (
           <div className="space-y-2">
-            {existingAssets.map((asset) => {
+            {displayedAssets.map((asset) => {
               const index = assetIds.indexOf(asset.id)
               return (
                 <ExistingFileRow
                   key={asset.id}
                   metadata={asset}
-                  onRemove={() => handleRemoveAsset(index)}
+                  onRemove={() => handleRemoveAsset(asset.id, index)}
                 />
               )
             })}
