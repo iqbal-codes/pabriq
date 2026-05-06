@@ -1,5 +1,6 @@
 'use client'
 
+import Cookies from 'js-cookie'
 import { CheckIcon, Languages, Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useLocale, useTranslations } from 'use-intl'
@@ -42,7 +43,7 @@ export function LanguageToggle() {
       url.pathname = `/${targetLocale}${basePath === '/' ? '' : basePath}`
     }
 
-    document.cookie = `${LOCALE_COOKIE}=${targetLocale}; path=/; max-age=31536000`
+    Cookies.set(LOCALE_COOKIE, targetLocale, { path: '/', maxAge: 31536000 })
     window.location.assign(url.toString())
   }
 

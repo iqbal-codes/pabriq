@@ -142,14 +142,14 @@ export function CustomersListPage() {
       meta: { label: t('name'), mobileRole: 'title' },
     },
     {
-      accessorKey: 'email',
-      header: t('email'),
-      meta: { label: t('email'), mobileRole: 'meta' },
-    },
-    {
       accessorKey: 'phone',
       header: t('phone'),
       meta: { label: t('phone'), mobileRole: 'meta' },
+    },
+    {
+      accessorKey: 'email',
+      header: t('email'),
+      meta: { label: t('email'), mobileRole: 'meta' },
     },
     {
       accessorKey: 'active',
