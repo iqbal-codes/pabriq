@@ -8,27 +8,14 @@ type Props = {
   title: string
   count: number
   tasks: BoardTask[]
-  canApprove?: boolean
-  onAdvance?: (taskId: string) => void
-  onStart?: (taskId: string) => void
-  onReview?: (taskId: string) => void
   onClickCard?: (taskId: string) => void
 }
 
-export function KanbanColumn({
-  title,
-  count,
-  tasks,
-  canApprove = false,
-  onAdvance,
-  onStart,
-  onReview,
-  onClickCard,
-}: Props) {
+export function KanbanColumn({ title, count, tasks, onClickCard }: Props) {
   const t = useTranslations('production')
 
   return (
-    <Card className="flex h-full min-w-72 flex-col bg-muted/30 py-0! gap-2!">
+    <Card className="flex h-full min-w-72 flex-col bg-muted/30">
       <CardHeader className="flex flex-row items-center justify-between p-3">
         <h3 className="text-sm font-semibold">{title}</h3>
         <Badge variant="secondary">{count}</Badge>
@@ -40,15 +27,7 @@ export function KanbanColumn({
           </p>
         ) : (
           tasks.map((bt) => (
-            <KanbanTaskCard
-              key={bt.task.id}
-              task={bt}
-              canApprove={canApprove}
-              onAdvance={onAdvance}
-              onStart={onStart}
-              onReview={onReview}
-              onClick={onClickCard}
-            />
+            <KanbanTaskCard key={bt.task.id} task={bt} onClick={onClickCard} />
           ))
         )}
       </CardContent>

@@ -17,20 +17,21 @@ const stage: Stage = {
   updatedAt: new Date(),
 }
 
-function createTask(id: string, status: string): BoardTask {
+function createTask(id: string): BoardTask {
   return {
     task: {
       id,
       orgId: 'org-1',
       orderId: 'order-1',
-      stageId: status === 'in_progress' ? stage.id : null,
-      status,
+      stageId: stage.id,
+      status: 'in_progress',
+      taskNumber: `TSK-${id}`,
       context: { productName: `Product ${id}`, customerName: 'Acme Corp' },
       assignedTo: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     },
-    stage: status === 'in_progress' ? stage : null,
+    stage,
   }
 }
 
@@ -57,13 +58,13 @@ function renderColumn(
 
 describe('KanbanColumn', () => {
   it('renders title and count', () => {
-    renderColumn([createTask('1', 'queued')], { title: 'Queue', count: 1 })
+    renderColumn([createTask('1')], { title: 'Queue', count: 1 })
     expect(screen.getByText('Queue')).toBeInTheDocument()
     expect(screen.getByText('1')).toBeInTheDocument()
   })
 
   it('renders task cards for each task', () => {
-    const tasks = [createTask('1', 'queued'), createTask('2', 'queued')]
+    const tasks = [createTask('1'), createTask('2')]
     renderColumn(tasks, { title: 'Queue', count: 2 })
     expect(screen.getByText('Product 1')).toBeInTheDocument()
     expect(screen.getByText('Product 2')).toBeInTheDocument()

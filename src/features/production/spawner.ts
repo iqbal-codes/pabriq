@@ -1,3 +1,4 @@
+import { desc, eq } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   taskActivity as activityTable,
@@ -12,25 +13,41 @@ export async function spawnTasksForApprovedOrder(
   const orderData = await getOrder(orderId, orgId)
   if (!orderData) throw new Error('Order not found')
 
-  const { order, lineItems } = orderData
+  const { order, lineItems, customerName } = orderData
   if (order.status !== 'approved' && order.status !== 'production') {
     throw new Error('Order is not approved')
   }
 
+  const latestTask = await db
+    .select({ taskNumber: tasksTable.taskNumber })
+    .from(tasksTable)
+    .where(eq(tasksTable.orgId, orgId))
+    .orderBy(desc(tasksTable.createdAt), desc(tasksTable.id))
+    .limit(1)
+
+  let nextNum = latestTask[0]?.taskNumber
+    ? Number.parseInt(latestTask[0].taskNumber.split('-')[1], 10) + 1
+    : 1
   const now = new Date()
 
   for (const item of lineItems) {
     const id = crypto.randomUUID()
+    const taskNumber = `TSK-${nextNum}`
+    nextNum++
     await db.insert(tasksTable).values({
       id,
       orgId,
       orderId,
       stageId: null,
       status: 'queued',
+      taskNumber,
+      lineItemId: item.id,
       context: {
         productName: item.name ?? '',
-        customerName: '',
+        customerName: customerName ?? '',
         requirements: item.notes ?? null,
+        orderNumber: order.orderNumber ?? '',
+        quantity: item.quantity ?? 1,
       },
       createdAt: now,
       updatedAt: now,

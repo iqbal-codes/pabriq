@@ -1,22 +1,38 @@
 import { parseAsString, useQueryState } from 'nuqs'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { Input } from '#/components/ui/input'
 import { NativeSelect } from '#/components/ui/native-select'
 import { Spinner } from '#/components/ui/spinner'
+import type { Role } from '#/features/permissions/model'
+import { canApproveProductionTask } from '#/features/permissions/model'
 import { Route } from '#/routes/_org/production/index'
 import { KanbanBoard } from '../components/kanban-board'
-import { useBoardTasks, useStages, useTaskMutations } from '../hooks'
+import { ReviewModal } from '../components/review-modal'
+import { TaskDetailModal } from '../components/task-detail-modal'
+import {
+  useBoardTasks,
+  useStages,
+  useTaskDetail,
+  useTaskMutations,
+} from '../hooks'
 
 export function KanbanPage() {
   const t = useTranslations('production')
-  const ctx = Route.useRouteContext() as { org: { id: string } }
+  const ctx = Route.useRouteContext() as {
+    org: { id: string; role?: string }
+  }
 
   const [search, setSearch] = useQueryState('q', parseAsString.withDefault(''))
   const [stageFilter, setStageFilter] = useQueryState(
     'stage',
     parseAsString.withDefault(''),
   )
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [reviewTaskId, setReviewTaskId] = useState<string | null>(null)
+
+  const role = ctx.org.role as Role
+  const canApprove = canApproveProductionTask(role)
 
   const { data: stages } = useStages()
   const activeStages = useMemo(() => {
@@ -36,7 +52,14 @@ export function KanbanPage() {
   )
 
   const { data: boardData, isLoading } = useBoardTasks(filters)
-  const { advanceTask } = useTaskMutations()
+  const { data: reviewTask } = useTaskDetail(reviewTaskId ?? '')
+  const { approveAdvance, rejectAdvance } = useTaskMutations()
+
+  const reviewStageName = useMemo(() => {
+    if (!reviewTask || !activeStages.length) return ''
+    const s = activeStages.find((st) => st.id === reviewTask.stageId)
+    return s?.name ?? ''
+  }, [reviewTask, activeStages])
 
   return (
     <div className="flex flex-col overflow-hidden gap-4 h-full">
@@ -69,8 +92,7 @@ export function KanbanPage() {
           <KanbanBoard
             stages={activeStages}
             boardData={boardData}
-            onStart={(taskId) => advanceTask.mutate({ taskId })}
-            onAdvance={(taskId) => advanceTask.mutate({ taskId })}
+            onClickCard={setSelectedTaskId}
           />
         ) : (
           <div className="py-16 text-center text-sm text-muted-foreground">
@@ -78,6 +100,41 @@ export function KanbanPage() {
           </div>
         )}
       </div>
+
+      {selectedTaskId && (
+        <TaskDetailModal
+          taskId={selectedTaskId}
+          open={!!selectedTaskId}
+          onOpenChange={(open) => {
+            if (!open) setSelectedTaskId(null)
+          }}
+          canApprove={canApprove}
+          onReview={(taskId) => {
+            setSelectedTaskId(null)
+            setReviewTaskId(taskId)
+          }}
+        />
+      )}
+
+      {reviewTaskId && (
+        <ReviewModal
+          taskId={reviewTaskId}
+          taskNumber={reviewTask?.taskNumber ?? null}
+          stageName={reviewStageName}
+          open={!!reviewTaskId}
+          onOpenChange={(open) => {
+            if (!open) setReviewTaskId(null)
+          }}
+          onApprove={(id, notes) => {
+            approveAdvance.mutate({ taskId: id, reviewNotes: notes })
+            setReviewTaskId(null)
+          }}
+          onReject={(id, notes) => {
+            rejectAdvance.mutate({ taskId: id, reviewNotes: notes })
+            setReviewTaskId(null)
+          }}
+        />
+      )}
     </div>
   )
 }

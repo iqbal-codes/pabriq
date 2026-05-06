@@ -296,6 +296,30 @@ describe('order approval and task spawning', () => {
       'Order is not approved',
     )
   })
+
+  it('generates sequential task numbers per org', async () => {
+    const { orderId: o1 } = await seedOrder(org1Id, 'pending')
+    await approveOrder(o1, org1Id, 'user-1')
+    await spawnTasksForApprovedOrder(o1, org1Id)
+
+    const tasks1 = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.orderId, o1))
+
+    expect(tasks1[0].taskNumber).toBe('TSK-1')
+
+    const { orderId: o2 } = await seedOrder(org1Id, 'pending')
+    await approveOrder(o2, org1Id, 'user-1')
+    await spawnTasksForApprovedOrder(o2, org1Id)
+
+    const tasks2 = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.orderId, o2))
+
+    expect(tasks2[0].taskNumber).toBe('TSK-2')
+  })
 })
 
 describe('task advancement', () => {

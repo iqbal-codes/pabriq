@@ -43,7 +43,7 @@ export function LanguageToggle() {
       url.pathname = `/${targetLocale}${basePath === '/' ? '' : basePath}`
     }
 
-    Cookies.set(LOCALE_COOKIE, targetLocale, { path: '/', maxAge: 31536000 })
+    Cookies.set(LOCALE_COOKIE, targetLocale, { path: '/', expires: 365 })
     window.location.assign(url.toString())
   }
 

@@ -43,6 +43,7 @@ function createTask(
       orderId: 'order-1',
       stageId,
       status,
+      taskNumber: `TSK-${id}`,
       context: { productName: `P-${id}`, customerName: 'Acme' },
       assignedTo: null,
       createdAt: new Date(),

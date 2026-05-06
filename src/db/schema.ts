@@ -321,11 +321,15 @@ export const productionTasks = pgTable('production_tasks', {
     onDelete: 'restrict',
   }),
   status: text('status').notNull().default('queued'),
+  taskNumber: text('task_number'),
+  lineItemId: text('line_item_id'),
   context: json('context')
     .$type<{
       productName: string
       customerName: string
       requirements: string | null
+      orderNumber?: string
+      quantity?: number
       requirementResponses?: Record<
         string,
         { assetIds?: string[]; value?: string }
