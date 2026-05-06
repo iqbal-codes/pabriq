@@ -19,6 +19,11 @@ export type UploadResult = {
   }[]
 }
 
+export type UploadCompletePayload = {
+  assetId: string
+  file: File
+}
+
 export type AssetUploadConfig = {
   ownerType: OwnerType
   ownerId?: string
@@ -37,7 +42,7 @@ export type AssetUploadDropzonePropsBase = {
   acceptedMimeTypes: readonly string[]
   maxBytes: number
   disabled?: boolean
-  onUploadComplete?: (assetId: string) => void
+  onUploadComplete?: (payload: UploadCompletePayload) => void
   onUploadError?: (itemId: string, error: string) => void
 }
 

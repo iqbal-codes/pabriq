@@ -5,7 +5,7 @@ import { Button } from '#/components/ui/button'
 import { Progress } from '#/components/ui/progress'
 import type { UploadItem } from '#/features/assets/upload-machine'
 import { cn } from '#/lib/utils'
-import type { AssetUploadDropzoneProps } from './types'
+import type { AssetUploadDropzoneProps, UploadCompletePayload } from './types'
 import { useUploadMachine } from './use-upload-machine'
 
 interface PhotoGridUploadProps {
@@ -16,7 +16,8 @@ interface PhotoGridUploadProps {
   acceptedMimeTypes: readonly string[]
   maxBytes: number
   disabled?: boolean
-  onUploadComplete?: (assetId: string) => void
+  keepCompletedItems?: boolean
+  onUploadComplete?: (payload: UploadCompletePayload) => void
   onUploadError?: (itemId: string, error: string) => void
 }
 
@@ -102,6 +103,7 @@ export function PhotoGridUpload(props: PhotoGridUploadProps) {
 
   const machineResult = useUploadMachine(props.items, {
     adapter: props.adapter,
+    keepCompletedItems: props.keepCompletedItems,
     onUploadComplete: props.onUploadComplete,
     onUploadError: props.onUploadError,
   })

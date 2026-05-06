@@ -5,7 +5,7 @@ import {
   createUploadItem,
   isSubmitBlocked,
 } from '#/features/assets/upload-machine'
-import type { UploaderAdapter } from './types'
+import type { UploadCompletePayload, UploaderAdapter } from './types'
 
 const MAX_CONCURRENT = 3
 const UNDO_TIMEOUT_MS = 5000
@@ -13,7 +13,8 @@ const UNDO_TIMEOUT_MS = 5000
 export type UseUploadMachineOptions = {
   adapter: UploaderAdapter
   maxConcurrency?: number
-  onUploadComplete?: (assetId: string) => void
+  keepCompletedItems?: boolean
+  onUploadComplete?: (payload: UploadCompletePayload) => void
   onUploadError?: (itemId: string, error: string) => void
 }
 
@@ -34,6 +35,7 @@ export function useUploadMachine(
   const {
     adapter,
     maxConcurrency = MAX_CONCURRENT,
+    keepCompletedItems = true,
     onUploadComplete,
     onUploadError,
   } = options
@@ -88,7 +90,10 @@ export function useUploadMachine(
             error: null,
           })
           uploadingRef.current.delete(item.id)
-          onUploadComplete?.(result.assetId)
+          onUploadComplete?.({ assetId: result.assetId, file: item.file })
+          if (!keepCompletedItems) {
+            setItemsState(itemsRef.current.filter((i) => i.id !== item.id))
+          }
           processQueue()
         } catch (err) {
           const errorMessage =
@@ -101,7 +106,15 @@ export function useUploadMachine(
         }
       })()
     }
-  }, [maxConcurrency, adapter, updateItem, onUploadComplete, onUploadError])
+  }, [
+    maxConcurrency,
+    adapter,
+    updateItem,
+    keepCompletedItems,
+    onUploadComplete,
+    onUploadError,
+    setItemsState,
+  ])
 
   const addFiles = useCallback(
     (files: File[]) => {

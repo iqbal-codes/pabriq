@@ -135,7 +135,9 @@ function OnboardingPage() {
                 adapter={adapter}
                 acceptedMimeTypes={ACCEPTED_LOGO_MIMES}
                 maxBytes={MAX_LOGO_BYTES}
-                onUploadComplete={(assetId) => setUploadedLogoAssetId(assetId)}
+                onUploadComplete={({ assetId }) =>
+                  setUploadedLogoAssetId(assetId)
+                }
               />
               <p className="text-xs text-muted-foreground mt-1">
                 {t('logoPhotoHint')}

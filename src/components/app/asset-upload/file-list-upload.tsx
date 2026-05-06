@@ -1,12 +1,12 @@
-import { CheckCircle, FileIcon, RefreshCw, X } from 'lucide-react'
+import { FileIcon, RefreshCw, X } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useTranslations } from 'use-intl'
+import { CircularProgress } from '#/components/customized/progress/progress-08'
 import { Button } from '#/components/ui/button'
-import { Progress } from '#/components/ui/progress'
 import type { UploadItem } from '#/features/assets/upload-machine'
 import { cn } from '#/lib/utils'
-import type { AssetUploadDropzoneProps } from './types'
+import type { AssetUploadDropzoneProps, UploadCompletePayload } from './types'
 import { useUploadMachine } from './use-upload-machine'
 
 function formatBytes(bytes: number): string {
@@ -23,7 +23,8 @@ interface FileListUploadProps {
   acceptedMimeTypes: readonly string[]
   maxBytes: number
   disabled?: boolean
-  onUploadComplete?: (assetId: string) => void
+  keepCompletedItems?: boolean
+  onUploadComplete?: (payload: UploadCompletePayload) => void
   onUploadError?: (itemId: string, error: string) => void
 }
 
@@ -39,8 +40,8 @@ function FileRow({
   const t = useTranslations('assetUpload')
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border p-3">
-      <FileIcon className="h-5 w-5 text-muted-foreground" />
+    <div className="flex items-center gap-3 rounded-lg border py-2 pr-2 pl-3">
+      <FileIcon className="h-7 w-10 text-muted-foreground" />
       <div className="flex-1 min-w-0">
         <p className="truncate text-sm font-medium">{item.file.name}</p>
         <div className="flex items-center gap-2 mt-1">
@@ -64,22 +65,29 @@ function FileRow({
             <span className="text-xs text-destructive">{item.error}</span>
           )}
         </div>
-        {(item.status === 'uploading' || item.status === 'processing') && (
-          <Progress value={item.progress} className="mt-2 h-1" />
-        )}
       </div>
       <div className="flex items-center gap-1">
-        {item.status === 'done' && (
-          <CheckCircle className="h-4 w-4 text-green-500" />
+        {(item.status === 'uploading' || item.status === 'processing') && (
+          <CircularProgress value={item.progress} strokeWidth={2} size={40} />
         )}
         {item.status === 'failed' && (
-          <Button variant="ghost" size="sm" onClick={() => onRetry(item.id)}>
-            <RefreshCw className="h-4 w-4" />
+          <Button
+            variant="ghost"
+            size="icon-lg"
+            onClick={() => onRetry(item.id)}
+          >
+            <RefreshCw />
           </Button>
         )}
-        <Button variant="ghost" size="sm" onClick={() => onRemove(item.id)}>
-          <X className="h-4 w-4" />
-        </Button>
+        {item.status === 'done' && (
+          <Button
+            variant="ghost"
+            size="icon-lg"
+            onClick={() => onRemove(item.id)}
+          >
+            <X />
+          </Button>
+        )}
       </div>
     </div>
   )
@@ -95,6 +103,7 @@ export function FileListUpload(props: FileListUploadProps) {
 
   const machineResult = useUploadMachine(props.items, {
     adapter: props.adapter,
+    keepCompletedItems: props.keepCompletedItems,
     onUploadComplete: props.onUploadComplete,
     onUploadError: props.onUploadError,
   })
@@ -131,7 +140,7 @@ export function FileListUpload(props: FileListUploadProps) {
   })
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div
         {...getRootProps()}
         className={cn(

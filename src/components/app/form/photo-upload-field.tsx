@@ -43,8 +43,8 @@ function PhotoUploadFieldSingle({
     [ownerType, usage],
   )
 
-  function handleUploadComplete(assetId: string) {
-    field.handleChange(assetId)
+  function handleUploadComplete(upload: { assetId: string }) {
+    field.handleChange(upload.assetId)
   }
 
   function handleRemovePhoto() {
@@ -82,6 +82,7 @@ function PhotoUploadFieldSingle({
             adapter={adapter}
             acceptedMimeTypes={getAcceptedMimeTypes(usage)}
             maxBytes={getMaxBytes(usage)}
+            keepCompletedItems={false}
             onUploadComplete={handleUploadComplete}
             disabled={disabled}
           />
@@ -115,8 +116,8 @@ function PhotoUploadFieldMultiple({
     [ownerType, usage],
   )
 
-  function handleUploadComplete(assetId: string) {
-    field.handleChange([...assetIds, assetId])
+  function handleUploadComplete(upload: { assetId: string }) {
+    field.handleChange([...(field.state.value ?? []), upload.assetId])
   }
 
   function handleRemovePhoto(index: number) {
@@ -157,6 +158,7 @@ function PhotoUploadFieldMultiple({
             adapter={adapter}
             acceptedMimeTypes={getAcceptedMimeTypes(usage)}
             maxBytes={getMaxBytes(usage)}
+            keepCompletedItems={false}
             onUploadComplete={handleUploadComplete}
             disabled={disabled}
           />
