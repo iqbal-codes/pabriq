@@ -4,10 +4,23 @@ Opinionated SaaS boilerplate built on [TanStack Start](https://tanstack.com/star
 
 ## Quick Start
 
+This project uses [Infisical](https://infisical.com) for secret management. No `.env.local` file is required.
+
+### Prerequisites
+- [Infisical CLI](https://infisical.com/docs/cli/overview) installed and logged in
+- Access to the Infisical project (see `.infisical.json` for project config)
+
+### Run locally
+
 ```bash
 bun install
-cp .env.example .env.local   # fill in your credentials
-bun run dev                   # http://localhost:3000
+bun run dev:infisical   # pulls secrets from Infisical and starts dev server
+```
+
+To run without Infisical (e.g. with a manually created `.env.local`):
+
+```bash
+bun run dev             # starts dev server using local env
 ```
 
 ## Stack
@@ -32,23 +45,29 @@ bun run dev                   # http://localhost:3000
 ## Commands
 
 ```bash
-bun install          # install dependencies
-bun run dev          # start dev server (port 3000)
-bun run build        # production build
-bun run check        # lint + format (Biome)
-bun run typecheck    # TypeScript check
-bun run test         # run tests (Vitest)
+bun install                # install dependencies
+bun run dev                # start dev server (port 3000)
+bun run dev:infisical      # start dev server with Infisical secrets (local user)
+bun run dev:agent          # start dev server with Infisical Machine Identity (for agents)
+bun run build              # production build
+bun run check              # lint + format (Biome)
+bun run typecheck          # TypeScript check
+bun run test               # run tests (Vitest)
 
 # Database
-bun run db:generate  # generate drizzle migrations
-bun run db:migrate   # apply migrations
-bun run db:push      # push schema directly (dev only)
-bun run db:studio    # open drizzle studio
+bun run db:generate        # generate drizzle migrations
+bun run db:migrate         # apply migrations
+bun run db:push            # push schema directly (dev only)
+bun run db:studio          # open drizzle studio
+bun run db:studio:infisical # open drizzle studio with Infisical secrets (local user)
+bun run db:studio:agent    # open drizzle studio with Infisical Machine Identity (for agents)
 ```
 
 ## Environment
 
-Copy `.env.example` to `.env.local`:
+Secrets are managed via **Infisical** — no local `.env` file is required for day-to-day development. The project is linked to Infisical via `.infisical.json`.
+
+If you need to run without Infisical, copy `.env.example` to `.env.local` and fill in the values manually:
 
 | Variable | Required | Description |
 |---|---|---|
