@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from '@react-pdf/renderer'
-import type { QuotationPdfData } from '../types'
+import type { InvoicePdfData } from '../types'
 
 Font.register({
   family: 'Helvetica',
@@ -201,8 +201,9 @@ function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-US', {
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: '2-digit',
@@ -213,11 +214,11 @@ function formatPercent(pct: number): string {
   return `${pct.toFixed(2)}%`
 }
 
-interface QuotationDocumentProps {
-  data: QuotationPdfData
+interface InvoiceDocumentProps {
+  data: InvoicePdfData
 }
 
-export function QuotationDocument({ data }: QuotationDocumentProps) {
+export function InvoiceDocument({ data }: InvoiceDocumentProps) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -228,37 +229,35 @@ export function QuotationDocument({ data }: QuotationDocumentProps) {
             )}
           </View>
           <View style={styles.metaWrap}>
-            <Text style={styles.title}>Quotation</Text>
+            <Text style={styles.title}>Invoice</Text>
             <View style={styles.metaRow}>
               <View style={styles.metaLabel}>
-                <Text style={styles.metaLabelText}>Quote no.:</Text>
+                <Text style={styles.metaLabelText}>Invoice no.:</Text>
               </View>
               <View style={styles.metaValue}>
-                <Text style={styles.metaValueText}>{data.quoteNumber}</Text>
+                <Text style={styles.metaValueText}>{data.invoiceNumber}</Text>
               </View>
             </View>
             <View style={styles.metaRow}>
               <View style={styles.metaLabel}>
-                <Text style={styles.metaLabelText}>Date:</Text>
+                <Text style={styles.metaLabelText}>Invoice date:</Text>
               </View>
               <View style={styles.metaValue}>
                 <Text style={styles.metaValueText}>
-                  {formatDate(data.createdAt)}
+                  {formatDate(data.issuedDate)}
                 </Text>
               </View>
             </View>
-            {data.validUntil && (
-              <View style={styles.metaRow}>
-                <View style={styles.metaLabel}>
-                  <Text style={styles.metaLabelText}>Valid until:</Text>
-                </View>
-                <View style={styles.metaValue}>
-                  <Text style={styles.metaValueText}>
-                    {formatDate(data.validUntil)}
-                  </Text>
-                </View>
+            <View style={styles.metaRow}>
+              <View style={styles.metaLabel}>
+                <Text style={styles.metaLabelText}>Due:</Text>
               </View>
-            )}
+              <View style={styles.metaValue}>
+                <Text style={styles.metaValueText}>
+                  {formatDate(data.dueDate)}
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -340,10 +339,26 @@ export function QuotationDocument({ data }: QuotationDocumentProps) {
 
         <View style={styles.footerRow}>
           <View style={styles.notesSection}>
-            {data.notes && (
+            {(data.notes || data.paymentMethod) && (
               <View>
-                <Text style={styles.notesTitle}>Notes</Text>
-                <Text style={styles.notesText}>{data.notes}</Text>
+                <Text style={styles.notesTitle}>
+                  Payment Instructions or other notes
+                </Text>
+                {data.paymentMethod && (
+                  <Text style={styles.notesText}>
+                    {data.paymentMethod.name}
+                    {data.paymentMethod.bankName ||
+                    data.paymentMethod.accountNumber
+                      ? `\nBank : ${data.paymentMethod.bankName ?? ''}`
+                      : ''}
+                    {data.paymentMethod.accountNumber
+                      ? `\nNo. Rekening : ${data.paymentMethod.accountNumber}`
+                      : ''}
+                  </Text>
+                )}
+                {data.notes && (
+                  <Text style={styles.notesText}>{data.notes}</Text>
+                )}
               </View>
             )}
           </View>
@@ -370,11 +385,11 @@ export function QuotationDocument({ data }: QuotationDocumentProps) {
             </View>
             <View style={styles.totalRow}>
               <View style={styles.totalLabel}>
-                <Text style={styles.totalLabelText}>Grand Total</Text>
+                <Text style={styles.totalLabelText}>Total</Text>
               </View>
               <View style={styles.totalValue}>
                 <Text style={styles.totalValueText}>
-                  {formatCurrency(data.grandTotal)}
+                  {formatCurrency(data.total)}
                 </Text>
               </View>
             </View>

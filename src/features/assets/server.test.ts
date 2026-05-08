@@ -9,6 +9,7 @@ describe('finalizeUpload validation', () => {
       'organization',
       'order',
       'productionTask',
+      'invoice',
     ]
 
     for (const ownerType of validOwnerTypes) {
@@ -57,6 +58,10 @@ describe('finalizeUpload validation', () => {
         maxBytes: 100 * 1024 * 1024,
         kinds: ['image', 'video', 'file'],
       },
+      payment_proof: {
+        maxBytes: 25 * 1024 * 1024,
+        kinds: ['image', 'file'],
+      },
     }
 
     it('logo limits to 5MB image only', () => {
@@ -89,6 +94,7 @@ describe('finalizeUpload validation', () => {
       profile: 1,
       gallery: 20,
       attachment: 50,
+      payment_proof: 10,
     }
 
     it('logo allows max 1 active', () => {

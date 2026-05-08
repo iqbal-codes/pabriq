@@ -1,0 +1,160 @@
+import { Link } from '@tanstack/react-router'
+import { FileText } from 'lucide-react'
+import { parseAsInteger, parseAsString, useQueryState } from 'nuqs'
+import { useCallback, useMemo } from 'react'
+import { useTranslations } from 'use-intl'
+import type { AppColumnDef } from '#/components/app/data-table'
+import { DataTable } from '#/components/app/data-table'
+import { PageContent } from '#/components/app/page-shell/page-content'
+import { PageHeader } from '#/components/app/page-shell/page-header'
+import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
+import { useInvoicesList } from '#/features/invoices/hooks'
+import type { InvoiceRow } from '#/features/invoices/model'
+import { Route } from '#/routes/_org/invoices/index'
+
+export function InvoiceListPage() {
+  const ctx = Route.useRouteContext() as { org: { id: string } }
+  const t = useTranslations('invoices')
+  const dt = useTranslations('dataTable')
+  const st = useTranslations('status')
+
+  const [search] = useQueryState('q', parseAsString.withDefault(''))
+  const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
+  const [perPage, setPerPage] = useQueryState(
+    'perPage',
+    parseAsInteger.withDefault(25),
+  )
+  const [statusFilter] = useQueryState('status', parseAsString.withDefault(''))
+
+  const queryFilters = useMemo(
+    () => ({
+      orgId: ctx.org.id,
+      q: search || undefined,
+      status: statusFilter || undefined,
+      page,
+      perPage,
+    }),
+    [ctx.org.id, search, statusFilter, page, perPage],
+  )
+
+  const { data, isFetching } = useInvoicesList(queryFilters)
+  const rows = data?.rows ?? []
+  const totalRows = data?.totalRows ?? 0
+
+  const handlePerPageChange = useCallback(
+    (pp: number) => {
+      setPerPage(pp)
+      setPage(1)
+    },
+    [setPerPage, setPage],
+  )
+
+  const columns = useMemo<AppColumnDef<InvoiceRow>[]>(
+    () => [
+      {
+        accessorKey: 'invoiceNumber',
+        header: t('invoiceNumber'),
+        meta: { label: t('invoiceNumber'), mobileRole: 'title' },
+      },
+      {
+        accessorKey: 'customerName',
+        header: t('customer'),
+        meta: { label: t('customer') },
+      },
+      {
+        accessorKey: 'total',
+        header: t('total'),
+        meta: { label: t('total') },
+        cell: ({ row }: { row: { original: InvoiceRow } }) => (
+          <span>
+            {new Intl.NumberFormat('id-ID', {
+              style: 'currency',
+              currency: 'IDR',
+              minimumFractionDigits: 0,
+            }).format(row.original.total)}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'dueDate',
+        header: t('dueDate'),
+        meta: { label: t('dueDate') },
+        cell: ({ row }: { row: { original: InvoiceRow } }) => (
+          <span>{row.original.dueDate}</span>
+        ),
+      },
+      {
+        accessorKey: 'status',
+        header: t('status'),
+        meta: { label: t('status'), mobileRole: 'badge' },
+        cell: ({ row }: { row: { original: InvoiceRow } }) => (
+          <Badge>{st(row.original.status as keyof typeof st)}</Badge>
+        ),
+      },
+      {
+        id: 'overdue' as const,
+        header: '',
+        meta: { label: t('overdue') },
+        cell: ({ row }: { row: { original: InvoiceRow } }) =>
+          row.original.overdue ? (
+            <Badge variant="destructive">{t('overdue')}</Badge>
+          ) : null,
+      },
+      {
+        id: 'actions' as const,
+        header: '',
+        meta: { label: dt('actions') },
+        cell: ({ row }: { row: { original: InvoiceRow } }) => (
+          <Button variant="ghost" size="icon-sm" asChild>
+            <Link to="/invoices/$id" params={{ id: row.original.id }}>
+              <FileText className="h-4 w-4" />
+            </Link>
+          </Button>
+        ),
+      },
+    ],
+    [t, dt, st],
+  )
+
+  return (
+    <PageContent>
+      <PageHeader title={t('title')} />
+      <DataTable
+        columns={columns}
+        data={rows}
+        getRowId={(row) => row.id}
+        tableId="invoices"
+        isLoading={isFetching}
+        totalRows={totalRows}
+        page={page}
+        perPage={perPage}
+        onPageChange={setPage}
+        onPerPageChange={handlePerPageChange}
+        labels={{
+          clearFilters: dt('clearFilters'),
+          columnVisibility: dt('columnVisibility'),
+          errorRetry: dt('errorRetry'),
+          errorTitle: dt('errorTitle'),
+          firstPage: dt('firstPage'),
+          lastPage: dt('lastPage'),
+          loading: dt('loading'),
+          nextPage: dt('nextPage'),
+          of: dt('of'),
+          page: dt('page'),
+          perPage: dt('perPage'),
+          previousPage: dt('previousPage'),
+          resetColumns: dt('resetColumns'),
+          rowsSelected: (selected: number, total: number) =>
+            dt('rowsSelected', { selected, total }),
+          visibleRows: (from: number, to: number, total: number) =>
+            dt('visibleRows', { from, to, total }),
+          filters: dt('filters'),
+          applyFilters: dt('applyFilters'),
+          cancelFilters: dt('cancelFilters'),
+          activeFilters: dt('activeFilters'),
+        }}
+      />
+    </PageContent>
+  )
+}

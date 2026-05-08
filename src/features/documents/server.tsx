@@ -3,8 +3,15 @@ import { getRequestHeaders } from '@tanstack/react-start/server'
 import { and, eq } from 'drizzle-orm'
 import { db } from '#/db/index'
 import { member } from '#/db/schema'
+import { InvoiceDocument } from './templates/invoice'
 import { QuotationDocument } from './templates/quotation'
-import type { QuotationPdfData } from './types'
+import type {
+  CustomerPdfInfo,
+  InvoicePdfData,
+  OrgPdfInfo,
+  PdfLineItem,
+  QuotationPdfData,
+} from './types'
 
 export class DocumentAuthError extends Error {
   constructor(
@@ -40,17 +47,102 @@ export async function resolveOrgForDocument(
   return { orgId: memberships[0].orgId, userId: session.user.id }
 }
 
+async function buildOrgPdfInfo(orgId: string): Promise<OrgPdfInfo> {
+  const {
+    organizationProfiles: profiles,
+    addresses,
+    organization,
+  } = await import('#/db/schema')
+
+  const orgRows = await db
+    .select({ name: organization.name })
+    .from(organization)
+    .where(eq(organization.id, orgId))
+    .limit(1)
+  const orgName = orgRows[0]?.name ?? 'Workshop'
+
+  const profileRows = await db
+    .select()
+    .from(profiles)
+    .where(eq(profiles.orgId, orgId))
+    .limit(1)
+  const profile = profileRows[0] ?? null
+
+  let addressStr: string | null = null
+  if (profile?.addressId) {
+    const addrRows = await db
+      .select()
+      .from(addresses)
+      .where(eq(addresses.id, profile.addressId))
+      .limit(1)
+    const addr = addrRows[0] ?? null
+    if (addr) {
+      const parts = [addr.streetAddress, addr.areaName].filter(Boolean)
+      addressStr = parts.join(', ')
+    }
+  }
+
+  let logoUrl: string | null = null
+  if (profile?.logoAssetId) {
+    try {
+      const { getAssetSignedUrl } = await import('#/features/assets/server')
+      const result = await getAssetSignedUrl({
+        data: {
+          assetId: profile.logoAssetId,
+          variantKey: 'preview' as const,
+        },
+      })
+      logoUrl = result.url
+    } catch {
+      // Logo unavailable
+    }
+  }
+
+  return {
+    name: profile?.displayName ?? orgName,
+    email: profile?.email ?? null,
+    phone: profile?.phone ?? null,
+    address: addressStr,
+    logoUrl,
+  }
+}
+
+async function buildCustomerPdfInfo(
+  customerId: string,
+): Promise<CustomerPdfInfo> {
+  const { customers } = await import('#/db/schema')
+  const rows = await db
+    .select()
+    .from(customers)
+    .where(eq(customers.id, customerId))
+    .limit(1)
+  const c = rows[0] ?? null
+  return {
+    name: c?.name ?? 'Unknown',
+    email: c?.email ?? null,
+    phone: c?.phone ?? null,
+    address: c?.address ?? null,
+  }
+}
+
+function computeLineItemTaxes(items: PdfLineItem[]): {
+  items: PdfLineItem[]
+  taxes: number
+} {
+  return {
+    items,
+    taxes: items.reduce(
+      (sum, li) => sum + Math.round(li.total * li.taxPercent) / 100,
+      0,
+    ),
+  }
+}
+
 export async function generateQuotationPdf(
   orgId: string,
   orderId: string,
 ): Promise<Buffer> {
-  const {
-    orders,
-    orderLineItems,
-    customers,
-    products,
-    organizationProfiles: profiles,
-  } = await import('#/db/schema')
+  const { orders, orderLineItems, products } = await import('#/db/schema')
 
   const orderRows = await db
     .select()
@@ -67,68 +159,134 @@ export async function generateQuotationPdf(
     throw new Error('Customer not found')
   }
 
-  const [customerRows, profileRows, itemRows] = await Promise.all([
-    db
-      .select()
-      .from(customers)
-      .where(eq(customers.id, order.customerId))
-      .limit(1),
-    db.select().from(profiles).where(eq(profiles.orgId, orgId)).limit(1),
-    db
-      .select({
-        itemId: orderLineItems.id,
-        productId: orderLineItems.productId,
-        quantity: orderLineItems.quantity,
-        unitPrice: orderLineItems.unitPrice,
-        total: orderLineItems.total,
-      })
-      .from(orderLineItems)
-      .where(eq(orderLineItems.orderId, orderId)),
-  ])
-
-  if (customerRows.length === 0) {
-    throw new Error('Customer not found')
-  }
-
-  const customer = customerRows[0]
-  const profile = profileRows[0] ?? {
-    displayName: null,
-    phone: null,
-    logoAssetId: null,
-  }
-
-  const [productRows] = await Promise.all([
-    db
-      .select({ id: products.id, name: products.name })
-      .from(products)
-      .where(and(eq(products.orgId, orgId))),
-  ])
+  const [orgPdfInfo, customerPdfInfo, itemRows, productRows] =
+    await Promise.all([
+      buildOrgPdfInfo(orgId),
+      buildCustomerPdfInfo(order.customerId),
+      db
+        .select({
+          itemId: orderLineItems.id,
+          productId: orderLineItems.productId,
+          quantity: orderLineItems.quantity,
+          unitPrice: orderLineItems.unitPrice,
+          total: orderLineItems.total,
+        })
+        .from(orderLineItems)
+        .where(eq(orderLineItems.orderId, orderId)),
+      db
+        .select({ id: products.id, name: products.name })
+        .from(products)
+        .where(eq(products.orgId, orgId)),
+    ])
 
   const productMap = new Map(productRows.map((p) => [p.id, p.name]))
 
-  const lineItems = itemRows.map((item) => ({
-    productName: productMap.get(item.productId) ?? 'Unknown Product',
-    quantity: item.quantity,
-    unitPrice: item.unitPrice,
-    total: item.total,
-  }))
+  const lineItems = itemRows.map(
+    (item) =>
+      ({
+        description: productMap.get(item.productId) ?? 'Unknown Product',
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        taxPercent: 0,
+        total: item.total,
+      }) as PdfLineItem,
+  )
+
+  const { taxes } = computeLineItemTaxes(lineItems)
+  const subtotal = lineItems.reduce((s, li) => s + li.total, 0)
 
   const pdfData: QuotationPdfData = {
-    orgName: profile.displayName ?? 'Workshop',
-    orgPhone: profile.phone ?? null,
+    org: orgPdfInfo,
     quoteNumber: order.orderNumber ?? 'ORD-????-???',
     createdAt: order.createdAt,
     validUntil: order.validUntil ?? null,
-    customer: {
-      name: customer.name,
-      email: customer.email ?? null,
-      phone: customer.phone ?? null,
-      address: customer.address ?? null,
-    },
+    customer: customerPdfInfo,
     lineItems,
-    grandTotal: order.total,
+    subtotal,
+    taxes,
+    grandTotal: subtotal + taxes,
+    notes: order.notes ?? null,
   }
 
   const buffer = await renderToBuffer(<QuotationDocument data={pdfData} />)
+  return Buffer.from(buffer)
+}
+
+export async function generateInvoicePdf(
+  orgId: string,
+  invoiceId: string,
+): Promise<Buffer> {
+  const {
+    invoices: invoicesTable,
+    invoiceLineItems,
+    paymentMethods,
+  } = await import('#/db/schema')
+
+  const invoiceRows = await db
+    .select()
+    .from(invoicesTable)
+    .where(and(eq(invoicesTable.id, invoiceId), eq(invoicesTable.orgId, orgId)))
+    .limit(1)
+
+  if (invoiceRows.length === 0) {
+    throw new DocumentAuthError('Invoice not found', 404)
+  }
+
+  const invoice = invoiceRows[0]
+
+  const [orgPdfInfo, customerPdfInfo, itemRows, pmRows] = await Promise.all([
+    buildOrgPdfInfo(orgId),
+    buildCustomerPdfInfo(invoice.customerId),
+    db
+      .select()
+      .from(invoiceLineItems)
+      .where(eq(invoiceLineItems.invoiceId, invoiceId)),
+    invoice.paymentMethodId
+      ? db
+          .select()
+          .from(paymentMethods)
+          .where(eq(paymentMethods.id, invoice.paymentMethodId))
+          .limit(1)
+      : Promise.resolve([]),
+  ])
+
+  const lineItems = itemRows.map(
+    (item) =>
+      ({
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        taxPercent: item.taxPercent,
+        total: item.total,
+      }) as PdfLineItem,
+  )
+
+  const { taxes } = computeLineItemTaxes(lineItems)
+  const paymentMethod = pmRows[0] ?? null
+
+  const pdfData: InvoicePdfData = {
+    org: orgPdfInfo,
+    invoiceNumber: invoice.invoiceNumber,
+    issuedDate: invoice.issuedDate,
+    dueDate: invoice.dueDate,
+    percentage: invoice.percentage,
+    customer: customerPdfInfo,
+    lineItems,
+    subtotal: invoice.subtotal,
+    taxes,
+    total: invoice.total,
+    notes: invoice.notes ?? null,
+    paymentMethod: paymentMethod
+      ? {
+          name: paymentMethod.name,
+          bankName: paymentMethod.bankName,
+          accountNumber: paymentMethod.accountNumber,
+          accountHolder: paymentMethod.accountHolder,
+          instructions: paymentMethod.instructions,
+        }
+      : null,
+  }
+
+  const buffer = await renderToBuffer(<InvoiceDocument data={pdfData} />)
   return Buffer.from(buffer)
 }

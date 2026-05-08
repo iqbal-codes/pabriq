@@ -6,7 +6,13 @@ export type OwnerType =
   | 'organization'
   | 'order'
   | 'productionTask'
-export type Usage = 'logo' | 'profile' | 'gallery' | 'attachment'
+  | 'invoice'
+export type Usage =
+  | 'logo'
+  | 'profile'
+  | 'gallery'
+  | 'attachment'
+  | 'payment_proof'
 export type AssetKind = 'image' | 'video' | 'file'
 export type VariantKey = 'preview' | 'full' | 'original'
 export type AssetStatus = 'pending' | 'active' | 'deleted'
@@ -72,6 +78,11 @@ export const USAGE_LIMITS: Record<
     maxActive: 50,
     maxBytes: 100 * 1024 * 1024,
     kinds: ['image', 'video', 'file'],
+  },
+  payment_proof: {
+    maxActive: 10,
+    maxBytes: 25 * 1024 * 1024,
+    kinds: ['image', 'file'],
   },
 }
 
