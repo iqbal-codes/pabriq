@@ -34,7 +34,7 @@ export function useStageMutations() {
   const t = useTranslations('production')
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.production.stages() })
+    queryClient.invalidateQueries({ queryKey: ['production', 'stages'] })
   }
 
   const createStage = useMutation<

@@ -140,30 +140,31 @@ function ComboboxFieldSingle({
       )}
       <div className="mt-1">
         <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              className="w-full justify-between font-normal"
-              disabled={disabled}
-            >
-              {selectedLabel ? (
-                <span className="truncate">{selectedLabel}</span>
-              ) : (
-                <span className="text-muted-foreground">{placeholder}</span>
-              )}
-              {value ? (
-                <XIcon
-                  className="size-4 shrink-0 opacity-50"
-                  onClick={handleClear}
-                />
-              ) : (
+          <div className="relative">
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-full justify-between font-normal"
+                disabled={disabled}
+              >
+                {selectedLabel ? (
+                  <span className="truncate">{selectedLabel}</span>
+                ) : (
+                  <span className="text-muted-foreground">{placeholder}</span>
+                )}
                 <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
-              )}
-            </Button>
-          </PopoverTrigger>
+              </Button>
+            </PopoverTrigger>
+            {value && (
+              <XIcon
+                className="absolute right-3 top-1/2 size-4 -translate-y-1/2 cursor-pointer opacity-50 hover:opacity-100"
+                onClick={handleClear}
+              />
+            )}
+          </div>
           <PopoverContent
             className="p-0"
             style={{ width: 'var(--radix-popover-trigger-width)' }}
@@ -311,13 +312,19 @@ function ComboboxFieldMulti({
       <div className="mt-1">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
+            <div
               role="combobox"
               aria-expanded={open}
-              className="flex h-auto min-h-10 w-full justify-between gap-1.5 py-2 font-normal"
-              disabled={disabled}
+              aria-disabled={disabled || undefined}
+              tabIndex={disabled ? -1 : 0}
+              className={cn(
+                'flex h-auto min-h-10 w-full items-center justify-between gap-1.5 rounded-lg border bg-background px-4 py-2 text-sm font-normal shadow-xs transition-all outline-none',
+                'hover:bg-accent hover:text-accent-foreground',
+                'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                'dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
+                "[&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+                disabled ? 'pointer-events-none opacity-50' : 'cursor-default',
+              )}
             >
               <div className="flex flex-wrap gap-1">
                 {values.length > 0 ? (
@@ -331,7 +338,7 @@ function ComboboxFieldMulti({
                       >
                         {getLabel(v)}
                         <XIcon
-                          className="size-3"
+                          className="size-3 cursor-pointer"
                           onClick={(e) => handleRemove(v, e)}
                         />
                       </Badge>
@@ -345,7 +352,7 @@ function ComboboxFieldMulti({
                 )}
               </div>
               <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
-            </Button>
+            </div>
           </PopoverTrigger>
           <PopoverContent
             className="w-[--radix-popover-trigger-width] p-0"

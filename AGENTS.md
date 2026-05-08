@@ -78,6 +78,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Server boundary: TanStack Start `createServerFn`.
 - Database: Neon Postgres + Drizzle.
 - Auth: Better Auth + Drizzle adapter.
+- Design tokens: `DESIGN.md` (colors, typography, spacing, radius).
 - Monitoring: Sentry optional locally, required in production when configured.
 
 ## 6. Agent skills

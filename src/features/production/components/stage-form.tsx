@@ -30,6 +30,7 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
     defaultValues: {
       name: stage?.name ?? '',
       description: stage?.description ?? '',
+      board: stage?.board ?? 'pre_production',
       needApproval: stage?.needApproval ?? false,
       requirements: (stage?.requirements as Requirement[]) ?? [],
     },
@@ -39,6 +40,7 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
           id: stage.id,
           name: value.name,
           description: value.description || undefined,
+          board: value.board,
           needApproval: value.needApproval,
           requirements: value.requirements as Requirement[],
         })
@@ -46,6 +48,7 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
         await createStage.mutateAsync({
           name: value.name,
           description: value.description || undefined,
+          board: value.board,
           needApproval: value.needApproval,
           requirements: value.requirements as Requirement[],
         })
@@ -79,6 +82,40 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
                   label={t('stageDescription')}
                   placeholder={t('stageDescriptionPlaceholder')}
                 />
+              )}
+            </form.AppField>
+
+            <form.AppField name="board">
+              {(field) => (
+                <div>
+                  <Label>{t('board')}</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Button
+                      type="button"
+                      variant={
+                        field.state.value === 'pre_production'
+                          ? 'default'
+                          : 'outline'
+                      }
+                      size="sm"
+                      onClick={() => field.handleChange('pre_production')}
+                    >
+                      {t('boardPreProduction')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={
+                        field.state.value === 'production'
+                          ? 'default'
+                          : 'outline'
+                      }
+                      size="sm"
+                      onClick={() => field.handleChange('production')}
+                    >
+                      {t('boardProduction')}
+                    </Button>
+                  </div>
+                </div>
               )}
             </form.AppField>
 
@@ -200,7 +237,11 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
           </FormGrid>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               {ct('cancel')}
             </Button>
             <form.AppForm>

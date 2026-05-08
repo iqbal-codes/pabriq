@@ -196,6 +196,17 @@ export async function toggleStage(
 }
 
 export async function deleteStage(id: string, orgId: string): Promise<void> {
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(tasksTable)
+    .where(and(eq(tasksTable.stageId, id), eq(tasksTable.orgId, orgId)))
+
+  if (count > 0) {
+    throw new Error(
+      `Cannot delete stage: ${count} task(s) are still assigned to this stage. Reassign or complete them first.`,
+    )
+  }
+
   const result = await db
     .delete(stagesTable)
     .where(and(eq(stagesTable.id, id), eq(stagesTable.orgId, orgId)))

@@ -70,6 +70,7 @@ export type Messages = {
     preview: string
     actions: string
     pcs: string
+    type: string
   }
   settings: {
     general: string
@@ -87,6 +88,21 @@ export type Messages = {
     saveFailed: string
     profileTab: string
     memberTab: string
+    addPaymentMethod: string
+    editPaymentMethod: string
+    bankTransfer: string
+    paymentGateway: string
+    bankName: string
+    accountNumber: string
+    accountHolder: string
+    instructions: string
+    defaultPayment: string
+    deletePaymentMethod: string
+    deletePaymentMethodConfirm: string
+    noPaymentMethods: string
+    noPaymentMethodsDesc: string
+    active: string
+    inactive: string
   }
   members: {
     title: string
@@ -489,6 +505,7 @@ export type Messages = {
     noActivity: string
     tabActive: string
     tabArchive: string
+    board: string
     boardPreProduction: string
     boardProduction: string
     archivedEmpty: string
@@ -627,6 +644,7 @@ const en: Messages = {
     preview: 'Preview',
     actions: 'Actions',
     pcs: 'pcs',
+    type: 'Type',
   },
   dataTable: {
     clearFilters: 'Clear filters',
@@ -790,6 +808,22 @@ const en: Messages = {
     saveFailed: 'Failed to save settings',
     profileTab: 'Profile',
     memberTab: 'Members',
+    addPaymentMethod: 'Add Payment Method',
+    editPaymentMethod: 'Edit Payment Method',
+    bankTransfer: 'Bank Transfer',
+    paymentGateway: 'Payment Gateway',
+    bankName: 'Bank Name',
+    accountNumber: 'Account Number',
+    accountHolder: 'Account Holder',
+    instructions: 'Instructions',
+    defaultPayment: 'Default',
+    deletePaymentMethod: 'Delete Payment Method',
+    deletePaymentMethodConfirm:
+      'Are you sure you want to delete this payment method?',
+    noPaymentMethods: 'No payment methods yet',
+    noPaymentMethodsDesc: 'Add a payment method to get started.',
+    active: 'Active',
+    inactive: 'Inactive',
   },
   members: {
     title: 'Members',
@@ -1042,6 +1076,7 @@ const en: Messages = {
     noActivity: 'No activity yet',
     tabActive: 'Active Tasks',
     tabArchive: 'Archive',
+    board: 'Board',
     boardPreProduction: 'Pre-Production',
     boardProduction: 'Production',
     archivedEmpty: 'No archived tasks',

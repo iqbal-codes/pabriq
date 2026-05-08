@@ -19,7 +19,6 @@ export function StageList({ stages, loading }: Props) {
   const dt = useTranslations('dataTable')
   const { deleteStage, reorderStages } = useStageMutations()
   const [editStage, setEditStage] = useState<Stage | undefined>()
-  const [showCreate, setShowCreate] = useState(false)
 
   async function handleMoveUp(index: number) {
     if (index === 0) return
@@ -142,7 +141,7 @@ export function StageList({ stages, loading }: Props) {
         columns={columns}
         data={stages}
         getRowId={(row) => row.id}
-        isLoading={loading}
+        isLoading={loading || deleteStage.isPending}
         labels={labels}
         onPageChange={() => {}}
         onPerPageChange={() => {}}
@@ -154,13 +153,11 @@ export function StageList({ stages, loading }: Props) {
         emptyDescription={t('noTasks')}
         noResultsTitle={t('stageManagement')}
         hasActiveFilters={false}
-        toolbarStart={
-          <Button onClick={() => setShowCreate(true)}>{t('addStage')}</Button>
-        }
+        toolbarStart={<div />}
         rowActions={(stage: Stage) => (
           <div className="flex gap-1">
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               tooltip={t('editStage')}
               onClick={() => setEditStage(stage)}
@@ -168,18 +165,16 @@ export function StageList({ stages, loading }: Props) {
               <Edit className="size-4" />
             </Button>
             <Button
-              variant="destructive"
+              variant="ghost"
               size="icon"
               tooltip={t('deleteStage')}
               onClick={() => handleDelete(stage.id)}
             >
-              <Trash className="size-4" />
+              <Trash className="size-4 text-destructive" />
             </Button>
           </div>
         )}
       />
-
-      <StageForm open={showCreate} onOpenChange={setShowCreate} />
 
       {editStage && (
         <StageForm

@@ -7,14 +7,13 @@ description: UI component system — shadcn primitives, app components, forms, D
 
 ## Non-Negotiables
 
-- MUST use shadcn/ui primitives — never raw `<button>`, `<input>`, `<select>`, `<textarea>`, `<table>`, `<dialog>`, `<label>` standalone. Use `Button`, `Input`, `NativeSelect`, `Textarea`, `Table`, `Dialog`, `Label` from `#/components/ui/*`.
-- MUST use `useAppForm` from `#/components/app/form` for all form state. MUST NOT use raw `useState` for field values.
-- MUST wrap form fields in `form.AppField` with the field component from `#/components/app/form`.
+- MUST use shadcn/ui primitives — never raw `<button>`, `<input>`, `<select>`, `<textarea>`, `<dialog>`, `<label>` standalone. Use `Button`, `Input`, `NativeSelect`, `Textarea`, `Dialog`, `Label` from `#/components/ui/*`. (`Table` from `#/components/ui/table` is only used internally by the `DataTable` app component; never build table UIs directly from it.)
+- MUST use `useAppForm` from `#/components/app/form` for ALL forms. MUST use the app/form field components (`TextField`, `NumberField`, `SelectField`, etc.) inside `form.AppField`. MUST NOT build forms from scratch using shadcn/ui `Input`, `Label`, `Field` primitives — always go through the app/form layer.
 - MUST use `nuqs` (`useQueryState`, `parseAsString`) for URL search params. MUST NOT use raw `useSearchParams`.
 - MUST use lucide-react for icons. MUST NOT use emoji or other icon libraries.
 - MUST use `Button asChild` when wrapping a `Link` in a `Button`.
 - MUST use `PageContent` and `PageHeader` from `#/components/app/page-shell` for workspace pages.
-- MUST use `DataTable` from `#/components/app/data-table` for lists with columns.
+- MUST use `DataTable` from `#/components/app/data-table` for ALL table/list UIs. MUST NOT build tables directly from `#/components/ui/table` — it's an internal primitive only used by the `DataTable` component.
 
 ## UI Primitives
 

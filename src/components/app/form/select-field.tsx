@@ -1,4 +1,10 @@
-import { NativeSelect, NativeSelectOption } from '#/components/ui/native-select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#/components/ui/select'
 import { useFieldContext } from './form-context'
 import type { FieldProps, SelectOption } from './form-fields-shared'
 import { firstError } from './form-utils'
@@ -27,25 +33,26 @@ export function SelectField({
         </label>
       )}
       <div className="mt-1">
-        <NativeSelect
-          id={field.name}
+        <Select
           name={field.name}
           value={field.state.value || ''}
-          onChange={(e) => field.handleChange(e.target.value)}
-          onBlur={field.handleBlur}
+          onValueChange={(value) => field.handleChange(value)}
+          onOpenChange={(open) => {
+            if (!open) field.handleBlur()
+          }}
           disabled={disabled}
         >
-          {placeholder && (
-            <NativeSelectOption value="" disabled>
-              {placeholder}
-            </NativeSelectOption>
-          )}
-          {options.map((opt) => (
-            <NativeSelectOption key={opt.value} value={opt.value}>
-              {opt.label}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
+          <SelectTrigger id={field.name} className="w-full">
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
     </div>

@@ -1,318 +1,366 @@
+import { Pencil, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { useTranslations } from "use-intl";
+import type {
+  AppColumnDef,
+  DataTableLabels,
+} from "#/components/app/data-table";
+import { DataTable } from "#/components/app/data-table";
+import { FormGrid, FormRoot, useAppForm } from "#/components/app/form";
+import { PageContent } from "#/components/app/page-shell/page-content";
+import { PageHeader } from "#/components/app/page-shell/page-header";
 import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from '@tanstack/react-query'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
-import { useState } from 'react'
-import { toast } from 'sonner'
-import { useTranslations } from 'use-intl'
-import { Button } from '#/components/ui/button'
-import { Card, CardContent } from '#/components/ui/card'
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "#/components/ui/alert-dialog";
+import { Badge } from "#/components/ui/badge";
+import { Button } from "#/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from '#/components/ui/dialog'
-import { Input } from '#/components/ui/input'
-import { Label } from '#/components/ui/label'
-import { NativeSelect } from '#/components/ui/native-select'
-import { Switch } from '#/components/ui/switch'
+} from "#/components/ui/dialog";
+import { Label } from "#/components/ui/label";
+import { Switch } from "#/components/ui/switch";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '#/components/ui/table'
-import {
-  createPaymentMethodFn,
-  deletePaymentMethodFn,
-  listPaymentMethodsFn,
-  updatePaymentMethodFn,
-} from '#/features/invoices/server'
-import { queryKeys } from '#/lib/query-keys'
+  useCreatePaymentMethod,
+  useDeletePaymentMethod,
+  usePaymentMethods,
+  useUpdatePaymentMethod,
+} from "#/features/invoices/hooks";
+import type { PaymentMethod } from "#/features/invoices/model";
+
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  bank_transfer: "bankTransfer",
+  payment_gateway: "paymentGateway",
+};
 
 export function PaymentMethodsPage() {
-  const t = useTranslations('invoices')
-  const st = useTranslations('settings')
-  const ct = useTranslations('common')
-  const queryClient = useQueryClient()
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState({
-    name: '',
-    type: 'bank_transfer',
-    bankName: '',
-    accountNumber: '',
-    accountHolder: '',
-    instructions: '',
-    isDefault: false,
-    active: true,
-  })
+  const t = useTranslations("settings");
+  const ct = useTranslations("common");
+  const dt = useTranslations("dataTable");
 
-  const { data: methods } = useSuspenseQuery({
-    queryKey: queryKeys.invoices.paymentMethods(),
-    queryFn: () => listPaymentMethodsFn({ data: {} }),
-  })
+  const { data: methods, isLoading } = usePaymentMethods();
+  const createPaymentMethod = useCreatePaymentMethod();
+  const updatePaymentMethod = useUpdatePaymentMethod();
+  const deletePaymentMethod = useDeletePaymentMethod();
 
-  const createMutation = useMutation({
-    mutationFn: (input: typeof form) =>
-      createPaymentMethodFn({
-        data: {
-          orgId: '',
-          ...input,
-          bankName: input.bankName || null,
-          accountNumber: input.accountNumber || null,
-          accountHolder: input.accountHolder || null,
-          instructions: input.instructions || null,
-        },
-      }),
-    onSuccess: (res) => {
-      if (res.ok) {
-        toast.success(st('saved'))
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.invoices.paymentMethods(),
-        })
-        setDialogOpen(false)
-        resetForm()
-      } else {
-        toast.error(res.error ?? 'Failed')
-      }
-    },
-  })
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PaymentMethod | null>(null);
 
-  const updateMutation = useMutation({
-    mutationFn: (input: { id: string } & typeof form) =>
-      updatePaymentMethodFn({
-        data: {
-          id: input.id,
-          name: input.name,
-          type: input.type,
-          bankName: input.bankName || null,
-          accountNumber: input.accountNumber || null,
-          accountHolder: input.accountHolder || null,
-          instructions: input.instructions || null,
-          isDefault: input.isDefault,
-          active: input.active,
-        },
-      }),
-    onSuccess: (res) => {
-      if (res.ok) {
-        toast.success(st('saved'))
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.invoices.paymentMethods(),
-        })
-        setDialogOpen(false)
-        resetForm()
-      } else {
-        toast.error(res.error ?? 'Failed')
-      }
-    },
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => deletePaymentMethodFn({ data: { id } }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.invoices.paymentMethods(),
-      })
-      toast.success(st('saved'))
-    },
-  })
-
-  function resetForm() {
-    setForm({
-      name: '',
-      type: 'bank_transfer',
-      bankName: '',
-      accountNumber: '',
-      accountHolder: '',
-      instructions: '',
+  const form = useAppForm({
+    defaultValues: {
+      name: "",
+      type: "bank_transfer" as string,
+      bankName: "",
+      accountNumber: "",
+      accountHolder: "",
+      instructions: "",
       isDefault: false,
       active: true,
-    })
-    setEditingId(null)
+    },
+    onSubmit: async ({ value }) => {
+      const derivedName =
+        value.type === "bank_transfer"
+          ? [value.bankName, value.accountNumber].filter(Boolean).join(" - ") ||
+            t("bankTransfer")
+          : t("paymentGateway");
+      const payload = {
+        name: derivedName,
+        type: value.type,
+        bankName: value.bankName || null,
+        accountNumber: value.accountNumber || null,
+        accountHolder: value.accountHolder || null,
+        instructions: value.instructions || null,
+        isDefault: value.isDefault,
+        active: value.active,
+      };
+      if (editingId) {
+        const result = await updatePaymentMethod.mutateAsync({
+          id: editingId,
+          ...payload,
+        });
+        if (!result.ok) {
+          toast.error(result.error);
+          return;
+        }
+      } else {
+        const result = await createPaymentMethod.mutateAsync({
+          orgId: "",
+          ...payload,
+        });
+        if (!result.ok) {
+          toast.error(result.error);
+          return;
+        }
+      }
+      toast.success(t("saved"));
+      setDialogOpen(false);
+      form.reset();
+      setEditingId(null);
+    },
+  });
+
+  function openEdit(method: PaymentMethod) {
+    setEditingId(method.id);
+    form.setFieldValue("type", method.type);
+    form.setFieldValue("bankName", method.bankName ?? "");
+    form.setFieldValue("accountNumber", method.accountNumber ?? "");
+    form.setFieldValue("accountHolder", method.accountHolder ?? "");
+    form.setFieldValue("instructions", method.instructions ?? "");
+    form.setFieldValue("isDefault", method.isDefault);
+    form.setFieldValue("active", method.active);
+    setDialogOpen(true);
   }
 
-  function openEdit(method: (typeof methods)[0]) {
-    setEditingId(method.id)
-    setForm({
-      name: method.name,
-      type: method.type,
-      bankName: method.bankName ?? '',
-      accountNumber: method.accountNumber ?? '',
-      accountHolder: method.accountHolder ?? '',
-      instructions: method.instructions ?? '',
-      isDefault: method.isDefault,
-      active: method.active,
-    })
-    setDialogOpen(true)
-  }
-
-  function handleSubmit() {
-    if (editingId) {
-      updateMutation.mutate({ id: editingId, ...form })
-    } else {
-      createMutation.mutate(form)
+  function handleDialogClose(open: boolean) {
+    if (!open) {
+      form.reset();
+      setEditingId(null);
     }
+    setDialogOpen(open);
   }
+
+  const columns: AppColumnDef<PaymentMethod>[] = [
+    {
+      id: "type",
+      header: ct("type"),
+      meta: { label: ct("type"), mobileRole: "badge" },
+      cell: ({ row }) => {
+        const labelKey =
+          TYPE_LABEL_KEYS[row.original.type] ?? row.original.type;
+        return <Badge variant="secondary">{t(labelKey)}</Badge>;
+      },
+    },
+    {
+      id: "bankName",
+      header: t("bankName"),
+      meta: { label: t("bankName"), mobileRole: "meta" },
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">
+          {row.original.bankName ?? "—"}
+        </span>
+      ),
+    },
+    {
+      id: "account",
+      header: t("accountNumber"),
+      meta: { label: t("accountNumber"), mobileRole: "meta" },
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">
+          {row.original.accountNumber
+            ? `${row.original.accountNumber}${row.original.accountHolder ? ` (${row.original.accountHolder})` : ""}`
+            : "—"}
+        </span>
+      ),
+    },
+    {
+      id: "isDefault",
+      header: t("defaultPayment"),
+      meta: { label: t("defaultPayment"), mobileRole: "badge" },
+      cell: ({ row }) =>
+        row.original.isDefault ? <Badge>{t("defaultPayment")}</Badge> : null,
+    },
+    {
+      id: "active",
+      header: ct("status"),
+      meta: { label: ct("status"), mobileRole: "badge" },
+      cell: ({ row }) => (
+        <Badge variant={row.original.active ? "default" : "secondary"}>
+          {row.original.active ? t("active") : t("inactive")}
+        </Badge>
+      ),
+    },
+  ];
+
+  const labels: DataTableLabels = {
+    clearFilters: dt("clearFilters"),
+    columnVisibility: dt("columnVisibility"),
+    errorRetry: dt("errorRetry"),
+    errorTitle: dt("errorTitle"),
+    firstPage: dt("firstPage"),
+    lastPage: dt("lastPage"),
+    loading: dt("loading"),
+    nextPage: dt("nextPage"),
+    of: dt("of"),
+    page: dt("page"),
+    perPage: dt("perPage"),
+    previousPage: dt("previousPage"),
+    resetColumns: dt("resetColumns"),
+    rowsSelected: (selected: number, total: number) =>
+      dt("rowsSelected", { selected, total }),
+    visibleRows: (from: number, to: number, total: number) =>
+      dt("visibleRows", { from, to, total }),
+  };
+
+  const methodList = methods ?? [];
 
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">{st('paymentMethods')}</h2>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('createInvoice')}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editingId ? 'Edit' : 'Add'} {st('paymentMethods')}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4">
-              <div>
-                <Label>{t('paymentMethod')}</Label>
-                <Input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="e.g. BCA Transfer"
-                />
-              </div>
-              <div>
-                <Label>Type</Label>
-                <NativeSelect
-                  value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                >
-                  <option value="bank_transfer">Bank Transfer</option>
-                  <option value="payment_gateway">Payment Gateway</option>
-                </NativeSelect>
-              </div>
-              <div>
-                <Label>Bank Name</Label>
-                <Input
-                  value={form.bankName}
-                  onChange={(e) =>
-                    setForm({ ...form, bankName: e.target.value })
-                  }
-                  placeholder="e.g. BCA"
-                />
-              </div>
-              <div>
-                <Label>Account Number</Label>
-                <Input
-                  value={form.accountNumber}
-                  onChange={(e) =>
-                    setForm({ ...form, accountNumber: e.target.value })
-                  }
-                  placeholder="e.g. 1234567890"
-                />
-              </div>
-              <div>
-                <Label>Account Holder</Label>
-                <Input
-                  value={form.accountHolder}
-                  onChange={(e) =>
-                    setForm({ ...form, accountHolder: e.target.value })
-                  }
-                  placeholder="e.g. PT Pabriq"
-                />
-              </div>
-              <div>
-                <Label>Instructions</Label>
-                <Input
-                  value={form.instructions}
-                  onChange={(e) =>
-                    setForm({ ...form, instructions: e.target.value })
-                  }
-                  placeholder="Additional payment instructions"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={form.isDefault}
-                  onCheckedChange={(v) => setForm({ ...form, isDefault: v })}
-                />
-                <Label>Default</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={form.active}
-                  onCheckedChange={(v) => setForm({ ...form, active: v })}
-                />
-                <Label>{st('general')}</Label>
-              </div>
-              <Button
-                onClick={handleSubmit}
-                disabled={createMutation.isPending || updateMutation.isPending}
-              >
-                {ct('confirm')}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+    <>
+      <PageHeader
+        title={t("paymentMethods")}
+        primaryAction={{
+          label: t("addPaymentMethod"),
+          onClick: () => {
+            form.reset();
+            setEditingId(null);
+            setDialogOpen(true);
+          },
+        }}
+      />
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('paymentMethod')}</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Bank</TableHead>
-                <TableHead>Account</TableHead>
-                <TableHead>Default</TableHead>
-                <TableHead>{t('status')}</TableHead>
-                <TableHead>{ct('actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {methods.map((method) => (
-                <TableRow key={method.id}>
-                  <TableCell className="font-medium">{method.name}</TableCell>
-                  <TableCell>{method.type}</TableCell>
-                  <TableCell>{method.bankName ?? '—'}</TableCell>
-                  <TableCell>
-                    {method.accountNumber
-                      ? `${method.accountNumber} (${method.accountHolder ?? ''})`
-                      : '—'}
-                  </TableCell>
-                  <TableCell>{method.isDefault ? 'Yes' : '—'}</TableCell>
-                  <TableCell>{method.active ? 'Active' : 'Inactive'}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => openEdit(method)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => deleteMutation.mutate(method.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  )
+      <DataTable
+        columns={columns}
+        data={methodList}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        labels={labels}
+        onPageChange={() => {}}
+        onPerPageChange={() => {}}
+        page={1}
+        perPage={methodList.length || 1}
+        tableId="payment-methods"
+        totalRows={methodList.length}
+        emptyTitle={t("noPaymentMethods")}
+        emptyDescription={t("noPaymentMethodsDesc")}
+        noResultsTitle={t("noPaymentMethods")}
+        hasActiveFilters={false}
+        rowActions={(method: PaymentMethod) => (
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              tooltip={t("editPaymentMethod")}
+              onClick={() => openEdit(method)}
+            >
+              <Pencil className="size-4" />
+            </Button>
+            <Button
+              variant="destructive"
+              size="icon"
+              tooltip={t("deletePaymentMethod")}
+              onClick={() => setDeleteTarget(method)}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </div>
+        )}
+      />
+
+      <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingId ? t("editPaymentMethod") : t("addPaymentMethod")}
+            </DialogTitle>
+          </DialogHeader>
+          <FormRoot form={form}>
+            <FormGrid columns={1}>
+              <form.AppField name="type">
+                {(field) => (
+                  <field.SelectField
+                    label={ct("type")}
+                    options={[
+                      { value: "bank_transfer", label: t("bankTransfer") },
+                      { value: "payment_gateway", label: t("paymentGateway") },
+                    ]}
+                  />
+                )}
+              </form.AppField>
+
+              <form.AppField name="bankName">
+                {(field) => <field.TextField label={t("bankName")} />}
+              </form.AppField>
+
+              <form.AppField name="accountNumber">
+                {(field) => <field.TextField label={t("accountNumber")} />}
+              </form.AppField>
+
+              <form.AppField name="accountHolder">
+                {(field) => <field.TextField label={t("accountHolder")} />}
+              </form.AppField>
+
+              <form.AppField name="instructions">
+                {(field) => <field.TextareaField label={t("instructions")} />}
+              </form.AppField>
+
+              <form.AppField name="isDefault">
+                {(field) => (
+                  <div className="flex items-center justify-between">
+                    <Label>{t("defaultPayment")}</Label>
+                    <Switch
+                      checked={field.state.value}
+                      onCheckedChange={(v) => field.handleChange(v)}
+                    />
+                  </div>
+                )}
+              </form.AppField>
+
+              <form.AppField name="active">
+                {(field) => (
+                  <div className="flex items-center justify-between">
+                    <Label>{ct("status")}</Label>
+                    <Switch
+                      checked={field.state.value}
+                      onCheckedChange={(v) => field.handleChange(v)}
+                    />
+                  </div>
+                )}
+              </form.AppField>
+            </FormGrid>
+
+            <div className="mt-4 flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleDialogClose(false)}
+              >
+                {ct("cancel")}
+              </Button>
+              <form.AppForm>
+                <form.SubmitButton>
+                  {editingId ? t("editPaymentMethod") : t("addPaymentMethod")}
+                </form.SubmitButton>
+              </form.AppForm>
+            </div>
+          </FormRoot>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("deletePaymentMethod")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("deletePaymentMethodConfirm")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{ct("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteTarget) {
+                  deletePaymentMethod.mutate(deleteTarget.id);
+                }
+                setDeleteTarget(null);
+              }}
+            >
+              {t("deletePaymentMethod")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
 }
