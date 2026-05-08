@@ -4,18 +4,18 @@
     "shadcn": {
       "type": "local",
       "command": ["npx", "-y", "shadcn@latest", "mcp"],
-      "enabled": false,
+      "enabled": false
     },
     "neon": {
       "type": "remote",
       "url": "https://mcp.neon.tech/mcp",
-      "enabled": true,
-    },
+      "enabled": true
+    }
   },
   "instructions": ["AGENTS.md"],
   "compaction": {
     "auto": true,
     "prune": true,
-    "reserved": 10000,
-  },
+    "reserved": 10000
+  }
 }
