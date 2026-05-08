@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
-import { defaultLocale, LOCALE_COOKIE, stripLocale } from '#/lib/i18n'
+import { LOCALE_KEY } from '#/lib/i18n'
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
@@ -34,17 +34,9 @@ export function LanguageToggle() {
   const locale = useLocale()
 
   const switchTo = (targetLocale: string) => {
-    const url = new URL(window.location.href)
-    const basePath = stripLocale(url.pathname)
-
-    if (targetLocale === defaultLocale) {
-      url.pathname = basePath
-    } else {
-      url.pathname = `/${targetLocale}${basePath === '/' ? '' : basePath}`
-    }
-
-    Cookies.set(LOCALE_COOKIE, targetLocale, { path: '/', expires: 365 })
-    window.location.assign(url.toString())
+    localStorage.setItem(LOCALE_KEY, targetLocale)
+    Cookies.set(LOCALE_KEY, targetLocale, { path: '/', expires: 365 })
+    window.location.reload()
   }
 
   return (

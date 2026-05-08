@@ -13,6 +13,7 @@ import { IntlProvider, useTranslations } from 'use-intl'
 import { Toaster } from '#/components/ui/sonner'
 import { ThemeProvider } from '#/components/ui/theme-provider'
 import { TooltipProvider } from '#/components/ui/tooltip'
+import { defaultLocale } from '#/lib/i18n'
 import { getCurrentLocale } from '#/lib/i18n.utils'
 import { getQueryClient } from '#/lib/query-client'
 import { messages } from '#/messages'
@@ -96,7 +97,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       >
         <IntlProvider
           locale={locale}
-          messages={messages[locale ?? 'en']}
+          messages={messages[locale ?? defaultLocale]}
           timeZone="UTC"
         >
           <TitleSetter />
