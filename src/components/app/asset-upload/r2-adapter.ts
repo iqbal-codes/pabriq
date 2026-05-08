@@ -138,12 +138,7 @@ export function getAcceptedMimeTypes(
         'application/pdf',
       ]
     case 'payment_proof':
-      return [
-        'image/png',
-        'image/jpeg',
-        'image/webp',
-        'application/pdf',
-      ]
+      return ['image/png', 'image/jpeg', 'image/webp', 'application/pdf']
   }
 }
 

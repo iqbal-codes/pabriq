@@ -72,7 +72,7 @@ function ExistingFileRow({
           <span className="text-xs text-muted-foreground">
             {formatBytes(metadata.sizeBytes)}
           </span>
-          <span className="text-xs text-green-600">{t('states.uploaded')}</span>
+          <span className="text-xs text-success">{t('states.uploaded')}</span>
         </div>
       </div>
       <Button variant="ghost" size="icon-lg" onClick={() => void onRemove()}>

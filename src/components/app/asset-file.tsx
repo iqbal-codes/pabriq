@@ -132,7 +132,7 @@ function AssetFileRow({
             </span>
           )}
           {!isPreviewable && ext && (
-            <Badge variant="outline" className="text-[10px] leading-3 py-0 h-4">
+            <Badge variant="outline" className="text-xs leading-3 py-0 h-4">
               {ext}
             </Badge>
           )}
@@ -199,7 +199,7 @@ function AssetFileGridCard({
           {metadata.originalFilename}
         </p>
         {showSize && (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {formatBytes(metadata.sizeBytes)}
           </p>
         )}
@@ -224,7 +224,7 @@ function AssetFileGridCard({
       {!isPreviewable && ext && (
         <Badge
           variant="secondary"
-          className="absolute top-1.5 left-1.5 text-[9px] leading-3 py-0 h-4"
+          className="absolute top-1.5 left-1.5 text-xs leading-3 py-0 h-4"
         >
           {ext}
         </Badge>

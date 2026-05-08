@@ -19,7 +19,7 @@ function formatBytes(bytes: number): string {
 function DropzoneIcon({ status }: { status: UploadItem['status'] }) {
   switch (status) {
     case 'done':
-      return <CheckCircle className="h-8 w-8 text-green-500" />
+      return <CheckCircle className="h-8 w-8 text-success" />
     case 'failed':
       return <AlertCircle className="h-8 w-8 text-destructive" />
     case 'uploading':

@@ -59,7 +59,7 @@ function FileRow({
             </span>
           )}
           {item.status === 'done' && (
-            <span className="text-xs text-green-600">{t('states.done')}</span>
+            <span className="text-xs text-success">{t('states.done')}</span>
           )}
           {item.status === 'failed' && item.error && (
             <span className="text-xs text-destructive">{item.error}</span>

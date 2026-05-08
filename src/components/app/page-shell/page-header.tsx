@@ -1,17 +1,18 @@
-import { Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "#/components/ui/button";
-import { cn } from "#/lib/utils";
-import { PageActions } from "./page-actions";
+import { Link } from '@tanstack/react-router'
+import { ArrowLeft } from 'lucide-react'
+import { Button } from '#/components/ui/button'
+import { cn } from '#/lib/utils'
+import { PageActions } from './page-actions'
+import type { PageAction } from './page-shell-types'
 
 type PageHeaderProps = {
-  title: string | React.ReactNode;
-  description?: string;
-  backAction?: PageAction;
-  primaryAction?: PageAction;
-  secondaryActions?: PageAction[];
-  className?: string;
-};
+  title: string | React.ReactNode
+  description?: string
+  backAction?: PageAction
+  primaryAction?: PageAction
+  secondaryActions?: PageAction[]
+  className?: string
+}
 
 export function PageHeader({
   title,
@@ -24,7 +25,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "hidden md:flex md:items-center md:justify-between mb-6",
+        'hidden md:flex md:items-center md:justify-between mb-6',
         className,
       )}
     >
@@ -57,5 +58,5 @@ export function PageHeader({
         secondaryActions={secondaryActions}
       />
     </div>
-  );
+  )
 }

@@ -52,7 +52,9 @@ describe('RadioGroupField', () => {
 
     await user.click(screen.getByText('Option B'))
     expect(
-      screen.getByRole('radio', { name: 'Option B' }).getAttribute('aria-checked'),
+      screen
+        .getByRole('radio', { name: 'Option B' })
+        .getAttribute('aria-checked'),
     ).toBe('true')
   })
 })
@@ -99,7 +101,9 @@ describe('RadioCardField', () => {
 
     await user.click(screen.getByText('Option A'))
     expect(
-      screen.getByRole('radio', { name: 'Option A' }).getAttribute('aria-checked'),
+      screen
+        .getByRole('radio', { name: 'Option A' })
+        .getAttribute('aria-checked'),
     ).toBe('true')
   })
 })

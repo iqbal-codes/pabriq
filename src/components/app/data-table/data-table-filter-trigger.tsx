@@ -27,7 +27,7 @@ export function DataTableFilterTrigger({
       {activeCount > 0 && (
         <Badge
           variant="secondary"
-          className="ml-1 size-5 rounded-full p-0 text-[11px] leading-none md:static md:size-auto md:rounded-md md:px-1.5 md:py-0.5"
+          className="ml-1 size-5 rounded-full p-0 text-xs leading-none md:static md:size-auto md:rounded-md md:px-1.5 md:py-0.5"
         >
           {activeCount}
         </Badge>

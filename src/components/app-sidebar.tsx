@@ -11,8 +11,8 @@ import {
   Users,
   Wrench,
 } from 'lucide-react'
-import { AssetImage } from '#/components/app/asset-image'
 import { useTranslations } from 'use-intl'
+import { AssetImage } from '#/components/app/asset-image'
 import { NavUser } from '#/components/nav-user'
 import {
   Sidebar,

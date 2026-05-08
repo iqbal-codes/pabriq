@@ -58,15 +58,15 @@ function PhotoThumbnail({
       {item.status === 'uploading' || item.status === 'processing' ? (
         <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center p-1">
           <Progress value={item.progress} className="w-full h-0.5" />
-          <span className="text-[10px] mt-0.5">{item.progress}%</span>
+          <span className="text-xs mt-0.5">{item.progress}%</span>
         </div>
       ) : item.status === 'failed' ? (
         <div className="absolute inset-0 bg-destructive/10 flex items-center justify-center">
           <AlertCircle className="size-5 text-destructive" />
         </div>
       ) : item.status === 'done' ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-green-500/10">
-          <CheckCircle className="size-5 text-green-500" />
+        <div className="absolute inset-0 flex items-center justify-center bg-success/10">
+          <CheckCircle className="size-5 text-success" />
         </div>
       ) : null}
 

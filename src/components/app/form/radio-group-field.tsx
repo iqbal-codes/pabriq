@@ -12,7 +12,10 @@ function RadioGroupField({
   disabled,
   options,
   layout = 'vertical',
-}: FieldProps & { options: SelectOption[]; layout?: 'vertical' | 'horizontal' }) {
+}: FieldProps & {
+  options: SelectOption[]
+  layout?: 'vertical' | 'horizontal'
+}) {
   const field = useFieldContext<string>()
   const error = firstError(field.state.meta.errors)
 
@@ -109,4 +112,4 @@ function RadioCardField({
   )
 }
 
-export { RadioGroupField, RadioCardField }
+export { RadioCardField, RadioGroupField }
