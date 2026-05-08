@@ -103,6 +103,8 @@ export type Messages = {
     noPaymentMethodsDesc: string
     active: string
     inactive: string
+    organization: string
+    save: string
   }
   members: {
     title: string
@@ -824,6 +826,8 @@ const en: Messages = {
     noPaymentMethodsDesc: 'Add a payment method to get started.',
     active: 'Active',
     inactive: 'Inactive',
+    organization: 'Organization',
+    save: 'Save',
   },
   members: {
     title: 'Members',

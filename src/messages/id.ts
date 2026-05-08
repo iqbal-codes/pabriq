@@ -253,6 +253,8 @@ const id: Messages = {
     noPaymentMethodsDesc: 'Tambahkan metode pembayaran untuk memulai.',
     active: 'Aktif',
     inactive: 'Tidak Aktif',
+    organization: 'Organisasi',
+    save: 'Simpan',
   },
   members: {
     title: 'Anggota',
