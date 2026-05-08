@@ -1,11 +1,13 @@
 import {
   boolean,
+  date,
   integer,
   json,
   pgTable,
   real,
   text,
   timestamp,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core'
 
 export const user = pgTable('user', {
@@ -184,7 +186,11 @@ export const organizationProfiles = pgTable('organization_profiles', {
     .references(() => organization.id, { onDelete: 'cascade' }),
   displayName: text('display_name'),
   phone: text('phone'),
+  email: text('email'),
   logoAssetId: text('logo_asset_id').references(() => assets.id, {
+    onDelete: 'set null',
+  }),
+  addressId: text('address_id').references(() => addresses.id, {
     onDelete: 'set null',
   }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -211,6 +217,10 @@ export const orders = pgTable('orders', {
   rejectedAt: timestamp('rejected_at'),
   rejectedBy: text('rejected_by'),
   rejectReason: text('reject_reason'),
+  courier: text('courier'),
+  trackingNumber: text('tracking_number'),
+  shippedAt: timestamp('shipped_at'),
+  deliveredAt: timestamp('delivered_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
@@ -253,35 +263,70 @@ export const customerTokens = pgTable('customer_tokens', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
 
-export const invoices = pgTable('invoices', {
+export const paymentMethods = pgTable('payment_methods', {
   id: text('id').primaryKey(),
   orgId: text('org_id')
     .notNull()
     .references(() => organization.id, { onDelete: 'cascade' }),
-  orderId: text('order_id')
-    .notNull()
-    .references(() => orders.id, { onDelete: 'restrict' }),
-  total: real('total').notNull(),
-  status: text('status').notNull().default('pending'),
-  dueDate: timestamp('due_date'),
+  name: text('name').notNull(),
+  type: text('type').notNull().default('bank_transfer'),
+  bankName: text('bank_name'),
+  accountNumber: text('account_number'),
+  accountHolder: text('account_holder'),
+  instructions: text('instructions'),
+  isDefault: boolean('is_default').notNull().default(false),
+  active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
 
-export const payments = pgTable('payments', {
+export const invoices = pgTable(
+  'invoices',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    invoiceNumber: text('invoice_number').notNull(),
+    orderId: text('order_id').references(() => orders.id, {
+      onDelete: 'set null',
+    }),
+    customerId: text('customer_id')
+      .notNull()
+      .references(() => customers.id, { onDelete: 'restrict' }),
+    customerName: text('customer_name').notNull(),
+    status: text('status').notNull().default('unpaid'),
+    percentage: real('percentage'),
+    subtotal: real('subtotal').notNull(),
+    total: real('total').notNull(),
+    dueDate: date('due_date').notNull(),
+    issuedDate: date('issued_date').notNull().defaultNow(),
+    paymentMethodId: text('payment_method_id').references(
+      () => paymentMethods.id,
+      { onDelete: 'set null' },
+    ),
+    paidAt: timestamp('paid_at'),
+    paidBy: text('paid_by'),
+    notes: text('notes'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('idx_invoices_org_number').on(table.orgId, table.invoiceNumber),
+  ],
+)
+
+export const invoiceLineItems = pgTable('invoice_line_items', {
   id: text('id').primaryKey(),
-  orgId: text('org_id')
-    .notNull()
-    .references(() => organization.id, { onDelete: 'cascade' }),
   invoiceId: text('invoice_id')
     .notNull()
     .references(() => invoices.id, { onDelete: 'cascade' }),
-  amount: real('amount').notNull(),
-  paymentDate: timestamp('payment_date').notNull().defaultNow(),
-  reference: text('reference'),
-  method: text('method').notNull().default('bank_transfer'),
+  description: text('description').notNull(),
+  quantity: integer('quantity').notNull(),
+  unitPrice: real('unit_price').notNull(),
+  taxPercent: real('tax_percent').notNull().default(0),
+  total: real('total').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
 
 export type Requirement = {
@@ -297,6 +342,7 @@ export const productionStages = pgTable('production_stages', {
     .notNull()
     .references(() => organization.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
+  board: text('board').notNull().default('pre_production'),
   description: text('description'),
   needApproval: boolean('need_approval').notNull().default(false),
   requirements: json('requirements')
@@ -317,6 +363,7 @@ export const productionTasks = pgTable('production_tasks', {
   orderId: text('order_id')
     .notNull()
     .references(() => orders.id, { onDelete: 'cascade' }),
+  board: text('board').notNull().default('pre_production'),
   stageId: text('stage_id').references(() => productionStages.id, {
     onDelete: 'restrict',
   }),
@@ -343,6 +390,7 @@ export const productionTasks = pgTable('production_tasks', {
   assignedTo: text('assigned_to'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  archivedAt: timestamp('archived_at'),
 })
 
 export const taskActivity = pgTable('task_activity', {

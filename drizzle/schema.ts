@@ -1,5 +1,6 @@
 import {
   boolean,
+  date,
   foreignKey,
   integer,
   json,
@@ -8,6 +9,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core'
 
 export const verification = pgTable('verification', {
@@ -270,15 +272,54 @@ export const customerTokens = pgTable(
   ],
 )
 
+export const paymentMethods = pgTable(
+  'payment_methods',
+  {
+    id: text().primaryKey().notNull(),
+    orgId: text('org_id').notNull(),
+    name: text().notNull(),
+    type: text().default('bank_transfer').notNull(),
+    bankName: text('bank_name'),
+    accountNumber: text('account_number'),
+    accountHolder: text('account_holder'),
+    instructions: text(),
+    isDefault: boolean('is_default').default(false).notNull(),
+    active: boolean().default(true).notNull(),
+    createdAt: timestamp('created_at', { mode: 'string' })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { mode: 'string' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.orgId],
+      foreignColumns: [organization.id],
+      name: 'payment_methods_org_id_organization_id_fk',
+    }).onDelete('cascade'),
+  ],
+)
+
 export const invoices = pgTable(
   'invoices',
   {
     id: text().primaryKey().notNull(),
     orgId: text('org_id').notNull(),
-    orderId: text('order_id').notNull(),
+    invoiceNumber: text('invoice_number').notNull(),
+    orderId: text('order_id'),
+    customerId: text('customer_id').notNull(),
+    customerName: text('customer_name').notNull(),
+    status: text().default('unpaid').notNull(),
+    percentage: real(),
+    subtotal: real().notNull(),
     total: real().notNull(),
-    status: text().default('pending').notNull(),
-    dueDate: timestamp('due_date', { mode: 'string' }),
+    dueDate: date('due_date').notNull(),
+    issuedDate: date('issued_date').defaultNow().notNull(),
+    paymentMethodId: text('payment_method_id'),
+    paidAt: timestamp('paid_at', { mode: 'string' }),
+    paidBy: text('paid_by'),
+    notes: text(),
     createdAt: timestamp('created_at', { mode: 'string' })
       .defaultNow()
       .notNull(),
@@ -296,7 +337,41 @@ export const invoices = pgTable(
       columns: [table.orderId],
       foreignColumns: [orders.id],
       name: 'invoices_order_id_orders_id_fk',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.customerId],
+      foreignColumns: [customers.id],
+      name: 'invoices_customer_id_customers_id_fk',
     }).onDelete('restrict'),
+    foreignKey({
+      columns: [table.paymentMethodId],
+      foreignColumns: [paymentMethods.id],
+      name: 'invoices_payment_method_id_payment_methods_id_fk',
+    }).onDelete('set null'),
+    uniqueIndex('idx_invoices_org_number').on(table.orgId, table.invoiceNumber),
+  ],
+)
+
+export const invoiceLineItems = pgTable(
+  'invoice_line_items',
+  {
+    id: text().primaryKey().notNull(),
+    invoiceId: text('invoice_id').notNull(),
+    description: text().notNull(),
+    quantity: integer().notNull(),
+    unitPrice: real('unit_price').notNull(),
+    taxPercent: real('tax_percent').default(0).notNull(),
+    total: real().notNull(),
+    createdAt: timestamp('created_at', { mode: 'string' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.invoiceId],
+      foreignColumns: [invoices.id],
+      name: 'invoice_line_items_invoice_id_invoices_id_fk',
+    }).onDelete('cascade'),
   ],
 )
 
@@ -394,39 +469,6 @@ export const productVariants = pgTable(
       columns: [table.productId],
       foreignColumns: [products.id],
       name: 'product_variants_product_id_products_id_fk',
-    }).onDelete('cascade'),
-  ],
-)
-
-export const payments = pgTable(
-  'payments',
-  {
-    id: text().primaryKey().notNull(),
-    orgId: text('org_id').notNull(),
-    invoiceId: text('invoice_id').notNull(),
-    amount: real().notNull(),
-    paymentDate: timestamp('payment_date', { mode: 'string' })
-      .defaultNow()
-      .notNull(),
-    reference: text(),
-    method: text().default('bank_transfer').notNull(),
-    createdAt: timestamp('created_at', { mode: 'string' })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp('updated_at', { mode: 'string' })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.orgId],
-      foreignColumns: [organization.id],
-      name: 'payments_org_id_organization_id_fk',
-    }).onDelete('cascade'),
-    foreignKey({
-      columns: [table.invoiceId],
-      foreignColumns: [invoices.id],
-      name: 'payments_invoice_id_invoices_id_fk',
     }).onDelete('cascade'),
   ],
 )
@@ -638,7 +680,9 @@ export const organizationProfiles = pgTable(
     orgId: text('org_id').notNull(),
     displayName: text('display_name'),
     phone: text(),
+    email: text(),
     logoAssetId: text('logo_asset_id'),
+    addressId: text('address_id'),
     createdAt: timestamp('created_at', { mode: 'string' })
       .defaultNow()
       .notNull(),
@@ -656,6 +700,11 @@ export const organizationProfiles = pgTable(
       columns: [table.logoAssetId],
       foreignColumns: [assets.id],
       name: 'organization_profiles_logo_asset_id_assets_id_fk',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.addressId],
+      foreignColumns: [addresses.id],
+      name: 'organization_profiles_address_id_addresses_id_fk',
     }).onDelete('set null'),
     unique('organization_profiles_org_id_unique').on(table.orgId),
   ],

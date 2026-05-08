@@ -9,13 +9,14 @@ import {
   customers,
   customerTokens,
   invitation,
+  invoiceLineItems,
   invoices,
   member,
   orderLineItems,
   orders,
   organization,
   organizationProfiles,
-  payments,
+  paymentMethods,
   pricingBreakpoints,
   productionTasks,
   products,
@@ -65,10 +66,11 @@ export const organizationRelations = relations(organization, ({ many }) => ({
   activityEvents: many(activityEvents),
   customerTokens: many(customerTokens),
   invoices: many(invoices),
+  invoiceLineItems: many(invoiceLineItems),
   orderLineItems: many(orderLineItems),
   products: many(products),
   productVariants: many(productVariants),
-  payments: many(payments),
+  paymentMethods: many(paymentMethods),
   pricingBreakpoints: many(pricingBreakpoints),
   productionTasks: many(productionTasks),
   workflowStages: many(workflowStages),
@@ -105,6 +107,7 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
 
 export const customersRelations = relations(customers, ({ one, many }) => ({
   orders: many(orders),
+  invoices: many(invoices),
   organization: one(organization, {
     fields: [customers.orgId],
     references: [organization.id],
@@ -154,7 +157,32 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
     fields: [invoices.orderId],
     references: [orders.id],
   }),
-  payments: many(payments),
+  customer: one(customers, {
+    fields: [invoices.customerId],
+    references: [customers.id],
+  }),
+  paymentMethod: one(paymentMethods, {
+    fields: [invoices.paymentMethodId],
+    references: [paymentMethods.id],
+  }),
+  lineItems: many(invoiceLineItems),
+}))
+
+export const invoiceLineItemsRelations = relations(
+  invoiceLineItems,
+  ({ one }) => ({
+    invoice: one(invoices, {
+      fields: [invoiceLineItems.invoiceId],
+      references: [invoices.id],
+    }),
+  }),
+)
+
+export const paymentMethodsRelations = relations(paymentMethods, ({ one }) => ({
+  organization: one(organization, {
+    fields: [paymentMethods.orgId],
+    references: [organization.id],
+  }),
 }))
 
 export const orderLineItemsRelations = relations(orderLineItems, ({ one }) => ({
@@ -201,17 +229,6 @@ export const productVariantsRelations = relations(
     pricingBreakpoints: many(pricingBreakpoints),
   }),
 )
-
-export const paymentsRelations = relations(payments, ({ one }) => ({
-  organization: one(organization, {
-    fields: [payments.orgId],
-    references: [organization.id],
-  }),
-  invoice: one(invoices, {
-    fields: [payments.invoiceId],
-    references: [invoices.id],
-  }),
-}))
 
 export const pricingBreakpointsRelations = relations(
   pricingBreakpoints,
@@ -290,6 +307,10 @@ export const organizationProfilesRelations = relations(
     asset: one(assets, {
       fields: [organizationProfiles.logoAssetId],
       references: [assets.id],
+    }),
+    address: one(addresses, {
+      fields: [organizationProfiles.addressId],
+      references: [addresses.id],
     }),
   }),
 )
