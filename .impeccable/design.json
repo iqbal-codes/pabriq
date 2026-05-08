@@ -1,0 +1,615 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-08T00:00:00.000Z",
+  "title": "Design System: Pabriq",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Ink",
+        "canonical": "#111111",
+        "tonalRamp": [
+          "#1a1a1a",
+          "#2d2d2d",
+          "#424242",
+          "#5c5c5c",
+          "#787878",
+          "#969696",
+          "#b5b5b5",
+          "#d6d6d6"
+        ]
+      },
+      "primary-active": {
+        "role": "primary",
+        "displayName": "Ink Active",
+        "canonical": "#242424",
+        "tonalRamp": [
+          "#1a1a1a",
+          "#242424",
+          "#333333",
+          "#444444",
+          "#555555",
+          "#666666",
+          "#777777",
+          "#888888"
+        ]
+      },
+      "ink": {
+        "role": "text",
+        "displayName": "Ink",
+        "canonical": "#111111",
+        "tonalRamp": [
+          "#111111",
+          "#1a1a1a",
+          "#2d2d2d",
+          "#424242",
+          "#5c5c5c",
+          "#787878",
+          "#969696",
+          "#b5b5b5"
+        ]
+      },
+      "body": {
+        "role": "text",
+        "displayName": "Body",
+        "canonical": "#374151",
+        "tonalRamp": [
+          "#1f2937",
+          "#374151",
+          "#4b5563",
+          "#6b7280",
+          "#9ca3af",
+          "#d1d5db",
+          "#e5e7eb",
+          "#f3f4f6"
+        ]
+      },
+      "muted": {
+        "role": "text",
+        "displayName": "Muted",
+        "canonical": "#6b7280",
+        "tonalRamp": [
+          "#374151",
+          "#4b5563",
+          "#6b7280",
+          "#9ca3af",
+          "#d1d5db",
+          "#e5e7eb",
+          "#f3f4f6",
+          "#f9fafb"
+        ]
+      },
+      "muted-soft": {
+        "role": "text",
+        "displayName": "Muted Soft",
+        "canonical": "#898989",
+        "tonalRamp": [
+          "#525252",
+          "#6b6b6b",
+          "#898989",
+          "#a3a3a3",
+          "#bdbdbd",
+          "#d4d4d4",
+          "#e8e8e8",
+          "#f5f5f5"
+        ]
+      },
+      "canvas": {
+        "role": "background",
+        "displayName": "Canvas",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#e5e5e5",
+          "#ebebeb",
+          "#f0f0f0",
+          "#f5f5f5",
+          "#fafafa",
+          "#fcfcfc",
+          "#fefefe",
+          "#ffffff"
+        ]
+      },
+      "surface-soft": {
+        "role": "surface",
+        "displayName": "Surface Soft",
+        "canonical": "#f8f9fa",
+        "tonalRamp": [
+          "#e9ecef",
+          "#edf0f2",
+          "#f1f3f5",
+          "#f5f7f9",
+          "#f8f9fa",
+          "#fafbfc",
+          "#fcfdfe",
+          "#ffffff"
+        ]
+      },
+      "surface-card": {
+        "role": "surface",
+        "displayName": "Surface Card",
+        "canonical": "#f5f5f5",
+        "tonalRamp": [
+          "#e0e0e0",
+          "#e8e8e8",
+          "#eeeeee",
+          "#f0f0f0",
+          "#f5f5f5",
+          "#f8f8f8",
+          "#fafafa",
+          "#fcfcfc"
+        ]
+      },
+      "surface-strong": {
+        "role": "surface",
+        "displayName": "Surface Strong",
+        "canonical": "#e5e7eb",
+        "tonalRamp": [
+          "#c9cdd3",
+          "#d1d5db",
+          "#d9dde3",
+          "#e0e4ea",
+          "#e5e7eb",
+          "#eef0f3",
+          "#f3f5f7",
+          "#f8f9fb"
+        ]
+      },
+      "surface-dark": {
+        "role": "surface",
+        "displayName": "Surface Dark",
+        "canonical": "#101010",
+        "tonalRamp": [
+          "#000000",
+          "#0a0a0a",
+          "#101010",
+          "#1a1a1a",
+          "#262626",
+          "#333333",
+          "#404040",
+          "#525252"
+        ]
+      },
+      "surface-dark-elevated": {
+        "role": "surface",
+        "displayName": "Surface Dark Elevated",
+        "canonical": "#1a1a1a",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#141414",
+          "#1a1a1a",
+          "#262626",
+          "#333333",
+          "#404040",
+          "#525252",
+          "#666666"
+        ]
+      },
+      "brand-accent": {
+        "role": "accent",
+        "displayName": "Brand Accent",
+        "canonical": "#3b82f6",
+        "tonalRamp": [
+          "#1e3a5f",
+          "#1d4ed8",
+          "#2563eb",
+          "#3b82f6",
+          "#60a5fa",
+          "#93c5fd",
+          "#bfdbfe",
+          "#dbeafe"
+        ]
+      },
+      "success": {
+        "role": "semantic",
+        "displayName": "Success",
+        "canonical": "#10b981",
+        "tonalRamp": [
+          "#064e3b",
+          "#047857",
+          "#059669",
+          "#10b981",
+          "#34d399",
+          "#6ee7b7",
+          "#a7f3d0",
+          "#d1fae5"
+        ]
+      },
+      "warning": {
+        "role": "semantic",
+        "displayName": "Warning",
+        "canonical": "#f59e0b",
+        "tonalRamp": [
+          "#78350f",
+          "#92400e",
+          "#b45309",
+          "#d97706",
+          "#f59e0b",
+          "#fbbf24",
+          "#fcd34d",
+          "#fef3c7"
+        ]
+      },
+      "error": {
+        "role": "semantic",
+        "displayName": "Error",
+        "canonical": "#ef4444",
+        "tonalRamp": [
+          "#7f1d1d",
+          "#991b1b",
+          "#b91c1c",
+          "#dc2626",
+          "#ef4444",
+          "#f87171",
+          "#fca5a5",
+          "#fecaca"
+        ]
+      },
+      "badge-orange": {
+        "role": "badge",
+        "displayName": "Badge Orange",
+        "canonical": "#fb923c",
+        "tonalRamp": [
+          "#7c2d12",
+          "#9a3412",
+          "#c2410c",
+          "#ea580c",
+          "#fb923c",
+          "#fdba74",
+          "#fed7aa",
+          "#ffedd5"
+        ]
+      },
+      "badge-pink": {
+        "role": "badge",
+        "displayName": "Badge Pink",
+        "canonical": "#ec4899",
+        "tonalRamp": [
+          "#831843",
+          "#9d174d",
+          "#be185d",
+          "#db2777",
+          "#ec4899",
+          "#f472b6",
+          "#f9a8d4",
+          "#fbcfe8"
+        ]
+      },
+      "badge-violet": {
+        "role": "badge",
+        "displayName": "Badge Violet",
+        "canonical": "#8b5cf6",
+        "tonalRamp": [
+          "#3b0764",
+          "#5b21b6",
+          "#6d28d9",
+          "#7c3aed",
+          "#8b5cf6",
+          "#a78bfa",
+          "#c4b5fd",
+          "#ddd6fe"
+        ]
+      },
+      "badge-emerald": {
+        "role": "badge",
+        "displayName": "Badge Emerald",
+        "canonical": "#34d399",
+        "tonalRamp": [
+          "#064e3b",
+          "#047857",
+          "#059669",
+          "#10b981",
+          "#34d399",
+          "#6ee7b7",
+          "#a7f3d0",
+          "#d1fae5"
+        ]
+      },
+      "hairline": {
+        "role": "border",
+        "displayName": "Hairline",
+        "canonical": "#e5e7eb",
+        "tonalRamp": [
+          "#c9cdd3",
+          "#d1d5db",
+          "#d9dde3",
+          "#e0e4ea",
+          "#e5e7eb",
+          "#eef0f3",
+          "#f3f5f7",
+          "#f8f9fb"
+        ]
+      },
+      "hairline-soft": {
+        "role": "border",
+        "displayName": "Hairline Soft",
+        "canonical": "#f3f4f6",
+        "tonalRamp": [
+          "#d1d5db",
+          "#d9dde3",
+          "#e5e7eb",
+          "#eef0f3",
+          "#f3f4f6",
+          "#f8f9fa",
+          "#fafbfc",
+          "#ffffff"
+        ]
+      },
+      "on-primary": {
+        "role": "text",
+        "displayName": "On Primary",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#e5e5e5",
+          "#ebebeb",
+          "#f0f0f0",
+          "#f5f5f5",
+          "#fafafa",
+          "#fcfcfc",
+          "#fefefe",
+          "#ffffff"
+        ]
+      },
+      "on-dark": {
+        "role": "text",
+        "displayName": "On Dark",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#e5e5e5",
+          "#ebebeb",
+          "#f0f0f0",
+          "#f5f5f5",
+          "#fafafa",
+          "#fcfcfc",
+          "#fefefe",
+          "#ffffff"
+        ]
+      },
+      "on-dark-soft": {
+        "role": "text",
+        "displayName": "On Dark Soft",
+        "canonical": "#a1a1aa",
+        "tonalRamp": [
+          "#52525b",
+          "#71717a",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#e4e4e7",
+          "#f4f4f5",
+          "#fafafa",
+          "#ffffff"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display-xl": {
+        "displayName": "Display XL",
+        "purpose": "Dashboard hero metrics, rare page-level statements."
+      },
+      "display-lg": {
+        "displayName": "Display LG",
+        "purpose": "Section headlines on dashboard surfaces."
+      },
+      "display-md": {
+        "displayName": "Display MD",
+        "purpose": "Major section breaks, high-density page titles."
+      },
+      "display-sm": {
+        "displayName": "Display SM",
+        "purpose": "Card-level headlines, modal titles."
+      },
+      "title-lg": {
+        "displayName": "Title LG",
+        "purpose": "Page headers, settings section titles."
+      },
+      "title-md": {
+        "displayName": "Title MD",
+        "purpose": "Card headers, form section legends, sidebar labels."
+      },
+      "title-sm": {
+        "displayName": "Title SM",
+        "purpose": "Small card titles, list headers."
+      },
+      "body-md": {
+        "displayName": "Body MD",
+        "purpose": "Default running text, form values, dialog copy."
+      },
+      "body-sm": {
+        "displayName": "Body SM",
+        "purpose": "Secondary text, navigation labels, table cells, buttons."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Badge labels, timestamps, metadata."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "Machine-generated identifiers: task, order, invoice numbers."
+      },
+      "button": { "displayName": "Button", "purpose": "All button labels." },
+      "nav-link": {
+        "displayName": "Nav Link",
+        "purpose": "Sidebar navigation items."
+      }
+    },
+    "shadows": [
+      {
+        "name": "interactive-lift",
+        "value": "0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)",
+        "purpose": "Hover state on clickable cards. Signals 'this is tappable'."
+      },
+      {
+        "name": "dialog-overlay",
+        "value": "0 25px 50px -12px rgba(0,0,0,0.25)",
+        "purpose": "Modal/dialog drop shadow. The only ambient shadow in the system."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default easing for state transitions."
+      },
+      {
+        "name": "ease-out-quart",
+        "value": "cubic-bezier(0.25, 1, 0.5, 1)",
+        "purpose": "Exit animations and hover lifts."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" },
+      { "name": "2xl", "value": "1536px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary CTA. Near-black background, white text. The signature action color.",
+      "html": "<button class=\"ds-btn-primary\">Create Order</button>",
+      "css": ".ds-btn-primary { background: #111111; color: #ffffff; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; line-height: 1; padding: 12px 20px; height: 40px; border: none; border-radius: 8px; cursor: pointer; transition: background 0.15s ease-out; } .ds-btn-primary:hover { background: #242424; } .ds-btn-primary:focus-visible { outline: 2px solid #111111; outline-offset: 2px; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action. White background with hairline border. Used for cancel and navigation.",
+      "html": "<button class=\"ds-btn-outline\">Cancel</button>",
+      "css": ".ds-btn-outline { background: #ffffff; color: #111111; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; line-height: 1; padding: 12px 20px; height: 40px; border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: background 0.15s ease-out; } .ds-btn-outline:hover { background: #f8f9fa; } .ds-btn-outline:focus-visible { outline: 2px solid #111111; outline-offset: 2px; }"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "button-destructive",
+      "description": "Irreversible actions. Red background, white text. Reserved for delete and reject.",
+      "html": "<button class=\"ds-btn-destructive\">Delete</button>",
+      "css": ".ds-btn-destructive { background: #ef4444; color: #ffffff; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; line-height: 1; padding: 12px 20px; height: 40px; border: none; border-radius: 8px; cursor: pointer; transition: background 0.15s ease-out; } .ds-btn-destructive:hover { background: #dc2626; } .ds-btn-destructive:focus-visible { outline: 2px solid #ef4444; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "text-input",
+      "description": "Standard form input. White background, hairline border, 8px radius.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Enter value\" />",
+      "css": ".ds-input { background: #ffffff; color: #111111; font-family: Inter, sans-serif; font-size: 16px; font-weight: 400; line-height: 1.5; padding: 10px 14px; height: 40px; border: 1px solid #e5e7eb; border-radius: 8px; outline: none; transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out; } .ds-input:focus { border-color: #111111; box-shadow: 0 0 0 2px rgba(17,17,17,0.1); } .ds-input::placeholder { color: #898989; }"
+    },
+    {
+      "name": "Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Status label. Pill-shaped, caption typography. Multiple semantic variants.",
+      "html": "<span class=\"ds-badge\">Pending</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; background: #f5f5f5; color: #111111; font-family: Inter, sans-serif; font-size: 13px; font-weight: 500; line-height: 1.4; padding: 4px 12px; border-radius: 9999px; white-space: nowrap; } .ds-badge-success { background: #10b981; color: #ffffff; } .ds-badge-destructive { background: #ef4444; color: #ffffff; } .ds-badge-warning { background: transparent; border: 1px solid #f59e0b; color: #d97706; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Content container. White background, 16px radius, 1px hairline border. Quiet and structural.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Order Summary</h3><p class=\"ds-card-body\">3 items, total Rp 450.000</p></div>",
+      "css": ".ds-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px; } .ds-card-title { font-family: Inter, sans-serif; font-size: 18px; font-weight: 600; line-height: 1.4; color: #111111; margin: 0 0 8px 0; } .ds-card-body { font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; line-height: 1.5; color: #374151; margin: 0; }"
+    },
+    {
+      "name": "Kanban Task Card",
+      "kind": "card",
+      "refersTo": "kanban-task-card",
+      "description": "Compact, clickable card for production tasks. Lifts on hover.",
+      "html": "<div class=\"ds-kanban-card\"><span class=\"ds-kanban-task-num\">TSK-0042</span><span class=\"ds-badge\">Pending</span><p class=\"ds-kanban-product\">Custom T-Shirt</p><p class=\"ds-kanban-meta\">Budi Santoso · 50 pcs</p></div>",
+      "css": ".ds-kanban-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; cursor: pointer; transition: box-shadow 0.15s ease-out; display: flex; flex-direction: column; gap: 4px; } .ds-kanban-card:hover { box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06); } .ds-kanban-task-num { font-family: JetBrains Mono, monospace; font-size: 13px; font-weight: 500; color: #6b7280; } .ds-kanban-product { font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #111111; margin: 0; } .ds-kanban-meta { font-family: Inter, sans-serif; font-size: 11px; color: #898989; margin: 0; }"
+    },
+    {
+      "name": "Data Table",
+      "kind": "card",
+      "refersTo": "data-table",
+      "description": "Double-border container pattern. Muted outer frame, white inner table.",
+      "html": "<div class=\"ds-table-outer\"><div class=\"ds-table-inner\"><table class=\"ds-table\"><thead><tr><th>Order</th><th>Customer</th><th>Status</th></tr></thead><tbody><tr><td>ORD-001</td><td>Budi Santoso</td><td><span class=\"ds-badge\">Active</span></td></tr></tbody></table></div></div>",
+      "css": ".ds-table-outer { border: 1px solid #e5e7eb; border-radius: 16px; padding: 6px; background: #f8f9fa; } .ds-table-inner { border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff; overflow: hidden; } .ds-table { width: 100%; border-collapse: collapse; font-family: Inter, sans-serif; font-size: 14px; } .ds-table th { background: #f8f9fa; padding: 10px 14px; text-align: left; font-weight: 500; font-size: 13px; color: #6b7280; border-bottom: 1px solid #e5e7eb; } .ds-table td { padding: 10px 14px; color: #374151; border-bottom: 1px solid #f3f4f6; } .ds-table tr:last-child td { border-bottom: none; } .ds-table tr:hover td { background: #f8f9fa; }"
+    },
+    {
+      "name": "Sidebar",
+      "kind": "nav",
+      "refersTo": "sidebar",
+      "description": "App navigation backbone. Collapsible from 256px to 48px icon-only mode.",
+      "html": "<nav class=\"ds-sidebar\"><div class=\"ds-sidebar-header\"><div class=\"ds-sidebar-logo\">P</div><span class=\"ds-sidebar-org\">Pabriq</span></div><ul class=\"ds-sidebar-nav\"><li class=\"ds-sidebar-item active\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\"/></svg>Dashboard</li><li class=\"ds-sidebar-item\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"9\" cy=\"21\" r=\"1\"/><circle cx=\"20\" cy=\"21\" r=\"1\"/><path d=\"M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6\"/></svg>Orders</li></ul></nav>",
+      "css": ".ds-sidebar { width: 256px; background: #f8f9fa; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; height: 100vh; padding: 16px 12px; } .ds-sidebar-header { display: flex; align-items: center; gap: 10px; padding: 0 8px 16px; } .ds-sidebar-logo { width: 32px; height: 32px; background: #111111; color: #ffffff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; } .ds-sidebar-org { font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; color: #111111; } .ds-sidebar-nav { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; } .ds-sidebar-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; color: #6b7280; cursor: pointer; transition: background 0.15s ease-out; } .ds-sidebar-item:hover { background: #f5f5f5; } .ds-sidebar-item.active { background: #f5f5f5; color: #111111; }"
+    },
+    {
+      "name": "Dialog",
+      "kind": "custom",
+      "refersTo": "dialog",
+      "description": "Focused interruption modal. White background, 16px radius, overlay with drop shadow.",
+      "html": "<div class=\"ds-dialog-overlay\"><div class=\"ds-dialog\"><h2 class=\"ds-dialog-title\">Confirm Action</h2><p class=\"ds-dialog-desc\">This action cannot be undone.</p><div class=\"ds-dialog-footer\"><button class=\"ds-btn-outline\">Cancel</button><button class=\"ds-btn-primary\">Confirm</button></div></div></div>",
+      "css": ".ds-dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; } .ds-dialog { background: #ffffff; border-radius: 16px; padding: 24px; max-width: 480px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); } .ds-dialog-title { font-family: Inter, sans-serif; font-size: 22px; font-weight: 600; color: #111111; margin: 0 0 8px 0; } .ds-dialog-desc { font-family: Inter, sans-serif; font-size: 14px; color: #6b7280; margin: 0 0 24px 0; } .ds-dialog-footer { display: flex; justify-content: flex-end; gap: 8px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Workbench",
+    "overview": "Pabriq is a craftsman's workbench for Made-To-Order businesses. Every element earns its place. The system reads as a well-organized workshop: tools in their spots, materials visible at a glance, nothing decorative getting in the way. Confidence comes from precision, not ornamentation. The visual language is deliberately restrained. A near-monochrome palette keeps the focus on the work itself: orders, production tasks, invoices. Color appears only where it carries meaning.",
+    "keyCharacteristics": [
+      "Sidebar-driven app shell with collapsible icon mode",
+      "Near-monochrome action layer — primary CTAs are #111111, not blue",
+      "Information density with clarity — double-border table pattern, kanban columns with soft backgrounds",
+      "Tactile feedback on every interaction — hover:shadow-md, button press states",
+      "Role-appropriate views — owner sees revenue, operator sees tasks, customer sees progress",
+      "Mobile-first responsive tables — data tables collapse to stacked Card layouts on mobile"
+    ],
+    "rules": [
+      {
+        "name": "The Monochrome Action Rule",
+        "body": "Primary CTAs are always #111111, never blue. The only exception is destructive actions (#ef4444). Color communicates state, not brand.",
+        "section": "colors"
+      },
+      {
+        "name": "The Semantic Scarcity Rule",
+        "body": "Success green, warning amber, and error red appear only where they carry operational meaning. They are signals, not decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Weight Boundary Rule",
+        "body": "Headlines and titles are always weight 600. Body and labels are 400 or 500. Never use 700 on display sizes.",
+        "section": "typography"
+      },
+      {
+        "name": "The Mono Identity Rule",
+        "body": "Monospaced text is reserved exclusively for machine-generated identifiers: task numbers, order numbers, invoice numbers.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "Surfaces are flat at rest. Shadows appear only as a response to state — hover, active press, or dialog overlay.",
+        "section": "elevation"
+      },
+      {
+        "name": "The No-Glass Rule",
+        "body": "Glassmorphism is prohibited. The one exception is the data table refetch overlay (1px blur). Content is always opaque.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use #111111 for all primary CTAs. The button is near-black, not blue.",
+      "Do use the sidebar as the structural backbone. Every screen starts with sidebar navigation.",
+      "Do use the double-border table container pattern for all data tables.",
+      "Do use #f8f9fa for kanban column backgrounds and sidebar background.",
+      "Do apply hover:shadow-md transition-shadow on every clickable card surface.",
+      "Do use font-mono for task numbers, order numbers, and invoice numbers.",
+      "Do use i18n keys for every user-facing string.",
+      "Do use the StatusBadge component for all status displays.",
+      "Do respect role-based visibility. Never show someone something they can't act on."
+    ],
+    "donts": [
+      "Don't use blue (#3b82f6) on primary CTAs. Blue appears on less than 5% of surfaces.",
+      "Don't use glassmorphism, backdrop-blur on content surfaces, or translucent cards.",
+      "Don't use border-left or border-right greater than 1px as a colored accent.",
+      "Don't use gradient text (background-clip: text with gradient).",
+      "Don't wrap everything in Cards. Match the container to the content pattern.",
+      "Don't use modals as the first thought for every interaction.",
+      "Don't animate CSS layout properties (height, width, padding).",
+      "Don't use console.log or code comments.",
+      "Don't hardcode user-facing text. Use use-intl and message files.",
+      "Don't guess library APIs. Check docs or existing patterns first."
+    ]
+  }
+}

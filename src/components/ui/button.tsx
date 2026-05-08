@@ -46,15 +46,15 @@ const buttonVariants = cva(
 
 function Button({
   className,
-  variant = 'default',
-  size = 'default',
+  variant = "default",
+  size = "default",
   asChild = false,
   isLoading,
   loadingPosition = 'left',
   tooltip,
   children,
   ...props
-}: ComponentProps<'button'> &
+}: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
     isLoading?: boolean
