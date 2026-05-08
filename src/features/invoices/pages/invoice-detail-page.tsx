@@ -68,7 +68,27 @@ export function InvoiceDetailPage() {
       <PageHeader title={`${t('viewInvoice')} — ${invoice.invoiceNumber}`} />
 
       <div className="mb-4 flex items-center gap-2">
-        <Badge>{st(invoice.status as keyof typeof st)}</Badge>
+        <Badge>
+          {st(
+            invoice.status as
+              | 'draft'
+              | 'pending'
+              | 'approved'
+              | 'production'
+              | 'in_delivery'
+              | 'completed'
+              | 'cancelled'
+              | 'rejected'
+              | 'active'
+              | 'inactive'
+              | 'paid'
+              | 'unpaid'
+              | 'void'
+              | 'overdue'
+              | 'pendingPayment'
+              | 'failed',
+          )}
+        </Badge>
         {isOverdue && <Badge variant="destructive">{t('overdue')}</Badge>}
       </div>
 

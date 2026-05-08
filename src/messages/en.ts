@@ -71,6 +71,10 @@ export type Messages = {
     actions: string
     pcs: string
     type: string
+    name: string
+    phone: string
+    workspaces: string
+    status: string
   }
   settings: {
     general: string
@@ -303,6 +307,7 @@ export type Messages = {
     invoices: string
     production: string
     settings: string
+    admin: string
   }
   customers: {
     title: string
@@ -516,6 +521,7 @@ export type Messages = {
     archivedProduct: string
     archivedCustomer: string
     archivedDate: string
+    requirementRemove: string
   }
   portal: {
     title: string
@@ -570,6 +576,7 @@ export type Messages = {
     lineItemDetail: string
     estimatedCompletion: string
     notes: string
+    rejectedTitle: string
   }
 }
 
@@ -647,6 +654,10 @@ const en: Messages = {
     actions: 'Actions',
     pcs: 'pcs',
     type: 'Type',
+    name: 'Name',
+    phone: 'Phone',
+    workspaces: 'Workspaces',
+    status: 'Status',
   },
   dataTable: {
     clearFilters: 'Clear filters',
@@ -793,6 +804,7 @@ const en: Messages = {
     invoices: 'Invoices',
     production: 'Production',
     settings: 'Settings',
+    admin: 'Admin',
   },
   settings: {
     general: 'General',
@@ -1089,6 +1101,7 @@ const en: Messages = {
     archivedProduct: 'Product',
     archivedCustomer: 'Customer',
     archivedDate: 'Archived',
+    requirementRemove: 'Remove requirement',
   },
   portal: {
     title: 'Order Confirmation',
@@ -1144,6 +1157,7 @@ const en: Messages = {
     lineItemDetail: 'Item Details',
     estimatedCompletion: 'Estimated completion: {date}',
     notes: 'Notes',
+    rejectedTitle: 'Order Rejected',
   },
   combobox: {
     searchPlaceholder: 'Search...',

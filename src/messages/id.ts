@@ -74,6 +74,10 @@ const id: Messages = {
     actions: 'Aksi',
     pcs: 'pcs',
     type: 'Tipe',
+    name: 'Nama',
+    phone: 'Telepon',
+    workspaces: 'Ruang Kerja',
+    status: 'Status',
   },
   dataTable: {
     clearFilters: 'Hapus filter',
@@ -220,6 +224,7 @@ const id: Messages = {
     invoices: 'Faktur',
     production: 'Produksi',
     settings: 'Pengaturan',
+    admin: 'Admin',
   },
   settings: {
     general: 'Umum',
@@ -520,6 +525,7 @@ const id: Messages = {
     archivedProduct: 'Produk',
     archivedCustomer: 'Pelanggan',
     archivedDate: 'Diarsipkan',
+    requirementRemove: 'Hapus persyaratan',
   },
   portal: {
     title: 'Konfirmasi Pesanan',
@@ -574,6 +580,7 @@ const id: Messages = {
     lineItemDetail: 'Detail Item',
     estimatedCompletion: 'Estimasi selesai: {date}',
     notes: 'Catatan',
+    rejectedTitle: 'Pesanan Ditolak',
   },
   combobox: {
     searchPlaceholder: 'Cari...',

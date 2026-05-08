@@ -60,7 +60,7 @@ function TestWrapper({
   locale = 'en',
 }: {
   children: React.ReactNode
-  locale?: string
+  locale?: 'en' | 'id'
 }) {
   return (
     <IntlProvider locale={locale} messages={testMessages}>

@@ -160,7 +160,19 @@ export function OrdersListPage() {
       header: t('status'),
       meta: { label: t('status'), mobileRole: 'badge' },
       cell: ({ row }) => (
-        <Badge variant="secondary">{st(row.original.status)}</Badge>
+        <Badge variant="secondary">
+          {st(
+            row.original.status as
+              | 'draft'
+              | 'pending'
+              | 'approved'
+              | 'production'
+              | 'in_delivery'
+              | 'completed'
+              | 'cancelled'
+              | 'rejected',
+          )}
+        </Badge>
       ),
     },
     {

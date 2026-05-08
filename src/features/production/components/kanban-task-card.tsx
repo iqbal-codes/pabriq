@@ -4,7 +4,10 @@ import { Badge } from '#/components/ui/badge'
 import { Card, CardContent } from '#/components/ui/card'
 import type { BoardTask } from '../model'
 
-const STATUS_LABELS: Record<string, string> = {
+const STATUS_LABELS: Record<
+  string,
+  'statusQueued' | 'statusInProgress' | 'pendingApproval' | 'statusCompleted'
+> = {
   queued: 'statusQueued',
   in_progress: 'statusInProgress',
   pending_approval: 'pendingApproval',
@@ -53,7 +56,14 @@ export function KanbanTaskCard({ task, onClick }: Props) {
             className={`text-xs leading-3 ${isPendingApproval ? 'border-warning text-warning' : ''}`}
           >
             {isPendingApproval && <Lock className="size-3 mr-0.5" />}
-            {t(STATUS_LABELS[taskData.status] ?? taskData.status)}
+            {t(
+              STATUS_LABELS[taskData.status] ??
+                (taskData.status as
+                  | 'statusQueued'
+                  | 'statusInProgress'
+                  | 'pendingApproval'
+                  | 'statusCompleted'),
+            )}
           </Badge>
         </div>
         <div className="text-xs text-muted-foreground font-mono">

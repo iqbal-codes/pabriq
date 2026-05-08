@@ -55,7 +55,25 @@ export function PaymentSection({ invoices, onUpload }: Props) {
                     </Badge>
                   ) : (
                     <Badge variant={isUnpaid ? 'default' : 'secondary'}>
-                      {st(inv.status as keyof typeof st)}
+                      {st(
+                        inv.status as
+                          | 'draft'
+                          | 'pending'
+                          | 'approved'
+                          | 'production'
+                          | 'in_delivery'
+                          | 'completed'
+                          | 'cancelled'
+                          | 'rejected'
+                          | 'active'
+                          | 'inactive'
+                          | 'paid'
+                          | 'unpaid'
+                          | 'void'
+                          | 'overdue'
+                          | 'pendingPayment'
+                          | 'failed',
+                      )}
                     </Badge>
                   )}
                 </div>

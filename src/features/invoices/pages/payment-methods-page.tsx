@@ -34,7 +34,7 @@ import {
 } from '#/features/invoices/hooks'
 import type { PaymentMethod } from '#/features/invoices/model'
 
-const TYPE_LABEL_KEYS: Record<string, string> = {
+const TYPE_LABEL_KEYS: Record<string, 'bankTransfer' | 'paymentGateway'> = {
   bank_transfer: 'bankTransfer',
   payment_gateway: 'paymentGateway',
 }

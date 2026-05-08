@@ -89,11 +89,31 @@ export function InvoiceListPage() {
         header: t('status'),
         meta: { label: t('status'), mobileRole: 'badge' },
         cell: ({ row }: { row: { original: InvoiceRow } }) => (
-          <Badge>{st(row.original.status as keyof typeof st)}</Badge>
+          <Badge>
+            {st(
+              row.original.status as
+                | 'draft'
+                | 'pending'
+                | 'approved'
+                | 'production'
+                | 'in_delivery'
+                | 'completed'
+                | 'cancelled'
+                | 'rejected'
+                | 'active'
+                | 'inactive'
+                | 'paid'
+                | 'unpaid'
+                | 'void'
+                | 'overdue'
+                | 'pendingPayment'
+                | 'failed',
+            )}
+          </Badge>
         ),
       },
     ],
-    [t, dt, st],
+    [t, st],
   )
 
   return (

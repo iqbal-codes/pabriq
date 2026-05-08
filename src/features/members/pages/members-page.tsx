@@ -48,7 +48,10 @@ import {
 import type { InvitationItem, MemberItem } from '#/features/members/server'
 import { canManageMembers } from '#/features/permissions/model'
 
-const ROLE_LABEL_KEYS: Record<string, string> = {
+const ROLE_LABEL_KEYS: Record<
+  string,
+  'ownerRole' | 'adminRole' | 'memberRole'
+> = {
   owner: 'ownerRole',
   admin: 'adminRole',
   member: 'memberRole',

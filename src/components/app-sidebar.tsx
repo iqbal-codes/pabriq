@@ -28,7 +28,14 @@ import type { Role } from '#/features/permissions/model'
 import { canViewProduction } from '#/features/permissions/model'
 
 type NavItem = {
-  key: string
+  key:
+    | 'dashboard'
+    | 'orders'
+    | 'customers'
+    | 'products'
+    | 'invoices'
+    | 'production'
+    | 'settings'
   href: string
   icon: React.ComponentType<{ className?: string }>
 }

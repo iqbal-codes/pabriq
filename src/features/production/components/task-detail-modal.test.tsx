@@ -10,6 +10,10 @@ const enMessages = {
     taskDetail: 'Task Detail',
     specification: 'Specification',
     activity: 'Activity',
+    orderLabel: 'Order',
+    productLabel: 'Product',
+    customerLabel: 'Customer',
+    quantityLabel: 'Quantity',
     comments: 'Comments',
     commentPlaceholder: 'Type a comment...',
     send: 'Send',
@@ -152,7 +156,7 @@ describe('TaskDetailModal', () => {
 
   it('shows Advance button with next stage name for in_progress tasks', () => {
     renderModal()
-    expect(screen.getByText('Advance Production')).toBeInTheDocument()
+    expect(screen.getByText('Advance to Production')).toBeInTheDocument()
   })
 
   it('shows Start Production for queued tasks', () => {

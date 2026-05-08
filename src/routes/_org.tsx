@@ -54,10 +54,64 @@ function OrgLayout() {
   const leafMatch = matches.filter((m) => m.routeId !== '__root__').at(-1)
   const pageTitleKey = (
     leafMatch?.context as unknown as Record<string, unknown>
-  )?.pageTitle as string | undefined
+  )?.pageTitle as
+    | 'dashboard'
+    | 'detail'
+    | 'edit'
+    | 'new'
+    | 'customers'
+    | 'createCustomer'
+    | 'editCustomer'
+    | 'viewCustomer'
+    | 'products'
+    | 'newProduct'
+    | 'editProduct'
+    | 'orders'
+    | 'createOrder'
+    | 'viewOrder'
+    | 'editOrder'
+    | 'invoices'
+    | 'createInvoice'
+    | 'viewInvoice'
+    | 'settings'
+    | 'general'
+    | 'productionStages'
+    | 'paymentMethods'
+    | 'members'
+    | 'profile'
+    | undefined
   const primaryAction = (
     leafMatch?.context as unknown as Record<string, unknown>
-  )?.primaryAction as { label: string; href: string } | undefined
+  )?.primaryAction as
+    | {
+        label:
+          | 'dashboard'
+          | 'detail'
+          | 'edit'
+          | 'new'
+          | 'customers'
+          | 'createCustomer'
+          | 'editCustomer'
+          | 'viewCustomer'
+          | 'products'
+          | 'newProduct'
+          | 'editProduct'
+          | 'orders'
+          | 'createOrder'
+          | 'viewOrder'
+          | 'editOrder'
+          | 'invoices'
+          | 'createInvoice'
+          | 'viewInvoice'
+          | 'settings'
+          | 'general'
+          | 'productionStages'
+          | 'paymentMethods'
+          | 'members'
+          | 'profile'
+        href: string
+      }
+    | undefined
 
   return (
     <SidebarProvider>

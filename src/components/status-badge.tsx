@@ -1,5 +1,5 @@
 import { useTranslations } from 'use-intl'
-import { Badge, type BadgeProps } from '#/components/ui/badge'
+import { Badge } from '#/components/ui/badge'
 
 type StatusVariant =
   | 'default'
@@ -27,6 +27,23 @@ const statusMap: Record<string, StatusVariant> = {
 export function StatusBadge({ status }: { status: string }) {
   const t = useTranslations('status')
   const variant = statusMap[status] ?? 'outline'
-  const label = status in statusMap ? t(status) : status
-  return <Badge variant={variant as BadgeProps['variant']}>{label}</Badge>
+  const label =
+    status in statusMap
+      ? t(
+          status as
+            | 'draft'
+            | 'pending'
+            | 'approved'
+            | 'production'
+            | 'in_delivery'
+            | 'completed'
+            | 'cancelled'
+            | 'active'
+            | 'inactive'
+            | 'paid'
+            | 'overdue'
+            | 'failed',
+        )
+      : status
+  return <Badge variant={variant as never}>{label}</Badge>
 }

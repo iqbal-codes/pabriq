@@ -12,7 +12,31 @@ import {
 } from '#/components/ui/breadcrumb'
 
 type BreadcrumbParent = {
-  label: string
+  label:
+    | 'dashboard'
+    | 'detail'
+    | 'edit'
+    | 'new'
+    | 'customers'
+    | 'createCustomer'
+    | 'editCustomer'
+    | 'viewCustomer'
+    | 'products'
+    | 'newProduct'
+    | 'editProduct'
+    | 'orders'
+    | 'createOrder'
+    | 'viewOrder'
+    | 'editOrder'
+    | 'invoices'
+    | 'createInvoice'
+    | 'viewInvoice'
+    | 'settings'
+    | 'general'
+    | 'productionStages'
+    | 'paymentMethods'
+    | 'members'
+    | 'profile'
   href: string
 }
 
@@ -33,7 +57,7 @@ export function Breadcrumbs() {
   const crumbs = routeCrumbs.flatMap((crumb): BreadcrumbEntry[] => {
     const context = crumb.context as unknown as Record<string, unknown>
     const parents = (context.parentBreadcrumbs ?? []) as BreadcrumbParent[]
-    const label = context.breadcrumb as string
+    const label = context.breadcrumb as BreadcrumbParent['label']
 
     return [
       ...parents.map((parent, i) => ({

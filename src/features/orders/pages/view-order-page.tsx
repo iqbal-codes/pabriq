@@ -138,7 +138,19 @@ export function ViewOrderPage() {
         title={
           <span className="flex items-center gap-2">
             {order.orderNumber ?? '—'}
-            <Badge variant="secondary">{st(order.status)}</Badge>
+            <Badge variant="secondary">
+              {st(
+                order.status as
+                  | 'draft'
+                  | 'pending'
+                  | 'approved'
+                  | 'production'
+                  | 'in_delivery'
+                  | 'completed'
+                  | 'cancelled'
+                  | 'rejected',
+              )}
+            </Badge>
           </span>
         }
         backAction={{ label: ct('back'), href: '/orders' }}

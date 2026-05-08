@@ -160,7 +160,7 @@ export function CreateOrderPage() {
                 className="w-full"
               >
                 <Link2 className="mr-2 h-4 w-4" />
-                {pt('generateLink')}
+                {t('generateLink')}
               </Button>
             ) : (
               <div className="flex gap-2">

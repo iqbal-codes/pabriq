@@ -25,11 +25,21 @@ import {
 } from '../hooks'
 import { RequirementForm } from './requirement-form'
 
-const STATUS_LABELS: Record<string, string> = {
+const STATUS_LABELS = {
   queued: 'statusQueued',
   in_progress: 'statusInProgress',
   pending_approval: 'pendingApproval',
   completed: 'statusCompleted',
+} as const
+
+type StatusLabelKey = (typeof STATUS_LABELS)[keyof typeof STATUS_LABELS]
+
+function getStatusLabelKey(status: string): StatusLabelKey | null {
+  if (status in STATUS_LABELS) {
+    return STATUS_LABELS[status as keyof typeof STATUS_LABELS]
+  }
+
+  return null
 }
 
 function getInitials(name: string) {
@@ -117,6 +127,7 @@ export function TaskDetailModal({
   const currentStage =
     currentStageIndex >= 0 ? activeStages[currentStageIndex] : null
   const nextStage = activeStages[currentStageIndex + 1]
+  const statusLabelKey = getStatusLabelKey(task.status)
   const hasRequirements =
     currentStage !== null && currentStage.requirements?.length > 0
 
@@ -151,7 +162,7 @@ export function TaskDetailModal({
         <div className="flex items-center justify-between text-sm mb-2">
           <span className="font-mono font-semibold">{task.taskNumber}</span>
           <Badge variant="secondary">
-            {t(STATUS_LABELS[task.status] ?? task.status)}
+            {statusLabelKey ? t(statusLabelKey) : task.status}
           </Badge>
         </div>
 
@@ -255,6 +266,7 @@ export function TaskDetailModal({
             currentStage.requirements.length > 0 && (
               <div className="w-full">
                 <RequirementForm
+                  taskId={taskId}
                   requirements={currentStage.requirements}
                   onCancel={() => setShowRequirementForm(false)}
                   onSubmit={handleAdvance}

@@ -20,7 +20,7 @@ import type { UploadItem } from '#/features/assets/upload-machine'
 import { createOrganization, listUserOrgs } from '#/features/auth/org'
 import { getCurrentSession } from '#/lib/auth-session'
 
-const ERROR_MAP: Record<string, string> = {
+const ERROR_MAP: Record<string, 'nameInvalid' | 'creationFailed' | 'taken'> = {
   name_invalid: 'nameInvalid',
   creation_failed: 'creationFailed',
   name_taken: 'taken',

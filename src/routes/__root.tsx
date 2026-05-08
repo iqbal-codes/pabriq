@@ -16,7 +16,7 @@ import { TooltipProvider } from '#/components/ui/tooltip'
 import { defaultLocale } from '#/lib/i18n'
 import { getCurrentLocale } from '#/lib/i18n.utils'
 import { getQueryClient } from '#/lib/query-client'
-import { messages } from '#/messages'
+import { type Locale, messages } from '#/messages'
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 import appCss from '../styles.css?url'
 
@@ -96,7 +96,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         suppressHydrationWarning
       >
         <IntlProvider
-          locale={locale}
+          locale={(locale ?? defaultLocale) as Locale}
           messages={messages[locale ?? defaultLocale]}
           timeZone="UTC"
         >

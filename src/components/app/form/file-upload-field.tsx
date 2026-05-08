@@ -23,6 +23,7 @@ import { firstError } from './form-utils'
 
 export type FileUploadFieldProps = FieldProps & {
   ownerType?: OwnerType
+  ownerId?: string
   usage?: Usage
   maxFiles?: number
   acceptedMimeTypes?: readonly string[]
@@ -86,6 +87,7 @@ type FileUploadFieldBaseProps = FieldProps & {
   adapter: UploaderAdapter
   queryKey: string[]
   ownerType: OwnerType
+  ownerId?: string
   usage?: Usage
   maxFiles?: number
   acceptedMimeTypes?: readonly string[]
@@ -97,6 +99,7 @@ function FileUploadFieldBase({
   adapter,
   queryKey,
   ownerType,
+  ownerId,
   usage = 'attachment',
   maxFiles = 50,
   acceptedMimeTypes,
@@ -171,7 +174,7 @@ function FileUploadFieldBase({
         <FileListUpload
           items={uploadItems}
           onItemsChange={(items) => setUploadItems(items)}
-          config={{ ownerType, usage, maxFiles }}
+          config={{ ownerType, ownerId, usage, maxFiles }}
           adapter={adapter}
           acceptedMimeTypes={mimeTypes}
           maxBytes={maxBytes}
@@ -201,6 +204,7 @@ function FileUploadFieldBase({
 
 export function FileUploadField({
   ownerType = 'order',
+  ownerId,
   usage = 'attachment',
   maxFiles = 50,
   acceptedMimeTypes,
@@ -208,8 +212,8 @@ export function FileUploadField({
   disabled,
 }: FileUploadFieldProps) {
   const adapter = useMemo(
-    () => createR2UploaderAdapter({ ownerType, usage }),
-    [ownerType, usage],
+    () => createR2UploaderAdapter({ ownerType, ownerId, usage }),
+    [ownerType, ownerId, usage],
   )
 
   return (
@@ -219,6 +223,7 @@ export function FileUploadField({
       adapter={adapter}
       queryKey={['assets-metadata']}
       ownerType={ownerType}
+      ownerId={ownerId}
       usage={usage}
       maxFiles={maxFiles}
       acceptedMimeTypes={acceptedMimeTypes}
