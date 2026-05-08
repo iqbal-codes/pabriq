@@ -8,6 +8,7 @@ import {
   canManageInvoices,
   canManageMembers,
   canManageProducts,
+  canManageSettings,
   canManageStages,
   canViewProduction,
   type Role,
@@ -79,5 +80,11 @@ describe('canManageStages', () => {
 describe('canManageCustomers', () => {
   it('allows owner and admin', () => {
     expectPermissions(canManageCustomers, ['owner', 'admin'])
+  })
+})
+
+describe('canManageSettings', () => {
+  it('allows owner and admin', () => {
+    expectPermissions(canManageSettings, ['owner', 'admin'])
   })
 })

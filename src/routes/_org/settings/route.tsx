@@ -24,7 +24,9 @@ function SettingsLayout() {
       ? 'profile'
       : pathname.includes('/settings/production-stages')
         ? 'stages'
-        : 'general'
+        : pathname.includes('/settings/payment-methods')
+          ? 'paymentMethods'
+          : 'general'
 
   return (
     <PageContent>
@@ -43,6 +45,9 @@ function SettingsLayout() {
             <Link to="/settings/production-stages">
               {pt('stageManagement')}
             </Link>
+          </TabsTrigger>
+          <TabsTrigger value="paymentMethods" asChild>
+            <Link to="/settings/payment-methods">{st('paymentMethods')}</Link>
           </TabsTrigger>
         </TabsList>
       </Tabs>

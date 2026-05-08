@@ -6,6 +6,8 @@ export type OrgSettings = {
   name: string
   slug: string
   phone: string | null
+  email: string | null
+  addressId: string | null
   logoAssetId: string | null
 }
 
@@ -48,6 +50,8 @@ export const getOrgSettingsFn = createServerFn({ method: 'GET' }).handler(
     const [profile] = await db
       .select({
         phone: organizationProfiles.phone,
+        email: organizationProfiles.email,
+        addressId: organizationProfiles.addressId,
         logoAssetId: organizationProfiles.logoAssetId,
       })
       .from(organizationProfiles)
@@ -58,6 +62,8 @@ export const getOrgSettingsFn = createServerFn({ method: 'GET' }).handler(
       name: org.name,
       slug: org.slug,
       phone: profile?.phone ?? null,
+      email: profile?.email ?? null,
+      addressId: profile?.addressId ?? null,
       logoAssetId: profile?.logoAssetId ?? null,
     }
   },
@@ -66,6 +72,8 @@ export const getOrgSettingsFn = createServerFn({ method: 'GET' }).handler(
 export type UpdateOrgSettingsInput = {
   name: string
   phone?: string | null
+  email?: string | null
+  addressId?: string | null
   logoAssetId?: string | null
 }
 
@@ -87,7 +95,12 @@ export const updateOrgSettingsFn = createServerFn({ method: 'POST' })
           },
         })
 
-        if (data.phone !== undefined || data.logoAssetId !== undefined) {
+        if (
+          data.phone !== undefined ||
+          data.email !== undefined ||
+          data.addressId !== undefined ||
+          data.logoAssetId !== undefined
+        ) {
           const { db } = await import('#/db/index')
           const { organizationProfiles } = await import('#/db/schema')
 
@@ -97,20 +110,24 @@ export const updateOrgSettingsFn = createServerFn({ method: 'POST' })
             .where(eq(organizationProfiles.orgId, orgId))
             .limit(1)
 
+          const updateData: Record<string, unknown> = {}
+          if (data.phone !== undefined) updateData.phone = data.phone ?? null
+          if (data.email !== undefined) updateData.email = data.email ?? null
+          if (data.addressId !== undefined)
+            updateData.addressId = data.addressId ?? null
+          if (data.logoAssetId !== undefined)
+            updateData.logoAssetId = data.logoAssetId ?? null
+
           if (existing) {
             await db
               .update(organizationProfiles)
-              .set({
-                phone: data.phone ?? null,
-                logoAssetId: data.logoAssetId ?? null,
-              })
+              .set(updateData)
               .where(eq(organizationProfiles.orgId, orgId))
           } else {
             await db.insert(organizationProfiles).values({
               id: crypto.randomUUID(),
               orgId,
-              phone: data.phone ?? null,
-              logoAssetId: data.logoAssetId ?? null,
+              ...updateData,
             })
           }
         }
