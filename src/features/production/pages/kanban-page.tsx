@@ -17,11 +17,13 @@ import {
   useTaskMutations,
 } from '../hooks'
 
-export function KanbanPage() {
+type Props = {
+  orgId: string
+  board?: string
+}
+
+export function KanbanPage({ orgId, board = 'pre_production' }: Props) {
   const t = useTranslations('production')
-  const ctx = Route.useRouteContext() as {
-    org: { id: string; role?: string }
-  }
 
   const [search, setSearch] = useQueryState('q', parseAsString.withDefault(''))
   const [stageFilter, setStageFilter] = useQueryState(
@@ -31,10 +33,13 @@ export function KanbanPage() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [reviewTaskId, setReviewTaskId] = useState<string | null>(null)
 
+  const ctx = Route.useRouteContext() as {
+    org: { id: string; role?: string }
+  }
   const role = ctx.org.role as Role
   const canApprove = canApproveProductionTask(role)
 
-  const { data: stages } = useStages()
+  const { data: stages } = useStages(board)
   const activeStages = useMemo(() => {
     if (!stages) return []
     return stages
@@ -44,11 +49,12 @@ export function KanbanPage() {
 
   const filters = useMemo(
     () => ({
-      orgId: ctx.org.id,
+      orgId,
+      board,
       search: search || undefined,
       stageId: stageFilter || undefined,
     }),
-    [ctx.org.id, search, stageFilter],
+    [orgId, board, search, stageFilter],
   )
 
   const { data: boardData, isLoading } = useBoardTasks(filters)
@@ -61,9 +67,24 @@ export function KanbanPage() {
     return s?.name ?? ''
   }, [reviewTask, activeStages])
 
+  const reviewNextStageName = useMemo(() => {
+    if (!reviewTask || !activeStages.length) return ''
+    const idx = activeStages.findIndex((st) => st.id === reviewTask.stageId)
+    const next = activeStages[idx + 1]
+    return next?.name ?? ''
+  }, [reviewTask, activeStages])
+
+  const reviewRequirementResponses = useMemo(() => {
+    if (!reviewTask) return undefined
+    const ctx = reviewTask.context as Record<string, unknown> | null
+    return ctx?.requirementResponses as
+      | Record<string, { value?: string; assetIds?: string[] }>
+      | undefined
+  }, [reviewTask])
+
   return (
     <div className="flex flex-col overflow-hidden gap-4 h-full">
-      <div className="flex items-center gap-3 px-4 pt-4">
+      <div className="flex items-center gap-3 px-4">
         <Input
           placeholder={t('searchPlaceholder')}
           value={search}
@@ -104,7 +125,7 @@ export function KanbanPage() {
       {selectedTaskId && (
         <TaskDetailModal
           taskId={selectedTaskId}
-          orgId={ctx.org.id}
+          orgId={orgId}
           open={!!selectedTaskId}
           onOpenChange={(open) => {
             if (!open) setSelectedTaskId(null)
@@ -122,6 +143,8 @@ export function KanbanPage() {
           taskId={reviewTaskId}
           taskNumber={reviewTask?.taskNumber ?? null}
           stageName={reviewStageName}
+          nextStageName={reviewNextStageName || undefined}
+          requirementResponses={reviewRequirementResponses}
           open={!!reviewTaskId}
           onOpenChange={(open) => {
             if (!open) setReviewTaskId(null)

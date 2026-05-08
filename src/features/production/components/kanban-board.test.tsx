@@ -8,6 +8,7 @@ const stage1: Stage = {
   id: 's1',
   orgId: 'org-1',
   name: 'Design',
+  board: 'pre_production',
   description: null,
   needApproval: false,
   requirements: [],
@@ -21,6 +22,7 @@ const stage2: Stage = {
   id: 's2',
   orgId: 'org-1',
   name: 'Production',
+  board: 'pre_production',
   description: null,
   needApproval: true,
   requirements: [],
@@ -41,6 +43,7 @@ function createTask(
       id,
       orgId: 'org-1',
       orderId: 'order-1',
+      board: 'pre_production',
       stageId,
       status,
       taskNumber: `TSK-${id}`,
@@ -49,8 +52,9 @@ function createTask(
       assignedTo: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      archivedAt: null,
     },
-    stage: stageId ? matched : null,
+    stage: matched,
   }
 }
 

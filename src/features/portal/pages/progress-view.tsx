@@ -1,7 +1,18 @@
-import { CheckCircle2 } from 'lucide-react'
-import { useTranslations } from 'use-intl'
-import { OrderTimeline } from '../components/order-timeline'
-import { useOrderTimeline } from '../hooks'
+import { CalendarClock, CheckCircle2 } from 'lucide-react'
+import { useLocale, useTranslations } from 'use-intl'
+import { Badge } from '#/components/ui/badge'
+import { Card } from '#/components/ui/card'
+import { CustomerInfoCard } from '../components/customer-info-card'
+import { LineItemTaskCard } from '../components/line-item-task-card'
+import { PaymentAlertBanner } from '../components/payment-alert-banner'
+import { PaymentSection } from '../components/payment-section'
+import { ShippingAddressCard } from '../components/shipping-address-card'
+import {
+  useOrderTimeline,
+  usePortalFinalizeUpload,
+  usePortalGetInvoiceUploadUrl,
+  useSubmitPaymentProof,
+} from '../hooks'
 import type { PortalOrder } from '../model'
 
 export function ProgressView({
@@ -12,6 +23,7 @@ export function ProgressView({
   token: string
 }) {
   const t = useTranslations('portal')
+  const locale = useLocale()
   const { data: timelineEvents } = useOrderTimeline(
     order.status === 'production' ||
       order.status === 'in_delivery' ||
@@ -19,6 +31,10 @@ export function ProgressView({
       ? token
       : '',
   )
+
+  const getUploadUrl = usePortalGetInvoiceUploadUrl()
+  const finalizeUpload = usePortalFinalizeUpload()
+  const submitProof = useSubmitPaymentProof()
 
   const statusLabel: Record<string, string> = {
     approved: t('statusApproved'),
@@ -29,76 +45,116 @@ export function ProgressView({
   }
 
   const isCompleted = order.status === 'completed'
+  const maxDays = order.lineItems.reduce(
+    (max, item) => Math.max(max, item.productionDays ?? 0),
+    0,
+  )
+
+  async function handleUpload(invoiceId: string, file: File) {
+    const uploadResult = await getUploadUrl.mutateAsync({
+      token,
+      invoiceId,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+    })
+
+    const response = await fetch(uploadResult.uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: { 'Content-Type': file.type },
+    })
+    if (!response.ok) throw new Error('Upload failed')
+
+    await finalizeUpload.mutateAsync({
+      token,
+      lineItemId: invoiceId,
+      assetId: uploadResult.assetId,
+      originalFilename: file.name,
+      mimeType: file.type,
+      sizeBytes: file.size,
+      storageKey: uploadResult.storageKey,
+    })
+
+    await submitProof.mutateAsync({
+      token,
+      invoiceId,
+      assetId: uploadResult.assetId,
+      originalFilename: file.name,
+      mimeType: file.type,
+      sizeBytes: file.size,
+      storageKey: uploadResult.storageKey,
+    })
+  }
 
   return (
     <div className="min-h-screen bg-muted py-4">
       <div className="mx-auto max-w-2xl px-4">
-        <div className="rounded-lg border border-border bg-card p-4 md:p-6">
-          <div className="mb-6">
-            <h1 className="text-xl font-semibold text-card-foreground">
-              {t('orderSummary')}
-            </h1>
-            {order.orderNumber && (
-              <p className="text-sm text-muted-foreground">
-                {order.orderNumber}
-              </p>
-            )}
+        <Card className="p-4 md:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-xl font-semibold text-card-foreground">
+                {t('orderSummary')}
+              </h1>
+              {order.orderNumber && (
+                <p className="text-sm text-muted-foreground">
+                  {order.orderNumber}
+                </p>
+              )}
+            </div>
             {order.status && (
-              <span className="mt-2 inline-block rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
+              <Badge variant="secondary" className="shrink-0 mt-1.5">
                 {statusLabel[order.status] ?? order.status}
-              </span>
+              </Badge>
             )}
           </div>
 
           {isCompleted && (
-            <div className="mb-6 rounded-lg bg-secondary p-4 text-center">
+            <div className="rounded-lg bg-secondary p-4 text-center">
               <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-primary" />
               <p className="text-sm text-secondary-foreground">
                 {t('completedThanks')}
               </p>
             </div>
           )}
+          <PaymentAlertBanner invoices={order.invoices} />
+          <CustomerInfoCard
+            name={order.customerName}
+            phone={order.customerPhone}
+            photoAssetId={order.customerPhotoAssetId}
+          />
+          <ShippingAddressCard address={order.shippingAddress} />
 
-          {timelineEvents && timelineEvents.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-sm font-semibold mb-3">{t('status')}</h2>
-              <OrderTimeline events={timelineEvents} />
+          {maxDays > 0 && (
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="flex items-center gap-3">
+                <CalendarClock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  {(() => {
+                    const estimatedDate = new Date(order.createdAt)
+                    estimatedDate.setDate(estimatedDate.getDate() + maxDays)
+                    const formattedDate = new Intl.DateTimeFormat(locale, {
+                      dateStyle: 'long',
+                    }).format(estimatedDate)
+                    return t('estimatedCompletion', { date: formattedDate })
+                  })()}
+                </p>
+              </div>
             </div>
           )}
 
-          <div className="mb-6 space-y-3">
+          <h2 className="text-sm font-semibold text-card-foreground">
+            {t('lineItems')}
+          </h2>
+          <div className="space-y-3">
             {order.lineItems.map((item) => (
-              <div
+              <LineItemTaskCard
                 key={item.id}
-                className="flex gap-3 border-b border-border pb-3 last:border-0"
-              >
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-card-foreground">
-                    {item.name || item.productName}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {t('quantity')}: {item.quantity} ×{' '}
-                    {new Intl.NumberFormat('en-ID', {
-                      style: 'currency',
-                      currency: 'IDR',
-                    }).format(item.unitPrice)}
-                  </p>
-                  {item.notes && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {item.notes}
-                    </p>
-                  )}
-                </div>
-                <p className="text-sm font-medium text-card-foreground">
-                  {new Intl.NumberFormat('en-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                  }).format(item.total)}
-                </p>
-              </div>
+                item={item}
+                events={timelineEvents ?? []}
+              />
             ))}
           </div>
-
           <div className="flex justify-end border-t border-border pt-4">
             <div>
               <p className="text-sm text-muted-foreground">{t('orderTotal')}</p>
@@ -110,7 +166,12 @@ export function ProgressView({
               </p>
             </div>
           </div>
-        </div>
+        </Card>
+        {order.invoices.length > 0 && (
+          <div className="mt-6">
+            <PaymentSection invoices={order.invoices} onUpload={handleUpload} />
+          </div>
+        )}
       </div>
     </div>
   )

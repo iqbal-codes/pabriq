@@ -1,5 +1,5 @@
-import { useState } from 'react'
 import { useTranslations } from 'use-intl'
+import { FormGrid, FormRoot, useAppForm } from '#/components/app/form'
 import { Button } from '#/components/ui/button'
 import {
   Dialog,
@@ -9,11 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
-import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
-import { NativeSelect } from '#/components/ui/native-select'
+import { NativeSelect, NativeSelectOption } from '#/components/ui/native-select'
 import { Switch } from '#/components/ui/switch'
-import { Textarea } from '#/components/ui/textarea'
 import { useStageMutations } from '../hooks'
 import type { Requirement, Stage } from '../model'
 
@@ -28,60 +26,36 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
   const ct = useTranslations('common')
   const { createStage, updateStage } = useStageMutations()
 
-  const [name, setName] = useState(stage?.name ?? '')
-  const [description, setDescription] = useState(stage?.description ?? '')
-  const [needApproval, setNeedApproval] = useState(stage?.needApproval ?? false)
-  const [requirements, setRequirements] = useState<Requirement[]>(
-    (stage?.requirements as Requirement[]) ?? [],
-  )
+  const form = useAppForm({
+    defaultValues: {
+      name: stage?.name ?? '',
+      description: stage?.description ?? '',
+      needApproval: stage?.needApproval ?? false,
+      requirements: (stage?.requirements as Requirement[]) ?? [],
+    },
+    onSubmit: async ({ value }) => {
+      if (stage) {
+        await updateStage.mutateAsync({
+          id: stage.id,
+          name: value.name,
+          description: value.description || undefined,
+          needApproval: value.needApproval,
+          requirements: value.requirements as Requirement[],
+        })
+      } else {
+        await createStage.mutateAsync({
+          name: value.name,
+          description: value.description || undefined,
+          needApproval: value.needApproval,
+          requirements: value.requirements as Requirement[],
+        })
+      }
+      onOpenChange(false)
+    },
+  })
 
-  function addRequirement() {
-    setRequirements([
-      ...requirements,
-      { id: crypto.randomUUID(), label: '', type: 'text', required: false },
-    ])
-  }
-
-  function updateRequirement(
-    index: number,
-    field: keyof Requirement,
-    value: string | boolean,
-  ) {
-    setRequirements(
-      requirements.map((r, i) =>
-        i === index ? { ...r, [field]: value as Requirement[typeof field] } : r,
-      ),
-    )
-  }
-
-  function removeRequirement(index: number) {
-    setRequirements(requirements.filter((_, i) => i !== index))
-  }
-
-  async function handleSubmit() {
-    if (!name.trim()) return
-
-    if (stage) {
-      await updateStage.mutateAsync({
-        id: stage.id,
-        name,
-        description: description || undefined,
-        needApproval,
-        requirements: requirements as Requirement[],
-      })
-    } else {
-      await createStage.mutateAsync({
-        name,
-        description: description || undefined,
-        needApproval,
-        requirements: requirements as Requirement[],
-      })
-    }
-
-    onOpenChange(false)
-  }
-
-  const isPending = createStage.isPending || updateStage.isPending
+  const canSubmit =
+    !form.state.isSubmitting && form.state.values.name.trim().length > 0
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -93,104 +67,149 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="name">{t('stageName')}</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
+        <FormRoot form={form}>
+          <FormGrid columns={1} className="py-4">
+            <form.AppField name="name">
+              {(field) => <field.TextField label={t('stageName')} />}
+            </form.AppField>
 
-          <div className="grid gap-2">
-            <Label htmlFor="description">{t('stageDescription')}</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('stageDescriptionPlaceholder')}
-            />
-          </div>
+            <form.AppField name="description">
+              {(field) => (
+                <field.TextareaField
+                  label={t('stageDescription')}
+                  placeholder={t('stageDescriptionPlaceholder')}
+                />
+              )}
+            </form.AppField>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>{t('needApproval')}</Label>
-              <p className="text-xs text-muted-foreground">
-                {t('needApprovalHint')}
-              </p>
-            </div>
-            <Switch checked={needApproval} onCheckedChange={setNeedApproval} />
-          </div>
-
-          <div className="grid gap-3">
-            <div className="flex items-center justify-between">
-              <Label>{t('requirements')}</Label>
-              <Button
-                variant="outline"
-                size="sm"
-                type="button"
-                onClick={addRequirement}
-              >
-                {t('addRequirement')}
-              </Button>
-            </div>
-
-            {requirements.map((req, i) => (
-              <div
-                key={req.id}
-                className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-end"
-              >
-                <div className="grid gap-1">
-                  <Label className="text-xs">{t('requirementLabel')}</Label>
-                  <Input
-                    value={req.label}
-                    onChange={(e) =>
-                      updateRequirement(i, 'label', e.target.value)
-                    }
-                  />
-                </div>
-                <div className="grid gap-1">
-                  <Label className="text-xs">{t('requirementType')}</Label>
-                  <NativeSelect
-                    value={req.type}
-                    onChange={(e) =>
-                      updateRequirement(i, 'type', e.target.value)
-                    }
-                  >
-                    <option value="text">{t('requirementTypeText')}</option>
-                    <option value="number">{t('requirementTypeNumber')}</option>
-                    <option value="upload">{t('requirementTypeUpload')}</option>
-                  </NativeSelect>
-                </div>
-                <div className="flex items-center gap-1 pb-1">
+            <form.AppField name="needApproval">
+              {(field) => (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>{t('needApproval')}</Label>
+                    <p className="text-xs text-muted-foreground">
+                      {t('needApprovalHint')}
+                    </p>
+                  </div>
                   <Switch
-                    checked={req.required}
-                    onCheckedChange={(v) => updateRequirement(i, 'required', v)}
+                    checked={field.state.value}
+                    onCheckedChange={(v) => field.handleChange(v)}
                   />
-                  <span className="text-xs">{t('required')}</span>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  type="button"
-                  onClick={() => removeRequirement(i)}
-                >
-                  {t('deleteStage')}
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
+              )}
+            </form.AppField>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {ct('cancel')}
-          </Button>
-          <Button onClick={handleSubmit} disabled={isPending || !name.trim()}>
-            {stage ? t('editStage') : t('addStage')}
-          </Button>
-        </DialogFooter>
+            <form.AppField name="requirements" mode="array">
+              {(requirementsField) => (
+                <div className="grid gap-3">
+                  <div className="flex items-center justify-between">
+                    <Label>{t('requirements')}</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      onClick={() =>
+                        requirementsField.pushValue({
+                          id: crypto.randomUUID(),
+                          label: '',
+                          type: 'text' as const,
+                          required: false,
+                        } as Requirement)
+                      }
+                    >
+                      {t('addRequirement')}
+                    </Button>
+                  </div>
+
+                  {requirementsField.state.value.map(
+                    (req: Requirement, i: number) => (
+                      <div
+                        key={req.id}
+                        className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-end"
+                      >
+                        <form.AppField name={`requirements[${i}].label`}>
+                          {(subField) => (
+                            <div className="grid gap-1">
+                              <Label className="text-xs">
+                                {t('requirementLabel')}
+                              </Label>
+                              <subField.TextField />
+                            </div>
+                          )}
+                        </form.AppField>
+
+                        <form.AppField name={`requirements[${i}].type`}>
+                          {(subField) => (
+                            <div className="grid gap-1">
+                              <Label className="text-xs">
+                                {t('requirementType')}
+                              </Label>
+                              <NativeSelect
+                                value={subField.state.value}
+                                onChange={(e) =>
+                                  subField.handleChange(
+                                    e.target.value as
+                                      | 'text'
+                                      | 'number'
+                                      | 'upload',
+                                  )
+                                }
+                              >
+                                <NativeSelectOption value="text">
+                                  {t('requirementTypeText')}
+                                </NativeSelectOption>
+                                <NativeSelectOption value="number">
+                                  {t('requirementTypeNumber')}
+                                </NativeSelectOption>
+                                <NativeSelectOption value="upload">
+                                  {t('requirementTypeUpload')}
+                                </NativeSelectOption>
+                              </NativeSelect>
+                            </div>
+                          )}
+                        </form.AppField>
+
+                        <form.AppField name={`requirements[${i}].required`}>
+                          {(subField) => (
+                            <div className="flex items-center gap-1 pb-1">
+                              <Switch
+                                checked={subField.state.value}
+                                onCheckedChange={(v) =>
+                                  subField.handleChange(v)
+                                }
+                              />
+                              <span className="text-xs">{t('required')}</span>
+                            </div>
+                          )}
+                        </form.AppField>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          type="button"
+                          onClick={() => requirementsField.removeValue(i)}
+                        >
+                          {t('deleteStage')}
+                        </Button>
+                      </div>
+                    ),
+                  )}
+                </div>
+              )}
+            </form.AppField>
+          </FormGrid>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              {ct('cancel')}
+            </Button>
+            <form.AppForm>
+              <form.SubmitButton disabled={!canSubmit}>
+                {stage ? t('editStage') : t('addStage')}
+              </form.SubmitButton>
+            </form.AppForm>
+          </DialogFooter>
+        </FormRoot>
       </DialogContent>
     </Dialog>
   )

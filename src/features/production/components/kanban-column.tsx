@@ -18,7 +18,9 @@ export function KanbanColumn({ title, count, tasks, onClickCard }: Props) {
     <Card className="flex h-full min-w-72 flex-col bg-muted/30 gap-0! py-0!">
       <CardHeader className="flex flex-row items-center justify-between p-3">
         <h3 className="text-sm font-semibold">{title}</h3>
-        <Badge variant="secondary">{count}</Badge>
+        <Badge variant="default" className="text-[10px] size-5">
+          {count}
+        </Badge>
       </CardHeader>
       <CardContent className="flex flex-col gap-2 overflow-y-auto p-3 pt-0">
         {tasks.length === 0 ? (

@@ -8,6 +8,7 @@ const stage: Stage = {
   id: 'stage-1',
   orgId: 'org-1',
   name: 'Production',
+  board: 'pre_production',
   description: null,
   needApproval: false,
   requirements: [],
@@ -23,6 +24,7 @@ function createTask(id: string): BoardTask {
       id,
       orgId: 'org-1',
       orderId: 'order-1',
+      board: 'pre_production',
       stageId: stage.id,
       status: 'in_progress',
       taskNumber: `TSK-${id}`,
@@ -31,28 +33,16 @@ function createTask(id: string): BoardTask {
       assignedTo: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      archivedAt: null,
     },
     stage,
   }
 }
 
-const enMessages = {
-  production: {
-    noTasks: 'No tasks',
-  },
-}
-
-function renderColumn(
-  tasks: BoardTask[],
-  props: { title: string; count?: number } = { title: 'Queue' },
-) {
+function renderColumn(tasks: BoardTask[], props: { title: string; count: number }) {
   return render(
-    <IntlProvider locale="en" messages={enMessages}>
-      <KanbanColumn
-        title={props.title}
-        count={props.count ?? tasks.length}
-        tasks={tasks}
-      />
+    <IntlProvider locale="en" messages={{ production: {} }}>
+      <KanbanColumn tasks={tasks} title={props.title} count={props.count} />
     </IntlProvider>,
   )
 }

@@ -1,3 +1,4 @@
+import { Upload, X } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { Button } from '#/components/ui/button'
@@ -68,7 +69,51 @@ export function RequirementForm({ requirements, onCancel, onSubmit }: Props) {
             />
           )}
           {req.type === 'upload' && (
-            <p className="text-sm text-muted-foreground">{t('uploadFile')}</p>
+            <div className="flex items-center gap-2">
+              <Input
+                id={`req-${req.id}`}
+                type="file"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) {
+                    setResponses((prev) => ({
+                      ...prev,
+                      [req.id]: { value: file.name },
+                    }))
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  document.getElementById(`req-${req.id}`)?.click()
+                }}
+              >
+                <Upload className="size-4" />
+                {responses[req.id]?.value
+                  ? responses[req.id].value
+                  : t('uploadFile')}
+              </Button>
+              {responses[req.id]?.value && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() =>
+                    setResponses((prev) => {
+                      const next = { ...prev }
+                      delete next[req.id]
+                      return next
+                    })
+                  }
+                >
+                  <X className="size-4" />
+                </Button>
+              )}
+            </div>
           )}
         </div>
       ))}

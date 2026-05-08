@@ -8,6 +8,7 @@ const events: OrderTaskEvent[] = [
   {
     id: 'act-1',
     taskId: 't1',
+    lineItemId: 'li-1',
     taskNumber: 'TSK-1',
     productName: 'Custom T-Shirt',
     type: 'stage_transition',
@@ -18,6 +19,7 @@ const events: OrderTaskEvent[] = [
   {
     id: 'act-2',
     taskId: 't1',
+    lineItemId: 'li-1',
     taskNumber: 'TSK-1',
     productName: 'Custom T-Shirt',
     type: 'stage_transition',

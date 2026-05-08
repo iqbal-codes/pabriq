@@ -9,7 +9,9 @@ import {
   approveTaskAdvanceFn,
   createStageFn,
   deleteStageFn,
+  getTaskCountsFn,
   getTaskDetailFn,
+  listArchivedTasksFn,
   listBoardTasksFn,
   listStagesFn,
   listTaskActivitiesFn,
@@ -20,10 +22,10 @@ import {
   updateStageFn,
 } from './server'
 
-export function useStages() {
+export function useStages(board?: string) {
   return useQuery({
-    queryKey: queryKeys.production.stages(),
-    queryFn: () => listStagesFn(),
+    queryKey: queryKeys.production.stages(board),
+    queryFn: () => listStagesFn({ data: { board } }),
   })
 }
 
@@ -113,18 +115,24 @@ export function useStageMutations() {
 
 export function useBoardTasks(filters: {
   orgId: string
+  board?: string
   stageId?: string
   search?: string
 }) {
   return useQuery({
     queryKey: queryKeys.production.board({
       orgId: filters.orgId,
+      board: filters.board,
       stageId: filters.stageId,
       search: filters.search,
     }),
     queryFn: () =>
       listBoardTasksFn({
-        data: { stageId: filters.stageId, search: filters.search },
+        data: {
+          board: filters.board,
+          stageId: filters.stageId,
+          search: filters.search,
+        },
       }),
   })
 }
@@ -145,6 +153,26 @@ export function useTaskActivities(taskId: string) {
   })
 }
 
+export function useArchivedTasks(filters: {
+  orgId: string
+  board?: string
+  search?: string
+  page?: number
+  perPage?: number
+}) {
+  return useQuery({
+    queryKey: queryKeys.production.archived(filters),
+    queryFn: () => listArchivedTasksFn({ data: filters }),
+  })
+}
+
+export function useTaskCounts(board?: string) {
+  return useQuery({
+    queryKey: queryKeys.production.counts(board),
+    queryFn: () => getTaskCountsFn({ data: { board } }),
+  })
+}
+
 export function useTaskMutations() {
   const queryClient = useQueryClient()
   const t = useTranslations('production')
@@ -158,7 +186,13 @@ export function useTaskMutations() {
   const advanceTask = useMutation<
     { ok: true; pendingApproval: boolean } | { ok: false; error: string },
     Error,
-    { taskId: string }
+    {
+      taskId: string
+      requirementResponses?: Record<
+        string,
+        { value?: string; assetIds?: string[] }
+      >
+    }
   >({
     mutationFn: (input) => advanceTaskFn({ data: input }),
     onSuccess: (result) => {

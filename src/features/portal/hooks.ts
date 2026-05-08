@@ -15,8 +15,10 @@ import {
   getOrderTasksTimelineFn,
   getPortalOrderFn,
   portalFinalizeUploadFn,
+  portalGetInvoiceUploadUrlFn,
   portalGetUploadUrlFn,
   savePortalAddressFn,
+  submitPaymentProofFn,
   updatePortalLineItemFn,
 } from './server'
 
@@ -84,6 +86,36 @@ export function usePortalGetUploadUrl() {
       fileSize: number
       lineItemId: string
     }) => portalGetUploadUrlFn({ data: input }),
+  })
+}
+
+export function usePortalGetInvoiceUploadUrl() {
+  return useMutation({
+    mutationFn: (input: {
+      token: string
+      invoiceId: string
+      fileName: string
+      fileType: string
+      fileSize: number
+    }) => portalGetInvoiceUploadUrlFn({ data: input }),
+  })
+}
+
+export function useSubmitPaymentProof() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: {
+      token: string
+      invoiceId: string
+      assetId: string
+      originalFilename: string
+      mimeType: string
+      sizeBytes: number
+      storageKey: string
+    }) => submitPaymentProofFn({ data: input }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.portal.all })
+    },
   })
 }
 

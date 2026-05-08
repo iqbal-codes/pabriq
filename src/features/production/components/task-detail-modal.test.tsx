@@ -14,9 +14,13 @@ const enMessages = {
     commentPlaceholder: 'Type a comment...',
     send: 'Send',
     startProduction: 'Start Production',
-    advanceTo: 'Advance',
+    advanceTo: 'Advance to {stage}',
     reviewAdvancement: 'Review',
     queue: 'Queue',
+    statusQueued: 'Queued',
+    statusInProgress: 'In Progress',
+    pendingApproval: 'Pending Approval',
+    statusCompleted: 'Completed',
   },
 }
 
@@ -38,6 +42,7 @@ vi.mock('../hooks', () => {
         id: taskId,
         orgId: 'org-1',
         orderId: 'order-1',
+        board: 'pre_production',
         stageId: taskStatusMap[taskId] === 'queued' ? null : 'stage-1',
         status: taskStatusMap[taskId] ?? 'in_progress',
         taskNumber: 'TSK-5',
@@ -71,8 +76,8 @@ vi.mock('../hooks', () => {
     }),
     useStages: () => ({
       data: [
-        { id: 'stage-1', name: 'Design', orderIndex: 0, active: true },
-        { id: 'stage-2', name: 'Production', orderIndex: 1, active: true },
+        { id: 'stage-1', name: 'Design', board: 'pre_production', orderIndex: 0, active: true, needApproval: false, requirements: [], description: null, orgId: 'org-1', createdAt: new Date(), updatedAt: new Date() },
+        { id: 'stage-2', name: 'Production', board: 'pre_production', orderIndex: 1, active: true, needApproval: false, requirements: [], description: null, orgId: 'org-1', createdAt: new Date(), updatedAt: new Date() },
       ],
       isLoading: false,
     }),
@@ -134,6 +139,6 @@ describe('TaskDetailModal', () => {
   it('shows activity tab content', async () => {
     renderModal()
     await userEvent.click(screen.getByText('Activity'))
-    expect(screen.getByText('stage_transition')).toBeInTheDocument()
+    expect(screen.getByText('Started Design')).toBeInTheDocument()
   })
 })

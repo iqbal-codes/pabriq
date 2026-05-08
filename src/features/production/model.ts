@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm'
 import { db } from '#/db/index'
 import type { Requirement } from '#/db/schema'
 import {
@@ -14,6 +14,7 @@ export type Stage = {
   id: string
   orgId: string
   name: string
+  board: string
   description: string | null
   needApproval: boolean
   requirements: Requirement[]
@@ -26,6 +27,7 @@ export type Stage = {
 export type CreateStageInput = {
   orgId: string
   name: string
+  board?: string
   description?: string
   needApproval?: boolean
   requirements?: Requirement[]
@@ -36,6 +38,7 @@ export type UpdateStageInput = {
   id: string
   orgId: string
   name?: string
+  board?: string
   description?: string
   needApproval?: boolean
   requirements?: Requirement[]
@@ -47,6 +50,7 @@ export type ProductionTask = {
   id: string
   orgId: string
   orderId: string
+  board: string
   stageId: string | null
   status: string
   taskNumber: string | null
@@ -55,6 +59,7 @@ export type ProductionTask = {
   assignedTo: string | null
   createdAt: Date
   updatedAt: Date
+  archivedAt: Date | null
 }
 
 export type TaskActivity = {
@@ -75,10 +80,13 @@ function generateId(): string {
 
 export async function createStage(input: CreateStageInput): Promise<Stage> {
   const now = new Date()
+  const board = input.board ?? 'pre_production'
   const maxOrder = await db
     .select({ value: sql<number>`COALESCE(MAX(order_index), -1)` })
     .from(stagesTable)
-    .where(eq(stagesTable.orgId, input.orgId))
+    .where(
+      and(eq(stagesTable.orgId, input.orgId), eq(stagesTable.board, board)),
+    )
 
   const id = generateId()
   const orderIndex = input.orderIndex ?? (maxOrder[0]?.value ?? -1) + 1
@@ -89,6 +97,7 @@ export async function createStage(input: CreateStageInput): Promise<Stage> {
       id,
       orgId: input.orgId,
       name: input.name,
+      board,
       description: input.description ?? null,
       needApproval: input.needApproval ?? false,
       requirements: (input.requirements ?? []) as Requirement[],
@@ -102,11 +111,18 @@ export async function createStage(input: CreateStageInput): Promise<Stage> {
   return rows[0] as Stage
 }
 
-export async function listStages(orgId: string): Promise<Stage[]> {
+export async function listStages(
+  orgId: string,
+  board?: string,
+): Promise<Stage[]> {
+  const conditions = [eq(stagesTable.orgId, orgId)]
+  if (board !== undefined) {
+    conditions.push(eq(stagesTable.board, board))
+  }
   const rows = await db
     .select()
     .from(stagesTable)
-    .where(eq(stagesTable.orgId, orgId))
+    .where(and(...conditions))
     .orderBy(asc(stagesTable.orderIndex))
 
   return rows as Stage[]
@@ -131,6 +147,7 @@ export async function updateStage(input: UpdateStageInput): Promise<Stage> {
   const updates: Record<string, unknown> = { updatedAt: now }
 
   if (input.name !== undefined) updates.name = input.name
+  if (input.board !== undefined) updates.board = input.board
   if (input.description !== undefined) updates.description = input.description
   if (input.needApproval !== undefined)
     updates.needApproval = input.needApproval
@@ -214,10 +231,16 @@ type AdvanceTaskResult =
   | { ok: true; pendingApproval: true }
   | { ok: false; error: string }
 
+type RequirementResponse = Record<
+  string,
+  { value?: string; assetIds?: string[] }
+>
+
 export async function advanceTask(
   taskId: string,
   orgId: string,
   actorId: string,
+  requirementResponses?: RequirementResponse,
 ): Promise<AdvanceTaskResult> {
   const taskRows = await db
     .select()
@@ -237,7 +260,13 @@ export async function advanceTask(
   const allStages = await db
     .select()
     .from(stagesTable)
-    .where(and(eq(stagesTable.orgId, orgId), eq(stagesTable.active, true)))
+    .where(
+      and(
+        eq(stagesTable.orgId, orgId),
+        eq(stagesTable.active, true),
+        eq(stagesTable.board, task.board),
+      ),
+    )
     .orderBy(asc(stagesTable.orderIndex))
 
   if (allStages.length === 0) {
@@ -252,12 +281,57 @@ export async function advanceTask(
     return { ok: false, error: 'Current stage not found' }
   }
 
+  if (!isQueued) {
+    const currentStage = allStages[currentStageIdx] as Stage
+    const requiredReqs = currentStage.requirements.filter(
+      (r: { required: boolean }) => r.required,
+    )
+    const missing = requiredReqs.filter(
+      (r: { id: string }) =>
+        !requirementResponses?.[r.id]?.value &&
+        !requirementResponses?.[r.id]?.assetIds?.length,
+    )
+    if (missing.length > 0) {
+      const names = missing.map((r: { label: string }) => r.label).join(', ')
+      return {
+        ok: false,
+        error: `Required requirements not fulfilled: ${names}`,
+      }
+    }
+  }
+
+  if (requirementResponses && Object.keys(requirementResponses).length > 0) {
+    const existingContext = (task.context as Record<string, unknown>) ?? {}
+    const updatedContext = {
+      ...existingContext,
+      requirementResponses: {
+        ...((existingContext.requirementResponses as RequirementResponse) ??
+          {}),
+        ...requirementResponses,
+      },
+    }
+    await db
+      .update(tasksTable)
+      .set({
+        context: updatedContext as never,
+        updatedAt: new Date(),
+      })
+      .where(eq(tasksTable.id, taskId))
+  }
+
+  const completedReqIds = Object.keys(requirementResponses ?? {})
+
   const nextStageIdx = currentStageIdx + 1
   if (nextStageIdx >= allStages.length) {
     const now = new Date()
     await db
       .update(tasksTable)
-      .set({ status: 'completed', stageId: null, updatedAt: now })
+      .set({
+        status: 'completed',
+        stageId: null,
+        archivedAt: now,
+        updatedAt: now,
+      })
       .where(eq(tasksTable.id, taskId))
 
     await logActivity({
@@ -266,7 +340,7 @@ export async function advanceTask(
       type: 'stage_transition',
       fromStageId: task.stageId,
       toStageId: null,
-      data: { completedRequirements: [] },
+      data: { completedRequirements: completedReqIds },
       actorId,
     })
 
@@ -363,7 +437,12 @@ export async function approveTaskAdvance(
     const now = new Date()
     await db
       .update(tasksTable)
-      .set({ status: 'completed', stageId: null, updatedAt: now })
+      .set({
+        status: 'completed',
+        stageId: null,
+        archivedAt: now,
+        updatedAt: now,
+      })
       .where(eq(tasksTable.id, taskId))
 
     await logActivity({
@@ -494,19 +573,26 @@ export type BoardTask = {
 
 export async function listBoardTasks(
   orgId: string,
-  filter?: { stageId?: string; search?: string },
+  filter?: { board?: string; stageId?: string; search?: string },
 ): Promise<{
   queued: BoardTask[]
   stages: Map<string, BoardTask[]>
   done: BoardTask[]
 }> {
-  const allStages = await listStages(orgId)
+  const board = filter?.board ?? 'pre_production'
+  const allStages = await listStages(orgId, board)
   const stageMap = new Map(allStages.map((s) => [s.id, s]))
 
   let tasks = await db
     .select()
     .from(tasksTable)
-    .where(eq(tasksTable.orgId, orgId))
+    .where(
+      and(
+        eq(tasksTable.orgId, orgId),
+        eq(tasksTable.board, board),
+        isNull(tasksTable.archivedAt),
+      ),
+    )
 
   if (filter?.search) {
     const searchStr = filter.search
@@ -515,11 +601,13 @@ export async function listBoardTasks(
         string,
         string | number | boolean | null
       > | null
+      const term = searchStr.toLowerCase()
       return (
         t.id.includes(searchStr) ||
-        ((ctx?.productName as string) ?? '')
-          .toLowerCase()
-          .includes(searchStr.toLowerCase())
+        (t.taskNumber ?? '').toLowerCase().includes(term) ||
+        ((ctx?.productName as string) ?? '').toLowerCase().includes(term) ||
+        ((ctx?.orderNumber as string) ?? '').toLowerCase().includes(term) ||
+        ((ctx?.customerName as string) ?? '').toLowerCase().includes(term)
       )
     })
   }
@@ -550,4 +638,93 @@ export async function listBoardTasks(
   }
 
   return { queued, stages, done }
+}
+
+export type ArchivedTaskRow = {
+  id: string
+  taskNumber: string | null
+  orderNumber: string | null
+  productName: string
+  customerName: string
+  archivedAt: Date
+}
+
+export async function listArchivedTasks(
+  orgId: string,
+  filter?: {
+    board?: string
+    search?: string
+    page?: number
+    perPage?: number
+  },
+): Promise<{ rows: ArchivedTaskRow[]; totalRows: number }> {
+  const page = filter?.page ?? 1
+  const perPage = filter?.perPage ?? 25
+  const board = filter?.board ?? 'pre_production'
+  const search = filter?.search
+
+  const baseConditions = and(
+    eq(tasksTable.orgId, orgId),
+    eq(tasksTable.board, board),
+    sql`${tasksTable.archivedAt} IS NOT NULL`,
+  )
+
+  const searchCondition = search
+    ? or(
+        search.length >= 3
+          ? ilike(tasksTable.taskNumber, `%${search}%`)
+          : undefined,
+        sql`${tasksTable.context}->>'productName' ILIKE ${`%${search}%`}`,
+        sql`${tasksTable.context}->>'orderNumber' ILIKE ${`%${search}%`}`,
+        sql`${tasksTable.context}->>'customerName' ILIKE ${`%${search}%`}`,
+      )
+    : undefined
+
+  const allTasks = await db
+    .select()
+    .from(tasksTable)
+    .where(and(baseConditions, searchCondition))
+    .orderBy(desc(tasksTable.archivedAt))
+
+  const totalRows = allTasks.length
+  const paged = allTasks.slice((page - 1) * perPage, page * perPage)
+
+  const rows = paged.map((t) => {
+    const ctx = t.context as Record<
+      string,
+      string | number | boolean | null
+    > | null
+    return {
+      id: t.id,
+      taskNumber: t.taskNumber,
+      orderNumber: (ctx?.orderNumber as string) ?? null,
+      productName: (ctx?.productName as string) ?? '',
+      customerName: (ctx?.customerName as string) ?? '',
+      archivedAt: t.archivedAt as Date,
+    }
+  })
+
+  return { rows, totalRows }
+}
+
+export async function getTaskCounts(
+  orgId: string,
+  board?: string,
+): Promise<{ active: number; archived: number }> {
+  const conditions = [eq(tasksTable.orgId, orgId)]
+  if (board !== undefined) {
+    conditions.push(eq(tasksTable.board, board))
+  }
+  const [result] = await db
+    .select({
+      active: sql<number>`COUNT(*) FILTER (WHERE ${tasksTable.archivedAt} IS NULL)`,
+      archived: sql<number>`COUNT(*) FILTER (WHERE ${tasksTable.archivedAt} IS NOT NULL)`,
+    })
+    .from(tasksTable)
+    .where(and(...conditions))
+
+  return {
+    active: Number(result?.active ?? 0),
+    archived: Number(result?.archived ?? 0),
+  }
 }

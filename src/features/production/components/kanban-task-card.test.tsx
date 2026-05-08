@@ -2,28 +2,18 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { IntlProvider } from 'use-intl'
 import { describe, expect, it, vi } from 'vitest'
-import type { BoardTask, Stage } from '../model'
+import type { BoardTask } from '../model'
 import { KanbanTaskCard } from './kanban-task-card'
 
-const stage: Stage = {
-  id: 'stage-1',
-  orgId: 'org-1',
-  name: 'Production',
-  description: null,
-  needApproval: false,
-  requirements: [],
-  orderIndex: 1,
-  active: true,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-}
-
-function createMockTask(overrides: Partial<BoardTask['task']> = {}): BoardTask {
+function createMockTask(
+  _overrides: Partial<BoardTask['task']> = {},
+): BoardTask {
   return {
     task: {
       id: 'task-1',
       orgId: 'org-1',
       orderId: 'order-1',
+      board: 'pre_production',
       stageId: 'stage-1',
       status: 'queued',
       taskNumber: 'TSK-5',
@@ -37,14 +27,22 @@ function createMockTask(overrides: Partial<BoardTask['task']> = {}): BoardTask {
       assignedTo: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-      ...overrides,
+      archivedAt: null,
     },
-    stage,
+    stage: null,
   }
 }
 
 const enMessages = {
-  production: {},
+  production: {
+    statusQueued: 'Queued',
+    statusInProgress: 'In Progress',
+    pendingApproval: 'Pending Approval',
+    statusCompleted: 'Completed',
+  },
+  common: {
+    pcs: 'pcs',
+  },
 }
 
 function renderCard(task: BoardTask) {
@@ -85,7 +83,7 @@ describe('KanbanTaskCard', () => {
 
   it('renders status badge', () => {
     renderCard(createMockTask())
-    expect(screen.getByText('queued')).toBeInTheDocument()
+    expect(screen.getByText('Queued')).toBeInTheDocument()
   })
 
   it('has no action buttons', () => {

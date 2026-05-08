@@ -1,7 +1,8 @@
 import { Link } from '@tanstack/react-router'
-import { Eye, Pencil, ShoppingCart } from 'lucide-react'
+import { Eye, Link2, Pencil, ShoppingCart } from 'lucide-react'
 import { parseAsInteger, parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
+import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import type {
   AppColumnDef,
@@ -21,6 +22,7 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { useOrdersList } from '#/features/orders/hooks'
 import type { OrderRow } from '#/features/orders/model'
+import { generateOrderTokenFn } from '#/features/portal/server'
 import { Route } from '#/routes/_org/orders/index'
 
 export function OrdersListPage() {
@@ -269,6 +271,29 @@ export function OrdersListPage() {
                 </Link>
               </Button>
             )}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              tooltip={t('copyOrderLink')}
+              onClick={async () => {
+                let token = row.orderToken
+                if (!token) {
+                  const result = await generateOrderTokenFn({
+                    data: { orderId: row.id },
+                  })
+                  if (!('token' in result)) {
+                    toast.error('Failed to generate link')
+                    return
+                  }
+                  token = result.token
+                }
+                const url = `${window.location.origin}/order/${token}`
+                await navigator.clipboard.writeText(url)
+                toast.success(t('orderLinkCopied'))
+              }}
+            >
+              <Link2 className="size-4" />
+            </Button>
           </div>
         )}
       />

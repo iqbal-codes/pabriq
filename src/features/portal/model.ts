@@ -4,8 +4,10 @@ import {
   addresses,
   assets,
   customers,
+  invoices as invoicesTable,
   orderLineItems,
   orders,
+  paymentMethods as paymentMethodsTable,
   productionStages,
   productionTasks,
   products,
@@ -31,6 +33,25 @@ export type PortalLineItem = {
   assetIds: string[]
   assets: PortalAsset[]
   createdAt: Date
+  taskId: string | null
+  taskNumber: string | null
+  currentStageName: string | null
+  productionDays: number
+}
+
+export type PortalInvoice = {
+  id: string
+  invoiceNumber: string
+  total: number
+  percentage: number | null
+  dueDate: string
+  status: string
+  paymentMethodName: string | null
+  paymentMethodBankName: string | null
+  paymentMethodAccountNumber: string | null
+  paymentMethodAccountHolder: string | null
+  paymentMethodInstructions: string | null
+  hasPaymentProof: boolean
 }
 
 export type PortalOrder = {
@@ -44,7 +65,9 @@ export type PortalOrder = {
   customerName: string | null
   customerPhone: string | null
   customerIsWni: boolean | null
+  customerPhotoAssetId: string | null
   lineItems: PortalLineItem[]
+  invoices: PortalInvoice[]
   createdAt: Date
   rejectReason?: string | null
 }
@@ -103,6 +126,7 @@ export async function getPortalOrder(
             name: customers.name,
             phone: customers.phone,
             isWni: customers.isWni,
+            photoAssetId: customers.photoAssetId,
           })
           .from(customers)
           .where(
@@ -121,11 +145,18 @@ export async function getPortalOrder(
     .where(eq(orderLineItems.orderId, order.id))
 
   const productRows = await db
-    .select({ id: products.id, name: products.name })
+    .select({
+      id: products.id,
+      name: products.name,
+      productionDays: products.productionDays,
+    })
     .from(products)
     .where(eq(products.orgId, order.orgId))
 
-  const productMap = new Map(productRows.map((p) => [p.id, p.name]))
+  const productNameMap = new Map(productRows.map((p) => [p.id, p.name]))
+  const productDaysMap = new Map(
+    productRows.map((p) => [p.id, p.productionDays]),
+  )
 
   const lineItemIds = itemRows.map((item) => item.id)
   const assetRows =
@@ -166,17 +197,105 @@ export async function getPortalOrder(
     assetsByLineItem.set(asset.ownerId, assetList)
   }
 
-  const items: PortalLineItem[] = itemRows.map((item) => ({
-    id: item.id,
-    productName: productMap.get(item.productId) ?? 'Unknown',
-    quantity: item.quantity,
-    unitPrice: item.unitPrice,
-    total: item.total,
-    name: item.name ?? null,
-    notes: item.notes ?? null,
-    assetIds: assetIdsByLineItem.get(item.id) ?? [],
-    assets: assetsByLineItem.get(item.id) ?? [],
-    createdAt: item.createdAt,
+  const taskRows = await db
+    .select({
+      id: productionTasks.id,
+      taskNumber: productionTasks.taskNumber,
+      lineItemId: productionTasks.lineItemId,
+      stageId: productionTasks.stageId,
+    })
+    .from(productionTasks)
+    .where(eq(productionTasks.orderId, order.id))
+
+  const allStages = await db
+    .select({ id: productionStages.id, name: productionStages.name })
+    .from(productionStages)
+    .where(eq(productionStages.orgId, order.orgId))
+
+  const stageNameMap = new Map(allStages.map((s) => [s.id, s.name]))
+  const taskByLineItem = new Map(taskRows.map((t) => [t.lineItemId, t]))
+
+  const items: PortalLineItem[] = itemRows.map((item) => {
+    const task = taskByLineItem.get(item.id)
+    return {
+      id: item.id,
+      productName: productNameMap.get(item.productId) ?? 'Unknown',
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      total: item.total,
+      name: item.name ?? null,
+      notes: item.notes ?? null,
+      assetIds: assetIdsByLineItem.get(item.id) ?? [],
+      assets: assetsByLineItem.get(item.id) ?? [],
+      createdAt: item.createdAt,
+      taskId: task?.id ?? null,
+      taskNumber: task?.taskNumber ?? null,
+      currentStageName: task?.stageId
+        ? (stageNameMap.get(task.stageId) ?? null)
+        : null,
+      productionDays: productDaysMap.get(item.productId) ?? 0,
+    }
+  })
+
+  const invoiceRows = await db
+    .select({
+      id: invoicesTable.id,
+      invoiceNumber: invoicesTable.invoiceNumber,
+      total: invoicesTable.total,
+      percentage: invoicesTable.percentage,
+      dueDate: invoicesTable.dueDate,
+      status: invoicesTable.status,
+      paymentMethodName: paymentMethodsTable.name,
+      paymentMethodBankName: paymentMethodsTable.bankName,
+      paymentMethodAccountNumber: paymentMethodsTable.accountNumber,
+      paymentMethodAccountHolder: paymentMethodsTable.accountHolder,
+      paymentMethodInstructions: paymentMethodsTable.instructions,
+    })
+    .from(invoicesTable)
+    .leftJoin(
+      paymentMethodsTable,
+      eq(invoicesTable.paymentMethodId, paymentMethodsTable.id),
+    )
+    .where(
+      and(
+        eq(invoicesTable.orderId, order.id),
+        eq(invoicesTable.orgId, order.orgId),
+      ),
+    )
+
+  const paymentProofAssetIds =
+    invoiceRows.length > 0
+      ? await db
+          .select({ ownerId: assets.ownerId })
+          .from(assets)
+          .where(
+            and(
+              eq(assets.ownerType, 'invoice'),
+              eq(assets.usage, 'payment_proof'),
+              eq(assets.status, 'active'),
+              inArray(
+                assets.ownerId,
+                invoiceRows.map((inv) => inv.id),
+              ),
+            ),
+          )
+      : []
+
+  const proofSet = new Set(paymentProofAssetIds.map((a) => a.ownerId))
+
+  const invoices: PortalInvoice[] = invoiceRows.map((inv) => ({
+    id: inv.id,
+    invoiceNumber: inv.invoiceNumber,
+    total: inv.total,
+    percentage: inv.percentage,
+    dueDate: inv.dueDate,
+    status: inv.status,
+    paymentMethodName: inv.paymentMethodName,
+    paymentMethodBankName: inv.paymentMethodBankName,
+    paymentMethodAccountNumber: inv.paymentMethodAccountNumber,
+    paymentMethodAccountHolder: inv.paymentMethodAccountHolder,
+    paymentMethodInstructions: inv.paymentMethodInstructions,
+    hasPaymentProof: proofSet.has(inv.id),
   }))
 
   return {
@@ -192,7 +311,9 @@ export async function getPortalOrder(
       customerName: customer?.name ?? null,
       customerPhone: customer?.phone ?? null,
       customerIsWni: customer?.isWni ?? null,
+      customerPhotoAssetId: customer?.photoAssetId ?? null,
       lineItems: items,
+      invoices,
       createdAt: order.createdAt,
       rejectReason: order.rejectReason ?? null,
     },
@@ -495,6 +616,7 @@ export async function getPortalCustomerAddress(
 export type OrderTaskEvent = {
   id: string
   taskId: string
+  lineItemId: string | null
   taskNumber: string | null
   productName: string
   type: string
@@ -517,7 +639,12 @@ export async function getOrderTasksTimeline(
   const stageNameMap = new Map(allStages.map((s) => [s.id, s.name]))
 
   const tasks = await db
-    .select({ id: productionTasks.id, taskNumber: productionTasks.taskNumber })
+    .select({
+      id: productionTasks.id,
+      taskNumber: productionTasks.taskNumber,
+      lineItemId: productionTasks.lineItemId,
+      context: productionTasks.context,
+    })
     .from(productionTasks)
     .where(eq(productionTasks.orderId, orderResult.order.id))
 
@@ -546,18 +673,22 @@ export async function getOrderTasksTimeline(
 
   const taskMap = new Map(tasks.map((t) => [t.id, t]))
 
-  return activities.map((act) => ({
-    id: act.id,
-    taskId: act.taskId,
-    taskNumber: taskMap.get(act.taskId)?.taskNumber ?? null,
-    productName: '',
-    type: act.type,
-    fromStageName: act.fromStageId
-      ? (stageNameMap.get(act.fromStageId) ?? null)
-      : null,
-    toStageName: act.toStageId
-      ? (stageNameMap.get(act.toStageId) ?? null)
-      : null,
-    createdAt: act.createdAt,
-  }))
+  return activities.map((act) => {
+    const task = taskMap.get(act.taskId)
+    return {
+      id: act.id,
+      taskId: act.taskId,
+      lineItemId: task?.lineItemId ?? null,
+      taskNumber: task?.taskNumber ?? null,
+      productName: task?.context?.productName ?? '',
+      type: act.type,
+      fromStageName: act.fromStageId
+        ? (stageNameMap.get(act.fromStageId) ?? null)
+        : null,
+      toStageName: act.toStageId
+        ? (stageNameMap.get(act.toStageId) ?? null)
+        : null,
+      createdAt: act.createdAt,
+    }
+  })
 }

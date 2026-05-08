@@ -9,6 +9,10 @@ import {
 } from '#/db/schema'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
 import { listBreakpoints } from '#/features/products/model'
+import {
+  archiveBoardTasks,
+  spawnProductionTasks,
+} from '#/features/production/spawner'
 
 export type Order = {
   id: string
@@ -25,8 +29,17 @@ export type Order = {
   rejectedAt: Date | null
   rejectedBy: string | null
   rejectReason: string | null
+  courier: string | null
+  trackingNumber: string | null
+  shippedAt: Date | null
+  deliveredAt: Date | null
   createdAt: Date
   updatedAt: Date
+}
+
+export type DeliveryInfo = {
+  courier?: string
+  trackingNumber?: string
 }
 
 export type OrderLineItem = {
@@ -96,6 +109,7 @@ export type OrderRow = {
   status: string
   total: number
   orderNumber: string | null
+  orderToken: string | null
   createdAt: Date
 }
 
@@ -223,6 +237,7 @@ export async function listOrders(
       status: ordersTable.status,
       total: ordersTable.total,
       orderNumber: ordersTable.orderNumber,
+      orderToken: ordersTable.orderToken,
       createdAt: ordersTable.createdAt,
     })
     .from(ordersTable)
@@ -406,6 +421,10 @@ export async function createDraftOrder(
       rejectedAt: null,
       rejectedBy: null,
       rejectReason: null,
+      courier: null,
+      trackingNumber: null,
+      shippedAt: null,
+      deliveredAt: null,
       createdAt: now,
       updatedAt: now,
     },
@@ -580,4 +599,95 @@ export async function rejectOrder(
       updatedAt: now,
     })
     .where(eq(ordersTable.id, id))
+}
+
+export async function advanceOrderStatus(
+  id: string,
+  orgId: string,
+  _actorId: string,
+): Promise<void> {
+  const orderRows = await db
+    .select()
+    .from(ordersTable)
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.orgId, orgId)))
+    .limit(1)
+
+  if (orderRows.length === 0) throw new Error('Order not found')
+  const order = orderRows[0]
+
+  const now = new Date()
+  if (order.status === 'approved') {
+    await db
+      .update(ordersTable)
+      .set({ status: 'in_progress', updatedAt: now })
+      .where(eq(ordersTable.id, id))
+    await archiveBoardTasks(id, 'pre_production')
+    await spawnProductionTasks(id, orgId)
+  } else if (order.status === 'in_progress') {
+    await db
+      .update(ordersTable)
+      .set({ status: 'in_delivery', updatedAt: now })
+      .where(eq(ordersTable.id, id))
+    await archiveBoardTasks(id, 'production')
+  } else if (order.status === 'in_delivery') {
+    await db
+      .update(ordersTable)
+      .set({ status: 'completed', deliveredAt: now, updatedAt: now })
+      .where(eq(ordersTable.id, id))
+  } else {
+    throw new Error(`Cannot advance order from status: ${order.status}`)
+  }
+}
+
+export async function setDeliveryInfo(
+  id: string,
+  orgId: string,
+  delivery: DeliveryInfo,
+): Promise<void> {
+  const orderRows = await db
+    .select()
+    .from(ordersTable)
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.orgId, orgId)))
+    .limit(1)
+
+  if (orderRows.length === 0) throw new Error('Order not found')
+  if (orderRows[0].status !== 'in_delivery')
+    throw new Error('Only in_delivery orders can have delivery info set')
+
+  const now = new Date()
+  const updates: Record<string, unknown> = { updatedAt: now }
+  if (delivery.courier !== undefined) updates.courier = delivery.courier
+  if (delivery.trackingNumber !== undefined)
+    updates.trackingNumber = delivery.trackingNumber
+
+  await db.update(ordersTable).set(updates).where(eq(ordersTable.id, id))
+}
+
+export async function markShipped(
+  id: string,
+  orgId: string,
+  delivery: DeliveryInfo,
+): Promise<void> {
+  const orderRows = await db
+    .select()
+    .from(ordersTable)
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.orgId, orgId)))
+    .limit(1)
+
+  if (orderRows.length === 0) throw new Error('Order not found')
+  if (orderRows[0].status !== 'in_progress')
+    throw new Error('Only in_progress orders can be shipped')
+
+  const now = new Date()
+  await db
+    .update(ordersTable)
+    .set({
+      status: 'in_delivery',
+      courier: delivery.courier ?? null,
+      trackingNumber: delivery.trackingNumber ?? null,
+      shippedAt: now,
+      updatedAt: now,
+    })
+    .where(eq(ordersTable.id, id))
+  await archiveBoardTasks(id, 'production')
 }

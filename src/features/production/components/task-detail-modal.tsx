@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { ArrowRight, CheckCircle2, Clock, XCircle } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
+import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import {
@@ -12,13 +14,32 @@ import {
 } from '#/components/ui/dialog'
 import { Input } from '#/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
+import { useMembers } from '#/features/members/hooks'
 import { getAssetsForLineItemFn } from '#/features/orders/server'
+import type { TaskActivity } from '#/features/production/model'
 import {
   useStages,
   useTaskActivities,
   useTaskDetail,
   useTaskMutations,
 } from '../hooks'
+import { RequirementForm } from './requirement-form'
+
+const STATUS_LABELS: Record<string, string> = {
+  queued: 'statusQueued',
+  in_progress: 'statusInProgress',
+  pending_approval: 'pendingApproval',
+  completed: 'statusCompleted',
+}
+
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .map((p) => p[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+}
 
 type Props = {
   taskId: string
@@ -42,6 +63,9 @@ export function TaskDetailModal({
   const { data: activities } = useTaskActivities(taskId)
   const { data: stages } = useStages()
   const { advanceTask, saveComment } = useTaskMutations()
+  const { data: members } = useMembers()
+  const [commentText, setCommentText] = useState('')
+  const [showRequirementForm, setShowRequirementForm] = useState(false)
   const { data: lineItemAssets } = useQuery({
     queryKey: ['order-assets', task?.lineItemId ?? ''],
     queryFn: () => {
@@ -54,7 +78,22 @@ export function TaskDetailModal({
     enabled: !!task?.lineItemId,
   })
 
-  const [commentText, setCommentText] = useState('')
+  const stageNameMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const s of stages ?? []) {
+      map.set(s.id, s.name)
+    }
+    return map
+  }, [stages])
+
+  const actorMap = useMemo(() => {
+    const map = new Map<string, { name: string; image: string | null }>()
+    if (!members) return map
+    for (const m of members) {
+      map.set(m.user.id, { name: m.user.name, image: m.user.image })
+    }
+    return map
+  }, [members])
 
   if (taskLoading || !task) return null
 
@@ -75,10 +114,24 @@ export function TaskDetailModal({
   const currentStageIndex = task.stageId
     ? activeStages.findIndex((s) => s.id === task.stageId)
     : -1
+  const currentStage =
+    currentStageIndex >= 0 ? activeStages[currentStageIndex] : null
   const nextStage = activeStages[currentStageIndex + 1]
+  const hasRequirements =
+    currentStage !== null && currentStage.requirements?.length > 0
 
-  function handleAdvance() {
-    advanceTask.mutate({ taskId })
+  function handleAdvanceClick() {
+    if (hasRequirements) {
+      setShowRequirementForm(true)
+    } else {
+      handleAdvance({})
+    }
+  }
+
+  function handleAdvance(
+    responses: Record<string, { value?: string; assetIds?: string[] }>,
+  ) {
+    advanceTask.mutate({ taskId, requirementResponses: responses })
     onOpenChange(false)
   }
 
@@ -97,7 +150,9 @@ export function TaskDetailModal({
 
         <div className="flex items-center justify-between text-sm mb-2">
           <span className="font-mono font-semibold">{task.taskNumber}</span>
-          <Badge variant="secondary">{task.status}</Badge>
+          <Badge variant="secondary">
+            {t(STATUS_LABELS[task.status] ?? task.status)}
+          </Badge>
         </div>
 
         <Tabs defaultValue="details" className="w-full">
@@ -109,19 +164,27 @@ export function TaskDetailModal({
           <TabsContent value="details" className="space-y-3 pt-4">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <span className="text-muted-foreground text-xs">Order</span>
+                <span className="text-muted-foreground text-xs">
+                  {t('orderLabel')}
+                </span>
                 <p className="font-medium">{orderNumber}</p>
               </div>
               <div>
-                <span className="text-muted-foreground text-xs">Product</span>
+                <span className="text-muted-foreground text-xs">
+                  {t('productLabel')}
+                </span>
                 <p className="font-medium">{productName}</p>
               </div>
               <div>
-                <span className="text-muted-foreground text-xs">Customer</span>
+                <span className="text-muted-foreground text-xs">
+                  {t('customerLabel')}
+                </span>
                 <p className="font-medium">{customerName}</p>
               </div>
               <div>
-                <span className="text-muted-foreground text-xs">Quantity</span>
+                <span className="text-muted-foreground text-xs">
+                  {t('quantityLabel')}
+                </span>
                 <p className="font-medium">{quantity}</p>
               </div>
             </div>
@@ -138,7 +201,7 @@ export function TaskDetailModal({
             {lineItemAssets && lineItemAssets.length > 0 && (
               <div>
                 <span className="text-muted-foreground text-xs">
-                  Attachments
+                  {t('attachments')}
                 </span>
                 <AssetFileList
                   assetIds={lineItemAssets.map((a) => a.id)}
@@ -151,22 +214,19 @@ export function TaskDetailModal({
           </TabsContent>
 
           <TabsContent value="activity" className="space-y-4 pt-4">
-            <div className="space-y-2 max-h-60 overflow-y-auto">
+            <div className="space-y-3 max-h-60 overflow-y-auto">
               {(!activities || activities.length === 0) && (
-                <p className="text-sm text-muted-foreground">No activity</p>
+                <p className="text-sm text-muted-foreground">
+                  {t('noActivity')}
+                </p>
               )}
               {activities?.map((act) => (
-                <div
+                <ActivityRow
                   key={act.id}
-                  className="flex items-start gap-2 text-sm border-b pb-2 last:border-0"
-                >
-                  <Badge variant="outline" className="text-[10px] shrink-0">
-                    {act.type}
-                  </Badge>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(act.createdAt).toLocaleDateString()}
-                  </div>
-                </div>
+                  activity={act}
+                  stageNameMap={stageNameMap}
+                  actorMap={actorMap}
+                />
               ))}
             </div>
 
@@ -179,6 +239,7 @@ export function TaskDetailModal({
               />
               <Button
                 size="sm"
+                className="h-9"
                 onClick={handleSendComment}
                 disabled={!commentText.trim()}
               >
@@ -189,21 +250,181 @@ export function TaskDetailModal({
         </Tabs>
 
         <div className="flex justify-end pt-2 border-t">
-          {task.status === 'queued' && (
-            <Button onClick={handleAdvance}>{t('startProduction')}</Button>
+          {showRequirementForm &&
+            currentStage?.requirements &&
+            currentStage.requirements.length > 0 && (
+              <div className="w-full">
+                <RequirementForm
+                  requirements={currentStage.requirements}
+                  onCancel={() => setShowRequirementForm(false)}
+                  onSubmit={handleAdvance}
+                />
+              </div>
+            )}
+          {!showRequirementForm && task.status === 'queued' && (
+            <Button onClick={handleAdvanceClick}>{t('startProduction')}</Button>
           )}
-          {task.status === 'in_progress' && nextStage && (
-            <Button onClick={handleAdvance}>
-              {t('advanceTo')} {nextStage.name}
-            </Button>
-          )}
-          {task.status === 'pending_approval' && canApprove && onReview && (
-            <Button onClick={() => onReview(taskId)}>
-              {t('reviewAdvancement')}
-            </Button>
-          )}
+          {!showRequirementForm &&
+            task.status === 'in_progress' &&
+            nextStage && (
+              <Button onClick={handleAdvanceClick}>
+                {t('advanceTo', { stage: nextStage.name })}
+              </Button>
+            )}
+          {!showRequirementForm &&
+            task.status === 'pending_approval' &&
+            canApprove &&
+            onReview && (
+              <Button onClick={() => onReview(taskId)}>
+                {t('reviewAdvancement')}
+              </Button>
+            )}
         </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function ActivityRow({
+  activity,
+  stageNameMap,
+  actorMap,
+}: {
+  activity: TaskActivity
+  stageNameMap: Map<string, string>
+  actorMap: Map<string, { name: string; image: string | null }>
+}) {
+  const t = useTranslations('production')
+  const fromName = activity.fromStageId
+    ? stageNameMap.get(activity.fromStageId)
+    : null
+  const toName = activity.toStageId
+    ? stageNameMap.get(activity.toStageId)
+    : null
+  const data = activity.data ?? {}
+  const time = new Date(activity.createdAt)
+  const dateStr = time.toLocaleDateString()
+  const timeStr = time.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  const user = actorMap.get(activity.actorId)
+
+  function getDescription(): string {
+    switch (activity.type) {
+      case 'stage_transition':
+        if (!fromName && !toName) return t('taskCreated')
+        if (!toName) return `Completed from ${fromName}`
+        if (!fromName) return `Started ${toName}`
+        return `${fromName} → ${toName}`
+      case 'advancement_requested':
+        return `Requested advancement to ${toName ?? 'next stage'}`
+      case 'approved':
+        return 'Advancement approved'
+      case 'rejected':
+        return 'Advancement rejected'
+      default:
+        return activity.type
+    }
+  }
+
+  if (activity.type === 'comment') {
+    return (
+      <div className="flex gap-2.5 pb-3 last:pb-0">
+        <Avatar className="size-7 shrink-0 mt-0.5">
+          {user?.image ? <AvatarImage src={user.image} /> : null}
+          <AvatarFallback className="text-xs">
+            {user ? getInitials(user.name) : '?'}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="text-xs font-medium">
+              {user?.name ?? activity.actorId.slice(0, 8)}
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              {dateStr} {timeStr}
+            </span>
+          </div>
+          <div className="bg-muted rounded-lg px-3 py-2 text-sm">
+            {String(data.text ?? '')}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const isSystem =
+    activity.type === 'stage_transition' || activity.actorId === 'system'
+
+  if (isSystem) {
+    const iconMap: Record<string, React.ReactNode> = {
+      stage_transition: (
+        <ArrowRight className="size-3.5 text-blue-500 shrink-0 mt-0.5" />
+      ),
+      advancement_requested: (
+        <Clock className="size-3.5 text-amber-500 shrink-0 mt-0.5" />
+      ),
+      approved: (
+        <CheckCircle2 className="size-3.5 text-green-500 shrink-0 mt-0.5" />
+      ),
+      rejected: <XCircle className="size-3.5 text-red-500 shrink-0 mt-0.5" />,
+    }
+
+    return (
+      <div className="flex gap-2.5 border-b pb-2.5 last:border-0">
+        <div className="size-6 flex items-start justify-center shrink-0 mt-0.5">
+          {iconMap[activity.type] ?? <div className="size-3.5" />}
+        </div>
+        <div className="min-w-0 text-sm">
+          <p className="text-xs text-foreground">{getDescription()}</p>
+          <span className="text-[11px] text-muted-foreground">
+            {dateStr} {timeStr}
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  const iconMap: Record<string, React.ReactNode> = {
+    advancement_requested: (
+      <Clock className="size-3.5 text-amber-500 shrink-0 mt-0.5" />
+    ),
+    approved: (
+      <CheckCircle2 className="size-3.5 text-green-500 shrink-0 mt-0.5" />
+    ),
+    rejected: <XCircle className="size-3.5 text-red-500 shrink-0 mt-0.5" />,
+  }
+
+  return (
+    <div className="flex gap-2.5 border-b pb-2.5 last:border-0">
+      <Avatar className="size-6 shrink-0 mt-0.5">
+        {user?.image ? <AvatarImage src={user.image} /> : null}
+        <AvatarFallback className="text-[10px]">
+          {user ? getInitials(user.name) : '?'}
+        </AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 text-sm">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-medium">
+            {user?.name ?? activity.actorId.slice(0, 8)}
+          </span>
+          <span className="text-[11px] text-muted-foreground">
+            {dateStr} {timeStr}
+          </span>
+        </div>
+        <p className="text-xs text-foreground mt-0.5 flex items-center gap-1">
+          <span className="shrink-0">{iconMap[activity.type]}</span>
+          <span>{getDescription()}</span>
+          {(activity.type === 'approved' || activity.type === 'rejected') &&
+            data.reviewNotes && (
+              <span className="text-muted-foreground truncate">
+                · {String(data.reviewNotes)}
+              </span>
+            )}
+        </p>
+      </div>
+    </div>
   )
 }

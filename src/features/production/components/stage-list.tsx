@@ -1,16 +1,10 @@
-import { ArrowDown, ArrowUp } from 'lucide-react'
+import { ArrowDown, ArrowUp, Edit, Trash } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslations } from 'use-intl'
+import type { AppColumnDef, DataTableLabels } from '#/components/app/data-table'
+import { DataTable } from '#/components/app/data-table'
+import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
-import { Card, CardContent } from '#/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '#/components/ui/table'
 import { useStageMutations } from '../hooks'
 import type { Stage } from '../model'
 import { StageForm } from './stage-form'
@@ -22,7 +16,7 @@ type Props = {
 
 export function StageList({ stages, loading }: Props) {
   const t = useTranslations('production')
-  const ct = useTranslations('common')
+  const dt = useTranslations('dataTable')
   const { deleteStage, reorderStages } = useStageMutations()
   const [editStage, setEditStage] = useState<Stage | undefined>()
   const [showCreate, setShowCreate] = useState(false)
@@ -45,95 +39,145 @@ export function StageList({ stages, loading }: Props) {
     await deleteStage.mutateAsync({ id: stageId })
   }
 
-  if (loading) {
-    return <div className="text-sm text-muted-foreground">{ct('loading')}</div>
+  const columns: AppColumnDef<Stage>[] = [
+    {
+      id: 'reorder',
+      header: t('reorder'),
+      enableSorting: false,
+      meta: { label: t('reorder'), mobileRole: 'hidden' },
+      cell: ({ row }) => {
+        const i = stages.findIndex((s) => s.id === row.original.id)
+        return (
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleMoveUp(i)}
+              disabled={i === 0}
+            >
+              <ArrowUp className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleMoveDown(i)}
+              disabled={i === stages.length - 1}
+            >
+              <ArrowDown className="size-4" />
+            </Button>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: 'name',
+      header: t('stageName'),
+      meta: { label: t('stageName'), mobileRole: 'title' },
+    },
+    {
+      accessorKey: 'description',
+      header: t('stageDescription'),
+      meta: { label: t('stageDescription'), mobileRole: 'meta' },
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground">
+          {row.original.description ?? '—'}
+        </span>
+      ),
+    },
+    {
+      id: 'needApproval',
+      header: t('needApproval'),
+      meta: { label: t('needApproval'), mobileRole: 'badge' },
+      cell: ({ row }) => (
+        <Badge variant={row.original.needApproval ? 'default' : 'secondary'}>
+          {row.original.needApproval ? t('required') : t('optional')}
+        </Badge>
+      ),
+    },
+    {
+      id: 'requirements',
+      header: t('requirements'),
+      meta: { label: t('requirements'), mobileRole: 'meta' },
+      cell: ({ row }) => (
+        <span className="text-sm">
+          {(row.original.requirements as Array<unknown>)?.length ?? 0}
+        </span>
+      ),
+    },
+    {
+      id: 'active',
+      header: t('active'),
+      meta: { label: t('active'), mobileRole: 'badge' },
+      cell: ({ row }) => (
+        <Badge variant={row.original.active ? 'default' : 'secondary'}>
+          {row.original.active ? t('active') : t('inactive')}
+        </Badge>
+      ),
+    },
+  ]
+
+  const labels: DataTableLabels = {
+    clearFilters: dt('clearFilters'),
+    columnVisibility: dt('columnVisibility'),
+    errorRetry: dt('errorRetry'),
+    errorTitle: dt('errorTitle'),
+    firstPage: dt('firstPage'),
+    lastPage: dt('lastPage'),
+    loading: dt('loading'),
+    nextPage: dt('nextPage'),
+    of: dt('of'),
+    page: dt('page'),
+    perPage: dt('perPage'),
+    previousPage: dt('previousPage'),
+    resetColumns: dt('resetColumns'),
+    rowsSelected: (selected: number, total: number) =>
+      dt('rowsSelected', { selected, total }),
+    visibleRows: (from: number, to: number, total: number) =>
+      dt('visibleRows', { from, to, total }),
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button onClick={() => setShowCreate(true)}>{t('addStage')}</Button>
-      </div>
-
-      {stages.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            {t('noTasks')}
-          </CardContent>
-        </Card>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-24">{t('reorder')}</TableHead>
-              <TableHead>{t('stageName')}</TableHead>
-              <TableHead>{t('stageDescription')}</TableHead>
-              <TableHead>{t('needApproval')}</TableHead>
-              <TableHead>{t('requirements')}</TableHead>
-              <TableHead>{t('active')}</TableHead>
-              <TableHead className="w-32">{ct('actions')}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {stages.map((stage, i) => (
-              <TableRow key={stage.id}>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleMoveUp(i)}
-                      disabled={i === 0}
-                    >
-                      <ArrowUp className="size-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleMoveDown(i)}
-                      disabled={i === stages.length - 1}
-                    >
-                      <ArrowDown className="size-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-                <TableCell className="font-medium">{stage.name}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {stage.description}
-                </TableCell>
-                <TableCell>
-                  {stage.needApproval ? '✓ ' : ''}
-                  {stage.needApproval ? t('required') : t('optional')}
-                </TableCell>
-                <TableCell>
-                  {(stage.requirements as Array<unknown>)?.length ?? 0}
-                </TableCell>
-                <TableCell>
-                  {stage.active ? t('active') : t('inactive')}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditStage(stage)}
-                    >
-                      {t('editStage')}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(stage.id)}
-                    >
-                      {t('deleteStage')}
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+      <DataTable
+        columns={columns}
+        data={stages}
+        getRowId={(row) => row.id}
+        isLoading={loading}
+        labels={labels}
+        onPageChange={() => {}}
+        onPerPageChange={() => {}}
+        page={1}
+        perPage={stages.length || 1}
+        tableId="production-stages"
+        totalRows={stages.length}
+        emptyTitle={t('stageManagement')}
+        emptyDescription={t('noTasks')}
+        noResultsTitle={t('stageManagement')}
+        hasActiveFilters={false}
+        toolbarStart={
+          <Button onClick={() => setShowCreate(true)}>{t('addStage')}</Button>
+        }
+        rowActions={(stage: Stage) => (
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              tooltip={t('editStage')}
+              onClick={() => setEditStage(stage)}
+            >
+              <Edit className="size-4" />
+            </Button>
+            <Button
+              variant="destructive"
+              size="icon"
+              tooltip={t('deleteStage')}
+              onClick={() => handleDelete(stage.id)}
+            >
+              <Trash className="size-4" />
+            </Button>
+          </div>
+        )}
+      />
 
       <StageForm open={showCreate} onOpenChange={setShowCreate} />
 

@@ -42,13 +42,13 @@ async function resolveOrgAndRole(): Promise<{ orgId: string; role: string }> {
   return { orgId: memberships[0].orgId, role: memberships[0].role }
 }
 
-export const listStagesFn = createServerFn({ method: 'GET' }).handler(
-  async (): Promise<Stage[]> => {
+export const listStagesFn = createServerFn({ method: 'GET' })
+  .inputValidator((input: { board?: string }) => input)
+  .handler(async ({ data }): Promise<Stage[]> => {
     const orgId = await resolveOrgId()
     const { listStages } = await import('./model')
-    return listStages(orgId)
-  },
-)
+    return listStages(orgId, data.board)
+  })
 
 export const createStageFn = createServerFn({ method: 'POST' })
   .inputValidator((input: Omit<CreateStageInput, 'orgId'>) => input)
@@ -133,7 +133,15 @@ export const deleteStageFn = createServerFn({ method: 'POST' })
   })
 
 export const advanceTaskFn = createServerFn({ method: 'POST' })
-  .inputValidator((input: { taskId: string }) => input)
+  .inputValidator(
+    (input: {
+      taskId: string
+      requirementResponses?: Record<
+        string,
+        { value?: string; assetIds?: string[] }
+      >
+    }) => input,
+  )
   .handler(
     async ({
       data,
@@ -150,6 +158,7 @@ export const advanceTaskFn = createServerFn({ method: 'POST' })
           data.taskId,
           orgId,
           session?.user.id ?? 'unknown',
+          data.requirementResponses,
         )
       } catch (e) {
         return {
@@ -227,11 +236,15 @@ export const saveTaskCommentFn = createServerFn({ method: 'POST' })
   })
 
 export const listBoardTasksFn = createServerFn({ method: 'GET' })
-  .inputValidator((input: { stageId?: string; search?: string }) => input)
+  .inputValidator((input: { board?: string; stageId?: string; search?: string }) => input)
   .handler(async ({ data }) => {
     const orgId = await resolveOrgId()
     const { listBoardTasks } = await import('./model')
-    return listBoardTasks(orgId, { stageId: data.stageId, search: data.search })
+    return listBoardTasks(orgId, {
+      board: data.board,
+      stageId: data.stageId,
+      search: data.search,
+    })
   })
 
 export const getTaskDetailFn = createServerFn({ method: 'GET' })
@@ -247,4 +260,27 @@ export const listTaskActivitiesFn = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const { listTaskActivities } = await import('./model')
     return listTaskActivities(data.taskId)
+  })
+
+export const listArchivedTasksFn = createServerFn({ method: 'GET' })
+  .inputValidator(
+    (input: { board?: string; search?: string; page?: number; perPage?: number }) => input,
+  )
+  .handler(async ({ data }) => {
+    const orgId = await resolveOrgId()
+    const { listArchivedTasks } = await import('./model')
+    return listArchivedTasks(orgId, {
+      board: data.board,
+      search: data.search,
+      page: data.page,
+      perPage: data.perPage,
+    })
+  })
+
+export const getTaskCountsFn = createServerFn({ method: 'GET' })
+  .inputValidator((input: { board?: string }) => input)
+  .handler(async ({ data }) => {
+    const orgId = await resolveOrgId()
+    const { getTaskCounts } = await import('./model')
+    return getTaskCounts(orgId, data.board)
   })

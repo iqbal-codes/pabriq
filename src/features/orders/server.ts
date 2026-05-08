@@ -129,3 +129,69 @@ export const rejectOrderFn = createServerFn({ method: 'POST' })
       }
     }
   })
+
+export const advanceOrderStatusFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ data }): Promise<MutationResult> => {
+    const orgId = await resolveOrgId()
+    try {
+      const { auth } = await import('#/lib/auth')
+      const headers = getRequestHeaders()
+      const session = await auth.api.getSession({ headers })
+      const userId = session?.user.id ?? 'unknown'
+      const { advanceOrderStatus } = await import('./model')
+      await advanceOrderStatus(data.id, orgId, userId)
+      return { ok: true }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
+  })
+
+export const setDeliveryInfoFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (input: { id: string; courier?: string; trackingNumber?: string }) => input,
+  )
+  .handler(async ({ data }): Promise<MutationResult> => {
+    const orgId = await resolveOrgId()
+    try {
+      const { setDeliveryInfo } = await import('./model')
+      await setDeliveryInfo(data.id, orgId, {
+        courier: data.courier,
+        trackingNumber: data.trackingNumber,
+      })
+      return { ok: true }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
+  })
+
+export const markShippedFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (input: {
+      id: string
+      courier?: string
+      trackingNumber?: string
+    }) => input,
+  )
+  .handler(async ({ data }): Promise<MutationResult> => {
+    const orgId = await resolveOrgId()
+    try {
+      const { markShipped } = await import('./model')
+      await markShipped(data.id, orgId, {
+        courier: data.courier,
+        trackingNumber: data.trackingNumber,
+      })
+      return { ok: true }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
+  })

@@ -537,4 +537,79 @@ describe('task advancement', () => {
       rejectTaskAdvance(taskId, org1Id, 'operator-1', 'member'),
     ).rejects.toThrow('Not authorized')
   })
+
+  it('blocks advancement when required requirements are missing', async () => {
+    await createStage({
+      orgId: org1Id,
+      name: 'Design',
+      orderIndex: 0,
+      requirements: [
+        { id: 'notes', label: 'Notes', type: 'text' as const, required: true },
+      ],
+    })
+    await createStage({ orgId: org1Id, name: 'Production', orderIndex: 1 })
+
+    const { taskId } = await seedTask(org1Id)
+    await advanceTask(taskId, org1Id, 'operator-1')
+
+    const result = await advanceTask(taskId, org1Id, 'operator-1')
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error).toContain('Required requirements')
+  })
+
+  it('advances when required requirements are fulfilled', async () => {
+    await createStage({
+      orgId: org1Id,
+      name: 'Design',
+      orderIndex: 0,
+      requirements: [
+        { id: 'notes', label: 'Notes', type: 'text' as const, required: true },
+      ],
+    })
+    await createStage({ orgId: org1Id, name: 'Production', orderIndex: 1 })
+
+    const { taskId } = await seedTask(org1Id)
+    await advanceTask(taskId, org1Id, 'operator-1')
+
+    const result = await advanceTask(taskId, org1Id, 'operator-1', {
+      notes: { value: 'All good' },
+    })
+
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.pendingApproval).toBe(false)
+  })
+
+  it('saves requirementResponses to task context on advance', async () => {
+    await createStage({
+      orgId: org1Id,
+      name: 'Design',
+      orderIndex: 0,
+      requirements: [
+        { id: 'notes', label: 'Notes', type: 'text' as const, required: false },
+        { id: 'qty', label: 'Qty', type: 'number' as const, required: true },
+      ],
+    })
+    await createStage({ orgId: org1Id, name: 'Production', orderIndex: 1 })
+
+    const { taskId } = await seedTask(org1Id)
+    await advanceTask(taskId, org1Id, 'operator-1')
+
+    await advanceTask(taskId, org1Id, 'operator-1', {
+      notes: { value: 'Looks good' },
+      qty: { value: '100' },
+    })
+
+    const task = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.id, taskId))
+      .limit(1)
+    const ctx = task[0].context as Record<string, unknown> | null
+    expect(ctx).toBeDefined()
+    const responses = ctx?.requirementResponses as Record<string, unknown>
+    expect(responses).toBeDefined()
+    expect(responses.notes).toEqual({ value: 'Looks good' })
+    expect(responses.qty).toEqual({ value: '100' })
+  })
 })

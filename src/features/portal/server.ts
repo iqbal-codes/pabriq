@@ -135,6 +135,75 @@ export const savePortalAddressFn = createServerFn({ method: 'POST' })
     })
   })
 
+export const portalGetInvoiceUploadUrlFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (input: {
+      token: string
+      invoiceId: string
+      fileName: string
+      fileType: string
+      fileSize: number
+    }) => input,
+  )
+  .handler(
+    async ({
+      data,
+    }): Promise<{ uploadUrl: string; storageKey: string; assetId: string }> => {
+      const orgId = await getOrgIdFromToken(data.token)
+      const { buildUploadUrl } = await import('#/features/assets/model')
+      return buildUploadUrl(
+        orgId,
+        'invoice',
+        data.invoiceId,
+        data.fileName,
+        data.fileType,
+        data.fileSize,
+        'payment_proof' as Usage,
+      )
+    },
+  )
+
+export const submitPaymentProofFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (input: {
+      token: string
+      invoiceId: string
+      assetId: string
+      originalFilename: string
+      mimeType: string
+      sizeBytes: number
+      storageKey: string
+    }) => input,
+  )
+  .handler(
+    async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
+      try {
+        const orgId = await getOrgIdFromToken(data.token)
+        const { insertAsset } = await import('#/features/assets/model')
+        await insertAsset({
+          assetId: data.assetId,
+          orgId,
+          ownerType: 'invoice',
+          ownerId: data.invoiceId,
+          usage: 'payment_proof',
+          originalFilename: data.originalFilename,
+          mimeType: data.mimeType,
+          sizeBytes: data.sizeBytes,
+          checksumSha256: null,
+          storageKeyOriginal: data.storageKey,
+          variantOriginalMimeType: data.mimeType,
+          variantOriginalSizeBytes: data.sizeBytes,
+        })
+        return { ok: true }
+      } catch (e) {
+        return {
+          ok: false,
+          error: e instanceof Error ? e.message : 'Unknown error',
+        }
+      }
+    },
+  )
+
 export const getOrderTasksTimelineFn = createServerFn({ method: 'GET' })
   .inputValidator((input: { token: string }) => input)
   .handler(async ({ data }) => {
