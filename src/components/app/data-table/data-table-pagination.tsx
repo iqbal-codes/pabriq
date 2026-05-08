@@ -1,9 +1,4 @@
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '#/components/ui/button'
 import { NativeSelect, NativeSelectOption } from '#/components/ui/native-select'
 import type { DataTableLabels } from './data-table-utils'
@@ -40,19 +35,23 @@ export function DataTablePagination({
       </p>
 
       <div className="flex items-center gap-2">
+        <NativeSelect
+          value={String(perPage)}
+          onChange={(e) => onPerPageChange(Number(e.target.value))}
+          disabled={disabled}
+          aria-label={labels.perPage}
+        >
+          {perPageOptions.map((n) => (
+            <NativeSelectOption key={n} value={String(n)}>
+              {n}
+            </NativeSelectOption>
+          ))}
+        </NativeSelect>
         <div className="flex items-center gap-1">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onPageChange(1)}
-            disabled={disabled || page <= 1}
-            aria-label={labels.firstPage}
-          >
-            <ChevronsLeft className="size-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
+            className="h-9"
             onClick={() => onPageChange(page - 1)}
             disabled={disabled || page <= 1}
             aria-label={labels.previousPage}
@@ -68,35 +67,14 @@ export function DataTablePagination({
           <Button
             variant="outline"
             size="sm"
+            className="h-9"
             onClick={() => onPageChange(page + 1)}
             disabled={disabled || page >= totalPages}
             aria-label={labels.nextPage}
           >
             <ChevronRight className="size-4" />
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(totalPages)}
-            disabled={disabled || page >= totalPages}
-            aria-label={labels.lastPage}
-          >
-            <ChevronsRight className="size-4" />
-          </Button>
         </div>
-
-        <NativeSelect
-          value={String(perPage)}
-          onChange={(e) => onPerPageChange(Number(e.target.value))}
-          disabled={disabled}
-          aria-label={labels.perPage}
-        >
-          {perPageOptions.map((n) => (
-            <NativeSelectOption key={n} value={String(n)}>
-              {n}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
       </div>
     </div>
   )

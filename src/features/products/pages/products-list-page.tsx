@@ -158,15 +158,9 @@ export function ProductsListPage() {
       meta: { label: t('name'), mobileRole: 'title' },
     },
     {
-      accessorKey: 'description',
-      header: t('description'),
-      meta: { label: t('description'), mobileRole: 'meta' },
-      cell: ({ row }) => row.original.description ?? '—',
-    },
-    {
       accessorKey: 'basePrice',
-      header: t('basePrice'),
-      meta: { label: t('basePrice'), mobileRole: 'meta' },
+      header: t('price'),
+      meta: { label: t('price'), mobileRole: 'meta' },
       cell: ({ row }) => {
         const { basePrice, minDiscountPrice } = row.original
         return formatPrice(basePrice, minDiscountPrice)
@@ -209,6 +203,8 @@ export function ProductsListPage() {
   }
 
   const hasActiveFilters = !!(search || statusFilter)
+
+  console.log({ rows })
 
   return (
     <PageContent>

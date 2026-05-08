@@ -9,6 +9,7 @@ export const ProductFormFields = withForm({
     name: '',
     description: '',
     productionNotes: '',
+    primaryImageAssetId: null as string | null,
     basePrice: 0,
     productionDays: 1,
     minQuantity: 1,
@@ -41,6 +42,16 @@ export const ProductFormFields = withForm({
             </form.AppField>
             <form.AppField name="productionDays">
               {(field) => <field.NumberField label={t('productionDays')} />}
+            </form.AppField>
+            <form.AppField name="primaryImageAssetId">
+              {(field) => (
+                <field.PhotoUploadField
+                  label={t('photo')}
+                  ownerType="product"
+                  usage="gallery"
+                  maxFiles={1}
+                />
+              )}
             </form.AppField>
           </FormGrid>
         </FormSection>

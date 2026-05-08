@@ -137,6 +137,13 @@ export function getAcceptedMimeTypes(
         'video/webm',
         'application/pdf',
       ]
+    case 'payment_proof':
+      return [
+        'image/png',
+        'image/jpeg',
+        'image/webp',
+        'application/pdf',
+      ]
   }
 }
 

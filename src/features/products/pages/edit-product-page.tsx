@@ -27,6 +27,9 @@ export function EditProductPage() {
       name: product?.name ?? '',
       description: product?.description ?? '',
       productionNotes: product?.productionNotes ?? '',
+      primaryImageAssetId: (product?.primaryImageAssetId ?? null) as
+        | string
+        | null,
       basePrice: product?.basePrice ?? 0,
       productionDays: product?.productionDays ?? 1,
       minQuantity: product?.minQuantity ?? 1,

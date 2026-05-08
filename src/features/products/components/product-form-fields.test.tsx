@@ -10,6 +10,7 @@ function TestWrapper() {
       name: '',
       description: '',
       productionNotes: '',
+      primaryImageAssetId: null as string | null,
       basePrice: 0,
       productionDays: 1,
       minQuantity: 1,
@@ -38,6 +39,7 @@ function TestWrapper() {
           productionDays: 'Production Days',
           minQuantity: 'Min. Quantity',
           maxQuantity: 'Max. Quantity',
+          photo: 'Primary Photo',
           pricingAndOrders: 'Pricing & Orders',
           pricing: {
             breakpoints: 'Pricing Breakpoints',

@@ -300,6 +300,29 @@ export function DataTable<TData>({
         ),
         cell: ({ row }) => rowActions?.(row.original),
       } as AppColumnDef<TData>)
+    } else if (cols.length > 0) {
+      const lastIndex = cols.length - 1
+      const lastCol = cols[lastIndex]
+      cols[lastIndex] = {
+        ...lastCol,
+        header: (ctx) => (
+          <div className="flex items-center justify-between gap-2">
+            <span className="truncate">{flexRender(lastCol.header, ctx)}</span>
+            <DataTableViewOptions
+              columns={ctx.table.getAllLeafColumns().map((col) => ({
+                id: col.id,
+                label:
+                  (col.columnDef.meta as AppColumnMeta | undefined)?.label ||
+                  col.id,
+                getIsVisible: () => col.getIsVisible(),
+                getCanHide: () => col.getCanHide(),
+                toggleVisibility: () => col.toggleVisibility(),
+              }))}
+              labels={labels}
+            />
+          </div>
+        ),
+      } as AppColumnDef<TData>
     } else {
       cols.push({
         id: 'column-visibility',

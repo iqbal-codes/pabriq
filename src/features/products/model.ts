@@ -27,7 +27,7 @@ export type CreateProductInput = {
   name: string
   description?: string
   productionNotes?: string
-  primaryImageAssetId?: string
+  primaryImageAssetId?: string | null
   basePrice?: number
   productionDays?: number
   minQuantity?: number

@@ -20,6 +20,7 @@ export function CreateProductPage() {
       name: '',
       description: '',
       productionNotes: '',
+      primaryImageAssetId: null as string | null,
       basePrice: 0,
       productionDays: 1,
       minQuantity: 1,

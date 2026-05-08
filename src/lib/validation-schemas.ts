@@ -12,6 +12,7 @@ export const productFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string(),
   productionNotes: z.string(),
+  primaryImageAssetId: z.string().nullable(),
   basePrice: z.number(),
   productionDays: z.number(),
   minQuantity: z.number(),

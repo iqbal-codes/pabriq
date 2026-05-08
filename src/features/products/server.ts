@@ -104,7 +104,7 @@ export const listProductsFn = createServerFn({ method: 'GET' })
         minDiscountPrice: sql<number | null>`(
           SELECT MIN(b.unit_price)
           FROM ${breakpointsTable} b
-          WHERE b.product_id = ${productsTable.id}
+          WHERE b.product_id = products.id
         )`,
       })
       .from(productsTable)
