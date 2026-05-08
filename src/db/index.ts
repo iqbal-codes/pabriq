@@ -13,7 +13,7 @@ export const db = await (async () => {
   const { Pool } = await import('pg')
   const pool = new Pool({
     connectionString: normalizePostgresConnectionString(databaseUrl),
-    connectionTimeoutMillis: 3000,
+    connectionTimeoutMillis: 10000,
   })
   try {
     const client = await pool.connect()

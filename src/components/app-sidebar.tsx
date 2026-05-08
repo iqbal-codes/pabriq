@@ -11,6 +11,7 @@ import {
   Users,
   Wrench,
 } from 'lucide-react'
+import { AssetImage } from '#/components/app/asset-image'
 import { useTranslations } from 'use-intl'
 import { NavUser } from '#/components/nav-user'
 import {
@@ -88,9 +89,17 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="cursor-default">
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <GalleryVerticalEnd className="size-4" />
-              </div>
+              {org.logo ? (
+                <AssetImage
+                  assetId={org.logo}
+                  assetKind="image"
+                  className="size-8 rounded-lg"
+                />
+              ) : (
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <GalleryVerticalEnd className="size-4" />
+                </div>
+              )}
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{org.name}</span>
                 <span className="truncate text-xs">{org.slug}</span>
@@ -104,7 +113,11 @@ export function AppSidebar({
           {navItems.map((item) => (
             <SidebarMenuItem key={item.key}>
               <SidebarMenuButton asChild tooltip={t(item.key)}>
-                <Link to={item.href}>
+                <Link
+                  to={item.href}
+                  activeProps={{ 'data-active': true }}
+                  activeOptions={{ exact: item.href === '/' }}
+                >
                   {item.icon && <item.icon />}
                   <span>{t(item.key)}</span>
                 </Link>
