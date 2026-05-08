@@ -69,9 +69,71 @@ export type Messages = {
     cancel: string
     preview: string
     actions: string
+    pcs: string
   }
   settings: {
-    comingSoon: string
+    general: string
+    members: string
+    profile: string
+    paymentMethods: string
+    orgName: string
+    orgSlug: string
+    phone: string
+    email: string
+    address: string
+    billingAddress: string
+    logo: string
+    saved: string
+    saveFailed: string
+    profileTab: string
+    memberTab: string
+  }
+  members: {
+    title: string
+    invite: string
+    inviteDesc: string
+    name: string
+    email: string
+    role: string
+    ownerRole: string
+    adminRole: string
+    memberRole: string
+    joined: string
+    remove: string
+    removeConfirm: string
+    changeRole: string
+    pending: string
+    pendingDesc: string
+    cancelInvite: string
+    cancelConfirm: string
+    inviteSent: string
+    inviteLinkCopied: string
+    acceptPageTitle: string
+    acceptDesc: string
+    accept: string
+    reject: string
+    accepted: string
+    rejected: string
+    roleUpdated: string
+    roleUpdateFailed: string
+    memberRemoved: string
+    copyLink: string
+    noMembers: string
+    noMembersDesc: string
+  }
+  profile: {
+    title: string
+    name: string
+    email: string
+    avatar: string
+    changePassword: string
+    currentPassword: string
+    newPassword: string
+    newPasswordDesc: string
+    passwordChanged: string
+    passwordChangeFailed: string
+    profileSaved: string
+    profileSaveFailed: string
   }
   dataTable: {
     clearFilters: string
@@ -142,6 +204,8 @@ export type Messages = {
     maxQtyError: string
     phone: string
     email: string
+    copyOrderLink: string
+    orderLinkCopied: string
     copyPortalLink: string
     linkCopied: string
     generateLink: string
@@ -169,9 +233,15 @@ export type Messages = {
     createOrder: string
     viewOrder: string
     editOrder: string
+    invoices: string
+    createInvoice: string
+    viewInvoice: string
     settings: string
     general: string
     productionStages: string
+    paymentMethods: string
+    members: string
+    profile: string
   }
   status: {
     draft: string
@@ -185,7 +255,10 @@ export type Messages = {
     active: string
     inactive: string
     paid: string
+    unpaid: string
+    void: string
     overdue: string
+    pendingPayment: string
     failed: string
   }
   org: {
@@ -273,11 +346,13 @@ export type Messages = {
     updated: string
     deleted: string
     deleteConfirm: string
+    price: string
     basePrice: string
     productionDays: string
     minQuantity: string
     maxQuantity: string
     noPhoto: string
+    photo: string
     viewProduct: string
     editProduct: string
     pricing: {
@@ -292,6 +367,35 @@ export type Messages = {
       interpolateOn: string
       interpolateOff: string
     }
+  }
+  invoices: {
+    title: string
+    createInvoice: string
+    viewInvoice: string
+    invoiceNumber: string
+    customer: string
+    total: string
+    dueDate: string
+    issuedDate: string
+    status: string
+    percentage: string
+    subtotal: string
+    lineItems: string
+    notes: string
+    markAsPaid: string
+    voidInvoice: string
+    voidConfirm: string
+    paymentMethod: string
+    paymentProof: string
+    uploadProof: string
+    confirmPayment: string
+    pendingConfirmation: string
+    downloadInvoice: string
+    overdue: string
+    noInvoices: string
+    noInvoicesDesc: string
+    searchPlaceholder: string
+    noResults: string
   }
   address: {
     title: string
@@ -374,6 +478,25 @@ export type Messages = {
     orderApproved: string
     orderRejected: string
     pendingApproval: string
+    statusQueued: string
+    statusInProgress: string
+    statusCompleted: string
+    orderLabel: string
+    productLabel: string
+    customerLabel: string
+    quantityLabel: string
+    taskCreated: string
+    noActivity: string
+    tabActive: string
+    tabArchive: string
+    boardPreProduction: string
+    boardProduction: string
+    archivedEmpty: string
+    archivedTaskNumber: string
+    archivedOrder: string
+    archivedProduct: string
+    archivedCustomer: string
+    archivedDate: string
   }
   portal: {
     title: string
@@ -418,6 +541,16 @@ export type Messages = {
     statusCancelled: string
     required: string
     areaRequired: string
+    paymentAlert: string
+    paymentUnpaid: string
+    paymentOverdue: string
+    paymentDueSoon: string
+    paymentAllPaid: string
+    currentStage: string
+    taskTimeline: string
+    lineItemDetail: string
+    estimatedCompletion: string
+    notes: string
   }
 }
 
@@ -493,6 +626,7 @@ const en: Messages = {
     cancel: 'Cancel',
     preview: 'Preview',
     actions: 'Actions',
+    pcs: 'pcs',
   },
   dataTable: {
     clearFilters: 'Clear filters',
@@ -558,6 +692,8 @@ const en: Messages = {
     maxQtyError: 'Max quantity is {max}',
     phone: 'Phone',
     email: 'Email',
+    copyOrderLink: 'Copy Link',
+    orderLinkCopied: 'Order link copied',
     copyPortalLink: 'Copy Portal Link',
     linkCopied: 'Portal link copied',
     generateLink: 'Generate Portal Link',
@@ -585,9 +721,15 @@ const en: Messages = {
     createOrder: 'Create Order',
     viewOrder: 'View Order',
     editOrder: 'Edit Order',
+    invoices: 'Invoices',
+    createInvoice: 'Create Invoice',
+    viewInvoice: 'View Invoice',
     settings: 'Settings',
     general: 'General',
     productionStages: 'Production Stages',
+    paymentMethods: 'Payment Methods',
+    members: 'Members',
+    profile: 'Profile',
   },
   status: {
     draft: 'Draft',
@@ -601,7 +743,10 @@ const en: Messages = {
     active: 'Active',
     inactive: 'Inactive',
     paid: 'Paid',
+    unpaid: 'Unpaid',
+    void: 'Void',
     overdue: 'Overdue',
+    pendingPayment: 'Pending Payment',
     failed: 'Failed',
   },
   org: {
@@ -630,7 +775,68 @@ const en: Messages = {
     settings: 'Settings',
   },
   settings: {
-    comingSoon: 'General settings coming soon',
+    general: 'General',
+    members: 'Members',
+    profile: 'Profile',
+    paymentMethods: 'Payment Methods',
+    orgName: 'Organization Name',
+    orgSlug: 'Slug',
+    phone: 'Phone Number',
+    email: 'Email',
+    address: 'Address',
+    billingAddress: 'Billing Address',
+    logo: 'Organization Logo',
+    saved: 'Settings saved',
+    saveFailed: 'Failed to save settings',
+    profileTab: 'Profile',
+    memberTab: 'Members',
+  },
+  members: {
+    title: 'Members',
+    invite: 'Invite Member',
+    inviteDesc: 'Invite a new member to your organization',
+    name: 'Name',
+    email: 'Email',
+    role: 'Role',
+    ownerRole: 'Owner',
+    adminRole: 'Admin',
+    memberRole: 'Member',
+    joined: 'Joined',
+    remove: 'Remove',
+    removeConfirm: 'Are you sure you want to remove this member?',
+    changeRole: 'Change Role',
+    pending: 'Pending Invitations',
+    pendingDesc: 'These invitations have not been accepted yet',
+    cancelInvite: 'Cancel',
+    cancelConfirm: 'Are you sure you want to cancel this invitation?',
+    inviteSent: 'Invitation sent',
+    inviteLinkCopied: 'Invitation link copied',
+    acceptPageTitle: 'Accept Invitation',
+    acceptDesc: 'You have been invited to join',
+    accept: 'Accept',
+    reject: 'Reject',
+    accepted: 'Invitation accepted',
+    rejected: 'Invitation rejected',
+    roleUpdated: 'Role updated',
+    roleUpdateFailed: 'Failed to update role',
+    memberRemoved: 'Member removed',
+    copyLink: 'Copy Invite Link',
+    noMembers: 'No members yet',
+    noMembersDesc: 'Invite members to your organization to get started',
+  },
+  profile: {
+    title: 'Profile',
+    name: 'Name',
+    email: 'Email',
+    avatar: 'Avatar',
+    changePassword: 'Change Password',
+    currentPassword: 'Current Password',
+    newPassword: 'New Password',
+    newPasswordDesc: 'Minimal 8 characters',
+    passwordChanged: 'Password changed successfully',
+    passwordChangeFailed: 'Failed to change password',
+    profileSaved: 'Profile saved',
+    profileSaveFailed: 'Failed to save profile',
   },
   customers: {
     title: 'Customers',
@@ -692,11 +898,13 @@ const en: Messages = {
     updated: 'Product updated successfully',
     deleted: 'Product deleted',
     deleteConfirm: 'Are you sure you want to delete this product?',
+    price: 'Price',
     basePrice: 'Base Price',
     productionDays: 'Production Days',
     minQuantity: 'Min. Quantity',
     maxQuantity: 'Max. Quantity',
     noPhoto: 'No photo',
+    photo: 'Primary Photo',
     viewProduct: 'View Product',
     editProduct: 'Edit Product',
     pricing: {
@@ -712,6 +920,35 @@ const en: Messages = {
         'Prices are calculated using linear interpolation between breakpoints',
       interpolateOff: 'Prices use the nearest lower breakpoint (step pricing)',
     },
+  },
+  invoices: {
+    title: 'Invoices',
+    createInvoice: 'Create Invoice',
+    viewInvoice: 'View Invoice',
+    invoiceNumber: 'Invoice #',
+    customer: 'Customer',
+    total: 'Total',
+    dueDate: 'Due Date',
+    issuedDate: 'Issued',
+    status: 'Status',
+    percentage: 'Percentage',
+    subtotal: 'Subtotal',
+    lineItems: 'Line Items',
+    notes: 'Notes',
+    markAsPaid: 'Mark as Paid',
+    voidInvoice: 'Void Invoice',
+    voidConfirm: 'Are you sure you want to void this invoice?',
+    paymentMethod: 'Payment Method',
+    paymentProof: 'Payment Proof',
+    uploadProof: 'Upload Payment Proof',
+    confirmPayment: 'Confirm Payment',
+    pendingConfirmation: 'Pending confirmation',
+    downloadInvoice: 'Download Invoice',
+    overdue: 'Overdue',
+    noInvoices: 'No invoices yet',
+    noInvoicesDesc: 'Create your first invoice to get started.',
+    searchPlaceholder: 'Search invoices...',
+    noResults: 'No invoices match your search',
   },
   address: {
     title: 'Address',
@@ -794,6 +1031,25 @@ const en: Messages = {
     orderApproved: 'Order approved successfully',
     orderRejected: 'Order rejected',
     pendingApproval: 'Pending Approval',
+    statusQueued: 'Queued',
+    statusInProgress: 'In Progress',
+    statusCompleted: 'Completed',
+    orderLabel: 'Order',
+    productLabel: 'Product',
+    customerLabel: 'Customer',
+    quantityLabel: 'Quantity',
+    taskCreated: 'Task created',
+    noActivity: 'No activity yet',
+    tabActive: 'Active Tasks',
+    tabArchive: 'Archive',
+    boardPreProduction: 'Pre-Production',
+    boardProduction: 'Production',
+    archivedEmpty: 'No archived tasks',
+    archivedTaskNumber: 'Task Number',
+    archivedOrder: 'Order',
+    archivedProduct: 'Product',
+    archivedCustomer: 'Customer',
+    archivedDate: 'Archived',
   },
   portal: {
     title: 'Order Confirmation',
@@ -839,6 +1095,16 @@ const en: Messages = {
     statusCancelled: 'Cancelled',
     required: 'This field is required',
     areaRequired: 'Please select an area',
+    paymentAlert: 'Payment Status',
+    paymentUnpaid: '{count} unpaid invoice — {amount}',
+    paymentOverdue: 'Overdue',
+    paymentDueSoon: 'Due in {days} days',
+    paymentAllPaid: 'All invoices paid',
+    currentStage: 'Current Stage',
+    taskTimeline: 'Task Timeline',
+    lineItemDetail: 'Item Details',
+    estimatedCompletion: 'Estimated completion: {date}',
+    notes: 'Notes',
   },
   combobox: {
     searchPlaceholder: 'Search...',

@@ -44,6 +44,21 @@ export const queryKeys = {
     signedUrl: (assetId: string) =>
       [...queryKeys.assets.all, 'signed-url', assetId] as const,
   },
+  invoices: {
+    all: ['invoices'] as const,
+    lists: () => [...queryKeys.invoices.all, 'list'] as const,
+    list: (filters: {
+      orgId: string
+      status?: string
+      q?: string
+      page?: number
+      perPage?: number
+    }) => [...queryKeys.invoices.lists(), filters] as const,
+    details: () => [...queryKeys.invoices.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.invoices.details(), id] as const,
+    paymentMethods: () =>
+      [...queryKeys.invoices.all, 'payment-methods'] as const,
+  },
   portal: {
     all: ['portal'] as const,
     order: (token: string) =>
@@ -58,11 +73,25 @@ export const queryKeys = {
   },
   production: {
     all: ['production'] as const,
-    stages: () => [...queryKeys.production.all, 'stages'] as const,
-    board: (filters: { orgId: string; stageId?: string; search?: string }) =>
-      [...queryKeys.production.all, 'board', filters] as const,
+    stages: (board?: string) =>
+      [...queryKeys.production.all, 'stages', board ?? 'all'] as const,
+    board: (filters: {
+      orgId: string
+      board?: string
+      stageId?: string
+      search?: string
+    }) => [...queryKeys.production.all, 'board', filters] as const,
     task: (id: string) => [...queryKeys.production.all, 'task', id] as const,
     activities: (taskId: string) =>
       [...queryKeys.production.all, 'activities', taskId] as const,
+    archived: (filters: {
+      orgId: string
+      board?: string
+      search?: string
+      page?: number
+      perPage?: number
+    }) => [...queryKeys.production.all, 'archived', filters] as const,
+    counts: (board?: string) =>
+      [...queryKeys.production.all, 'counts', board ?? 'all'] as const,
   },
 }

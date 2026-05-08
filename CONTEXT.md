@@ -21,8 +21,13 @@
 | **Application Component** | Project-wide reusable UI composition used across internal workspace and public flows. Built from shadcn/ui primitives and TanStack libraries; must not assume authentication, organization membership, or a specific route context. |
 | **Application Data Table** | Application Component for workspace resource lists. Renders server-backed table/card views from feature-owned data, URL state, filters, permissions, and actions. |
 | **Asset** | Tenant-scoped uploaded media or document owned by a business entity (product, customer, organization, order, or production task). |
-| **Asset Usage** | Business intent of an Asset: `logo`, `profile`, `gallery`, or `attachment`. Governs limits and processing policy. |
+| **Asset Usage** | Business intent of an Asset: `logo`, `profile`, `gallery`, `attachment`, or `payment_proof`. Governs limits and processing policy. |
 | **Asset Variant** | A delivery form of an Asset (`preview`, `full`, `original`) selected based on display or document need. |
+| **Invoice** | A payment request sent to a customer. Has statuses: `unpaid`, `paid`, `void`. Can be standalone or linked to an order via progress billing. |
+| **Progress billing** | Splitting an order total into multiple invoices, each covering a percentage. Example: Invoice 1 = 50% DP, Invoice 2 = 50% remaining. |
+| **Payment Method** | An org-managed bank account or payment gateway. Stored in `payment_methods` table with name, bank details, and instructions. |
+| **Payment Proof** | An asset with `usage='payment_proof'` attached to an invoice. Customer uploads via portal; admin confirms and marks invoice paid. |
+| **Pending Payment** | Computed label — shown when an invoice is `unpaid` but a payment proof asset exists. |
 | **Apex** | The root domain (`pabriq.com`, `localhost:3000`). Sign-in, sign-up, org management. No org context. |
 
 ## Architecture
@@ -63,5 +68,15 @@ src/
 - Route tree regenerated with new structure
 - Biome check passing
 - Session cookie shared across subdomains (`.localhost`)
+
+**Completed — Slice 9: Invoices & Manual Payments (spec 13)**
+- `invoices`, `payments` tables dropped and recreated with correct schema
+- `invoice_line_items` and `payment_methods` tables added
+- Percentage-based progress billing: 1 order = N invoices, 1 invoice = 1 payment
+- Payment methods CRUD in Settings (bank accounts/gateways)
+- Payment proof upload via customer portal (token-authenticated)
+- Invoice PDF generation via @react-pdf
+- Admin invoice list, create, detail pages
+- State machine: unpaid → paid | void; pending payment is computed label
 
 **Next**: Wire real Neon queries into dashboard, add order intake flow, build core MTO features.
