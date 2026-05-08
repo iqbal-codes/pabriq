@@ -8,11 +8,11 @@ import {
   products as productsTable,
 } from '#/db/schema'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
-import { listBreakpoints } from '#/features/products/model'
 import {
   archiveBoardTasks,
   spawnProductionTasks,
 } from '#/features/production/spawner'
+import { listBreakpoints } from '#/features/products/model'
 
 export type Order = {
   id: string

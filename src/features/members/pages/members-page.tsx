@@ -1,20 +1,16 @@
-import { ChevronDown, UserMinus } from "lucide-react";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import { useTranslations } from "use-intl";
-import type {
-  AppColumnDef,
-  DataTableLabels,
-} from "#/components/app/data-table";
-import { DataTable } from "#/components/app/data-table";
+import { ChevronDown, UserMinus } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
+import { useTranslations } from 'use-intl'
+import type { AppColumnDef, DataTableLabels } from '#/components/app/data-table'
+import { DataTable } from '#/components/app/data-table'
 import {
   FormActions,
   FormGrid,
   FormRoot,
   useAppForm,
-} from "#/components/app/form";
-import { PageContent } from "#/components/app/page-shell/page-content";
-import { PageHeader } from "#/components/app/page-shell/page-header";
+} from '#/components/app/form'
+import { PageHeader } from '#/components/app/page-shell/page-header'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,23 +20,23 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "#/components/ui/alert-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
-import { Badge } from "#/components/ui/badge";
-import { Button } from "#/components/ui/button";
+} from '#/components/ui/alert-dialog'
+import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar'
+import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "#/components/ui/dialog";
+} from '#/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "#/components/ui/dropdown-menu";
+} from '#/components/ui/dropdown-menu'
 import {
   useCancelInvitation,
   useInvitations,
@@ -48,86 +44,86 @@ import {
   useMembers,
   useRemoveMember,
   useUpdateMemberRole,
-} from "#/features/members/hooks";
-import type { InvitationItem, MemberItem } from "#/features/members/server";
-import { canManageMembers } from "#/features/permissions/model";
+} from '#/features/members/hooks'
+import type { InvitationItem, MemberItem } from '#/features/members/server'
+import { canManageMembers } from '#/features/permissions/model'
 
 const ROLE_LABEL_KEYS: Record<string, string> = {
-  owner: "ownerRole",
-  admin: "adminRole",
-  member: "memberRole",
-};
+  owner: 'ownerRole',
+  admin: 'adminRole',
+  member: 'memberRole',
+}
 
 const BASE_URL =
-  process.env.NODE_ENV === "production"
-    ? "https://app.pabriq.com"
-    : "http://localhost:3000";
+  process.env.NODE_ENV === 'production'
+    ? 'https://app.pabriq.com'
+    : 'http://localhost:3000'
 
 function getInitials(name: string) {
   return name
-    .split(" ")
+    .split(' ')
     .map((p) => p[0])
-    .join("")
+    .join('')
     .slice(0, 2)
-    .toUpperCase();
+    .toUpperCase()
 }
 
 export function MembersPage({ orgRole }: { orgRole: string }) {
-  const t = useTranslations("members");
-  const ct = useTranslations("common");
-  const dt = useTranslations("dataTable");
-  const canManage = canManageMembers(orgRole as "owner" | "admin" | "member");
+  const t = useTranslations('members')
+  const ct = useTranslations('common')
+  const dt = useTranslations('dataTable')
+  const canManage = canManageMembers(orgRole as 'owner' | 'admin' | 'member')
 
-  const { data: members, isLoading: membersLoading } = useMembers();
-  const { data: invitations, isLoading: invitationsLoading } = useInvitations();
-  const inviteMember = useInviteMember();
-  const updateMemberRole = useUpdateMemberRole();
-  const removeMember = useRemoveMember();
-  const cancelInvitation = useCancelInvitation();
+  const { data: members, isLoading: membersLoading } = useMembers()
+  const { data: invitations, isLoading: invitationsLoading } = useInvitations()
+  const inviteMember = useInviteMember()
+  const updateMemberRole = useUpdateMemberRole()
+  const removeMember = useRemoveMember()
+  const cancelInvitation = useCancelInvitation()
 
-  const memberList = members ?? [];
+  const memberList = members ?? []
   const pendingInvitations = useMemo(
-    () => (invitations ?? []).filter((inv) => inv.status === "pending"),
+    () => (invitations ?? []).filter((inv) => inv.status === 'pending'),
     [invitations],
-  );
+  )
 
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [removeTarget, setRemoveTarget] = useState<MemberItem | null>(null);
-  const [cancelTarget, setCancelTarget] = useState<string | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [removeTarget, setRemoveTarget] = useState<MemberItem | null>(null)
+  const [cancelTarget, setCancelTarget] = useState<string | null>(null)
 
   const inviteForm = useAppForm({
-    defaultValues: { email: "", role: "member" as string },
+    defaultValues: { email: '', role: 'member' as string },
     onSubmit: async ({ value }) => {
       const result = await inviteMember.mutateAsync({
         email: value.email,
         role: value.role,
-      });
+      })
       if (result.ok) {
-        const inviteUrl = `${BASE_URL}/invite/accept?id=${result.invitationId}`;
-        setInviteOpen(false);
-        inviteForm.reset();
+        const inviteUrl = `${BASE_URL}/invite/accept?id=${result.invitationId}`
+        setInviteOpen(false)
+        inviteForm.reset()
         try {
-          await navigator.clipboard.writeText(inviteUrl);
-          toast.success(t("inviteLinkCopied"));
+          await navigator.clipboard.writeText(inviteUrl)
+          toast.success(t('inviteLinkCopied'))
         } catch {
-          toast.success(t("inviteSent"));
+          toast.success(t('inviteSent'))
         }
       } else {
-        toast.error(result.error);
+        toast.error(result.error)
       }
     },
-  });
+  })
 
   const memberColumns: AppColumnDef<MemberItem>[] = [
     {
-      id: "name",
-      header: t("name"),
-      meta: { label: t("name"), mobileRole: "title" },
+      id: 'name',
+      header: t('name'),
+      meta: { label: t('name'), mobileRole: 'title' },
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
             <AvatarImage
-              src={row.original.user.image ?? ""}
+              src={row.original.user.image ?? ''}
               alt={row.original.user.name}
             />
             <AvatarFallback>
@@ -139,27 +135,27 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
       ),
     },
     {
-      id: "email",
-      header: t("email"),
-      meta: { label: t("email"), mobileRole: "meta" },
+      id: 'email',
+      header: t('email'),
+      meta: { label: t('email'), mobileRole: 'meta' },
       cell: ({ row }) => (
         <span className="text-muted-foreground">{row.original.user.email}</span>
       ),
     },
     {
-      id: "role",
-      header: t("role"),
-      meta: { label: t("role"), mobileRole: "badge" },
+      id: 'role',
+      header: t('role'),
+      meta: { label: t('role'), mobileRole: 'badge' },
       cell: ({ row }) => {
-        const member = row.original;
-        const isOwner = member.role === "owner";
-        const roleLabelKey = ROLE_LABEL_KEYS[member.role] ?? member.role;
+        const member = row.original
+        const isOwner = member.role === 'owner'
+        const roleLabelKey = ROLE_LABEL_KEYS[member.role] ?? member.role
         if (isOwner || !canManage) {
           return (
-            <Badge variant={isOwner ? "default" : "secondary"}>
+            <Badge variant={isOwner ? 'default' : 'secondary'}>
               {t(roleLabelKey)}
             </Badge>
-          );
+          )
         }
         return (
           <DropdownMenu>
@@ -170,7 +166,7 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {(["admin", "member"] as const).map((r) => (
+              {(['admin', 'member'] as const).map((r) => (
                 <DropdownMenuItem
                   key={r}
                   onClick={() =>
@@ -185,67 +181,67 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-        );
+        )
       },
     },
     {
-      id: "joined",
-      header: t("joined"),
-      meta: { label: t("joined"), mobileRole: "meta" },
+      id: 'joined',
+      header: t('joined'),
+      meta: { label: t('joined'), mobileRole: 'meta' },
       cell: ({ row }) => (
         <span className="text-muted-foreground text-sm">
           {new Date(row.original.createdAt).toLocaleDateString()}
         </span>
       ),
     },
-  ];
+  ]
 
   const invitationColumns: AppColumnDef<InvitationItem>[] = [
     {
-      accessorKey: "email",
-      header: t("email"),
-      meta: { label: t("email"), mobileRole: "title" },
+      accessorKey: 'email',
+      header: t('email'),
+      meta: { label: t('email'), mobileRole: 'title' },
     },
     {
-      id: "role",
-      header: t("role"),
-      meta: { label: t("role"), mobileRole: "badge" },
+      id: 'role',
+      header: t('role'),
+      meta: { label: t('role'), mobileRole: 'badge' },
       cell: ({ row }) => (
         <Badge variant="secondary">
           {t(ROLE_LABEL_KEYS[row.original.role] ?? row.original.role)}
         </Badge>
       ),
     },
-  ];
+  ]
 
   const labels: DataTableLabels = {
-    clearFilters: dt("clearFilters"),
-    columnVisibility: dt("columnVisibility"),
-    errorRetry: dt("errorRetry"),
-    errorTitle: dt("errorTitle"),
-    firstPage: dt("firstPage"),
-    lastPage: dt("lastPage"),
-    loading: dt("loading"),
-    nextPage: dt("nextPage"),
-    of: dt("of"),
-    page: dt("page"),
-    perPage: dt("perPage"),
-    previousPage: dt("previousPage"),
-    resetColumns: dt("resetColumns"),
+    clearFilters: dt('clearFilters'),
+    columnVisibility: dt('columnVisibility'),
+    errorRetry: dt('errorRetry'),
+    errorTitle: dt('errorTitle'),
+    firstPage: dt('firstPage'),
+    lastPage: dt('lastPage'),
+    loading: dt('loading'),
+    nextPage: dt('nextPage'),
+    of: dt('of'),
+    page: dt('page'),
+    perPage: dt('perPage'),
+    previousPage: dt('previousPage'),
+    resetColumns: dt('resetColumns'),
     rowsSelected: (selected: number, total: number) =>
-      dt("rowsSelected", { selected, total }),
+      dt('rowsSelected', { selected, total }),
     visibleRows: (from: number, to: number, total: number) =>
-      dt("visibleRows", { from, to, total }),
-  };
+      dt('visibleRows', { from, to, total }),
+  }
 
   return (
     <>
       <PageHeader
-        title={t("title")}
+        title={t('title')}
         primaryAction={
           canManage
             ? {
-                label: t("invite"),
+                label: t('invite'),
                 onClick: () => setInviteOpen(true),
               }
             : undefined
@@ -264,12 +260,12 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
         perPage={memberList.length || 1}
         tableId="members"
         totalRows={memberList.length}
-        emptyTitle={t("noMembers")}
-        emptyDescription={t("noMembersDesc")}
-        noResultsTitle={t("noMembers")}
+        emptyTitle={t('noMembers')}
+        emptyDescription={t('noMembersDesc')}
+        noResultsTitle={t('noMembers')}
         hasActiveFilters={false}
         rowActions={(member: MemberItem) =>
-          canManage && member.role !== "owner" ? (
+          canManage && member.role !== 'owner' ? (
             <Button
               variant="ghost"
               size="icon-sm"
@@ -284,8 +280,8 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
       {pendingInvitations.length > 0 && (
         <div className="mt-8 space-y-4">
           <div>
-            <h2 className="text-base font-semibold">{t("pending")}</h2>
-            <p className="text-sm text-muted-foreground">{t("pendingDesc")}</p>
+            <h2 className="text-base font-semibold">{t('pending')}</h2>
+            <p className="text-sm text-muted-foreground">{t('pendingDesc')}</p>
           </div>
           <DataTable
             columns={invitationColumns}
@@ -299,7 +295,7 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
             perPage={pendingInvitations.length || 1}
             tableId="invitations"
             totalRows={pendingInvitations.length}
-            emptyTitle={t("noMembers")}
+            emptyTitle={t('noMembers')}
             hasActiveFilters={false}
             rowActions={(inv: InvitationItem) =>
               canManage ? (
@@ -319,21 +315,21 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t("invite")}</DialogTitle>
-            <DialogDescription>{t("inviteDesc")}</DialogDescription>
+            <DialogTitle>{t('invite')}</DialogTitle>
+            <DialogDescription>{t('inviteDesc')}</DialogDescription>
           </DialogHeader>
           <FormRoot form={inviteForm}>
             <FormGrid columns={1}>
               <inviteForm.AppField name="email">
-                {(field) => <field.EmailField label={t("email")} />}
+                {(field) => <field.EmailField label={t('email')} />}
               </inviteForm.AppField>
               <inviteForm.AppField name="role">
                 {(field) => (
                   <field.SelectField
-                    label={t("role")}
+                    label={t('role')}
                     options={[
-                      { value: "admin", label: t("adminRole") },
-                      { value: "member", label: t("memberRole") },
+                      { value: 'admin', label: t('adminRole') },
+                      { value: 'member', label: t('memberRole') },
                     ]}
                   />
                 )}
@@ -341,10 +337,10 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
             </FormGrid>
             <FormActions>
               <Button variant="outline" onClick={() => setInviteOpen(false)}>
-                {ct("cancel")}
+                {ct('cancel')}
               </Button>
               <inviteForm.AppForm>
-                <inviteForm.SubmitButton>{t("invite")}</inviteForm.SubmitButton>
+                <inviteForm.SubmitButton>{t('invite')}</inviteForm.SubmitButton>
               </inviteForm.AppForm>
             </FormActions>
           </FormRoot>
@@ -357,24 +353,24 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("remove")}</AlertDialogTitle>
+            <AlertDialogTitle>{t('remove')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("removeConfirm")}
+              {t('removeConfirm')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{ct("cancel")}</AlertDialogCancel>
+            <AlertDialogCancel>{ct('cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (removeTarget) {
                   removeMember.mutate({
                     memberIdOrEmail: removeTarget.user.email,
-                  });
+                  })
                 }
-                setRemoveTarget(null);
+                setRemoveTarget(null)
               }}
             >
-              {t("remove")}
+              {t('remove')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -386,26 +382,26 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("cancelInvite")}</AlertDialogTitle>
+            <AlertDialogTitle>{t('cancelInvite')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("cancelConfirm")}
+              {t('cancelConfirm')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{ct("cancel")}</AlertDialogCancel>
+            <AlertDialogCancel>{ct('cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (cancelTarget) {
-                  cancelInvitation.mutate({ invitationId: cancelTarget });
+                  cancelInvitation.mutate({ invitationId: cancelTarget })
                 }
-                setCancelTarget(null);
+                setCancelTarget(null)
               }}
             >
-              {t("cancelInvite")}
+              {t('cancelInvite')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
-  );
+  )
 }

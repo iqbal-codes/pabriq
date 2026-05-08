@@ -17,7 +17,11 @@ export function GeneralSettingsPage() {
       slug: settings?.slug ?? '',
       phone: settings?.phone ?? '',
       email: settings?.email ?? '',
-      address: settings?.address ?? { areaId: '', areaName: '', streetAddress: '' },
+      address: settings?.address ?? {
+        areaId: '',
+        areaName: '',
+        streetAddress: '',
+      },
       logoAssetId: settings?.logoAssetId ?? null,
     },
     onSubmit: async ({ value }) => {
@@ -76,9 +80,7 @@ export function GeneralSettingsPage() {
                 {(field) => <field.EmailField label={t('email')} />}
               </form.AppField>
               <form.AppField name="address">
-                {(field) => (
-                  <field.AddressField label={t('address')} />
-                )}
+                {(field) => <field.AddressField label={t('address')} />}
               </form.AppField>
             </FormGrid>
           </CardContent>

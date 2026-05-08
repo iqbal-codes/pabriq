@@ -173,11 +173,7 @@ export const setDeliveryInfoFn = createServerFn({ method: 'POST' })
 
 export const markShippedFn = createServerFn({ method: 'POST' })
   .inputValidator(
-    (input: {
-      id: string
-      courier?: string
-      trackingNumber?: string
-    }) => input,
+    (input: { id: string; courier?: string; trackingNumber?: string }) => input,
   )
   .handler(async ({ data }): Promise<MutationResult> => {
     const orgId = await resolveOrgId()

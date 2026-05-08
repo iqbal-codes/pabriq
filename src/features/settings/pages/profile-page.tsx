@@ -1,35 +1,23 @@
-import { useStore } from "@tanstack/react-form";
-import { useRef, useState } from "react";
-import { toast } from "sonner";
-import { useTranslations } from "use-intl";
+import { useStore } from '@tanstack/react-form'
+import { toast } from 'sonner'
+import { useTranslations } from 'use-intl'
 import {
   FormActions,
   FormGrid,
   FormRoot,
   useAppForm,
-} from "#/components/app/form";
-import { PageHeader } from "#/components/app/page-shell/page-header";
-import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
-import { Button } from "#/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
-import { authClient } from "#/lib/auth-client";
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((p) => p[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
+} from '#/components/app/form'
+import { PageHeader } from '#/components/app/page-shell/page-header'
+import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import { authClient } from '#/lib/auth-client'
 
 export function ProfilePage({
   user,
 }: {
-  user: { id: string; name: string; email: string; image: string | null };
+  user: { id: string; name: string; email: string; image: string | null }
 }) {
-  const t = useTranslations("profile");
-  const ct = useTranslations("common");
+  const t = useTranslations('profile')
+  const ct = useTranslations('common')
 
   const profileForm = useAppForm({
     defaultValues: { name: user.name, image: user.image },
@@ -37,42 +25,42 @@ export function ProfilePage({
       const { error } = await authClient.updateUser({
         name: value.name,
         image: value.image,
-      });
+      })
       if (error) {
-        toast.error(t("profileSaveFailed"));
+        toast.error(t('profileSaveFailed'))
       } else {
-        toast.success(t("profileSaved"));
+        toast.success(t('profileSaved'))
       }
     },
-  });
+  })
 
   const isSubmitting = useStore(
     profileForm.store,
     (state) => state.isSubmitting,
-  );
+  )
 
   const passwordForm = useAppForm({
-    defaultValues: { currentPassword: "", newPassword: "" },
+    defaultValues: { currentPassword: '', newPassword: '' },
     onSubmit: async ({ value }) => {
       const { error } = await authClient.changePassword({
         currentPassword: value.currentPassword,
         newPassword: value.newPassword,
-      });
+      })
       if (error) {
-        toast.error(t("passwordChangeFailed"));
+        toast.error(t('passwordChangeFailed'))
       } else {
-        toast.success(t("passwordChanged"));
-        passwordForm.reset();
+        toast.success(t('passwordChanged'))
+        passwordForm.reset()
       }
     },
-  });
+  })
 
   return (
     <>
       <PageHeader
-        title={t("title")}
+        title={t('title')}
         primaryAction={{
-          label: ct("confirm"),
+          label: ct('confirm'),
           onClick: () => profileForm.handleSubmit(),
           isLoading: isSubmitting,
         }}
@@ -85,7 +73,7 @@ export function ProfilePage({
                 <profileForm.AppField name="image">
                   {(field) => (
                     <field.PhotoUploadField
-                      label={t("avatar")}
+                      label={t('avatar')}
                       maxFiles={1}
                       multiple={false}
                       ownerType="customer"
@@ -94,10 +82,10 @@ export function ProfilePage({
                   )}
                 </profileForm.AppField>
                 <profileForm.AppField name="name">
-                  {(field) => <field.TextField label={t("name")} />}
+                  {(field) => <field.TextField label={t('name')} />}
                 </profileForm.AppField>
                 <div>
-                  <span className="text-sm font-medium">{t("email")}</span>
+                  <span className="text-sm font-medium">{t('email')}</span>
                   <p className="text-sm text-muted-foreground mt-1">
                     {user.email}
                   </p>
@@ -110,20 +98,20 @@ export function ProfilePage({
         <FormRoot form={passwordForm}>
           <Card>
             <CardHeader>
-              <CardTitle>{t("changePassword")}</CardTitle>
+              <CardTitle>{t('changePassword')}</CardTitle>
             </CardHeader>
             <CardContent>
               <FormGrid columns={1}>
                 <passwordForm.AppField name="currentPassword">
                   {(field) => (
-                    <field.PasswordField label={t("currentPassword")} />
+                    <field.PasswordField label={t('currentPassword')} />
                   )}
                 </passwordForm.AppField>
                 <passwordForm.AppField name="newPassword">
-                  {(field) => <field.PasswordField label={t("newPassword")} />}
+                  {(field) => <field.PasswordField label={t('newPassword')} />}
                 </passwordForm.AppField>
                 <p className="text-xs text-muted-foreground -mt-2">
-                  {t("newPasswordDesc")}
+                  {t('newPasswordDesc')}
                 </p>
               </FormGrid>
             </CardContent>
@@ -131,12 +119,12 @@ export function ProfilePage({
           <FormActions>
             <passwordForm.AppForm>
               <passwordForm.SubmitButton>
-                {t("changePassword")}
+                {t('changePassword')}
               </passwordForm.SubmitButton>
             </passwordForm.AppForm>
           </FormActions>
         </FormRoot>
       </div>
     </>
-  );
+  )
 }

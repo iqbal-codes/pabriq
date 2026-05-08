@@ -140,7 +140,7 @@ export function CreateOrderPage() {
               {createdOrder && (
                 <div className="mt-2">
                   <p className="font-medium">{createdOrder.customerName}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     {`${t('totalLabel')}: `}
                     {new Intl.NumberFormat('en-ID', {
                       style: 'currency',

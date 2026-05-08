@@ -1,11 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Link2, Mail, Phone, User, XCircle } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-import { useTranslations } from "use-intl";
-import { AssetImage } from "#/components/app/asset-image";
-import { PageContent } from "#/components/app/page-shell/page-content";
-import { PageHeader } from "#/components/app/page-shell/page-header";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { CheckCircle2, Link2, Mail, Phone, User, XCircle } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import { useTranslations } from 'use-intl'
+import { AssetImage } from '#/components/app/asset-image'
+import { PageContent } from '#/components/app/page-shell/page-content'
+import { PageHeader } from '#/components/app/page-shell/page-header'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,112 +15,112 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "#/components/ui/alert-dialog";
-import { Badge } from "#/components/ui/badge";
-import { Button } from "#/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
-import { Textarea } from "#/components/ui/textarea";
-import { useOrder } from "#/features/orders/hooks";
-import { getAssetsForLineItemFn } from "#/features/orders/server";
-import { generateOrderTokenFn } from "#/features/portal/server";
-import { Route } from "#/routes/_org/orders/$id";
+} from '#/components/ui/alert-dialog'
+import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import { Textarea } from '#/components/ui/textarea'
+import { useOrder } from '#/features/orders/hooks'
+import { getAssetsForLineItemFn } from '#/features/orders/server'
+import { generateOrderTokenFn } from '#/features/portal/server'
+import { Route } from '#/routes/_org/orders/$id'
 
 export function ViewOrderPage() {
-  const { id } = Route.useParams();
-  const ctx = Route.useRouteContext() as { org: { id: string } };
-  const { data } = useOrder({ id, orgId: ctx.org.id });
-  const t = useTranslations("orders");
-  const ct = useTranslations("common");
-  const st = useTranslations("status");
+  const { id } = Route.useParams()
+  const ctx = Route.useRouteContext() as { org: { id: string } }
+  const { data } = useOrder({ id, orgId: ctx.org.id })
+  const t = useTranslations('orders')
+  const ct = useTranslations('common')
+  const st = useTranslations('status')
 
-  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
 
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   const approveOrder = useMutation({
     mutationFn: async (input: { id: string }) => {
-      const { approveOrderFn } = await import("#/features/orders/server");
-      return approveOrderFn({ data: input });
+      const { approveOrderFn } = await import('#/features/orders/server')
+      return approveOrderFn({ data: input })
     },
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["orders", "lists"] });
+      queryClient.invalidateQueries({ queryKey: ['orders', 'lists'] })
       queryClient.invalidateQueries({
-        queryKey: ["orders", "detail", variables.id],
-      });
+        queryKey: ['orders', 'detail', variables.id],
+      })
     },
-  });
+  })
 
   const rejectOrder = useMutation({
     mutationFn: async (input: { id: string; reason: string }) => {
-      const { rejectOrderFn } = await import("#/features/orders/server");
-      return rejectOrderFn({ data: input });
+      const { rejectOrderFn } = await import('#/features/orders/server')
+      return rejectOrderFn({ data: input })
     },
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["orders", "lists"] });
+      queryClient.invalidateQueries({ queryKey: ['orders', 'lists'] })
       queryClient.invalidateQueries({
-        queryKey: ["orders", "detail", variables.id],
-      });
-      setRejectDialogOpen(false);
-      setRejectReason("");
+        queryKey: ['orders', 'detail', variables.id],
+      })
+      setRejectDialogOpen(false)
+      setRejectReason('')
     },
-  });
+  })
 
   const generateToken = useMutation({
     mutationFn: async (orderId: string) => {
-      return generateOrderTokenFn({ data: { orderId } });
+      return generateOrderTokenFn({ data: { orderId } })
     },
-  });
+  })
 
   const handleCopyPortalLink = async () => {
-    if (!data) return;
-    const { order } = data;
+    if (!data) return
+    const { order } = data
 
-    let token = order.orderToken;
+    let token = order.orderToken
     if (!token) {
-      const result = await generateToken.mutateAsync(order.id);
-      if (!("token" in result)) {
-        toast.error("Failed to generate link");
-        return;
+      const result = await generateToken.mutateAsync(order.id)
+      if (!('token' in result)) {
+        toast.error('Failed to generate link')
+        return
       }
-      token = result.token;
+      token = result.token
     }
 
-    const url = `${window.location.origin}/order/${token}`;
-    await navigator.clipboard.writeText(url);
-    toast.success(t("linkCopied"));
-  };
+    const url = `${window.location.origin}/order/${token}`
+    await navigator.clipboard.writeText(url)
+    toast.success(t('linkCopied'))
+  }
 
   const handleApprove = async () => {
-    if (!data) return;
-    const result = await approveOrder.mutateAsync({ id: data.order.id });
+    if (!data) return
+    const result = await approveOrder.mutateAsync({ id: data.order.id })
     if (!result.ok) {
-      toast.error(result.error);
+      toast.error(result.error)
     } else {
-      toast.success(t("orderApproved"));
+      toast.success(t('orderApproved'))
     }
-  };
+  }
 
   const handleReject = async () => {
-    if (!data) return;
-    if (!rejectReason.trim()) return;
+    if (!data) return
+    if (!rejectReason.trim()) return
     const result = await rejectOrder.mutateAsync({
       id: data.order.id,
       reason: rejectReason.trim(),
-    });
+    })
     if (!result.ok) {
-      toast.error(result.error);
+      toast.error(result.error)
     } else {
-      toast.success(t("orderRejected"));
+      toast.success(t('orderRejected'))
     }
-  };
+  }
 
   if (!data) {
     return (
       <PageContent>
-        <p>{t("noOrders")}</p>
+        <p>{t('noOrders')}</p>
       </PageContent>
-    );
+    )
   }
 
   const {
@@ -130,32 +130,32 @@ export function ViewOrderPage() {
     customerPhone,
     customerPhotoAssetId,
     customerEmail,
-  } = data;
+  } = data
 
   return (
     <PageContent>
       <PageHeader
         title={
           <span className="flex items-center gap-2">
-            {order.orderNumber ?? "—"}
+            {order.orderNumber ?? '—'}
             <Badge variant="secondary">{st(order.status)}</Badge>
           </span>
         }
-        backAction={{ label: ct("back"), href: "/orders" }}
+        backAction={{ label: ct('back'), href: '/orders' }}
         primaryAction={
-          order.status === "draft"
+          order.status === 'draft'
             ? {
-                label: t("editOrder"),
+                label: t('editOrder'),
                 href: `/orders/${order.id}/edit`,
               }
             : undefined
         }
       />
 
-      {order.validUntil && order.status === "draft" && (
+      {order.validUntil && order.status === 'draft' && (
         <span className="text-sm text-muted-foreground">
-          {t("validUntil")}:{" "}
-          {new Intl.DateTimeFormat("id-ID").format(order.validUntil)}
+          {t('validUntil')}:{' '}
+          {new Intl.DateTimeFormat('id-ID').format(order.validUntil)}
         </span>
       )}
 
@@ -167,10 +167,10 @@ export function ViewOrderPage() {
           disabled={generateToken.isPending}
         >
           <Link2 className="size-4" />
-          {order.orderToken ? t("copyPortalLink") : t("generateLink")}
+          {order.orderToken ? t('copyPortalLink') : t('generateLink')}
         </Button>
 
-        {order.status === "pending" && (
+        {order.status === 'pending' && (
           <>
             <Button
               type="button"
@@ -179,7 +179,7 @@ export function ViewOrderPage() {
               disabled={approveOrder.isPending}
             >
               <CheckCircle2 className="size-4" />
-              {t("approve")}
+              {t('approve')}
             </Button>
             <Button
               type="button"
@@ -189,19 +189,19 @@ export function ViewOrderPage() {
               disabled={rejectOrder.isPending}
             >
               <XCircle className="size-4" />
-              {t("reject")}
+              {t('reject')}
             </Button>
           </>
         )}
       </div>
 
-      {order.status === "rejected" && order.rejectReason && (
+      {order.status === 'rejected' && order.rejectReason && (
         <Card className="mb-6 border-destructive/50">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
               <XCircle className="size-5 text-destructive mt-0.5" />
               <div>
-                <p className="font-medium">{t("rejectReason")}</p>
+                <p className="font-medium">{t('rejectReason')}</p>
                 <p className="text-sm text-muted-foreground">
                   {order.rejectReason}
                 </p>
@@ -214,7 +214,7 @@ export function ViewOrderPage() {
       <div className="grid gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>{t("summary")}</CardTitle>
+            <CardTitle>{t('summary')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
@@ -231,7 +231,7 @@ export function ViewOrderPage() {
               )}
               <div className="min-w-0 flex-1">
                 <p className="font-medium">
-                  {customerName ?? t("guestCustomer")}
+                  {customerName ?? t('guestCustomer')}
                 </p>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                   {customerPhone && (
@@ -251,16 +251,16 @@ export function ViewOrderPage() {
             </div>
             {order.notes && (
               <div>
-                <p className="text-sm text-muted-foreground">{t("notes")}</p>
+                <p className="text-sm text-muted-foreground">{t('notes')}</p>
                 <p className="whitespace-pre-wrap">{order.notes}</p>
               </div>
             )}
             <div>
-              <p className="text-sm text-muted-foreground">{t("total")}</p>
+              <p className="text-sm text-muted-foreground">{t('total')}</p>
               <p className="text-lg font-semibold">
-                {new Intl.NumberFormat("id-ID", {
-                  style: "currency",
-                  currency: "IDR",
+                {new Intl.NumberFormat('id-ID', {
+                  style: 'currency',
+                  currency: 'IDR',
                   minimumFractionDigits: 0,
                 }).format(order.total)}
               </p>
@@ -270,7 +270,7 @@ export function ViewOrderPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t("lineItems")}</CardTitle>
+            <CardTitle>{t('lineItems')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -285,34 +285,34 @@ export function ViewOrderPage() {
       <AlertDialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("reject")}</AlertDialogTitle>
+            <AlertDialogTitle>{t('reject')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("rejectReasonPlaceholder")}
+              {t('rejectReasonPlaceholder')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-3">
             <Textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder={t("rejectReasonPlaceholder")}
+              placeholder={t('rejectReasonPlaceholder')}
               rows={3}
             />
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setRejectDialogOpen(false)}>
-              {ct("cancel")}
+              {ct('cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleReject}
               disabled={!rejectReason.trim() || rejectOrder.isPending}
             >
-              {t("reject")}
+              {t('reject')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </PageContent>
-  );
+  )
 }
 
 function LineItemRow({
@@ -320,21 +320,21 @@ function LineItemRow({
   orgId,
 }: {
   item: {
-    id: string;
-    productId: string;
-    name: string | null;
-    notes: string | null;
-    quantity: number;
-    unitPrice: number;
-    total: number;
-  };
-  orgId: string;
+    id: string
+    productId: string
+    name: string | null
+    notes: string | null
+    quantity: number
+    unitPrice: number
+    total: number
+  }
+  orgId: string
 }) {
   const { data: assets } = useQuery({
-    queryKey: ["order-assets", item.id],
+    queryKey: ['order-assets', item.id],
     queryFn: () =>
       getAssetsForLineItemFn({ data: { lineItemId: item.id, orgId } }),
-  });
+  })
 
   return (
     <div className="rounded-lg border p-4 space-y-2">
@@ -342,18 +342,18 @@ function LineItemRow({
         <div>
           <p className="font-medium">{item.name || item.productId}</p>
           <p className="text-sm text-muted-foreground">
-            {item.quantity} ×{" "}
-            {new Intl.NumberFormat("id-ID", {
-              style: "currency",
-              currency: "IDR",
+            {item.quantity} ×{' '}
+            {new Intl.NumberFormat('id-ID', {
+              style: 'currency',
+              currency: 'IDR',
               minimumFractionDigits: 0,
             }).format(item.unitPrice)}
           </p>
         </div>
         <p className="font-medium">
-          {new Intl.NumberFormat("id-ID", {
-            style: "currency",
-            currency: "IDR",
+          {new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
             minimumFractionDigits: 0,
           }).format(item.total)}
         </p>
@@ -376,5 +376,5 @@ function LineItemRow({
         </div>
       )}
     </div>
-  );
+  )
 }

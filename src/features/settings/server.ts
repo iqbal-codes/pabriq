@@ -34,8 +34,9 @@ export const getOrgSettingsFn = createServerFn({ method: 'GET' }).handler(
     const orgId = await resolveOrgId()
 
     const { db } = await import('#/db/index')
-    const { organization, organizationProfiles, addresses } =
-      await import('#/db/schema')
+    const { organization, organizationProfiles, addresses } = await import(
+      '#/db/schema'
+    )
 
     const [org] = await db
       .select({
@@ -58,10 +59,7 @@ export const getOrgSettingsFn = createServerFn({ method: 'GET' }).handler(
         streetAddress: addresses.streetAddress,
       })
       .from(organizationProfiles)
-      .leftJoin(
-        addresses,
-        eq(organizationProfiles.addressId, addresses.id),
-      )
+      .leftJoin(addresses, eq(organizationProfiles.addressId, addresses.id))
       .where(eq(organizationProfiles.orgId, orgId))
       .limit(1)
 
