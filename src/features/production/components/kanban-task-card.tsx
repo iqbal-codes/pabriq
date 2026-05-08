@@ -50,19 +50,19 @@ export function KanbanTaskCard({ task, onClick }: Props) {
           </span>
           <Badge
             variant={isPendingApproval ? 'outline' : 'secondary'}
-            className={`text-[10px] leading-3 ${isPendingApproval ? 'border-amber-400 text-amber-600' : ''}`}
+            className={`text-xs leading-3 ${isPendingApproval ? 'border-warning text-warning' : ''}`}
           >
             {isPendingApproval && <Lock className="size-3 mr-0.5" />}
             {t(STATUS_LABELS[taskData.status] ?? taskData.status)}
           </Badge>
         </div>
-        <div className="text-[11px] text-muted-foreground font-mono">
+        <div className="text-xs text-muted-foreground font-mono">
           {orderNum}
         </div>
         <p className="text-sm font-medium leading-tight truncate">
           {productName}
         </p>
-        <p className="text-[11px] text-muted-foreground truncate">
+        <p className="text-xs text-muted-foreground truncate">
           {customerName}
           {quantity ? ` \u00B7 ${quantity} ${ct('pcs')}` : ''}
         </p>

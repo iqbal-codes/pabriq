@@ -343,7 +343,7 @@ function ActivityRow({
             <span className="text-xs font-medium">
               {user?.name ?? activity.actorId.slice(0, 8)}
             </span>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {dateStr} {timeStr}
             </span>
           </div>
@@ -361,15 +361,15 @@ function ActivityRow({
   if (isSystem) {
     const iconMap: Record<string, React.ReactNode> = {
       stage_transition: (
-        <ArrowRight className="size-3.5 text-blue-500 shrink-0 mt-0.5" />
+        <ArrowRight className="size-3.5 text-brand-accent shrink-0 mt-0.5" />
       ),
       advancement_requested: (
-        <Clock className="size-3.5 text-amber-500 shrink-0 mt-0.5" />
+        <Clock className="size-3.5 text-warning shrink-0 mt-0.5" />
       ),
       approved: (
-        <CheckCircle2 className="size-3.5 text-green-500 shrink-0 mt-0.5" />
+        <CheckCircle2 className="size-3.5 text-success shrink-0 mt-0.5" />
       ),
-      rejected: <XCircle className="size-3.5 text-red-500 shrink-0 mt-0.5" />,
+      rejected: <XCircle className="size-3.5 text-error shrink-0 mt-0.5" />,
     }
 
     return (
@@ -379,7 +379,7 @@ function ActivityRow({
         </div>
         <div className="min-w-0 text-sm">
           <p className="text-xs text-foreground">{getDescription()}</p>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {dateStr} {timeStr}
           </span>
         </div>
@@ -389,19 +389,19 @@ function ActivityRow({
 
   const iconMap: Record<string, React.ReactNode> = {
     advancement_requested: (
-      <Clock className="size-3.5 text-amber-500 shrink-0 mt-0.5" />
+      <Clock className="size-3.5 text-warning shrink-0 mt-0.5" />
     ),
     approved: (
-      <CheckCircle2 className="size-3.5 text-green-500 shrink-0 mt-0.5" />
+      <CheckCircle2 className="size-3.5 text-success shrink-0 mt-0.5" />
     ),
-    rejected: <XCircle className="size-3.5 text-red-500 shrink-0 mt-0.5" />,
+    rejected: <XCircle className="size-3.5 text-error shrink-0 mt-0.5" />,
   }
 
   return (
     <div className="flex gap-2.5 border-b pb-2.5 last:border-0">
       <Avatar className="size-6 shrink-0 mt-0.5">
         {user?.image ? <AvatarImage src={user.image} /> : null}
-        <AvatarFallback className="text-[10px]">
+        <AvatarFallback className="text-xs">
           {user ? getInitials(user.name) : '?'}
         </AvatarFallback>
       </Avatar>
@@ -410,7 +410,7 @@ function ActivityRow({
           <span className="text-xs font-medium">
             {user?.name ?? activity.actorId.slice(0, 8)}
           </span>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {dateStr} {timeStr}
           </span>
         </div>

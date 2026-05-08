@@ -37,7 +37,7 @@ export function RequirementForm({ requirements, onCancel, onSubmit }: Props) {
         <div key={req.id}>
           <div className="flex items-center gap-1 mb-1">
             <Label htmlFor={`req-${req.id}`}>{req.label}</Label>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {req.required
                 ? t('requirementRequired')
                 : t('requirementOptional')}

@@ -1,6 +1,6 @@
-import { useTranslations } from 'use-intl'
-import { FormGrid, FormRoot, useAppForm } from '#/components/app/form'
-import { Button } from '#/components/ui/button'
+import { useTranslations } from "use-intl";
+import { FormGrid, FormRoot, useAppForm } from "#/components/app/form";
+import { Button } from "#/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,29 +8,29 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '#/components/ui/dialog'
-import { Label } from '#/components/ui/label'
-import { NativeSelect, NativeSelectOption } from '#/components/ui/native-select'
-import { Switch } from '#/components/ui/switch'
-import { useStageMutations } from '../hooks'
-import type { Requirement, Stage } from '../model'
+} from "#/components/ui/dialog";
+import { Label } from "#/components/ui/label";
+import { Switch } from "#/components/ui/switch";
+import { useStageMutations } from "../hooks";
+import type { Requirement, Stage } from "../model";
+import { Trash } from "lucide-react";
 
 type Props = {
-  stage?: Stage
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
+  stage?: Stage;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
 
 export function StageForm({ stage, open, onOpenChange }: Props) {
-  const t = useTranslations('production')
-  const ct = useTranslations('common')
-  const { createStage, updateStage } = useStageMutations()
+  const t = useTranslations("production");
+  const ct = useTranslations("common");
+  const { createStage, updateStage } = useStageMutations();
 
   const form = useAppForm({
     defaultValues: {
-      name: stage?.name ?? '',
-      description: stage?.description ?? '',
-      board: stage?.board ?? 'pre_production',
+      name: stage?.name ?? "",
+      description: stage?.description ?? "",
+      board: stage?.board ?? "pre_production",
       needApproval: stage?.needApproval ?? false,
       requirements: (stage?.requirements as Requirement[]) ?? [],
     },
@@ -43,7 +43,7 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
           board: value.board,
           needApproval: value.needApproval,
           requirements: value.requirements as Requirement[],
-        })
+        });
       } else {
         await createStage.mutateAsync({
           name: value.name,
@@ -51,36 +51,36 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
           board: value.board,
           needApproval: value.needApproval,
           requirements: value.requirements as Requirement[],
-        })
+        });
       }
-      onOpenChange(false)
+      onOpenChange(false);
     },
-  })
+  });
 
   const canSubmit =
-    !form.state.isSubmitting && form.state.values.name.trim().length > 0
+    !form.state.isSubmitting && form.state.values.name.trim().length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{stage ? t('editStage') : t('addStage')}</DialogTitle>
+          <DialogTitle>{stage ? t("editStage") : t("addStage")}</DialogTitle>
           <DialogDescription>
-            {t('stageDescriptionPlaceholder')}
+            {t("stageDescriptionPlaceholder")}
           </DialogDescription>
         </DialogHeader>
 
         <FormRoot form={form}>
           <FormGrid columns={1} className="py-4">
             <form.AppField name="name">
-              {(field) => <field.TextField label={t('stageName')} />}
+              {(field) => <field.TextField label={t("stageName")} />}
             </form.AppField>
 
             <form.AppField name="description">
               {(field) => (
                 <field.TextareaField
-                  label={t('stageDescription')}
-                  placeholder={t('stageDescriptionPlaceholder')}
+                  label={t("stageDescription")}
+                  placeholder={t("stageDescriptionPlaceholder")}
                 />
               )}
             </form.AppField>
@@ -88,31 +88,31 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
             <form.AppField name="board">
               {(field) => (
                 <div>
-                  <Label>{t('board')}</Label>
+                  <Label>{t("board")}</Label>
                   <div className="flex gap-2 mt-1">
                     <Button
                       type="button"
                       variant={
-                        field.state.value === 'pre_production'
-                          ? 'default'
-                          : 'outline'
+                        field.state.value === "pre_production"
+                          ? "default"
+                          : "outline"
                       }
                       size="sm"
-                      onClick={() => field.handleChange('pre_production')}
+                      onClick={() => field.handleChange("pre_production")}
                     >
-                      {t('boardPreProduction')}
+                      {t("boardPreProduction")}
                     </Button>
                     <Button
                       type="button"
                       variant={
-                        field.state.value === 'production'
-                          ? 'default'
-                          : 'outline'
+                        field.state.value === "production"
+                          ? "default"
+                          : "outline"
                       }
                       size="sm"
-                      onClick={() => field.handleChange('production')}
+                      onClick={() => field.handleChange("production")}
                     >
-                      {t('boardProduction')}
+                      {t("boardProduction")}
                     </Button>
                   </div>
                 </div>
@@ -123,9 +123,9 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
               {(field) => (
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>{t('needApproval')}</Label>
+                    <Label>{t("needApproval")}</Label>
                     <p className="text-xs text-muted-foreground">
-                      {t('needApprovalHint')}
+                      {t("needApprovalHint")}
                     </p>
                   </div>
                   <Switch
@@ -140,7 +140,7 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
               {(requirementsField) => (
                 <div className="grid gap-3">
                   <div className="flex items-center justify-between">
-                    <Label>{t('requirements')}</Label>
+                    <Label>{t("requirements")}</Label>
                     <Button
                       variant="outline"
                       size="sm"
@@ -148,13 +148,13 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
                       onClick={() =>
                         requirementsField.pushValue({
                           id: crypto.randomUUID(),
-                          label: '',
-                          type: 'text' as const,
+                          label: "",
+                          type: "text" as const,
                           required: false,
                         } as Requirement)
                       }
                     >
-                      {t('addRequirement')}
+                      {t("addRequirement")}
                     </Button>
                   </div>
 
@@ -162,71 +162,64 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
                     (req: Requirement, i: number) => (
                       <div
                         key={req.id}
-                        className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-end"
+                        className="flex flex-col gap-2 p-3 border rounded-lg relative"
                       >
-                        <form.AppField name={`requirements[${i}].label`}>
-                          {(subField) => (
-                            <div className="grid gap-1">
-                              <Label className="text-xs">
-                                {t('requirementLabel')}
-                              </Label>
-                              <subField.TextField />
-                            </div>
-                          )}
-                        </form.AppField>
+                        <FormGrid columns={2}>
+                          <form.AppField name={`requirements[${i}].label`}>
+                            {(subField) => (
+                              <subField.TextField
+                                label={t("requirementLabel")}
+                              />
+                            )}
+                          </form.AppField>
 
-                        <form.AppField name={`requirements[${i}].type`}>
-                          {(subField) => (
-                            <div className="grid gap-1">
-                              <Label className="text-xs">
-                                {t('requirementType')}
-                              </Label>
-                              <NativeSelect
-                                value={subField.state.value}
-                                onChange={(e) =>
-                                  subField.handleChange(
-                                    e.target.value as
-                                      | 'text'
-                                      | 'number'
-                                      | 'upload',
-                                  )
-                                }
-                              >
-                                <NativeSelectOption value="text">
-                                  {t('requirementTypeText')}
-                                </NativeSelectOption>
-                                <NativeSelectOption value="number">
-                                  {t('requirementTypeNumber')}
-                                </NativeSelectOption>
-                                <NativeSelectOption value="upload">
-                                  {t('requirementTypeUpload')}
-                                </NativeSelectOption>
-                              </NativeSelect>
-                            </div>
-                          )}
-                        </form.AppField>
+                          <form.AppField name={`requirements[${i}].type`}>
+                            {(subField) => (
+                              <subField.SelectField
+                                label={t("requirementType")}
+                                options={[
+                                  {
+                                    value: "text",
+                                    label: t("requirementTypeText"),
+                                  },
+                                  {
+                                    value: "number",
+                                    label: t("requirementTypeNumber"),
+                                  },
+                                  {
+                                    value: "upload",
+                                    label: t("requirementTypeUpload"),
+                                  },
+                                ]}
+                              />
+                            )}
+                          </form.AppField>
+                        </FormGrid>
 
                         <form.AppField name={`requirements[${i}].required`}>
                           {(subField) => (
-                            <div className="flex items-center gap-1 pb-1">
+                            <div className="flex items-center justify-between py-2">
+                              <span className="text-sm font-medium">
+                                {t("requirementRequired")}
+                              </span>
                               <Switch
                                 checked={subField.state.value}
-                                onCheckedChange={(v) =>
-                                  subField.handleChange(v)
+                                onCheckedChange={(checked) =>
+                                  subField.handleChange(checked)
                                 }
                               />
-                              <span className="text-xs">{t('required')}</span>
                             </div>
                           )}
                         </form.AppField>
-
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon-sm"
                           type="button"
+                          tooltip={t("requirementRemove")}
+                          className="absolute right-3 top-1"
                           onClick={() => requirementsField.removeValue(i)}
                         >
-                          {t('deleteStage')}
+                          <Trash className="w-4 h-4 text-destructive" />
                         </Button>
                       </div>
                     ),
@@ -242,16 +235,16 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              {ct('cancel')}
+              {ct("cancel")}
             </Button>
             <form.AppForm>
               <form.SubmitButton disabled={!canSubmit}>
-                {stage ? t('editStage') : t('addStage')}
+                {stage ? t("editStage") : t("addStage")}
               </form.SubmitButton>
             </form.AppForm>
           </DialogFooter>
         </FormRoot>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

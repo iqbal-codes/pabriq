@@ -236,7 +236,9 @@ export const saveTaskCommentFn = createServerFn({ method: 'POST' })
   })
 
 export const listBoardTasksFn = createServerFn({ method: 'GET' })
-  .inputValidator((input: { board?: string; stageId?: string; search?: string }) => input)
+  .inputValidator(
+    (input: { board?: string; stageId?: string; search?: string }) => input,
+  )
   .handler(async ({ data }) => {
     const orgId = await resolveOrgId()
     const { listBoardTasks } = await import('./model')
@@ -264,7 +266,12 @@ export const listTaskActivitiesFn = createServerFn({ method: 'GET' })
 
 export const listArchivedTasksFn = createServerFn({ method: 'GET' })
   .inputValidator(
-    (input: { board?: string; search?: string; page?: number; perPage?: number }) => input,
+    (input: {
+      board?: string
+      search?: string
+      page?: number
+      perPage?: number
+    }) => input,
   )
   .handler(async ({ data }) => {
     const orgId = await resolveOrgId()

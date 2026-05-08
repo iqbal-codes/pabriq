@@ -138,10 +138,5 @@ export async function archiveBoardTasks(
   await db
     .update(tasksTable)
     .set({ status: 'completed', archivedAt: now, updatedAt: now })
-    .where(
-      and(
-        eq(tasksTable.orderId, orderId),
-        eq(tasksTable.board, board),
-      ),
-    )
+    .where(and(eq(tasksTable.orderId, orderId), eq(tasksTable.board, board)))
 }

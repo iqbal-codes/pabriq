@@ -72,7 +72,7 @@ export function ReviewModal({
             <div className="space-y-1.5">
               {fulfilledReqs.map(([id, resp]) => (
                 <div key={id} className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="size-3.5 text-green-500 shrink-0" />
+                  <CheckCircle2 className="size-3.5 text-success shrink-0" />
                   <span className="text-muted-foreground">{id}</span>
                   {resp.value && (
                     <span className="truncate">: {resp.value}</span>

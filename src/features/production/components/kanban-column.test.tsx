@@ -39,7 +39,10 @@ function createTask(id: string): BoardTask {
   }
 }
 
-function renderColumn(tasks: BoardTask[], props: { title: string; count: number }) {
+function renderColumn(
+  tasks: BoardTask[],
+  props: { title: string; count: number },
+) {
   return render(
     <IntlProvider locale="en" messages={{ production: {} }}>
       <KanbanColumn tasks={tasks} title={props.title} count={props.count} />

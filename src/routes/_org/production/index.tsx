@@ -18,14 +18,19 @@ export const Route = createFileRoute('/_org/production/')({
 
 function ProductionPage() {
   const t = useTranslations('production')
-  const ctx = Route.useRouteContext() as { session: unknown; org: { id: string } }
+  const ctx = Route.useRouteContext() as {
+    session: unknown
+    org: { id: string }
+  }
   const [tab, setTab] = useQueryState(
     'tab',
     parseAsStringEnum(['active', 'archive']).withDefault('active'),
   )
   const [board, setBoard] = useQueryState(
     'board',
-    parseAsStringEnum(['pre_production', 'production']).withDefault('pre_production'),
+    parseAsStringEnum(['pre_production', 'production']).withDefault(
+      'pre_production',
+    ),
   )
   const { data: counts } = useTaskCounts(board)
 
@@ -56,7 +61,7 @@ function ProductionPage() {
           <TabsTrigger value="active">
             {t('tabActive')}
             {counts && (
-              <Badge variant="default" className="ml-1.5 text-[10px] size-5">
+              <Badge variant="default" className="ml-1.5 text-xs size-5">
                 {counts.active}
               </Badge>
             )}
@@ -64,7 +69,7 @@ function ProductionPage() {
           <TabsTrigger value="archive">
             {t('tabArchive')}
             {counts && (
-              <Badge variant="default" className="ml-1.5 text-[10px] size-5">
+              <Badge variant="default" className="ml-1.5 text-xs size-5">
                 {counts.archived}
               </Badge>
             )}
