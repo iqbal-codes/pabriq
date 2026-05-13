@@ -112,6 +112,7 @@ export function KanbanPage({ orgId, board = 'pre_production' }: Props) {
         ) : boardData ? (
           <KanbanBoard
             stages={activeStages}
+            board={board}
             boardData={boardData}
             onClickCard={setSelectedTaskId}
           />

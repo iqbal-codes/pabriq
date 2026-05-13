@@ -6,6 +6,7 @@ import { CustomerInfoCard } from '../components/customer-info-card'
 import { LineItemTaskCard } from '../components/line-item-task-card'
 import { PaymentAlertBanner } from '../components/payment-alert-banner'
 import { PaymentSection } from '../components/payment-section'
+import { PortalHeader } from '../components/portal-header'
 import { ShippingAddressCard } from '../components/shipping-address-card'
 import {
   useOrderTimeline,
@@ -88,8 +89,12 @@ export function ProgressView({
   }
 
   return (
-    <div className="min-h-screen bg-muted py-4">
-      <div className="mx-auto max-w-2xl px-4">
+    <div className="min-h-screen bg-muted">
+      <PortalHeader
+        orgLogoAssetId={order.orgLogoAssetId}
+        title={order.orderNumber ?? t('orderSummary')}
+      />
+      <div className="mx-auto max-w-2xl px-4 py-4">
         <Card className="p-4 md:p-6">
           <div className="flex items-start justify-between gap-4">
             <div>

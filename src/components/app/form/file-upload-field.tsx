@@ -130,7 +130,8 @@ function FileUploadFieldBase({
       }
     }
 
-    return assetIds
+    return [...assetIds]
+      .reverse()
       .map((assetId) => assetsById.get(assetId))
       .filter((asset): asset is AssetMetadata => asset !== undefined)
   }, [assetIds, existingAssets, optimisticAssets])

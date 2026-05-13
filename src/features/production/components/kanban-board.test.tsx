@@ -74,7 +74,7 @@ function renderBoard(data: {
 }) {
   return render(
     <IntlProvider locale="en" messages={enMessages}>
-      <KanbanBoard stages={[stage1, stage2]} boardData={data} />
+      <KanbanBoard stages={[stage1, stage2]} board="pre_production" boardData={data} />
     </IntlProvider>,
   )
 }

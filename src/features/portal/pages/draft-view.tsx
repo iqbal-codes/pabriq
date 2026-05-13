@@ -1,30 +1,14 @@
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import { FormGrid, FormRoot, useAppForm } from '#/components/app/form'
+import { CustomerInfoCard } from '#/features/portal/components/customer-info-card'
+import { PortalHeader } from '#/features/portal/components/portal-header'
 import {
   useConfirmPortalOrder,
   useSavePortalAddress,
   useUpdatePortalLineItem,
 } from '../hooks'
 import type { PortalOrder } from '../model'
-
-function CustomerInfoCard({ order }: { order: PortalOrder }) {
-  const t = useTranslations('portal')
-
-  return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <h2 className="mb-4 text-sm font-medium text-card-foreground">
-        {t('customerInfo')}
-      </h2>
-      <p className="text-sm text-card-foreground">
-        {order.customerName ?? t('guestCustomer')}
-      </p>
-      {order.customerPhone && (
-        <p className="text-sm text-muted-foreground">{order.customerPhone}</p>
-      )}
-    </div>
-  )
-}
 
 export function DraftView({
   order,
@@ -108,15 +92,19 @@ export function DraftView({
 
   return (
     <FormRoot form={form}>
-      <div className="min-h-screen bg-muted py-4">
-        <div className="mx-auto max-w-2xl px-4">
-          <h1 className="mb-6 text-xl font-semibold text-foreground">
-            {t('title')}
-          </h1>
-
+      <div className="min-h-screen bg-muted">
+        <PortalHeader
+          orgLogoAssetId={order.orgLogoAssetId}
+          title={t('title')}
+        />
+        <div className="mx-auto max-w-2xl px-4 py-4">
           <div className="space-y-6">
             {hasCustomer ? (
-              <CustomerInfoCard order={order} />
+              <CustomerInfoCard
+                name={order.customerName}
+                phone={order.customerPhone}
+                photoAssetId={order.customerPhotoAssetId}
+              />
             ) : (
               <div className="rounded-lg border border-border bg-card p-4">
                 <h2 className="mb-4 text-sm font-medium text-card-foreground">
@@ -174,7 +162,7 @@ export function DraftView({
                 {order.lineItems.map((item, i) => (
                   <div
                     key={item.id}
-                    className="space-y-3 border-b border-border pb-4 last:border-0"
+                    className="space-y-3 border-b border-border pb-4 last:border-0 last:pb-0"
                   >
                     <div className="flex justify-between">
                       <div>

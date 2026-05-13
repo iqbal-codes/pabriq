@@ -8,7 +8,7 @@
 
 | Term | Meaning |
 |---|---|
-| **Organization** | A tenant — an MTO business using Pabriq. Has its own subdomain (`{slug}.localhost:3000`), members, settings, and data. |
+| **Organization** | A tenant — an MTO business using Pabriq. Has its own subdomain (`{slug}.localhost:3001`), members, settings, and data. |
 | **Owner** | Full-access org member. Can delete org, manage billing, configure everything. |
 | **Admin** | Operations lead. Manages orders, products, customers, members, settings. Cannot delete org. |
 | **Member** | Basic org member. Can view and create certain resources. Read-limited. |
@@ -28,7 +28,7 @@
 | **Payment Method** | An org-managed bank account or payment gateway. Stored in `payment_methods` table with name, bank details, and instructions. |
 | **Payment Proof** | An asset with `usage='payment_proof'` attached to an invoice. Customer uploads via portal; admin confirms and marks invoice paid. |
 | **Pending Payment** | Computed label — shown when an invoice is `unpaid` but a payment proof asset exists. |
-| **Apex** | The root domain (`pabriq.com`, `localhost:3000`). Sign-in, sign-up, org management. No org context. |
+| **Apex** | The root domain (`pabriq.com`, `localhost:3001`). Sign-in, sign-up, org management. No org context. |
 
 ## Architecture
 
@@ -50,7 +50,7 @@ src/
 
 ## Key decisions
 
-- **Subdomain multi-tenancy**: orgs identified by subdomain (`{slug}.localhost:3000`). Middleware in `_org.tsx`'s `beforeLoad` resolves org from host header, validates membership, sets RLS context.
+- **Subdomain multi-tenancy**: orgs identified by subdomain (`{slug}.localhost:3001`). Middleware in `_org.tsx`'s `beforeLoad` resolves org from host header, validates membership, sets RLS context.
 - **Better Auth org plugin**: handles org CRUD, member management, invitations, and RBAC via `createAccessControl()`.
 - **RLS for data isolation**: `org_id` FK on all business tables. Policy filters by `current_setting('app.current_org_id')`.
 - **Single-tenant mode available**: `VITE_ENABLE_ORGANIZATIONS=false` hides org switcher and creation, behaves like a white-label app. Underlying schema stays multi-tenant-ready.

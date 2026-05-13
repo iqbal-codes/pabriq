@@ -90,7 +90,7 @@ All internal imports MUST use `#/` prefix (e.g. `import { db } from '#/db/index'
 |---|---|---|
 | `DATABASE_URL` | Yes | Neon Postgres connection string |
 | `BETTER_AUTH_SECRET` | Yes | `bunx @better-auth/cli@latest secret` |
-| `BETTER_AUTH_URL` | Yes | e.g. `http://localhost:3000` |
+| `BETTER_AUTH_URL` | Yes | e.g. `http://localhost:3001` |
 | `SENTRY_DSN` | No | Optional monitoring |
 | `R2_*` | No | Cloudflare R2 storage |
 

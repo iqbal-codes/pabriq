@@ -7,6 +7,8 @@ import {
   invoices as invoicesTable,
   orderLineItems,
   orders,
+  organization,
+  organizationProfiles,
   paymentMethods as paymentMethodsTable,
   productionStages,
   productionTasks,
@@ -57,6 +59,9 @@ export type PortalInvoice = {
 export type PortalOrder = {
   id: string
   orgId: string
+  orgName: string
+  orgLogoAssetId: string | null
+  orgPhone: string | null
   status: string
   orderNumber: string | null
   total: number
@@ -298,11 +303,30 @@ export async function getPortalOrder(
     hasPaymentProof: proofSet.has(inv.id),
   }))
 
+  const orgRow = (
+    await db
+      .select({
+        name: organization.name,
+        logoAssetId: organizationProfiles.logoAssetId,
+        phone: organizationProfiles.phone,
+      })
+      .from(organization)
+      .leftJoin(
+        organizationProfiles,
+        eq(organizationProfiles.orgId, organization.id),
+      )
+      .where(eq(organization.id, order.orgId))
+      .limit(1)
+  )[0]
+
   return {
     ok: true,
     order: {
       id: order.id,
       orgId: order.orgId,
+      orgName: orgRow?.name ?? '',
+      orgLogoAssetId: orgRow?.logoAssetId ?? null,
+      orgPhone: orgRow?.phone ?? null,
       status: order.status,
       orderNumber: order.orderNumber,
       total: order.total,

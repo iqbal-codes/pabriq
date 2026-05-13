@@ -6,6 +6,7 @@ import {
   productionStages as stagesTable,
   productionTasks as tasksTable,
 } from '#/db/schema'
+import { advanceOrderStatus } from '#/features/orders/model'
 import { canApproveProductionTask } from '#/features/permissions/model'
 
 export type { Requirement } from '#/db/schema'
@@ -355,6 +356,10 @@ export async function advanceTask(
       actorId,
     })
 
+    if (task.board === 'pre_production') {
+      await advanceOrderStatus(task.orderId, orgId, actorId)
+    }
+
     return { ok: true, pendingApproval: false }
   }
 
@@ -366,7 +371,7 @@ export async function advanceTask(
       .update(tasksTable)
       .set({
         status: 'pending_approval',
-        stageId: nextStage.id,
+        stageId: task.stageId,
         updatedAt: now,
       })
       .where(eq(tasksTable.id, taskId))
@@ -465,6 +470,10 @@ export async function approveTaskAdvance(
       data: { completedRequirements: [] },
       actorId,
     })
+
+    if (task.board === 'pre_production') {
+      await advanceOrderStatus(task.orderId, orgId, actorId)
+    }
 
     return { ok: true, pendingApproval: false }
   }

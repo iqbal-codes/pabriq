@@ -273,14 +273,21 @@ export function TaskDetailModal({
                 />
               </div>
             )}
-          {!showRequirementForm && task.status === 'queued' && (
-            <Button onClick={handleAdvanceClick}>{t('startProduction')}</Button>
+          {!showRequirementForm && task.status === 'queued' && nextStage && (
+            <Button onClick={handleAdvanceClick}>
+              {t('advanceTo', { stage: nextStage.name })}
+            </Button>
           )}
           {!showRequirementForm &&
             task.status === 'in_progress' &&
             nextStage && (
               <Button onClick={handleAdvanceClick}>
-                {t('advanceTo', { stage: nextStage.name })}
+                {nextStage.name === 'Selesai'
+                  ? 'Selesai'
+                  : task.board === 'pre_production' &&
+                      currentStageIndex === activeStages.length - 1
+                    ? t('continueToProduction')
+                    : t('advanceTo', { stage: nextStage.name })}
               </Button>
             )}
           {!showRequirementForm &&

@@ -60,7 +60,7 @@ const ROLE_LABEL_KEYS: Record<
 const BASE_URL =
   process.env.NODE_ENV === 'production'
     ? 'https://app.pabriq.com'
-    : 'http://localhost:3000'
+    : 'http://localhost:3001'
 
 function getInitials(name: string) {
   return name

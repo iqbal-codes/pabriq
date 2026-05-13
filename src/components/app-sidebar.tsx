@@ -116,7 +116,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu>
+        <SidebarMenu className="px-2">
           {navItems.map((item) => (
             <SidebarMenuItem key={item.key}>
               <SidebarMenuButton asChild tooltip={t(item.key)}>
