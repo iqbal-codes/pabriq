@@ -51,7 +51,7 @@ export function useCreatePaymentMethod() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (
-      input: Omit<PaymentMethod, 'id' | 'createdAt' | 'updatedAt'>,
+      input: Omit<PaymentMethod, 'id' | 'orgId' | 'createdAt' | 'updatedAt'>,
     ) => createPaymentMethodFn({ data: input }),
     onSuccess: () => {
       queryClient.invalidateQueries({

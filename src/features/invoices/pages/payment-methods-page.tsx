@@ -90,10 +90,7 @@ export function PaymentMethodsPage() {
           return
         }
       } else {
-        const result = await createPaymentMethod.mutateAsync({
-          orgId: '',
-          ...payload,
-        })
+        const result = await createPaymentMethod.mutateAsync(payload)
         if (!result.ok) {
           toast.error(result.error)
           return

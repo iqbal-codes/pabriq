@@ -106,12 +106,14 @@ export const listPaymentMethodsFn = createServerFn({ method: 'GET' })
 
 export const createPaymentMethodFn = createServerFn({ method: 'POST' })
   .inputValidator(
-    (input: Omit<PaymentMethod, 'id' | 'createdAt' | 'updatedAt'>) => input,
+    (input: Omit<PaymentMethod, 'id' | 'orgId' | 'createdAt' | 'updatedAt'>) =>
+      input,
   )
   .handler(async ({ data }): Promise<MutationResult> => {
+    const orgId = await resolveOrgId()
     try {
       const { createPaymentMethod } = await import('./model')
-      await createPaymentMethod({ ...data, orgId: data.orgId })
+      await createPaymentMethod({ ...data, orgId })
       return { ok: true }
     } catch (e) {
       return {
