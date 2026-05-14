@@ -88,12 +88,17 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   const planMatch = plan.stdout.match(/<plan>([\s\S]*?)<\/plan>/)
   if (!planMatch) {
     throw new Error(
-      'Planning agent did not produce a <plan> tag.\n\n' + plan.stdout,
+      `Planning agent did not produce a <plan> tag.\n\n${plan.stdout}`,
     )
   }
 
+  const planJson = planMatch[1]
+  if (!planJson) {
+    throw new Error('Planning agent produced an empty <plan> tag.')
+  }
+
   // The plan JSON contains an array of issues, each with id, title, branch.
-  const { issues } = JSON.parse(planMatch[1]!) as {
+  const { issues } = JSON.parse(planJson) as {
     issues: { id: string; title: string; branch: string }[]
   }
 
@@ -172,9 +177,10 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
 
   // Log any agents that threw (network error, sandbox crash, etc.).
   for (const [i, outcome] of settled.entries()) {
-    if (outcome.status === 'rejected') {
+    const issue = issues[i]
+    if (outcome.status === 'rejected' && issue) {
       console.error(
-        `  ✗ ${issues[i]!.id} (${issues[i]!.branch}) failed: ${outcome.reason}`,
+        `  ✗ ${issue.id} (${issue.branch}) failed: ${outcome.reason}`,
       )
     }
   }
@@ -182,9 +188,10 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   // Only pass branches that actually produced commits to the merge phase.
   // An agent that ran successfully but made no commits has nothing to merge.
   const completedIssues = settled
-    .map((outcome, i) => ({ outcome, issue: issues[i]! }))
+    .map((outcome, i) => ({ outcome, issue: issues[i] ?? null }))
     .filter(
       (entry) =>
+        entry.issue !== null &&
         entry.outcome.status === 'fulfilled' &&
         entry.outcome.value.commits.length > 0,
     )
