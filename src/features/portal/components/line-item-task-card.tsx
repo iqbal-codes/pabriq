@@ -1,4 +1,4 @@
-import { Paperclip } from 'lucide-react'
+import { FileIcon } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
 import { Badge } from '#/components/ui/badge'
@@ -57,7 +57,7 @@ export function LineItemTaskCard({
             </p>
             {item.assetIds.length > 0 && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Paperclip className="size-3" />
+                <FileIcon className="size-3" />
                 {item.assetIds.length}
               </span>
             )}

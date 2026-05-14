@@ -1,11 +1,11 @@
-import { Phone, User } from "lucide-react";
-import { useTranslations } from "use-intl";
-import { AssetImage } from "#/components/app/asset-image";
+import { Phone, User } from 'lucide-react'
+import { useTranslations } from 'use-intl'
+import { AssetImage } from '#/components/app/asset-image'
 
 interface CustomerInfoCardProps {
-  name: string | null;
-  phone: string | null;
-  photoAssetId: string | null;
+  name: string | null
+  phone: string | null
+  photoAssetId: string | null
 }
 
 export function CustomerInfoCard({
@@ -13,14 +13,14 @@ export function CustomerInfoCard({
   phone,
   photoAssetId,
 }: CustomerInfoCardProps) {
-  const t = useTranslations("portal");
+  const t = useTranslations('portal')
 
-  if (!name) return null;
+  if (!name) return null
 
   return (
     <div className="rounded-lg border border-border bg-card p-4 space-y-2">
       <p className="text-sm font-medium text-card-foreground">
-        {t("customerInfo")}
+        {t('customerInfo')}
       </p>
       <div className="flex items-start gap-3">
         {photoAssetId ? (
@@ -45,5 +45,5 @@ export function CustomerInfoCard({
         </div>
       </div>
     </div>
-  );
+  )
 }
