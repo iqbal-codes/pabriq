@@ -1,12 +1,6 @@
 import { useTranslations } from 'use-intl'
-import {
-  FormActions,
-  FormGrid,
-  FormRoot,
-  useAppForm,
-} from '#/components/app/form'
+import { FormActions, FormRoot, useAppForm } from '#/components/app/form'
 import { Button } from '#/components/ui/button'
-import { Label } from '#/components/ui/label'
 import type { Requirement } from '../model'
 
 type Responses = Record<string, { value: string; assetIds?: string[] }>
