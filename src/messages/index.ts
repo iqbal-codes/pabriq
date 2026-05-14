@@ -1,6 +1,6 @@
-import type { Messages } from './en'
 import en from './en'
 import id from './id'
+import type { Messages } from './types'
 
 export type { Messages }
 export const messages: Record<string, Messages> = { en, id }

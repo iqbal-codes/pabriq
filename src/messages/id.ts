@@ -1,5 +1,6 @@
-import type { Messages } from "./en";
+import type { Messages } from './types'
 
+// biome-ignore format: locale message map is maintained as a dense dictionary
 const id: Messages = {
   auth: {
     signIn: "Masuk",
@@ -590,6 +591,6 @@ const id: Messages = {
     noResults: "Hasil tidak ditemukan",
     loading: "Mencari...",
   },
-};
+}
 
-export default id;
+export default id
