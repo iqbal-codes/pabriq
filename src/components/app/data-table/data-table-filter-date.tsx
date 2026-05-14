@@ -71,7 +71,6 @@ function SingleDateFilter({
           onSelect={(d) => {
             onChange(d ? format(d, DATE_FMT) : null)
           }}
-          initialFocus
         />
       </PopoverContent>
     </Popover>
@@ -133,7 +132,6 @@ function RangeDateFilter({
               to: r?.to ? format(r.to, DATE_FMT) : null,
             })
           }}
-          initialFocus
           numberOfMonths={2}
         />
       </PopoverContent>
