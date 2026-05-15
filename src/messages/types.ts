@@ -301,6 +301,7 @@ export type Messages = {
     redirecting: string;
     logoPhoto: string;
     logoPhotoHint: string;
+    clickToUpload: string;
   };
   sidebar: {
     dashboard: string;

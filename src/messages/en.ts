@@ -218,6 +218,7 @@ const en: Messages = {
     redirecting: "Redirecting...",
     logoPhoto: "Organization Photo",
     logoPhotoHint: "PNG, JPG, or WebP up to 5MB",
+    clickToUpload: "Click to upload a photo",
   },
   sidebar: {
     dashboard: "Dashboard",

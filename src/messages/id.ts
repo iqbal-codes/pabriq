@@ -218,6 +218,7 @@ const id: Messages = {
     redirecting: "Mengarahkan...",
     logoPhoto: "Foto Organisasi",
     logoPhotoHint: "PNG, JPG, atau WebP hingga 5MB",
+    clickToUpload: "Klik untuk unggah foto",
   },
   sidebar: {
     dashboard: "Dasbor",

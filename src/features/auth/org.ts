@@ -57,10 +57,12 @@ function randomSuffix() {
   return Math.random().toString(36).substring(2, 6)
 }
 
-type CreateOrgResult = { ok: true } | { ok: false; error: string }
+type CreateOrgResult =
+  | { ok: true; orgId: string }
+  | { ok: false; error: string }
 
 export const createOrganization = createServerFn({ method: 'POST' })
-  .inputValidator((input: { name: string; logoAssetId?: string }) => input)
+  .inputValidator((input: { name: string }) => input)
   .handler(async ({ data }): Promise<CreateOrgResult> => {
     const auth = await import('#/lib/auth').then((m) => m.auth)
     const headers = getRequestHeaders()
@@ -77,24 +79,18 @@ export const createOrganization = createServerFn({ method: 'POST' })
           body: { name: trimmed, slug: trySlug },
         })
 
-        if (data.logoAssetId) {
-          const { db } = await import('#/db/index')
-          const orgs = await db
-            .select({ id: organizationTable.id })
-            .from(organizationTable)
-            .where(eq(organizationTable.slug, trySlug))
-            .limit(1)
+        const { db } = await import('#/db/index')
+        const orgs = await db
+          .select({ id: organizationTable.id })
+          .from(organizationTable)
+          .where(eq(organizationTable.slug, trySlug))
+          .limit(1)
 
-          if (orgs[0]) {
-            await db.insert(organizationProfiles).values({
-              id: crypto.randomUUID(),
-              orgId: orgs[0].id,
-              logoAssetId: data.logoAssetId,
-            })
-          }
+        if (orgs[0]) {
+          return { ok: true, orgId: orgs[0].id }
         }
 
-        return { ok: true }
+        return { ok: false, error: 'creation_failed' }
       } catch (err: unknown) {
         const msg =
           err instanceof Error ? err.message.toLowerCase() : String(err)
@@ -106,3 +102,37 @@ export const createOrganization = createServerFn({ method: 'POST' })
 
     return { ok: false, error: 'name_taken' }
   })
+
+export const setOrganizationLogo = createServerFn({ method: 'POST' })
+  .inputValidator((input: { orgId: string; logoAssetId: string }) => input)
+  .handler(
+    async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
+      const { db } = await import('#/db/index')
+      const { organizationProfiles } = await import('#/db/schema')
+
+      try {
+        const existing = await db
+          .select({ id: organizationProfiles.id })
+          .from(organizationProfiles)
+          .where(eq(organizationProfiles.orgId, data.orgId))
+          .limit(1)
+
+        if (existing[0]) {
+          await db
+            .update(organizationProfiles)
+            .set({ logoAssetId: data.logoAssetId })
+            .where(eq(organizationProfiles.orgId, data.orgId))
+        } else {
+          await db.insert(organizationProfiles).values({
+            id: crypto.randomUUID(),
+            orgId: data.orgId,
+            logoAssetId: data.logoAssetId,
+          })
+        }
+
+        return { ok: true }
+      } catch {
+        return { ok: false, error: 'Failed to set organization logo' }
+      }
+    },
+  )

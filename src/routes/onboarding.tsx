@@ -1,14 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { ImageIcon, X } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { useDropzone } from 'react-dropzone'
 import { useTranslations } from 'use-intl'
-import {
-  createR2UploaderAdapter,
-  getAcceptedMimeTypes,
-  getMaxBytes,
-  PhotoGridUpload,
-} from '#/components/app/asset-upload'
 import { useAppForm } from '#/components/app/form'
+import { Button } from '#/components/ui/button'
 import {
   Card,
   CardContent,
@@ -16,9 +13,14 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
-import type { UploadItem } from '#/features/assets/upload-machine'
-import { createOrganization, listUserOrgs } from '#/features/auth/org'
+import { finalizeUpload, getUploadUrl } from '#/features/assets/server'
+import {
+  createOrganization,
+  listUserOrgs,
+  setOrganizationLogo,
+} from '#/features/auth/org'
 import { getCurrentSession } from '#/lib/auth-session'
+import { cn } from '#/lib/utils'
 
 const ERROR_MAP: Record<string, 'nameInvalid' | 'creationFailed' | 'taken'> = {
   name_invalid: 'nameInvalid',
@@ -36,8 +38,7 @@ export const Route = createFileRoute('/onboarding')({
   component: OnboardingPage,
 })
 
-const ACCEPTED_LOGO_MIMES = getAcceptedMimeTypes('logo')
-const MAX_LOGO_BYTES = getMaxBytes('logo')
+const MAX_LOGO_BYTES = 5 * 1024 * 1024
 
 function OnboardingPage() {
   const t = useTranslations('org')
@@ -55,36 +56,88 @@ function OnboardingPage() {
   }, [orgs, navigate])
 
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [uploadedLogoAssetId, setUploadedLogoAssetId] = useState<string | null>(
-    null,
-  )
-  const [uploadItems, setUploadItems] = useState<UploadItem[]>([])
+  const [logoFile, setLogoFile] = useState<File | null>(null)
 
-  const adapter = useMemo(
-    () =>
-      createR2UploaderAdapter({
-        ownerType: 'organization',
-        usage: 'logo',
-      }),
-    [],
-  )
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      setLogoFile(acceptedFiles[0])
+    }
+  }, [])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/png': [],
+      'image/jpeg': [],
+      'image/webp': [],
+    },
+    maxFiles: 1,
+    multiple: false,
+  })
 
   const form = useAppForm({
     defaultValues: { name: '' },
     onSubmit: async ({ value }) => {
       setSubmitError(null)
 
+      // Step 1: Create organization first
       const result = await createOrganization({
-        data: {
-          name: value.name,
-          logoAssetId: uploadedLogoAssetId ?? undefined,
-        },
+        data: { name: value.name },
       })
 
       if (!result.ok) {
         const key = ERROR_MAP[result.error as keyof typeof ERROR_MAP]
         setSubmitError(key ? t(key) : t('creationFailed'))
         return
+      }
+
+      // Step 2: Upload logo if user selected one
+      // resolveOrgId() now works because createOrganization added user as member ✅
+      if (logoFile && logoFile.size <= MAX_LOGO_BYTES) {
+        try {
+          const { uploadUrl, storageKey, assetId } = await getUploadUrl({
+            data: {
+              fileName: logoFile.name,
+              fileType: logoFile.type || 'image/png',
+              fileSize: logoFile.size,
+              ownerType: 'organization',
+              ownerId: result.orgId,
+              usage: 'logo',
+            },
+          })
+
+          const arrayBuffer = await logoFile.arrayBuffer()
+          await fetch(uploadUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': logoFile.type || 'image/png' },
+            body: arrayBuffer,
+          })
+
+          const finalized = await finalizeUpload({
+            data: {
+              assetId,
+              ownerType: 'organization',
+              ownerId: result.orgId,
+              usage: 'logo',
+              originalFilename: logoFile.name,
+              mimeType: logoFile.type || 'image/png',
+              sizeBytes: logoFile.size,
+              storageKeyOriginal: storageKey,
+              variantOriginalMimeType: logoFile.type || 'image/png',
+              variantOriginalSizeBytes: logoFile.size,
+            },
+          })
+
+          await setOrganizationLogo({
+            data: {
+              orgId: result.orgId,
+              logoAssetId: finalized.assetId,
+            },
+          })
+        } catch (err) {
+          // Logo upload failed but org was created - still redirect
+          console.error('Logo upload failed:', err)
+        }
       }
 
       navigate({ to: '/' })
@@ -124,21 +177,44 @@ function OnboardingPage() {
           >
             <div className="mb-6">
               <p className="text-sm font-medium mb-2">{t('logoPhoto')}</p>
-              <PhotoGridUpload
-                items={uploadItems}
-                onItemsChange={(items) => setUploadItems(items)}
-                config={{
-                  ownerType: 'organization',
-                  usage: 'logo',
-                  maxFiles: 1,
-                }}
-                adapter={adapter}
-                acceptedMimeTypes={ACCEPTED_LOGO_MIMES}
-                maxBytes={MAX_LOGO_BYTES}
-                onUploadComplete={({ assetId }) =>
-                  setUploadedLogoAssetId(assetId)
-                }
-              />
+              <div className="flex flex-wrap gap-2">
+                {!logoFile ? (
+                  <div
+                    {...getRootProps()}
+                    className={cn(
+                      'size-24 rounded-lg border-2 border-dashed flex items-center justify-center bg-muted transition-colors cursor-pointer shrink-0',
+                      isDragActive
+                        ? 'border-primary bg-primary/5'
+                        : 'border-muted',
+                    )}
+                  >
+                    <input {...getInputProps()} />
+                    <ImageIcon className="size-6 text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="relative size-24 rounded-lg border bg-background overflow-hidden group shrink-0">
+                    <img
+                      src={URL.createObjectURL(logoFile)}
+                      alt={logoFile.name}
+                      className="object-cover w-full h-full"
+                    />
+                    <div className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="size-5"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setLogoFile(null)
+                        }}
+                      >
+                        <X className="size-2.5" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {t('logoPhotoHint')}
               </p>
