@@ -1,11 +1,11 @@
-'use client'
+"use client";
 
-import { CheckIcon, ChevronsUpDownIcon, XIcon } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
-import { useTranslations } from 'use-intl'
+import { CheckIcon, ChevronsUpDownIcon, XIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "use-intl";
 
-import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
+import { Badge } from "#/components/ui/badge";
+import { Button } from "#/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -13,18 +13,23 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '#/components/ui/command'
+} from "#/components/ui/command";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupText,
+} from "#/components/ui/input-group";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '#/components/ui/popover'
-import { Spinner } from '#/components/ui/spinner'
-import { cn } from '#/lib/utils'
+} from "#/components/ui/popover";
+import { Spinner } from "#/components/ui/spinner";
+import { cn } from "#/lib/utils";
 
-import { useFieldContext } from './form-context'
-import type { ComboboxFieldProps, ComboboxOption } from './form-fields-shared'
-import { firstError } from './form-utils'
+import { useFieldContext } from "./form-context";
+import type { ComboboxFieldProps, ComboboxOption } from "./form-fields-shared";
+import { firstError } from "./form-utils";
 
 function useFiltered(
   options: ComboboxOption[],
@@ -32,13 +37,13 @@ function useFiltered(
   clientSide: boolean,
 ) {
   return useMemo(() => {
-    if (!clientSide || !query) return options
-    const q = query.toLowerCase()
+    if (!clientSide || !query) return options;
+    const q = query.toLowerCase();
     return options.filter(
       (o) =>
         o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q),
-    )
-  }, [options, query, clientSide])
+    );
+  }, [options, query, clientSide]);
 }
 
 function defaultItemRender(opt: ComboboxOption) {
@@ -49,7 +54,7 @@ function defaultItemRender(opt: ComboboxOption) {
         <span className="text-xs text-muted-foreground">{opt.description}</span>
       )}
     </div>
-  )
+  );
 }
 
 function ComboboxFieldSingle({
@@ -57,245 +62,73 @@ function ComboboxFieldSingle({
   placeholder,
   optional,
   optionalLabel,
-  disabled,
   options: staticOptions,
   search,
   searchDelay = 300,
   itemRender,
 }: ComboboxFieldProps) {
-  const field = useFieldContext<string>()
-  const error = firstError(field.state.meta.errors)
-  const t = useTranslations('combobox')
-  const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('')
-  const [debouncedQuery, setDebouncedQuery] = useState('')
-  const [knownOptions, setKnownOptions] = useState<ComboboxOption[]>([])
-  const [isFetching, setIsFetching] = useState(false)
+  const field = useFieldContext<string>();
+  const error = firstError(field.state.meta.errors);
+  const t = useTranslations("combobox");
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [knownOptions, setKnownOptions] = useState<ComboboxOption[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
     if (staticOptions) {
-      setKnownOptions(staticOptions)
+      setKnownOptions(staticOptions);
     }
-  }, [staticOptions])
+  }, [staticOptions]);
 
   useEffect(() => {
-    if (!search || !debouncedQuery) return
-    let cancelled = false
-    setIsFetching(true)
+    if (!search || !debouncedQuery) return;
+    let cancelled = false;
+    setIsFetching(true);
     search(debouncedQuery).then((results) => {
-      if (cancelled) return
+      if (cancelled) return;
       setKnownOptions((prev) => {
-        const map = new Map(prev.map((o) => [o.value, o]))
+        const map = new Map(prev.map((o) => [o.value, o]));
         for (const opt of results) {
-          map.set(opt.value, opt)
+          map.set(opt.value, opt);
         }
-        return Array.from(map.values())
-      })
-      setIsFetching(false)
-    })
+        return Array.from(map.values());
+      });
+      setIsFetching(false);
+    });
     return () => {
-      cancelled = true
-    }
-  }, [debouncedQuery, search])
+      cancelled = true;
+    };
+  }, [debouncedQuery, search]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), searchDelay)
-    return () => clearTimeout(timer)
-  }, [query, searchDelay])
+    const timer = setTimeout(() => setDebouncedQuery(query), searchDelay);
+    return () => clearTimeout(timer);
+  }, [query, searchDelay]);
 
-  const value = field.state.value
-  const activeOptions = staticOptions ?? knownOptions
-  const clientSide = !!staticOptions
-  const filtered = useFiltered(activeOptions, query, clientSide)
+  const value = field.state.value;
+  const activeOptions = staticOptions ?? knownOptions;
+  const clientSide = !!staticOptions;
+  const filtered = useFiltered(activeOptions, query, clientSide);
   const selectedLabel = value
     ? (knownOptions.find((o) => o.value === value)?.label ?? value)
-    : null
+    : null;
 
   function handleSelect(selectedValue: string) {
-    field.handleChange(selectedValue)
-    setQuery('')
-    setOpen(false)
-    field.handleBlur()
+    field.handleChange(selectedValue);
+    setQuery("");
+    setOpen(false);
+    field.handleBlur();
   }
 
   function handleClear(e: React.MouseEvent) {
-    e.stopPropagation()
-    field.handleChange('')
-    setQuery('')
-    setDebouncedQuery('')
-    field.handleBlur()
+    e.stopPropagation();
+    field.handleChange("");
+    setQuery("");
+    setDebouncedQuery("");
+    field.handleBlur();
   }
-
-  return (
-    <div data-invalid={!!error}>
-      {label && (
-        <label htmlFor={field.name} className="text-sm font-medium">
-          {label}
-          {optional && optionalLabel && (
-            <span className="text-muted-foreground font-normal">
-              {optionalLabel}
-            </span>
-          )}
-        </label>
-      )}
-      <div className="mt-1">
-        <Popover open={open} onOpenChange={setOpen}>
-          <div className="relative">
-            <PopoverTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                role="combobox"
-                aria-expanded={open}
-                className="w-full justify-between font-normal"
-                disabled={disabled}
-              >
-                {selectedLabel ? (
-                  <span className="truncate">{selectedLabel}</span>
-                ) : (
-                  <span className="text-muted-foreground">{placeholder}</span>
-                )}
-                <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            {value && (
-              <XIcon
-                className="absolute right-3 top-1/2 size-4 -translate-y-1/2 cursor-pointer opacity-50 hover:opacity-100"
-                onClick={handleClear}
-              />
-            )}
-          </div>
-          <PopoverContent
-            className="p-0"
-            style={{ width: 'var(--radix-popover-trigger-width)' }}
-            align="start"
-          >
-            <Command shouldFilter={false}>
-              <CommandInput
-                placeholder={placeholder ?? t('searchPlaceholder')}
-                value={query}
-                onValueChange={setQuery}
-              />
-              <CommandList>
-                {isFetching && (
-                  <div className="flex items-center justify-center gap-2 px-3 py-6 text-sm text-muted-foreground">
-                    <Spinner className="size-4" />
-                    <span>{t('loading')}</span>
-                  </div>
-                )}
-                {!isFetching && query && search && filtered.length === 0 && (
-                  <CommandEmpty>{t('noResults')}</CommandEmpty>
-                )}
-                {filtered.length > 0 && (
-                  <CommandGroup>
-                    {filtered.map((opt) => (
-                      <CommandItem
-                        key={opt.value}
-                        value={opt.value}
-                        onSelect={() => handleSelect(opt.value)}
-                      >
-                        <div className="flex-1">
-                          {itemRender
-                            ? itemRender(opt, value === opt.value)
-                            : defaultItemRender(opt)}
-                        </div>
-                        <CheckIcon
-                          className={cn(
-                            'mx-2 size-4',
-                            value === opt.value ? 'opacity-100' : 'opacity-0',
-                          )}
-                        />
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                )}
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-      </div>
-      {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
-    </div>
-  )
-}
-
-function ComboboxFieldMulti({
-  label,
-  placeholder,
-  optional,
-  optionalLabel,
-  disabled,
-  options: staticOptions,
-  search,
-  searchDelay = 300,
-  itemRender,
-}: ComboboxFieldProps) {
-  const field = useFieldContext<string[]>()
-  const error = firstError(field.state.meta.errors)
-  const t = useTranslations('combobox')
-  const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('')
-  const [debouncedQuery, setDebouncedQuery] = useState('')
-  const [knownOptions, setKnownOptions] = useState<ComboboxOption[]>([])
-  const [isFetching, setIsFetching] = useState(false)
-
-  useEffect(() => {
-    if (staticOptions) {
-      setKnownOptions(staticOptions)
-    }
-  }, [staticOptions])
-
-  useEffect(() => {
-    if (!search || !debouncedQuery) return
-    let cancelled = false
-    setIsFetching(true)
-    search(debouncedQuery).then((results) => {
-      if (cancelled) return
-      setKnownOptions((prev) => {
-        const map = new Map(prev.map((o) => [o.value, o]))
-        for (const opt of results) {
-          map.set(opt.value, opt)
-        }
-        return Array.from(map.values())
-      })
-      setIsFetching(false)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [debouncedQuery, search])
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), searchDelay)
-    return () => clearTimeout(timer)
-  }, [query, searchDelay])
-
-  const values = field.state.value ?? []
-  const activeOptions = staticOptions ?? knownOptions
-  const clientSide = !!staticOptions
-  const filtered = useFiltered(activeOptions, query, clientSide)
-
-  function handleSelect(selectedValue: string) {
-    const next = values.includes(selectedValue)
-      ? values.filter((v) => v !== selectedValue)
-      : [...values, selectedValue]
-    field.handleChange(next)
-    setQuery('')
-    field.handleBlur()
-  }
-
-  function handleRemove(removeValue: string, e: React.MouseEvent) {
-    e.stopPropagation()
-    field.handleChange(values.filter((v) => v !== removeValue))
-    field.handleBlur()
-  }
-
-  function getLabel(val: string): string {
-    return knownOptions.find((o) => o.value === val)?.label ?? val
-  }
-
-  const visible = values.slice(0, 3)
-  const overflow = values.length - 3
 
   return (
     <div data-invalid={!!error}>
@@ -312,55 +145,48 @@ function ComboboxFieldMulti({
       <div className="mt-1">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <div
-              role="combobox"
-              aria-expanded={open}
-              aria-disabled={disabled || undefined}
-              tabIndex={disabled ? -1 : 0}
-              className={cn(
-                'flex h-auto min-h-10 w-full items-center justify-between gap-1.5 rounded-lg border bg-background px-4 py-2 text-sm font-normal shadow-xs transition-all outline-none',
-                'hover:bg-accent hover:text-accent-foreground',
-                'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                'dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
-                "[&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-                disabled ? 'pointer-events-none opacity-50' : 'cursor-default',
-              )}
-            >
-              <div className="flex flex-wrap gap-1">
-                {values.length > 0 ? (
-                  <>
-                    {visible.map((v) => (
-                      <Badge
-                        key={v}
-                        variant="secondary"
-                        className="gap-1 whitespace-nowrap"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {getLabel(v)}
-                        <XIcon
-                          className="size-3 cursor-pointer"
-                          onClick={(e) => handleRemove(v, e)}
-                        />
-                      </Badge>
-                    ))}
-                    {overflow > 0 && (
-                      <Badge variant="secondary">+{overflow}</Badge>
-                    )}
-                  </>
+            <InputGroup>
+              <InputGroupText
+                className={cn(
+                  "w-full cursor-default",
+                  !selectedLabel && "text-muted-foreground",
+                )}
+              >
+                {selectedLabel ? (
+                  <span className="truncate">{selectedLabel}</span>
                 ) : (
                   <span className="text-muted-foreground">{placeholder}</span>
                 )}
-              </div>
-              <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
-            </div>
+              </InputGroupText>
+              {value && (
+                <InputGroupAddon align="inline-end" className="cursor-default!">
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    type="button"
+                    className="cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleClear(e);
+                    }}
+                  >
+                    <XIcon className="size-4 opacity-50 hover:opacity-100" />
+                  </Button>
+                </InputGroupAddon>
+              )}
+              <InputGroupAddon align="inline-end" className="cursor-default!">
+                <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
+              </InputGroupAddon>
+            </InputGroup>
           </PopoverTrigger>
           <PopoverContent
-            className="w-[--radix-popover-trigger-width] p-0"
+            className="p-0"
+            style={{ width: "var(--radix-popover-trigger-width)" }}
             align="start"
           >
             <Command shouldFilter={false}>
               <CommandInput
-                placeholder={placeholder ?? t('searchPlaceholder')}
+                placeholder={placeholder ?? t("searchPlaceholder")}
                 value={query}
                 onValueChange={setQuery}
               />
@@ -368,16 +194,194 @@ function ComboboxFieldMulti({
                 {isFetching && (
                   <div className="flex items-center justify-center gap-2 px-3 py-6 text-sm text-muted-foreground">
                     <Spinner className="size-4" />
-                    <span>{t('loading')}</span>
+                    <span>{t("loading")}</span>
                   </div>
                 )}
                 {!isFetching && query && search && filtered.length === 0 && (
-                  <CommandEmpty>{t('noResults')}</CommandEmpty>
+                  <CommandEmpty>{t("noResults")}</CommandEmpty>
+                )}
+                {filtered.length > 0 && (
+                  <CommandGroup>
+                    {filtered.map((opt) => (
+                      <CommandItem
+                        key={opt.value}
+                        value={opt.value}
+                        onSelect={() => handleSelect(opt.value)}
+                      >
+                        <div className="flex-1">
+                          {itemRender
+                            ? itemRender(opt, value === opt.value)
+                            : defaultItemRender(opt)}
+                        </div>
+                        <CheckIcon
+                          className={cn(
+                            "mx-2 size-4",
+                            value === opt.value ? "opacity-100" : "opacity-0",
+                          )}
+                        />
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+      {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
+    </div>
+  );
+}
+
+function ComboboxFieldMulti({
+  label,
+  placeholder,
+  optional,
+  optionalLabel,
+  options: staticOptions,
+  search,
+  searchDelay = 300,
+  itemRender,
+}: ComboboxFieldProps) {
+  const field = useFieldContext<string[]>();
+  const error = firstError(field.state.meta.errors);
+  const t = useTranslations("combobox");
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [knownOptions, setKnownOptions] = useState<ComboboxOption[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
+
+  useEffect(() => {
+    if (staticOptions) {
+      setKnownOptions(staticOptions);
+    }
+  }, [staticOptions]);
+
+  useEffect(() => {
+    if (!search || !debouncedQuery) return;
+    let cancelled = false;
+    setIsFetching(true);
+    search(debouncedQuery).then((results) => {
+      if (cancelled) return;
+      setKnownOptions((prev) => {
+        const map = new Map(prev.map((o) => [o.value, o]));
+        for (const opt of results) {
+          map.set(opt.value, opt);
+        }
+        return Array.from(map.values());
+      });
+      setIsFetching(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery, search]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), searchDelay);
+    return () => clearTimeout(timer);
+  }, [query, searchDelay]);
+
+  const values = field.state.value ?? [];
+  const activeOptions = staticOptions ?? knownOptions;
+  const clientSide = !!staticOptions;
+  const filtered = useFiltered(activeOptions, query, clientSide);
+
+  function handleSelect(selectedValue: string) {
+    const next = values.includes(selectedValue)
+      ? values.filter((v) => v !== selectedValue)
+      : [...values, selectedValue];
+    field.handleChange(next);
+    setQuery("");
+    field.handleBlur();
+  }
+
+  function handleRemove(removeValue: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    field.handleChange(values.filter((v) => v !== removeValue));
+    field.handleBlur();
+  }
+
+  function getLabel(val: string): string {
+    return knownOptions.find((o) => o.value === val)?.label ?? val;
+  }
+
+  const visible = values.slice(0, 3);
+  const overflow = values.length - 3;
+
+  return (
+    <div data-invalid={!!error}>
+      {label && (
+        <label htmlFor={field.name} className="text-sm font-medium">
+          {label}
+          {optional && optionalLabel && (
+            <span className="text-muted-foreground font-normal">
+              {optionalLabel}
+            </span>
+          )}
+        </label>
+      )}
+      <div className="mt-1">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <InputGroup>
+              <InputGroupText className="cursor-default">
+                <div className="flex flex-wrap gap-1">
+                  {values.length > 0 ? (
+                    <>
+                      {visible.map((v) => (
+                        <Badge
+                          key={v}
+                          variant="secondary"
+                          className="gap-1 whitespace-nowrap"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {getLabel(v)}
+                          <XIcon
+                            className="size-3 cursor-pointer"
+                            onClick={(e) => handleRemove(v, e)}
+                          />
+                        </Badge>
+                      ))}
+                      {overflow > 0 && (
+                        <Badge variant="secondary">+{overflow}</Badge>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">{placeholder}</span>
+                  )}
+                </div>
+              </InputGroupText>
+              <InputGroupAddon align="inline-end" className="cursor-default!">
+                <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
+              </InputGroupAddon>
+            </InputGroup>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-[--radix-popover-trigger-width] p-0"
+            align="start"
+          >
+            <Command shouldFilter={false}>
+              <CommandInput
+                placeholder={placeholder ?? t("searchPlaceholder")}
+                value={query}
+                onValueChange={setQuery}
+              />
+              <CommandList>
+                {isFetching && (
+                  <div className="flex items-center justify-center gap-2 px-3 py-6 text-sm text-muted-foreground">
+                    <Spinner className="size-4" />
+                    <span>{t("loading")}</span>
+                  </div>
+                )}
+                {!isFetching && query && search && filtered.length === 0 && (
+                  <CommandEmpty>{t("noResults")}</CommandEmpty>
                 )}
                 {filtered.length > 0 && (
                   <CommandGroup>
                     {filtered.map((opt) => {
-                      const isSelected = values.includes(opt.value)
+                      const isSelected = values.includes(opt.value);
                       return (
                         <CommandItem
                           key={opt.value}
@@ -386,15 +390,15 @@ function ComboboxFieldMulti({
                         >
                           <CheckIcon
                             className={cn(
-                              'mr-2 size-4',
-                              isSelected ? 'opacity-100' : 'opacity-0',
+                              "mr-2 size-4",
+                              isSelected ? "opacity-100" : "opacity-0",
                             )}
                           />
                           {itemRender
                             ? itemRender(opt, isSelected)
                             : defaultItemRender(opt)}
                         </CommandItem>
-                      )
+                      );
                     })}
                   </CommandGroup>
                 )}
@@ -405,13 +409,13 @@ function ComboboxFieldMulti({
       </div>
       {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
     </div>
-  )
+  );
 }
 
 export function ComboboxField(props: ComboboxFieldProps) {
-  if (props.mode === 'multi') {
-    return <ComboboxFieldMulti {...props} />
+  if (props.mode === "multi") {
+    return <ComboboxFieldMulti {...props} />;
   }
 
-  return <ComboboxFieldSingle {...props} />
+  return <ComboboxFieldSingle {...props} />;
 }
