@@ -8,7 +8,7 @@ interface PortalHeaderProps {
 
 export function PortalHeader({ orgLogoAssetId, title }: PortalHeaderProps) {
   return (
-    <header className="flex items-center gap-3 border-b border-border bg-card px-4 py-3">
+    <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-card px-4 py-3">
       {orgLogoAssetId ? (
         <AssetImage
           assetId={orgLogoAssetId}

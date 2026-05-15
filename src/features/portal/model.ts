@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, inArray, or } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   addresses,
@@ -647,6 +647,14 @@ export type OrderTaskEvent = {
   fromStageName: string | null
   toStageName: string | null
   createdAt: Date
+  requirementResponses?: Array<{
+    stageName: string
+    responses: Array<{
+      requirementName: string
+      value?: string
+      assetIds?: string[]
+    }>
+  }>
 }
 
 export async function getOrderTasksTimeline(
@@ -656,9 +664,14 @@ export async function getOrderTasksTimeline(
   if (!orderResult.ok) throw new Error('Invalid token')
 
   const allStages = await db
-    .select({ id: productionStages.id, name: productionStages.name })
+    .select({
+      id: productionStages.id,
+      name: productionStages.name,
+      requirements: productionStages.requirements,
+    })
     .from(productionStages)
     .where(eq(productionStages.orgId, orderResult.order.orgId))
+
 
   const stageNameMap = new Map(allStages.map((s) => [s.id, s.name]))
 
@@ -668,11 +681,14 @@ export async function getOrderTasksTimeline(
       taskNumber: productionTasks.taskNumber,
       lineItemId: productionTasks.lineItemId,
       context: productionTasks.context,
+      stageId: productionTasks.stageId,
     })
     .from(productionTasks)
     .where(eq(productionTasks.orderId, orderResult.order.id))
 
   if (tasks.length === 0) return []
+
+  const taskIds = tasks.map((t) => t.id)
 
   const activities = await db
     .select({
@@ -681,38 +697,133 @@ export async function getOrderTasksTimeline(
       type: taskActivity.type,
       fromStageId: taskActivity.fromStageId,
       toStageId: taskActivity.toStageId,
+      data: taskActivity.data,
       createdAt: taskActivity.createdAt,
     })
     .from(taskActivity)
     .where(
       and(
-        inArray(
-          taskActivity.taskId,
-          tasks.map((t) => t.id),
+        inArray(taskActivity.taskId, taskIds),
+        or(
+          eq(taskActivity.type, 'stage_transition'),
+          eq(taskActivity.type, 'created'),
+          eq(taskActivity.type, 'completed'),
         ),
-        eq(taskActivity.type, 'stage_transition'),
       ),
     )
-    .orderBy(desc(taskActivity.createdAt))
+    .orderBy(asc(taskActivity.createdAt))
 
-  const taskMap = new Map(tasks.map((t) => [t.id, t]))
-
-  return activities.map((act) => {
-    const task = taskMap.get(act.taskId)
-    return {
-      id: act.id,
-      taskId: act.taskId,
-      lineItemId: task?.lineItemId ?? null,
-      taskNumber: task?.taskNumber ?? null,
-      productName: task?.context?.productName ?? '',
-      type: act.type,
-      fromStageName: act.fromStageId
-        ? (stageNameMap.get(act.fromStageId) ?? null)
-        : null,
-      toStageName: act.toStageId
-        ? (stageNameMap.get(act.toStageId) ?? null)
-        : null,
-      createdAt: act.createdAt,
+  // Fetch stage requirements for context
+  const stageReqMap = new Map<string, Array<{ name: string; type: string }>>()
+  for (const stage of allStages) {
+    const requirements = stage.requirements as unknown as Array<{
+      name: string
+      type: string
+    }> | null
+    if (requirements && requirements.length > 0) {
+      stageReqMap.set(stage.id, requirements)
     }
-  })
+  }
+
+  const events: OrderTaskEvent[] = []
+
+  for (const task of tasks) {
+    const taskActivities = activities.filter((a) => a.taskId === task.id)
+
+    // Add task created event
+    const createdActivity = taskActivities.find((a) => a.type === 'created')
+    if (createdActivity) {
+      events.push({
+        id: createdActivity.id,
+        taskId: task.id,
+        lineItemId: task.lineItemId,
+        taskNumber: task.taskNumber ?? null,
+        productName: task.context?.productName ?? '',
+        type: 'created',
+        fromStageName: null,
+        toStageName: stageNameMap.get(task.stageId ?? '') ?? null,
+        createdAt: createdActivity.createdAt,
+      })
+    }
+
+    // Add stage transition events (excluding created/completed as they're handled separately)
+    const transitions = taskActivities
+      .filter((a) => a.type === 'stage_transition')
+      .sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      )
+
+    for (const trans of transitions) {
+      const toStageId = trans.toStageId ?? ''
+      const stageReqs = stageReqMap.get(toStageId) ?? []
+      const activityData = trans.data as Record<string, unknown> | null
+      const requirementResponses = activityData?.responses as Array<{
+        requirementIndex: number
+        value?: string
+        assetIds?: string[]
+      }> | null
+
+      const formattedResponses = stageReqs.map((req, idx) => {
+        const response = requirementResponses?.find(
+          (r) => r.requirementIndex === idx,
+        )
+        return {
+          requirementName: req.name,
+          value: response?.value as string | undefined,
+          assetIds: response?.assetIds as string[] | undefined,
+        }
+      })
+
+      const hasResponses = formattedResponses.some(
+        (r) => r.value || (r.assetIds && r.assetIds.length > 0),
+      )
+
+      events.push({
+        id: trans.id,
+        taskId: task.id,
+        lineItemId: task.lineItemId,
+        taskNumber: task.taskNumber ?? null,
+        productName: task.context?.productName ?? '',
+        type: 'stage_transition',
+        fromStageName: trans.fromStageId
+          ? (stageNameMap.get(trans.fromStageId) ?? null)
+          : null,
+        toStageName: trans.toStageId
+          ? (stageNameMap.get(trans.toStageId) ?? null)
+          : null,
+        createdAt: trans.createdAt,
+        requirementResponses: hasResponses
+          ? [
+              {
+                stageName:
+                  stageNameMap.get(toStageId) ??
+                  (trans.toStageId ?? 'Unknown Stage'),
+                responses: formattedResponses,
+              },
+            ]
+          : undefined,
+      })
+    }
+
+    // Add task completed event
+    const completedActivity = taskActivities.find((a) => a.type === 'completed')
+    if (completedActivity) {
+      events.push({
+        id: completedActivity.id,
+        taskId: task.id,
+        lineItemId: task.lineItemId,
+        taskNumber: task.taskNumber ?? null,
+        productName: task.context?.productName ?? '',
+        type: 'completed',
+        fromStageName: stageNameMap.get(task.stageId ?? '') ?? null,
+        toStageName: null,
+        createdAt: completedActivity.createdAt,
+      })
+    }
+  }
+
+  return events.sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  )
 }

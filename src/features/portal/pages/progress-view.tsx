@@ -24,13 +24,14 @@ export function ProgressView({
 }) {
   const t = useTranslations('portal')
   const locale = useLocale()
-  const { data: timelineEvents } = useOrderTimeline(
-    order.status === 'production' ||
-      order.status === 'in_delivery' ||
-      order.status === 'completed'
-      ? token
-      : '',
-  )
+
+  const shouldFetchTimeline =
+    token &&
+    ['production', 'in_delivery', 'completed', 'approved', 'in_progress'].includes(
+      order.status,
+    )
+
+  const { data: timelineEvents } = useOrderTimeline(shouldFetchTimeline ? token : '')
 
   const getUploadUrl = usePortalGetInvoiceUploadUrl()
   const submitProof = useSubmitPaymentProof()
