@@ -7,11 +7,8 @@ import {
   orders as ordersTable,
   products as productsTable,
 } from '#/db/schema'
+import type { ShippingAddress } from '#/features/address/model'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
-import {
-  archiveBoardTasks,
-  spawnProductionTasks,
-} from '#/features/production/spawner'
 import { listBreakpoints } from '#/features/products/model'
 
 export type Order = {
@@ -33,6 +30,7 @@ export type Order = {
   trackingNumber: string | null
   shippedAt: Date | null
   deliveredAt: Date | null
+  shippingAddress: ShippingAddress | null
   createdAt: Date
   updatedAt: Date
 }
@@ -101,6 +99,7 @@ export type GetOrderResult = {
   customerPhone: string | null
   customerPhotoAssetId: string | null
   customerEmail: string | null
+  shippingAddress: ShippingAddress | null
 }
 
 export type OrderRow = {
@@ -304,6 +303,7 @@ export async function getOrder(
     customerPhone: customer?.phone ?? null,
     customerPhotoAssetId: customer?.photoAssetId ?? null,
     customerEmail: customer?.email ?? null,
+    shippingAddress: (orderRows[0].shippingAddress ?? null) as ShippingAddress | null,
   }
 }
 
@@ -425,6 +425,7 @@ export async function createDraftOrder(
       trackingNumber: null,
       shippedAt: null,
       deliveredAt: null,
+      shippingAddress: null,
       createdAt: now,
       updatedAt: now,
     },
@@ -621,14 +622,11 @@ export async function advanceOrderStatus(
       .update(ordersTable)
       .set({ status: 'in_progress', updatedAt: now })
       .where(eq(ordersTable.id, id))
-    await archiveBoardTasks(id, 'pre_production')
-    await spawnProductionTasks(id, orgId)
   } else if (order.status === 'in_progress') {
     await db
       .update(ordersTable)
       .set({ status: 'in_delivery', updatedAt: now })
       .where(eq(ordersTable.id, id))
-    await archiveBoardTasks(id, 'production')
   } else if (order.status === 'in_delivery') {
     await db
       .update(ordersTable)
@@ -689,5 +687,4 @@ export async function markShipped(
       updatedAt: now,
     })
     .where(eq(ordersTable.id, id))
-  await archiveBoardTasks(id, 'production')
 }

@@ -109,6 +109,7 @@ export function OrdersListPage() {
       { value: 'draft', label: st('draft') },
       { value: 'pending', label: st('pending') },
       { value: 'approved', label: st('approved') },
+      { value: 'in_progress', label: st('in_progress') },
       { value: 'production', label: st('production') },
       { value: 'in_delivery', label: st('in_delivery') },
       { value: 'completed', label: st('completed') },
@@ -166,6 +167,7 @@ export function OrdersListPage() {
               | 'draft'
               | 'pending'
               | 'approved'
+              | 'in_progress'
               | 'production'
               | 'in_delivery'
               | 'completed'

@@ -191,3 +191,129 @@ export const markShippedFn = createServerFn({ method: 'POST' })
       }
     }
   })
+
+export const completeProductionFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (input: {
+      id: string
+      courier?: string
+      trackingNumber?: string
+      shippingFee?: number
+      shippingFeeDescription?: string
+      invoicePercentage?: number
+      invoiceDueDate: string
+      invoicePaymentMethodId: string
+      invoiceNotes?: string
+    }) => input,
+  )
+  .handler(async ({ data }): Promise<MutationResult> => {
+    const orgId = await resolveOrgId()
+    try {
+      // 1. Check all tasks are completed
+      const { db } = await import('#/db/index')
+      const { productionTasks } = await import('#/db/schema')
+      const { eq, and } = await import('drizzle-orm')
+
+      const tasks = await db
+        .select({ id: productionTasks.id, status: productionTasks.status })
+        .from(productionTasks)
+        .where(
+          and(
+            eq(productionTasks.orderId, data.id),
+            eq(productionTasks.orgId, orgId),
+          ),
+        )
+
+      const incompleteTasks = tasks.filter((t) => t.status !== 'completed')
+      if (incompleteTasks.length > 0) {
+        return {
+          ok: false,
+          error: `Cannot complete production: ${incompleteTasks.length} task(s) still in progress`,
+        }
+      }
+
+      // 2. Get order and customer info
+      const { orders: ordersTable, customers: customersTable } = await await import(
+        '#/db/schema'
+      )
+      const orderRows = await db
+        .select()
+        .from(ordersTable)
+        .where(and(eq(ordersTable.id, data.id), eq(ordersTable.orgId, orgId)))
+        .limit(1)
+
+      if (orderRows.length === 0) throw new Error('Order not found')
+      const order = orderRows[0]
+
+      if (order.status !== 'in_progress') {
+        return { ok: false, error: 'Order is not in progress' }
+      }
+
+      // Get customer info
+      let customerId = order.customerId ?? 'unknown'
+      let customerName = 'Unknown Customer'
+
+      if (order.customerId) {
+        const customerRows = await db
+          .select({
+            name: customersTable.name,
+          })
+          .from(customersTable)
+          .where(eq(customersTable.id, order.customerId))
+          .limit(1)
+
+        if (customerRows.length > 0) {
+          customerName = customerRows[0].name ?? 'Unknown Customer'
+        }
+      }
+
+      // 3. Calculate remaining balance
+      const { invoices: invoicesTable } = await import(
+        '#/db/schema'
+      )
+      const paidInvoices = await db
+        .select({ total: invoicesTable.total })
+        .from(invoicesTable)
+        .where(
+          and(
+            eq(invoicesTable.orderId, data.id),
+            eq(invoicesTable.orgId, orgId),
+            eq(invoicesTable.status, 'paid'),
+          ),
+        )
+
+      const invoicedAmount = paidInvoices.reduce((sum, inv) => sum + inv.total, 0)
+      const remainingAmount = Math.max(0, order.total - invoicedAmount)
+
+      // 4. Create final invoice if there's remaining balance
+      if (remainingAmount > 0) {
+        const { createInvoice } = await import('#/features/invoices/model')
+        await createInvoice(orgId, {
+          orderId: data.id,
+          customerId,
+          customerName,
+          lineItems: [],
+          percentage: data.invoicePercentage ?? 100,
+          dueDate: data.invoiceDueDate,
+          paymentMethodId: data.invoicePaymentMethodId,
+          notes: data.invoiceNotes,
+          shippingFee: data.shippingFee,
+          shippingFeeDescription: data.shippingFeeDescription,
+        })
+      }
+
+      // 5. Mark order as shipped (in_delivery)
+      const { markShipped } = await import('./model')
+      await markShipped(data.id, orgId, {
+        courier: data.courier,
+        trackingNumber: data.trackingNumber,
+      })
+
+      return { ok: true }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
+  })
