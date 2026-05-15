@@ -58,6 +58,12 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.invoices.details(), id] as const,
     paymentMethods: () =>
       [...queryKeys.invoices.all, 'payment-methods'] as const,
+    orderForInvoice: (orderId: string) =>
+      [...queryKeys.invoices.all, 'order-for-invoice', orderId] as const,
+    payments: (invoiceId: string) =>
+      [...queryKeys.invoices.all, 'payments', invoiceId] as const,
+    balance: (invoiceId: string) =>
+      [...queryKeys.invoices.all, 'balance', invoiceId] as const,
   },
   portal: {
     all: ['portal'] as const,

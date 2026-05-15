@@ -6,6 +6,7 @@ import {
   orderLineItems as orderLineItemsTable,
   orders as ordersTable,
   paymentMethods as paymentMethodsTable,
+  payments as paymentsTable,
 } from '#/db/schema'
 
 export type Invoice = {
@@ -15,7 +16,7 @@ export type Invoice = {
   orderId: string | null
   customerId: string
   customerName: string
-  status: 'unpaid' | 'paid' | 'void'
+  status: 'unpaid' | 'partially_paid' | 'paid' | 'void'
   percentage: number | null
   subtotal: number
   total: number
@@ -32,6 +33,7 @@ export type Invoice = {
 export type InvoiceLineItem = {
   id: string
   invoiceId: string
+  lineType: 'product' | 'shipping' | 'fee' | 'discount' | 'tax'
   description: string
   quantity: number
   unitPrice: number
@@ -87,10 +89,45 @@ export type InvoiceRow = {
   overdue: boolean
 }
 
+export type Payment = {
+  id: string
+  orgId: string
+  invoiceId: string
+  amount: number
+  method: 'bank_transfer' | 'payment_gateway' | 'cash'
+  reference: string | null
+  proofAssetId: string | null
+  status: 'pending' | 'confirmed' | 'rejected' | 'refunded'
+  receivedAt: Date | null
+  confirmedAt: Date | null
+  confirmedBy: string | null
+  rejectedReason: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export type CreatePaymentInput = {
+  invoiceId: string
+  amount: number
+  method: 'bank_transfer' | 'payment_gateway' | 'cash'
+  reference?: string
+  proofAssetId?: string
+  receivedAt?: Date
+}
+
+export type InvoiceBalance = {
+  total: number
+  confirmedAmount: number
+  pendingAmount: number
+  remaining: number
+  isFullyPaid: boolean
+}
+
 export type ListInvoicesParams = {
   orgId: string
   status?: string
   q?: string
+  orderId?: string
   page?: number
   perPage?: number
 }
@@ -169,6 +206,7 @@ export async function createInvoice(
       items.push({
         id: generateId(),
         invoiceId,
+        lineType: 'product',
         description: oi.name ?? 'Order item',
         quantity: oi.quantity,
         unitPrice: oi.unitPrice,
@@ -203,6 +241,7 @@ export async function createInvoice(
       items.push({
         id: generateId(),
         invoiceId,
+        lineType: 'product',
         description: li.description,
         quantity: li.quantity,
         unitPrice: li.unitPrice,
@@ -309,6 +348,10 @@ export async function listInvoices(
     conditions.push(eq(invoicesTable.status, params.status))
   }
 
+  if (params.orderId) {
+    conditions.push(eq(invoicesTable.orderId, params.orderId))
+  }
+
   const allConditions = and(...conditions) as SQL
   const page = params.page ?? 1
   const perPage = params.perPage ?? 25
@@ -355,10 +398,48 @@ export async function markInvoicePaid(
     .limit(1)
 
   if (invoiceRows.length === 0) throw new Error('Invoice not found')
-  if (invoiceRows[0].status !== 'unpaid')
-    throw new Error('Only unpaid invoices can be marked paid')
+  if (
+    invoiceRows[0].status !== 'unpaid' &&
+    invoiceRows[0].status !== 'partially_paid'
+  )
+    throw new Error('Only unpaid or partially paid invoices can be marked paid')
 
+  const invoice = invoiceRows[0]
   const now = new Date()
+
+  // Create a payment record for the remaining balance
+  const existingPayments = await db
+    .select({ amount: paymentsTable.amount })
+    .from(paymentsTable)
+    .where(
+      and(
+        eq(paymentsTable.invoiceId, id),
+        eq(paymentsTable.status, 'confirmed'),
+      ),
+    )
+
+  const alreadyPaid = existingPayments.reduce((sum, p) => sum + p.amount, 0)
+  const remaining = invoice.total - alreadyPaid
+
+  if (remaining > 0) {
+    await db.insert(paymentsTable).values({
+      id: generateId(),
+      orgId,
+      invoiceId: id,
+      amount: remaining,
+      method: 'bank_transfer',
+      reference: null,
+      proofAssetId: null,
+      status: 'confirmed',
+      receivedAt: now,
+      confirmedAt: now,
+      confirmedBy: userId,
+      rejectedReason: null,
+      createdAt: now,
+      updatedAt: now,
+    })
+  }
+
   await db
     .update(invoicesTable)
     .set({
@@ -480,4 +561,215 @@ export async function deletePaymentMethod(
     .where(
       and(eq(paymentMethodsTable.id, id), eq(paymentMethodsTable.orgId, orgId)),
     )
+}
+
+// ── Payment functions ──────────────────────────────────────────
+
+export async function createPayment(
+  orgId: string,
+  input: CreatePaymentInput,
+): Promise<Payment> {
+  const now = new Date()
+  const id = generateId()
+
+  await db.insert(paymentsTable).values({
+    id,
+    orgId,
+    invoiceId: input.invoiceId,
+    amount: input.amount,
+    method: input.method,
+    reference: input.reference ?? null,
+    proofAssetId: input.proofAssetId ?? null,
+    status: 'pending',
+    receivedAt: input.receivedAt ?? null,
+    confirmedAt: null,
+    confirmedBy: null,
+    rejectedReason: null,
+    createdAt: now,
+    updatedAt: now,
+  })
+
+  const [payment] = await db
+    .select()
+    .from(paymentsTable)
+    .where(eq(paymentsTable.id, id))
+    .limit(1)
+
+  return payment as Payment
+}
+
+export async function confirmPayment(
+  orgId: string,
+  paymentId: string,
+  userId: string,
+): Promise<{ payment: Payment; balance: InvoiceBalance }> {
+  const paymentRows = await db
+    .select()
+    .from(paymentsTable)
+    .where(and(eq(paymentsTable.id, paymentId), eq(paymentsTable.orgId, orgId)))
+    .limit(1)
+
+  if (paymentRows.length === 0) throw new Error('Payment not found')
+  if (paymentRows[0].status !== 'pending')
+    throw new Error('Only pending payments can be confirmed')
+
+  const payment = paymentRows[0]
+  const now = new Date()
+
+  await db
+    .update(paymentsTable)
+    .set({
+      status: 'confirmed',
+      confirmedAt: now,
+      confirmedBy: userId,
+      updatedAt: now,
+    })
+    .where(eq(paymentsTable.id, paymentId))
+
+  // Update invoice status based on balance
+  const balance = await getInvoiceBalance(payment.invoiceId, orgId)
+
+  if (balance.remaining <= 0) {
+    await db
+      .update(invoicesTable)
+      .set({
+        status: 'paid',
+        paidAt: now,
+        paidBy: userId,
+        updatedAt: now,
+      })
+      .where(eq(invoicesTable.id, payment.invoiceId))
+  } else {
+    await db
+      .update(invoicesTable)
+      .set({ status: 'partially_paid', updatedAt: now })
+      .where(eq(invoicesTable.id, payment.invoiceId))
+  }
+
+  const [updated] = await db
+    .select()
+    .from(paymentsTable)
+    .where(eq(paymentsTable.id, paymentId))
+    .limit(1)
+
+  return { payment: updated as Payment, balance }
+}
+
+export async function rejectPayment(
+  orgId: string,
+  paymentId: string,
+  reason: string,
+): Promise<Payment> {
+  const paymentRows = await db
+    .select()
+    .from(paymentsTable)
+    .where(and(eq(paymentsTable.id, paymentId), eq(paymentsTable.orgId, orgId)))
+    .limit(1)
+
+  if (paymentRows.length === 0) throw new Error('Payment not found')
+  if (paymentRows[0].status !== 'pending')
+    throw new Error('Only pending payments can be rejected')
+
+  const now = new Date()
+  await db
+    .update(paymentsTable)
+    .set({
+      status: 'rejected',
+      rejectedReason: reason,
+      updatedAt: now,
+    })
+    .where(eq(paymentsTable.id, paymentId))
+
+  const [updated] = await db
+    .select()
+    .from(paymentsTable)
+    .where(eq(paymentsTable.id, paymentId))
+    .limit(1)
+
+  return updated as Payment
+}
+
+export async function getPaymentsForInvoice(
+  orgId: string,
+  invoiceId: string,
+): Promise<Payment[]> {
+  const rows = await db
+    .select()
+    .from(paymentsTable)
+    .where(
+      and(
+        eq(paymentsTable.invoiceId, invoiceId),
+        eq(paymentsTable.orgId, orgId),
+      ),
+    )
+    .orderBy(desc(paymentsTable.createdAt))
+
+  return rows as Payment[]
+}
+
+export async function getInvoiceBalance(
+  invoiceId: string,
+  orgId: string,
+): Promise<InvoiceBalance> {
+  const invoiceRows = await db
+    .select({ total: invoicesTable.total })
+    .from(invoicesTable)
+    .where(and(eq(invoicesTable.id, invoiceId), eq(invoicesTable.orgId, orgId)))
+    .limit(1)
+
+  if (invoiceRows.length === 0) throw new Error('Invoice not found')
+
+  const paymentRows = await db
+    .select({ amount: paymentsTable.amount, status: paymentsTable.status })
+    .from(paymentsTable)
+    .where(
+      and(
+        eq(paymentsTable.invoiceId, invoiceId),
+        eq(paymentsTable.orgId, orgId),
+      ),
+    )
+
+  const confirmedAmount = paymentRows
+    .filter((p) => p.status === 'confirmed')
+    .reduce((sum, p) => sum + p.amount, 0)
+
+  const pendingAmount = paymentRows
+    .filter((p) => p.status === 'pending')
+    .reduce((sum, p) => sum + p.amount, 0)
+
+  const total = invoiceRows[0].total
+  const remaining = total - confirmedAmount
+
+  return {
+    total,
+    confirmedAmount,
+    pendingAmount,
+    remaining: Math.max(0, remaining),
+    isFullyPaid: remaining <= 0,
+  }
+}
+
+export async function updateInvoice(
+  id: string,
+  orgId: string,
+  input: Partial<{
+    notes: string
+    dueDate: string
+    paymentMethodId: string
+    customerName: string
+  }>,
+): Promise<Invoice> {
+  const now = new Date()
+  await db
+    .update(invoicesTable)
+    .set({ ...input, updatedAt: now })
+    .where(and(eq(invoicesTable.id, id), eq(invoicesTable.orgId, orgId)))
+
+  const [updated] = await db
+    .select()
+    .from(invoicesTable)
+    .where(eq(invoicesTable.id, id))
+    .limit(1)
+
+  return updated as Invoice
 }

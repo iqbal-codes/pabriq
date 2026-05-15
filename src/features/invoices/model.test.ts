@@ -1,8 +1,9 @@
-import { sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '#/db/index'
 import {
   customers as customersTable,
+  invoices as invoicesTable,
   orderLineItems as orderLineItemsTable,
   orders as ordersTable,
   organization,
@@ -10,13 +11,18 @@ import {
   products as productsTable,
 } from '#/db/schema'
 import {
+  confirmPayment,
   createInvoice,
+  createPayment,
   createPaymentMethod,
   deletePaymentMethod,
   getInvoice,
+  getInvoiceBalance,
+  getPaymentsForInvoice,
   listInvoices,
   listPaymentMethods,
   markInvoicePaid,
+  rejectPayment,
   updatePaymentMethod,
   voidInvoice,
 } from './model'
@@ -695,5 +701,390 @@ describe('paymentMethods', () => {
     await deletePaymentMethod(created.id, 'pm-org')
     const list = await listPaymentMethods('pm-org')
     expect(list).toHaveLength(0)
+  })
+})
+
+describe('createPayment', () => {
+  const payOrgId = 'pay-test-org'
+
+  beforeEach(async () => {
+    const now = new Date()
+    await db.insert(organization).values({
+      id: payOrgId,
+      name: 'Pay Test Org',
+      slug: 'pay-test-org',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(customersTable).values({
+      id: 'pay-cust',
+      orgId: payOrgId,
+      name: 'Pay Customer',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+  })
+
+  async function setupInvoice(): Promise<string> {
+    const result = await createInvoice(payOrgId, {
+      customerId: 'pay-cust',
+      customerName: 'Pay Customer',
+      dueDate: '2026-06-30',
+      paymentMethodId: '',
+      lineItems: [{ description: 'Item A', quantity: 2, unitPrice: 50000 }],
+    })
+    return result.invoice.id
+  }
+
+  it('creates a pending payment for an invoice', async () => {
+    const invoiceId = await setupInvoice()
+    const payment = await createPayment(payOrgId, {
+      invoiceId,
+      amount: 50000,
+      method: 'bank_transfer',
+      reference: 'TRF123',
+    })
+
+    expect(payment.id).toBeDefined()
+    expect(payment.invoiceId).toBe(invoiceId)
+    expect(payment.amount).toBe(50000)
+    expect(payment.method).toBe('bank_transfer')
+    expect(payment.reference).toBe('TRF123')
+    expect(payment.status).toBe('pending')
+    expect(payment.orgId).toBe(payOrgId)
+  })
+
+  it('creates payment without optional fields', async () => {
+    const invoiceId = await setupInvoice()
+    const payment = await createPayment(payOrgId, {
+      invoiceId,
+      amount: 100000,
+      method: 'cash',
+    })
+
+    expect(payment.amount).toBe(100000)
+    expect(payment.method).toBe('cash')
+    expect(payment.reference).toBeNull()
+  })
+})
+
+describe('confirmPayment', () => {
+  const payOrgId = 'confirm-test-org'
+
+  beforeEach(async () => {
+    const now = new Date()
+    await db.insert(organization).values({
+      id: payOrgId,
+      name: 'Confirm Test Org',
+      slug: 'confirm-test-org',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(customersTable).values({
+      id: 'confirm-cust',
+      orgId: payOrgId,
+      name: 'Confirm Customer',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+  })
+
+  async function setupInvoice(): Promise<string> {
+    const result = await createInvoice(payOrgId, {
+      customerId: 'confirm-cust',
+      customerName: 'Confirm Customer',
+      dueDate: '2026-06-30',
+      paymentMethodId: '',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    return result.invoice.id
+  }
+
+  it('confirms a pending payment and updates invoice to paid', async () => {
+    const invoiceId = await setupInvoice()
+    const payment = await createPayment(payOrgId, {
+      invoiceId,
+      amount: 100000,
+      method: 'bank_transfer',
+    })
+
+    const result = await confirmPayment(payOrgId, payment.id, 'admin-user')
+
+    expect(result.payment.status).toBe('confirmed')
+    expect(result.payment.confirmedBy).toBe('admin-user')
+    expect(result.balance.isFullyPaid).toBe(true)
+    expect(result.balance.remaining).toBe(0)
+
+    // Invoice should now be 'paid'
+    const dbInvoice = await db
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, invoiceId))
+      .limit(1)
+    expect(dbInvoice[0].status).toBe('paid')
+  })
+
+  it('sets invoice to partially_paid when payment is less than total', async () => {
+    const invoiceId = await setupInvoice()
+    const payment = await createPayment(payOrgId, {
+      invoiceId,
+      amount: 30000,
+      method: 'bank_transfer',
+    })
+
+    const result = await confirmPayment(payOrgId, payment.id, 'admin-user')
+
+    expect(result.payment.status).toBe('confirmed')
+    expect(result.balance.isFullyPaid).toBe(false)
+    expect(result.balance.confirmedAmount).toBe(30000)
+    expect(result.balance.remaining).toBe(70000)
+
+    // Invoice should be 'partially_paid'
+    const dbInvoice = await db
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, invoiceId))
+      .limit(1)
+    expect(dbInvoice[0].status).toBe('partially_paid')
+  })
+
+  it('rejects confirming an already-confirmed payment', async () => {
+    const invoiceId = await setupInvoice()
+    const payment = await createPayment(payOrgId, {
+      invoiceId,
+      amount: 100000,
+      method: 'bank_transfer',
+    })
+
+    await confirmPayment(payOrgId, payment.id, 'admin-user')
+
+    await expect(
+      confirmPayment(payOrgId, payment.id, 'admin-user'),
+    ).rejects.toThrow('Only pending payments can be confirmed')
+  })
+
+  it('handles multiple payments reaching paid status', async () => {
+    const invoiceId = await setupInvoice()
+
+    // First payment: 40,000
+    const p1 = await createPayment(payOrgId, {
+      invoiceId,
+      amount: 40000,
+      method: 'bank_transfer',
+    })
+    const r1 = await confirmPayment(payOrgId, p1.id, 'admin')
+    expect(r1.balance.confirmedAmount).toBe(40000)
+    expect(r1.balance.remaining).toBe(60000)
+
+    // Second payment: 60,000 → should make it paid
+    const p2 = await createPayment(payOrgId, {
+      invoiceId,
+      amount: 60000,
+      method: 'bank_transfer',
+    })
+    const r2 = await confirmPayment(payOrgId, p2.id, 'admin')
+    expect(r2.balance.isFullyPaid).toBe(true)
+
+    const dbInvoice = await db
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, invoiceId))
+      .limit(1)
+    expect(dbInvoice[0].status).toBe('paid')
+  })
+})
+
+describe('rejectPayment', () => {
+  const payOrgId = 'reject-test-org'
+
+  beforeEach(async () => {
+    const now = new Date()
+    await db.insert(organization).values({
+      id: payOrgId,
+      name: 'Reject Test Org',
+      slug: 'reject-test-org',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(customersTable).values({
+      id: 'reject-cust',
+      orgId: payOrgId,
+      name: 'Reject Customer',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+  })
+
+  async function setupInvoice(): Promise<string> {
+    const result = await createInvoice(payOrgId, {
+      customerId: 'reject-cust',
+      customerName: 'Reject Customer',
+      dueDate: '2026-06-30',
+      paymentMethodId: '',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    return result.invoice.id
+  }
+
+  it('rejects a pending payment with a reason', async () => {
+    const invoiceId = await setupInvoice()
+    const payment = await createPayment(payOrgId, {
+      invoiceId,
+      amount: 100000,
+      method: 'bank_transfer',
+    })
+
+    const rejected = await rejectPayment(payOrgId, payment.id, 'Wrong amount')
+
+    expect(rejected.status).toBe('rejected')
+    expect(rejected.rejectedReason).toBe('Wrong amount')
+  })
+
+  it('rejects rejecting a confirmed payment', async () => {
+    const invoiceId = await setupInvoice()
+    const payment = await createPayment(payOrgId, {
+      invoiceId,
+      amount: 100000,
+      method: 'bank_transfer',
+    })
+
+    await confirmPayment(payOrgId, payment.id, 'admin')
+
+    await expect(
+      rejectPayment(payOrgId, payment.id, 'Too late'),
+    ).rejects.toThrow('Only pending payments can be rejected')
+  })
+
+  it('rejects rejecting a non-existent payment', async () => {
+    await expect(
+      rejectPayment(payOrgId, 'non-existent', 'No reason'),
+    ).rejects.toThrow('Payment not found')
+  })
+})
+
+describe('getPaymentsForInvoice', () => {
+  const payOrgId = 'list-pay-org'
+
+  beforeEach(async () => {
+    const now = new Date()
+    await db.insert(organization).values({
+      id: payOrgId,
+      name: 'List Pay Org',
+      slug: 'list-pay-org',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(customersTable).values({
+      id: 'list-pay-cust',
+      orgId: payOrgId,
+      name: 'List Pay Customer',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+  })
+
+  it('returns all payments for an invoice ordered by newest first', async () => {
+    const result = await createInvoice(payOrgId, {
+      customerId: 'list-pay-cust',
+      customerName: 'List Pay Customer',
+      dueDate: '2026-06-30',
+      paymentMethodId: '',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoiceId = result.invoice.id
+
+    await createPayment(payOrgId, {
+      invoiceId,
+      amount: 50000,
+      method: 'bank_transfer',
+    })
+    await createPayment(payOrgId, {
+      invoiceId,
+      amount: 50000,
+      method: 'bank_transfer',
+    })
+
+    const payments = await getPaymentsForInvoice(payOrgId, invoiceId)
+    expect(payments).toHaveLength(2)
+  })
+
+  it('returns empty array when invoice has no payments', async () => {
+    const result = await createInvoice(payOrgId, {
+      customerId: 'list-pay-cust',
+      customerName: 'List Pay Customer',
+      dueDate: '2026-06-30',
+      paymentMethodId: '',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoiceId = result.invoice.id
+
+    const payments = await getPaymentsForInvoice(payOrgId, invoiceId)
+    expect(payments).toHaveLength(0)
+  })
+})
+
+describe('getInvoiceBalance', () => {
+  const payOrgId = 'balance-test-org'
+
+  beforeEach(async () => {
+    const now = new Date()
+    await db.insert(organization).values({
+      id: payOrgId,
+      name: 'Balance Test Org',
+      slug: 'balance-test-org',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(customersTable).values({
+      id: 'balance-cust',
+      orgId: payOrgId,
+      name: 'Balance Customer',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+  })
+
+  it('returns zero balance for unpaid invoice', async () => {
+    const result = await createInvoice(payOrgId, {
+      customerId: 'balance-cust',
+      customerName: 'Balance Customer',
+      dueDate: '2026-06-30',
+      paymentMethodId: '',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+
+    const balance = await getInvoiceBalance(result.invoice.id, payOrgId)
+    expect(balance.total).toBe(100000)
+    expect(balance.confirmedAmount).toBe(0)
+    expect(balance.pendingAmount).toBe(0)
+    expect(balance.remaining).toBe(100000)
+    expect(balance.isFullyPaid).toBe(false)
+  })
+
+  it('includes pending payments in the count', async () => {
+    const result = await createInvoice(payOrgId, {
+      customerId: 'balance-cust',
+      customerName: 'Balance Customer',
+      dueDate: '2026-06-30',
+      paymentMethodId: '',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoiceId = result.invoice.id
+
+    await createPayment(payOrgId, {
+      invoiceId,
+      amount: 50000,
+      method: 'bank_transfer',
+    })
+
+    const balance = await getInvoiceBalance(invoiceId, payOrgId)
+    expect(balance.pendingAmount).toBe(50000)
+    expect(balance.confirmedAmount).toBe(0)
+    expect(balance.remaining).toBe(100000) // nothing confirmed yet
   })
 })
