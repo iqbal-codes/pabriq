@@ -1,38 +1,47 @@
-import { ArrowRight, CheckCircle2, Clock, Upload } from 'lucide-react'
-import { AssetImage } from '#/components/app/asset-image'
-import type { OrderTaskEvent } from '../model'
+import { ArrowRight, CheckCircle2, Clock, Upload } from "lucide-react";
+import { AssetImage } from "#/components/app/asset-image";
+import type { OrderTaskEvent } from "../model";
 
 type Props = {
-  events: OrderTaskEvent[]
-}
+  events: OrderTaskEvent[];
+};
 
 function getDescription(event: OrderTaskEvent): string {
   switch (event.type) {
-    case 'created':
-      return `Task created → ${event.toStageName ?? 'Queue'}`
-    case 'stage_transition':
-      return `Entered ${event.toStageName}`
-    case 'completed':
-      return `Completed from ${event.fromStageName ?? 'stage'}`
+    case "created":
+      return "Masuk dalam antrian";
+    case "stage_transition":
+      if (!event.fromStageName) {
+        // From queue to first stage
+        return `Mulai ${event.toStageName}`;
+      }
+      if (!event.toStageName) {
+        // Last stage completed (task done)
+        return `${event.fromStageName} Selesai.`;
+      }
+      // Between stages
+      return `${event.fromStageName} Selesai, Mulai ${event.toStageName}`;
+    case "completed":
+      return `${event.fromStageName ?? "Stage"} Selesai.`;
     default:
-      return event.type
+      return event.type;
   }
 }
 
 function getIcon(event: OrderTaskEvent): React.ReactNode {
   switch (event.type) {
-    case 'created':
-      return <Clock className="size-3.5 text-muted-foreground shrink-0 mt-0.5" />
-    case 'stage_transition':
+    case "created":
+      return (
+        <Clock className="size-3.5 text-muted-foreground shrink-0 mt-0.5" />
+      );
+    case "stage_transition":
       return (
         <ArrowRight className="size-3.5 text-brand-accent shrink-0 mt-0.5" />
-      )
-    case 'completed':
-      return (
-        <CheckCircle2 className="size-3.5 text-success shrink-0 mt-0.5" />
-      )
+      );
+    case "completed":
+      return <CheckCircle2 className="size-3.5 text-success shrink-0 mt-0.5" />;
     default:
-      return null
+      return null;
   }
 }
 
@@ -40,15 +49,15 @@ function RequirementResponses({
   responses,
 }: {
   responses: Array<{
-    requirementName: string
-    value?: string
-    assetIds?: string[]
-  }>
+    requirementName: string;
+    value?: string;
+    assetIds?: string[];
+  }>;
 }) {
-  const hasFiles = responses.some((r) => r.assetIds && r.assetIds.length > 0)
-  const hasValues = responses.some((r) => r.value)
+  const hasFiles = responses.some((r) => r.assetIds && r.assetIds.length > 0);
+  const hasValues = responses.some((r) => r.value);
 
-  if (!hasFiles && !hasValues) return null
+  if (!hasFiles && !hasValues) return null;
 
   return (
     <div className="mt-2 space-y-2 rounded-lg bg-muted/50 p-3">
@@ -80,14 +89,14 @@ function RequirementResponses({
               <div key={i} className="text-xs">
                 <span className="font-medium text-muted-foreground">
                   {r.requirementName}:
-                </span>{' '}
+                </span>{" "}
                 <span className="text-foreground">{r.value}</span>
               </div>
             ))}
         </div>
       )}
     </div>
-  )
+  );
 }
 
 export function OrderTimeline({ events }: Props) {
@@ -103,26 +112,24 @@ export function OrderTimeline({ events }: Props) {
           </div>
           <div className="pb-3 min-w-0 flex-1">
             <p className="text-xs text-muted-foreground">
-              {new Date(event.createdAt).toLocaleDateString()}{' '}
+              {new Date(event.createdAt).toLocaleDateString()}{" "}
               {new Date(event.createdAt).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
+                hour: "2-digit",
+                minute: "2-digit",
               })}
             </p>
             <p className="text-sm flex items-center gap-1.5">
-              {event.taskNumber && (
-                <span className="font-mono text-xs">{event.taskNumber}</span>
-              )}
               <span>{getDescription(event)}</span>
             </p>
-            {event.requirementResponses && event.requirementResponses.length > 0 && (
-              <RequirementResponses
-                responses={event.requirementResponses[0].responses}
-              />
-            )}
+            {event.requirementResponses &&
+              event.requirementResponses.length > 0 && (
+                <RequirementResponses
+                  responses={event.requirementResponses[0].responses}
+                />
+              )}
           </div>
         </div>
       ))}
     </div>
-  )
+  );
 }
