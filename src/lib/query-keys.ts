@@ -99,5 +99,7 @@ export const queryKeys = {
     }) => [...queryKeys.production.all, 'archived', filters] as const,
     counts: (board?: string) =>
       [...queryKeys.production.all, 'counts', board ?? 'all'] as const,
+    tasksByOrder: (orderId: string) =>
+      [...queryKeys.production.all, 'tasks-by-order', orderId] as const,
   },
 }

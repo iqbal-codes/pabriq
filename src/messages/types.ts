@@ -271,6 +271,7 @@ export type Messages = {
     draft: string;
     pending: string;
     approved: string;
+    in_progress: string;
     production: string;
     in_delivery: string;
     completed: string;
@@ -552,6 +553,24 @@ export type Messages = {
     archivedCustomer: string;
     archivedDate: string;
     requirementRemove: string;
+    productionTasks: string;
+    noTasksForOrder: string;
+    loading: string;
+    // Complete production / shipment
+    markAsShipped: string;
+    completeProduction: string;
+    shipmentDetails: string;
+    shipmentAddress: string;
+    shipmentFee: string;
+    shipmentFeePlaceholder: string;
+    courierPlaceholder: string;
+    trackingNumber: string;
+    trackingNumberPlaceholder: string;
+    allTasksCompleted: string;
+    tasksNotCompleted: string;
+    remainingPayment: string;
+    createInvoiceAndShip: string;
+    courier: string;
   };
   portal: {
     title: string;
