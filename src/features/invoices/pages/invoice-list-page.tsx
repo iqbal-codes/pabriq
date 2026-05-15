@@ -103,6 +103,7 @@ export function InvoiceListPage() {
                 | 'active'
                 | 'inactive'
                 | 'paid'
+                | 'partially_paid'
                 | 'unpaid'
                 | 'void'
                 | 'overdue'
@@ -118,7 +119,13 @@ export function InvoiceListPage() {
 
   return (
     <PageContent>
-      <PageHeader title={t('title')} />
+      <PageHeader
+        title={t('title')}
+        primaryAction={{
+          label: t('createInvoice'),
+          href: '/invoices/new',
+        }}
+      />
       <DataTable
         columns={columns}
         data={rows}
