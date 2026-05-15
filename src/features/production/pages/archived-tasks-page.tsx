@@ -10,10 +10,9 @@ import type { ArchivedTaskRow } from '../model'
 
 type Props = {
   orgId: string
-  board?: string
 }
 
-export function ArchivedTasksPage({ orgId, board = 'pre_production' }: Props) {
+export function ArchivedTasksPage({ orgId }: Props) {
   const t = useTranslations('production')
   const dt = useTranslations('dataTable')
 
@@ -27,12 +26,11 @@ export function ArchivedTasksPage({ orgId, board = 'pre_production' }: Props) {
   const queryFilters = useMemo(
     () => ({
       orgId,
-      board,
       search: search || undefined,
       page,
       perPage,
     }),
-    [orgId, board, search, page, perPage],
+    [orgId, search, page, perPage],
   )
 
   const { data, isFetching } = useArchivedTasks(queryFilters)

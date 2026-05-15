@@ -434,7 +434,13 @@ export async function approveTaskAdvance(
   const allStages = await db
     .select()
     .from(stagesTable)
-    .where(and(eq(stagesTable.orgId, orgId), eq(stagesTable.active, true)))
+    .where(
+      and(
+        eq(stagesTable.orgId, orgId),
+        eq(stagesTable.active, true),
+        eq(stagesTable.board, task.board),
+      ),
+    )
     .orderBy(asc(stagesTable.orderIndex))
 
   const currentStageIdx = allStages.findIndex((s) => s.id === task.stageId)
@@ -599,20 +605,21 @@ export async function listBoardTasks(
   stages: Map<string, BoardTask[]>
   done: BoardTask[]
 }> {
-  const board = filter?.board ?? 'pre_production'
-  const allStages = await listStages(orgId, board)
+  const allStages = await listStages(orgId, filter?.board)
   const stageMap = new Map(allStages.map((s) => [s.id, s]))
+
+  const taskConditions: ReturnType<typeof and>[] = [
+    eq(tasksTable.orgId, orgId),
+    isNull(tasksTable.archivedAt),
+  ]
+  if (filter?.board) {
+    taskConditions.push(eq(tasksTable.board, filter.board))
+  }
 
   let tasks = await db
     .select()
     .from(tasksTable)
-    .where(
-      and(
-        eq(tasksTable.orgId, orgId),
-        eq(tasksTable.board, board),
-        isNull(tasksTable.archivedAt),
-      ),
-    )
+    .where(and(...taskConditions))
 
   if (filter?.search) {
     const searchStr = filter.search
@@ -680,14 +687,17 @@ export async function listArchivedTasks(
 ): Promise<{ rows: ArchivedTaskRow[]; totalRows: number }> {
   const page = filter?.page ?? 1
   const perPage = filter?.perPage ?? 25
-  const board = filter?.board ?? 'pre_production'
   const search = filter?.search
 
-  const baseConditions = and(
+  const archiveConditions: ReturnType<typeof and>[] = [
     eq(tasksTable.orgId, orgId),
-    eq(tasksTable.board, board),
     sql`${tasksTable.archivedAt} IS NOT NULL`,
-  )
+  ]
+  if (filter?.board) {
+    archiveConditions.push(eq(tasksTable.board, filter.board))
+  }
+
+  const baseConditions = and(...archiveConditions)
 
   const searchCondition = search
     ? or(

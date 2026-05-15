@@ -19,10 +19,9 @@ import {
 
 type Props = {
   orgId: string
-  board?: string
 }
 
-export function KanbanPage({ orgId, board = 'pre_production' }: Props) {
+export function KanbanPage({ orgId }: Props) {
   const t = useTranslations('production')
 
   const [search, setSearch] = useQueryState('q', parseAsString.withDefault(''))
@@ -39,7 +38,7 @@ export function KanbanPage({ orgId, board = 'pre_production' }: Props) {
   const role = ctx.org.role as Role
   const canApprove = canApproveProductionTask(role)
 
-  const { data: stages } = useStages(board)
+  const { data: stages } = useStages()
   const activeStages = useMemo(() => {
     if (!stages) return []
     return stages
@@ -50,11 +49,10 @@ export function KanbanPage({ orgId, board = 'pre_production' }: Props) {
   const filters = useMemo(
     () => ({
       orgId,
-      board,
       search: search || undefined,
       stageId: stageFilter || undefined,
     }),
-    [orgId, board, search, stageFilter],
+    [orgId, search, stageFilter],
   )
 
   const { data: boardData, isLoading } = useBoardTasks(filters)
@@ -112,7 +110,6 @@ export function KanbanPage({ orgId, board = 'pre_production' }: Props) {
         ) : boardData ? (
           <KanbanBoard
             stages={activeStages}
-            board={board}
             boardData={boardData}
             onClickCard={setSelectedTaskId}
           />
