@@ -10,7 +10,6 @@ import { PortalHeader } from '../components/portal-header'
 import { ShippingAddressCard } from '../components/shipping-address-card'
 import {
   useOrderTimeline,
-  usePortalFinalizeUpload,
   usePortalGetInvoiceUploadUrl,
   useSubmitPaymentProof,
 } from '../hooks'
@@ -34,7 +33,6 @@ export function ProgressView({
   )
 
   const getUploadUrl = usePortalGetInvoiceUploadUrl()
-  const finalizeUpload = usePortalFinalizeUpload()
   const submitProof = useSubmitPaymentProof()
 
   const statusLabel: Record<string, string> = {
@@ -66,16 +64,6 @@ export function ProgressView({
       headers: { 'Content-Type': file.type },
     })
     if (!response.ok) throw new Error('Upload failed')
-
-    await finalizeUpload.mutateAsync({
-      token,
-      lineItemId: invoiceId,
-      assetId: uploadResult.assetId,
-      originalFilename: file.name,
-      mimeType: file.type,
-      sizeBytes: file.size,
-      storageKey: uploadResult.storageKey,
-    })
 
     await submitProof.mutateAsync({
       token,

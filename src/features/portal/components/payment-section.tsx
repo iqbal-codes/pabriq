@@ -17,7 +17,8 @@ export function PaymentSection({ invoices, onUpload }: Props) {
   const st = useTranslations('status')
   const [uploadingId, setUploadingId] = useState<string | null>(null)
 
-  if (invoices.length === 0) return null
+  const visibleInvoices = invoices.filter((inv) => inv.status !== 'void')
+  if (visibleInvoices.length === 0) return null
 
   return (
     <Card className="mt-4">
@@ -28,7 +29,7 @@ export function PaymentSection({ invoices, onUpload }: Props) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {invoices.map((inv) => {
+        {visibleInvoices.map((inv) => {
           const isUnpaid = inv.status === 'unpaid'
           const isOverdue = isUnpaid && new Date(inv.dueDate) < new Date()
           const isPending = isUnpaid && inv.hasPaymentProof
@@ -68,6 +69,7 @@ export function PaymentSection({ invoices, onUpload }: Props) {
                           | 'active'
                           | 'inactive'
                           | 'paid'
+                          | 'partially_paid'
                           | 'unpaid'
                           | 'void'
                           | 'overdue'
