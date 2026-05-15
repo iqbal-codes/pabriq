@@ -258,6 +258,7 @@ export async function generateInvoicePdf(
         unitPrice: item.unitPrice,
         taxPercent: item.taxPercent,
         total: item.total,
+        lineType: item.lineType ?? 'product',
       }) as PdfLineItem,
   )
 

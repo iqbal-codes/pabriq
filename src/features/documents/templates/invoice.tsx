@@ -214,6 +214,14 @@ function formatPercent(pct: number): string {
   return `${pct.toFixed(2)}%`
 }
 
+const LINE_TYPE_LABELS: Record<string, string> = {
+  product: '',
+  shipping: '[Shipping] ',
+  fee: '[Fee] ',
+  discount: '[Discount] ',
+  tax: '[Tax] ',
+}
+
 interface InvoiceDocumentProps {
   data: InvoicePdfData
 }
@@ -320,6 +328,7 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
             style={styles.tableRow}
           >
             <Text style={[styles.tableCell, styles.colDesc]}>
+              {item.lineType && LINE_TYPE_LABELS[item.lineType]}
               {item.description}
             </Text>
             <Text style={[styles.tableCellRight, styles.colRate]}>

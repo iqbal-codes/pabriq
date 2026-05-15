@@ -19,6 +19,7 @@ export interface PdfLineItem {
   unitPrice: number
   taxPercent: number
   total: number
+  lineType?: string
 }
 
 export interface QuotationPdfData {
