@@ -121,7 +121,7 @@ function AssetFileRow({
           />
         </div>
       )}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 w-0 overflow-hidden">
         <p className="truncate text-sm font-medium">
           {metadata.originalFilename}
         </p>

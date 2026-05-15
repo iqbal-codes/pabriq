@@ -70,6 +70,8 @@ export type CreateInvoiceInput = {
   issuedDate?: string
   paymentMethodId: string
   notes?: string
+  shippingFee?: number
+  shippingFeeDescription?: string
 }
 
 export type CreateInvoiceResult = {
@@ -216,7 +218,23 @@ export async function createInvoice(
     }
 
     const subtotal = items.reduce((sum, i) => sum + i.total, 0)
-    const invoiceTotal = order.total * (percentage / 100)
+    const productTotal = order.total * (percentage / 100)
+    const shippingFee = input.shippingFee ?? 0
+    const invoiceTotal = productTotal + shippingFee
+
+    // Add shipping fee line item if provided
+    if (input.shippingFee && input.shippingFee > 0) {
+      items.push({
+        id: generateId(),
+        invoiceId,
+        lineType: 'shipping',
+        description: input.shippingFeeDescription ?? 'Shipping Fee',
+        quantity: 1,
+        unitPrice: input.shippingFee,
+        total: input.shippingFee,
+        createdAt: now,
+      })
+    }
 
     await db.insert(invoicesTable).values({
       id: invoiceId,

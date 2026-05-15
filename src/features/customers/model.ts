@@ -206,7 +206,7 @@ export async function listCustomers(
 
 export async function createCustomer(
   input: CustomerInput & { orgId: string },
-): Promise<void> {
+): Promise<string> {
   const validationError = validateCustomerInput(input)
   if (validationError) {
     throw new Error(validationError)
@@ -222,8 +222,10 @@ export async function createCustomer(
     isWni,
   )
 
+  const id = crypto.randomUUID()
+
   await db.insert(customersTable).values({
-    id: crypto.randomUUID(),
+    id,
     orgId: input.orgId,
     name: input.name.trim(),
     email: input.email?.trim() ?? null,
@@ -234,6 +236,8 @@ export async function createCustomer(
     photoAssetId: input.photoAssetId ?? null,
     addressId,
   })
+
+  return id
 }
 
 export async function updateCustomer(
