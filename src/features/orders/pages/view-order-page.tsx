@@ -1,5 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, Link2, Mail, Phone, User, XCircle } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import {
+  CheckCircle2,
+  FileText,
+  Link2,
+  Mail,
+  Phone,
+  Plus,
+  User,
+  XCircle,
+} from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
@@ -20,6 +30,8 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { Textarea } from '#/components/ui/textarea'
+import { CreateInvoiceModal } from '#/features/invoices/components/create-invoice-modal'
+import { useInvoicesList } from '#/features/invoices/hooks'
 import { useOrder } from '#/features/orders/hooks'
 import { getAssetsForLineItemFn } from '#/features/orders/server'
 import { generateOrderTokenFn } from '#/features/portal/server'
@@ -29,9 +41,23 @@ export function ViewOrderPage() {
   const { id } = Route.useParams()
   const ctx = Route.useRouteContext() as { org: { id: string } }
   const { data } = useOrder({ id, orgId: ctx.org.id })
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
+  const isApprovedOrLater = data
+    ? ['approved', 'production', 'in_delivery', 'completed'].includes(
+        data.order.status,
+      )
+    : false
+  const { data: invoicesData } = useInvoicesList({
+    orgId: ctx.org.id,
+    orderId: id,
+    page: 1,
+    perPage: 50,
+  })
+  const orderInvoices = invoicesData?.rows ?? []
   const t = useTranslations('orders')
   const ct = useTranslations('common')
   const st = useTranslations('status')
+  const it = useTranslations('invoices')
 
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
@@ -131,6 +157,15 @@ export function ViewOrderPage() {
     customerPhotoAssetId,
     customerEmail,
   } = data
+
+  const paidInvoices = orderInvoices.filter((inv) => inv.status === 'paid')
+  const invoicedPct = paidInvoices.reduce(
+    (sum, inv) => sum + (inv.percentage ?? 0),
+    0,
+  )
+  const invoicedAmt = paidInvoices.reduce((sum, inv) => sum + inv.total, 0)
+  const remainingPct = Math.max(0, 100 - invoicedPct)
+  const remainingAmt = Math.max(0, order.total - invoicedAmt)
 
   return (
     <PageContent>
@@ -292,6 +327,72 @@ export function ViewOrderPage() {
             </div>
           </CardContent>
         </Card>
+
+        {isApprovedOrLater && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>{it('title')}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setInvoiceModalOpen(true)}
+                >
+                  <Plus className="mr-1 h-4 w-4" />
+                  {it('createInvoice')}
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {orderInvoices.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {it('noInvoices')}
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {orderInvoices.map((inv) => (
+                    <div
+                      key={inv.id}
+                      className="flex items-center justify-between rounded-lg border p-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">{inv.invoiceNumber}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {inv.percentage && <>{inv.percentage}% — </>}
+                          {new Intl.NumberFormat('id-ID', {
+                            style: 'currency',
+                            currency: 'IDR',
+                            minimumFractionDigits: 0,
+                          }).format(inv.total)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge>
+                          {st(
+                            inv.status as
+                              | 'draft'
+                              | 'paid'
+                              | 'unpaid'
+                              | 'void'
+                              | 'partially_paid'
+                              | 'overdue'
+                              | 'pendingPayment'
+                              | 'failed',
+                          )}
+                        </Badge>
+                        <Button variant="ghost" size="icon-sm" asChild>
+                          <Link to="/invoices/$id" params={{ id: inv.id }}>
+                            <FileText className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <AlertDialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
@@ -323,6 +424,22 @@ export function ViewOrderPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CreateInvoiceModal
+        open={invoiceModalOpen}
+        onOpenChange={setInvoiceModalOpen}
+        order={{
+          id: order.id,
+          orderNumber: order.orderNumber,
+          total: order.total,
+          invoicedPercentage: invoicedPct,
+          invoicedAmount: invoicedAmt,
+          remainingPercentage: remainingPct,
+          remainingAmount: remainingAmt,
+          customerId: order.customerId,
+          customerName,
+        }}
+      />
     </PageContent>
   )
 }
