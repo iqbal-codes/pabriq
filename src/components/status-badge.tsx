@@ -20,6 +20,10 @@ const statusMap: Record<string, StatusVariant> = {
   active: 'success',
   inactive: 'secondary',
   paid: 'success',
+  partially_paid: 'warning',
+  unpaid: 'outline',
+  void: 'destructive',
+  pendingPayment: 'warning',
   overdue: 'destructive',
   failed: 'destructive',
 }
@@ -41,6 +45,10 @@ export function StatusBadge({ status }: { status: string }) {
             | 'active'
             | 'inactive'
             | 'paid'
+            | 'partially_paid'
+            | 'unpaid'
+            | 'void'
+            | 'pendingPayment'
             | 'overdue'
             | 'failed',
         )
