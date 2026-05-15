@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { useStore } from '@tanstack/react-form'
 import { Trash } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { FormGrid, FormRoot, useAppForm } from '#/components/app/form'
@@ -57,8 +59,15 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
     },
   })
 
-  const canSubmit =
-    !form.state.isSubmitting && form.state.values.name.trim().length > 0
+  const isSubmitting = useStore(form.store, (state) => state.isSubmitting)
+  const nameValue = useStore(form.store, (state) => state.values.name)
+  const canSubmit = !isSubmitting && nameValue.trim().length > 0
+
+  useEffect(() => {
+    if (open) {
+      form.reset()
+    }
+  }, [open, form])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

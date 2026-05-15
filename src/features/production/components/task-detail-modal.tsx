@@ -280,14 +280,15 @@ export function TaskDetailModal({
           )}
           {!showRequirementForm &&
             task.status === 'in_progress' &&
-            nextStage && (
+            (nextStage || currentStageIndex === activeStages.length - 1) && (
               <Button onClick={handleAdvanceClick}>
-                {nextStage.name === 'Selesai'
+                {(nextStage?.name === 'Selesai' ||
+                  currentStageIndex === activeStages.length - 1)
                   ? 'Selesai'
                   : task.board === 'pre_production' &&
                       currentStageIndex === activeStages.length - 1
                     ? t('continueToProduction')
-                    : t('advanceTo', { stage: nextStage.name })}
+                    : t('advanceTo', { stage: nextStage?.name })}
               </Button>
             )}
           {!showRequirementForm &&

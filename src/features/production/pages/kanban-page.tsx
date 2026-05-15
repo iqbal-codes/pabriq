@@ -49,6 +49,8 @@ export function KanbanPage({ orgId }: Props) {
   const filters = useMemo(
     () => ({
       orgId,
+      // Show all tasks across all boards for unified view
+      board: undefined,
       search: search || undefined,
       stageId: stageFilter || undefined,
     }),

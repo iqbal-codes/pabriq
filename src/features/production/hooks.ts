@@ -15,6 +15,7 @@ import {
   listBoardTasksFn,
   listStagesFn,
   listTaskActivitiesFn,
+  listTasksByOrderIdFn,
   rejectTaskAdvanceFn,
   reorderStagesFn,
   saveTaskCommentFn,
@@ -173,6 +174,33 @@ export function useTaskCounts(board?: string) {
   })
 }
 
+export function useTasksByOrderId(orderId: string) {
+  return useQuery({
+    queryKey: queryKeys.production.tasksByOrder(orderId),
+    queryFn: () => listTasksByOrderIdFn({ data: { orderId } }),
+    enabled: !!orderId,
+  })
+}
+
+function useTasksForOrderInternal(orderId: string) {
+  return useQuery({
+    queryKey: queryKeys.production.tasksByOrder(orderId),
+    queryFn: () => listTasksByOrderIdFn({ data: { orderId } }),
+    enabled: !!orderId,
+  })
+}
+
+export function useTaskByLineItemId(lineItemId: string, orderId: string) {
+  const { data: allTasks } = useTasksForOrderInternal(orderId)
+
+  if (!allTasks) return null
+
+  // Find task that matches lineItemId directly (not from context)
+  const matchingTask = allTasks.find((bt) => bt.task.lineItemId === lineItemId)
+
+  return matchingTask ?? null
+}
+
 export function useTaskMutations() {
   const queryClient = useQueryClient()
   const t = useTranslations('production')
@@ -195,7 +223,7 @@ export function useTaskMutations() {
     }
   >({
     mutationFn: (input) => advanceTaskFn({ data: input }),
-    onSuccess: (result) => {
+    onSuccess: (result, vars) => {
       if ('error' in result) {
         toast.error(result.error)
         return
@@ -205,6 +233,8 @@ export function useTaskMutations() {
       } else {
         toast.success(t('movedToStage'))
       }
+      queryClient.invalidateQueries({ queryKey: queryKeys.production.task(vars.taskId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.production.activities(vars.taskId) })
       invalidate()
     },
   })
@@ -215,12 +245,14 @@ export function useTaskMutations() {
     { taskId: string; reviewNotes?: string }
   >({
     mutationFn: (input) => approveTaskAdvanceFn({ data: input }),
-    onSuccess: (result) => {
+    onSuccess: (result, vars) => {
       if ('error' in result) {
         toast.error(result.error)
         return
       }
       toast.success(t('approved'))
+      queryClient.invalidateQueries({ queryKey: queryKeys.production.task(vars.taskId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.production.activities(vars.taskId) })
       invalidate()
     },
   })
@@ -231,12 +263,14 @@ export function useTaskMutations() {
     { taskId: string; reviewNotes?: string }
   >({
     mutationFn: (input) => rejectTaskAdvanceFn({ data: input }),
-    onSuccess: (result) => {
+    onSuccess: (result, vars) => {
       if ('error' in result) {
         toast.error(result.error)
         return
       }
       toast.success(t('rejected'))
+      queryClient.invalidateQueries({ queryKey: queryKeys.production.task(vars.taskId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.production.activities(vars.taskId) })
       invalidate()
     },
   })

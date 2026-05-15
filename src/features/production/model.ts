@@ -6,7 +6,6 @@ import {
   productionStages as stagesTable,
   productionTasks as tasksTable,
 } from '#/db/schema'
-import { advanceOrderStatus } from '#/features/orders/model'
 import { canApproveProductionTask } from '#/features/permissions/model'
 
 export type { Requirement } from '#/db/schema'
@@ -334,6 +333,50 @@ export async function advanceTask(
   const completedReqIds = Object.keys(requirementResponses ?? {})
 
   const nextStageIdx = currentStageIdx + 1
+
+  // Handle board transition: when pre_production completes all stages, move to production board
+  if (nextStageIdx >= allStages.length && task.board === 'pre_production') {
+    // Fetch production stages
+    const prodStages = await db
+      .select()
+      .from(stagesTable)
+      .where(
+        and(
+          eq(stagesTable.orgId, orgId),
+          eq(stagesTable.active, true),
+          eq(stagesTable.board, 'production'),
+        ),
+      )
+      .orderBy(asc(stagesTable.orderIndex))
+
+    if (prodStages.length > 0) {
+      // Transition to production board - move to first production stage
+      const now = new Date()
+      await db
+        .update(tasksTable)
+        .set({
+          board: 'production',
+          stageId: prodStages[0].id,
+          status: 'in_progress',
+          updatedAt: now,
+        })
+        .where(eq(tasksTable.id, taskId))
+
+      await logActivity({
+        orgId,
+        taskId,
+        type: 'board_transition',
+        fromStageId: task.stageId,
+        toStageId: prodStages[0].id,
+        data: { fromBoard: 'pre_production', toBoard: 'production' },
+        actorId,
+      })
+
+      return { ok: true, pendingApproval: false }
+    }
+    // If no production stages, complete as normal
+  }
+
   if (nextStageIdx >= allStages.length) {
     const now = new Date()
     await db
@@ -341,7 +384,7 @@ export async function advanceTask(
       .set({
         status: 'completed',
         stageId: null,
-        archivedAt: now,
+        // Don't set archivedAt here — completed tasks should stay visible in Done column
         updatedAt: now,
       })
       .where(eq(tasksTable.id, taskId))
@@ -356,14 +399,56 @@ export async function advanceTask(
       actorId,
     })
 
-    if (task.board === 'pre_production') {
-      await advanceOrderStatus(task.orderId, orgId, actorId)
-    }
-
     return { ok: true, pendingApproval: false }
   }
 
   const nextStage = allStages[nextStageIdx] as Stage
+
+  // When advancing from queue (isQueued), always enter the first stage first
+  // Approval/requirement is checked when trying to ADVANCE from that stage
+  if (isQueued) {
+    const now = new Date()
+    await db
+      .update(tasksTable)
+      .set({
+        status: 'in_progress',
+        stageId: nextStage.id,
+        updatedAt: now,
+      })
+      .where(eq(tasksTable.id, taskId))
+
+    await logActivity({
+      orgId,
+      taskId,
+      type: 'stage_transition',
+      fromStageId: task.stageId,
+      toStageId: nextStage.id,
+      data: { completedRequirements: [] },
+      actorId,
+    })
+
+    return { ok: true, pendingApproval: false }
+  }
+
+  // For non-queued tasks, check requirements and approval when trying to exit current stage
+  if (!isQueued) {
+    const currentStage = allStages[currentStageIdx] as Stage
+    const requiredReqs = currentStage.requirements.filter(
+      (r: { required: boolean }) => r.required,
+    )
+    const missing = requiredReqs.filter(
+      (r: { id: string }) =>
+        !requirementResponses?.[r.id]?.value &&
+        !requirementResponses?.[r.id]?.assetIds?.length,
+    )
+    if (missing.length > 0) {
+      const names = missing.map((r: { label: string }) => r.label).join(', ')
+      return {
+        ok: false,
+        error: `Required requirements not fulfilled: ${names}`,
+      }
+    }
+  }
 
   if (nextStage.needApproval) {
     const now = new Date()
@@ -455,6 +540,49 @@ export async function approveTaskAdvance(
     actorId,
   })
 
+  // Handle board transition: when pre_production completes all stages, move to production board
+  if (nextStageIdx >= allStages.length && task.board === 'pre_production') {
+    // Fetch production stages
+    const prodStages = await db
+      .select()
+      .from(stagesTable)
+      .where(
+        and(
+          eq(stagesTable.orgId, orgId),
+          eq(stagesTable.active, true),
+          eq(stagesTable.board, 'production'),
+        ),
+      )
+      .orderBy(asc(stagesTable.orderIndex))
+
+    if (prodStages.length > 0) {
+      // Transition to production board - move to first production stage
+      const now = new Date()
+      await db
+        .update(tasksTable)
+        .set({
+          board: 'production',
+          stageId: prodStages[0].id,
+          status: 'in_progress',
+          updatedAt: now,
+        })
+        .where(eq(tasksTable.id, taskId))
+
+      await logActivity({
+        orgId,
+        taskId,
+        type: 'board_transition',
+        fromStageId: task.stageId,
+        toStageId: prodStages[0].id,
+        data: { fromBoard: 'pre_production', toBoard: 'production' },
+        actorId,
+      })
+
+      return { ok: true, pendingApproval: false }
+    }
+    // If no production stages, complete as normal
+  }
+
   if (nextStageIdx >= allStages.length) {
     const now = new Date()
     await db
@@ -462,10 +590,11 @@ export async function approveTaskAdvance(
       .set({
         status: 'completed',
         stageId: null,
-        archivedAt: now,
+        // Don't set archivedAt here — completed tasks should stay visible in Done column
         updatedAt: now,
       })
       .where(eq(tasksTable.id, taskId))
+
 
     await logActivity({
       orgId,
@@ -476,10 +605,6 @@ export async function approveTaskAdvance(
       data: { completedRequirements: [] },
       actorId,
     })
-
-    if (task.board === 'pre_production') {
-      await advanceOrderStatus(task.orderId, orgId, actorId)
-    }
 
     return { ok: true, pendingApproval: false }
   }
@@ -600,6 +725,7 @@ export type BoardTask = {
 export async function listBoardTasks(
   orgId: string,
   filter?: { board?: string; stageId?: string; search?: string },
+  options?: { archiveCompletedAfterHours?: number },
 ): Promise<{
   queued: BoardTask[]
   stages: Map<string, BoardTask[]>
@@ -607,6 +733,21 @@ export async function listBoardTasks(
 }> {
   const allStages = await listStages(orgId, filter?.board)
   const stageMap = new Map(allStages.map((s) => [s.id, s]))
+
+  // Auto-archive completed tasks older than N hours
+  const archiveAfterHours = options?.archiveCompletedAfterHours ?? 24
+  const cutoffTime = new Date(Date.now() - archiveAfterHours * 60 * 60 * 1000)
+  await db
+    .update(tasksTable)
+    .set({ archivedAt: new Date() })
+    .where(
+      and(
+        eq(tasksTable.orgId, orgId),
+        eq(tasksTable.status, 'completed'),
+        isNull(tasksTable.archivedAt),
+        sql`${tasksTable.updatedAt} < ${cutoffTime}`,
+      ),
+    )
 
   const taskConditions: ReturnType<typeof and>[] = [
     eq(tasksTable.orgId, orgId),

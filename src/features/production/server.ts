@@ -237,16 +237,25 @@ export const saveTaskCommentFn = createServerFn({ method: 'POST' })
 
 export const listBoardTasksFn = createServerFn({ method: 'GET' })
   .inputValidator(
-    (input: { board?: string; stageId?: string; search?: string }) => input,
+    (input: {
+      board?: string
+      stageId?: string
+      search?: string
+      archiveAfterHours?: number
+    }) => input,
   )
   .handler(async ({ data }) => {
     const orgId = await resolveOrgId()
     const { listBoardTasks } = await import('./model')
-    return listBoardTasks(orgId, {
-      board: data.board,
-      stageId: data.stageId,
-      search: data.search,
-    })
+    return listBoardTasks(
+      orgId,
+      {
+        board: data.board,
+        stageId: data.stageId,
+        search: data.search,
+      },
+      { archiveCompletedAfterHours: data.archiveAfterHours ?? 24 },
+    )
   })
 
 export const getTaskDetailFn = createServerFn({ method: 'GET' })
@@ -290,4 +299,36 @@ export const getTaskCountsFn = createServerFn({ method: 'GET' })
     const orgId = await resolveOrgId()
     const { getTaskCounts } = await import('./model')
     return getTaskCounts(orgId, data.board)
+  })
+
+export const listTasksByOrderIdFn = createServerFn({ method: 'GET' })
+  .inputValidator((input: { orderId: string }) => input)
+  .handler(async ({ data }) => {
+    const orgId = await resolveOrgId()
+    const { db } = await import('#/db/index')
+    const { productionTasks } = await import('#/db/schema')
+    const { eq, and } = await import('drizzle-orm')
+
+    const rows = await db
+      .select()
+      .from(productionTasks)
+      .where(
+        and(
+          eq(productionTasks.orgId, orgId),
+          eq(productionTasks.orderId, data.orderId),
+        ),
+      )
+
+    // Get stages for these tasks
+    const { listStages } = await import('./model')
+    const allStages = await listStages(orgId, undefined)
+    const stageMap = new Map(allStages.map((s) => [s.id, s]))
+
+    return rows.map((t) => ({
+      task: {
+        ...t,
+        context: t.context as Record<string, string | number | boolean | null> | null,
+      },
+      stage: t.stageId ? (stageMap.get(t.stageId) ?? null) : null,
+    }))
   })
