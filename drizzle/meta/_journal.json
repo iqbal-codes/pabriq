@@ -106,6 +106,20 @@
       "when": 1746650000000,
       "tag": "0020_profiles_email_address",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1746700000000,
+      "tag": "0021_production_boards",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1747200000000,
+      "tag": "0022_invoice_payments",
+      "breakpoints": true
     }
   ]
 }

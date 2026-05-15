@@ -2,6 +2,7 @@ import {
   boolean,
   date,
   foreignKey,
+  index,
   integer,
   json,
   pgTable,
@@ -360,6 +361,7 @@ export const invoiceLineItems = pgTable(
     description: text().notNull(),
     quantity: integer().notNull(),
     unitPrice: real('unit_price').notNull(),
+    lineType: text('line_type').default('product').notNull(),
     taxPercent: real('tax_percent').default(0).notNull(),
     total: real().notNull(),
     createdAt: timestamp('created_at', { mode: 'string' })
@@ -372,6 +374,50 @@ export const invoiceLineItems = pgTable(
       foreignColumns: [invoices.id],
       name: 'invoice_line_items_invoice_id_invoices_id_fk',
     }).onDelete('cascade'),
+  ],
+)
+
+export const payments = pgTable(
+  'payments',
+  {
+    id: text().primaryKey().notNull(),
+    orgId: text('org_id').notNull(),
+    invoiceId: text('invoice_id').notNull(),
+    amount: real().notNull(),
+    method: text().default('bank_transfer').notNull(),
+    reference: text(),
+    proofAssetId: text('proof_asset_id'),
+    status: text().default('pending').notNull(),
+    receivedAt: timestamp('received_at', { mode: 'string' }),
+    confirmedAt: timestamp('confirmed_at', { mode: 'string' }),
+    confirmedBy: text('confirmed_by'),
+    rejectedReason: text('rejected_reason'),
+    createdAt: timestamp('created_at', { mode: 'string' })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { mode: 'string' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.orgId],
+      foreignColumns: [organization.id],
+      name: 'payments_org_id_organization_id_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.invoiceId],
+      foreignColumns: [invoices.id],
+      name: 'payments_invoice_id_invoices_id_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.proofAssetId],
+      foreignColumns: [assets.id],
+      name: 'payments_proof_asset_id_assets_id_fk',
+    }).onDelete('set null'),
+    index('idx_payments_org_id').on(table.orgId),
+    index('idx_payments_invoice_id').on(table.invoiceId),
+    index('idx_payments_status').on(table.status),
   ],
 )
 

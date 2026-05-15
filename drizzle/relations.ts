@@ -17,6 +17,7 @@ import {
   organization,
   organizationProfiles,
   paymentMethods,
+  payments,
   pricingBreakpoints,
   productionTasks,
   products,
@@ -70,6 +71,7 @@ export const organizationRelations = relations(organization, ({ many }) => ({
   orderLineItems: many(orderLineItems),
   products: many(products),
   productVariants: many(productVariants),
+  payments: many(payments),
   paymentMethods: many(paymentMethods),
   pricingBreakpoints: many(pricingBreakpoints),
   productionTasks: many(productionTasks),
@@ -177,6 +179,21 @@ export const invoiceLineItemsRelations = relations(
     }),
   }),
 )
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  organization: one(organization, {
+    fields: [payments.orgId],
+    references: [organization.id],
+  }),
+  invoice: one(invoices, {
+    fields: [payments.invoiceId],
+    references: [invoices.id],
+  }),
+  proofAsset: one(assets, {
+    fields: [payments.proofAssetId],
+    references: [assets.id],
+  }),
+}))
 
 export const paymentMethodsRelations = relations(paymentMethods, ({ one }) => ({
   organization: one(organization, {

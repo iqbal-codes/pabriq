@@ -1,6 +1,7 @@
 import {
   boolean,
   date,
+  index,
   integer,
   json,
   pgTable,
@@ -324,6 +325,7 @@ export const invoiceLineItems = pgTable('invoice_line_items', {
   description: text('description').notNull(),
   quantity: integer('quantity').notNull(),
   unitPrice: real('unit_price').notNull(),
+  lineType: text('line_type').notNull().default('product'),
   taxPercent: real('tax_percent').notNull().default(0),
   total: real('total').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -335,6 +337,37 @@ export type Requirement = {
   type: 'text' | 'number' | 'upload'
   required: boolean
 }
+
+export const payments = pgTable(
+  'payments',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    invoiceId: text('invoice_id')
+      .notNull()
+      .references(() => invoices.id, { onDelete: 'cascade' }),
+    amount: real('amount').notNull(),
+    method: text('method').notNull().default('bank_transfer'),
+    reference: text('reference'),
+    proofAssetId: text('proof_asset_id').references(() => assets.id, {
+      onDelete: 'set null',
+    }),
+    status: text('status').notNull().default('pending'),
+    receivedAt: timestamp('received_at'),
+    confirmedAt: timestamp('confirmed_at'),
+    confirmedBy: text('confirmed_by'),
+    rejectedReason: text('rejected_reason'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_payments_org_id').on(table.orgId),
+    index('idx_payments_invoice_id').on(table.invoiceId),
+    index('idx_payments_status').on(table.status),
+  ],
+)
 
 export const productionStages = pgTable('production_stages', {
   id: text('id').primaryKey(),
