@@ -233,9 +233,8 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
       }
 
       // 2. Get order and customer info
-      const { orders: ordersTable, customers: customersTable } = await await import(
-        '#/db/schema'
-      )
+      const { orders: ordersTable, customers: customersTable } =
+        await await import('#/db/schema')
       const orderRows = await db
         .select()
         .from(ordersTable)
@@ -250,7 +249,7 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
       }
 
       // Get customer info
-      let customerId = order.customerId ?? 'unknown'
+      const customerId = order.customerId ?? 'unknown'
       let customerName = 'Unknown Customer'
 
       if (order.customerId) {
@@ -268,9 +267,7 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
       }
 
       // 3. Calculate remaining balance
-      const { invoices: invoicesTable } = await import(
-        '#/db/schema'
-      )
+      const { invoices: invoicesTable } = await import('#/db/schema')
       const paidInvoices = await db
         .select({ total: invoicesTable.total })
         .from(invoicesTable)
@@ -282,7 +279,10 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
           ),
         )
 
-      const invoicedAmount = paidInvoices.reduce((sum, inv) => sum + inv.total, 0)
+      const invoicedAmount = paidInvoices.reduce(
+        (sum, inv) => sum + inv.total,
+        0,
+      )
       const remainingAmount = Math.max(0, order.total - invoicedAmount)
 
       // 4. Create final invoice if there's remaining balance

@@ -1,17 +1,17 @@
-import { Banknote, CheckCircle2, ExternalLink, XCircle } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-import { useTranslations } from "use-intl";
+import { Banknote, CheckCircle2, ExternalLink, XCircle } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import { useTranslations } from 'use-intl'
 import {
   FormActions,
   FormGrid,
   FormRoot,
   FormSection,
   useAppForm,
-} from "#/components/app/form";
-import { PageContent } from "#/components/app/page-shell/page-content";
-import { PageHeader } from "#/components/app/page-shell/page-header";
-import { StatusBadge } from "#/components/status-badge";
+} from '#/components/app/form'
+import { PageContent } from '#/components/app/page-shell/page-content'
+import { PageHeader } from '#/components/app/page-shell/page-header'
+import { StatusBadge } from '#/components/status-badge'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,16 +21,16 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "#/components/ui/alert-dialog";
-import { Badge } from "#/components/ui/badge";
-import { Button } from "#/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
+} from '#/components/ui/alert-dialog'
+import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "#/components/ui/dialog";
+} from '#/components/ui/dialog'
 import {
   useConfirmPayment,
   useCreatePayment,
@@ -40,60 +40,60 @@ import {
   useMarkInvoicePaid,
   useRejectPayment,
   useVoidInvoice,
-} from "#/features/invoices/hooks";
-import { Route } from "#/routes/_org/invoices/$id/index";
+} from '#/features/invoices/hooks'
+import { Route } from '#/routes/_org/invoices/$id/index'
 
 function RecordPaymentDialog({
   open,
   onOpenChange,
   invoiceId,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  invoiceId: string;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  invoiceId: string
 }) {
-  const t = useTranslations("invoices");
-  const ct = useTranslations("common");
-  const createPayment = useCreatePayment();
+  const t = useTranslations('invoices')
+  const ct = useTranslations('common')
+  const createPayment = useCreatePayment()
 
   const paymentMethodOptions = [
-    { value: "bank_transfer", label: t("bankTransfer") },
-    { value: "payment_gateway", label: t("gateway") },
-    { value: "cash", label: t("paymentCash") },
-  ];
+    { value: 'bank_transfer', label: t('bankTransfer') },
+    { value: 'payment_gateway', label: t('gateway') },
+    { value: 'cash', label: t('paymentCash') },
+  ]
 
   const form = useAppForm({
     defaultValues: {
-      amount: "",
-      method: "bank_transfer",
-      reference: "",
+      amount: '',
+      method: 'bank_transfer',
+      reference: '',
     },
     onSubmit: async ({ value }) => {
-      const amount = Number.parseFloat(value.amount);
+      const amount = Number.parseFloat(value.amount)
       if (!amount || amount <= 0) {
-        toast.error(t("invalidAmount"));
-        return;
+        toast.error(t('invalidAmount'))
+        return
       }
       const res = await createPayment.mutateAsync({
         invoiceId,
         amount,
-        method: value.method as "bank_transfer" | "payment_gateway" | "cash",
+        method: value.method as 'bank_transfer' | 'payment_gateway' | 'cash',
         reference: value.reference || undefined,
-      });
+      })
       if (res.ok) {
-        toast.success(t("paymentRecorded"));
-        onOpenChange(false);
+        toast.success(t('paymentRecorded'))
+        onOpenChange(false)
       } else {
-        toast.error(res.error ?? "Failed");
+        toast.error(res.error ?? 'Failed')
       }
     },
-  });
+  })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("recordPayment")}</DialogTitle>
+          <DialogTitle>{t('recordPayment')}</DialogTitle>
         </DialogHeader>
 
         <FormRoot form={form}>
@@ -101,23 +101,23 @@ function RecordPaymentDialog({
             <FormGrid columns={1}>
               <form.AppField name="amount">
                 {(field) => (
-                  <field.NumberField label={t("amount")} placeholder="0" />
+                  <field.NumberField label={t('amount')} placeholder="0" />
                 )}
               </form.AppField>
               <form.AppField name="method">
                 {(field) => (
                   <field.SelectField
-                    label={t("method")}
+                    label={t('method')}
                     options={paymentMethodOptions}
-                    placeholder={t("method")}
+                    placeholder={t('method')}
                   />
                 )}
               </form.AppField>
               <form.AppField name="reference">
                 {(field) => (
                   <field.TextField
-                    label={t("reference")}
-                    placeholder={t("reference")}
+                    label={t('reference')}
+                    placeholder={t('reference')}
                   />
                 )}
               </form.AppField>
@@ -130,16 +130,16 @@ function RecordPaymentDialog({
               type="button"
               onClick={() => onOpenChange(false)}
             >
-              {ct("cancel")}
+              {ct('cancel')}
             </Button>
             <form.AppForm>
-              <form.SubmitButton>{t("recordPayment")}</form.SubmitButton>
+              <form.SubmitButton>{t('recordPayment')}</form.SubmitButton>
             </form.AppForm>
           </FormActions>
         </FormRoot>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
 
 function RejectPaymentDialog({
@@ -149,33 +149,33 @@ function RejectPaymentDialog({
   onReject,
   isPending,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  paymentId: string | null;
-  onReject: (paymentId: string, reason: string) => Promise<void>;
-  isPending: boolean;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  paymentId: string | null
+  onReject: (paymentId: string, reason: string) => Promise<void>
+  isPending: boolean
 }) {
-  const t = useTranslations("invoices");
-  const ct = useTranslations("common");
+  const t = useTranslations('invoices')
+  const ct = useTranslations('common')
 
   const form = useAppForm({
     defaultValues: {
-      reason: "",
+      reason: '',
     },
     onSubmit: async ({ value }) => {
       if (paymentId) {
-        await onReject(paymentId, value.reason.trim());
+        await onReject(paymentId, value.reason.trim())
       }
     },
-  });
+  })
 
   return (
     <AlertDialog
       open={open}
       onOpenChange={(open_) => {
         if (!open_) {
-          onOpenChange(false);
-          form.reset();
+          onOpenChange(false)
+          form.reset()
         }
       }}
     >
@@ -183,18 +183,18 @@ function RejectPaymentDialog({
         <FormRoot form={form}>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t("rejectSimple")} {t("payments")}
+              {t('rejectSimple')} {t('payments')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t("rejectReasonPlaceholder")}
+              {t('rejectReasonPlaceholder')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-3">
             <form.AppField name="reason">
               {(field) => (
                 <field.TextareaField
-                  label={t("rejectReasonPlaceholder")}
-                  placeholder={t("rejectReasonPlaceholder")}
+                  label={t('rejectReasonPlaceholder')}
+                  placeholder={t('rejectReasonPlaceholder')}
                 />
               )}
             </form.AppField>
@@ -203,11 +203,11 @@ function RejectPaymentDialog({
             <AlertDialogCancel
               type="button"
               onClick={() => {
-                onOpenChange(false);
-                form.reset();
+                onOpenChange(false)
+                form.reset()
               }}
             >
-              {ct("cancel")}
+              {ct('cancel')}
             </AlertDialogCancel>
             <form.AppForm>
               <AlertDialogAction
@@ -220,7 +220,7 @@ function RejectPaymentDialog({
                   variant="default"
                   disabled={!form.state.values.reason.trim() || isPending}
                 >
-                  {t("rejectSimple")}
+                  {t('rejectSimple')}
                 </Button>
               </AlertDialogAction>
             </form.AppForm>
@@ -228,87 +228,87 @@ function RejectPaymentDialog({
         </FormRoot>
       </AlertDialogContent>
     </AlertDialog>
-  );
+  )
 }
 
 export function InvoiceDetailPage() {
-  const { id } = Route.useParams();
-  const t = useTranslations("invoices");
-  const st = useTranslations("status");
+  const { id } = Route.useParams()
+  const t = useTranslations('invoices')
+  const st = useTranslations('status')
 
-  const { data: result } = useInvoice(id);
-  const { data: payments } = useInvoicePayments(id);
-  const { data: balance } = useInvoiceBalance(id);
-  const markPaid = useMarkInvoicePaid();
-  const voidInv = useVoidInvoice();
-  const confirmPayment = useConfirmPayment();
-  const rejectPayment = useRejectPayment();
+  const { data: result } = useInvoice(id)
+  const { data: payments } = useInvoicePayments(id)
+  const { data: balance } = useInvoiceBalance(id)
+  const markPaid = useMarkInvoicePaid()
+  const voidInv = useVoidInvoice()
+  const confirmPayment = useConfirmPayment()
+  const rejectPayment = useRejectPayment()
 
-  const [recordDialogOpen, setRecordDialogOpen] = useState(false);
-  const [rejectDialogId, setRejectDialogId] = useState<string | null>(null);
+  const [recordDialogOpen, setRecordDialogOpen] = useState(false)
+  const [rejectDialogId, setRejectDialogId] = useState<string | null>(null)
 
   if (!result) {
     return (
       <PageContent>
-        <PageHeader title={t("viewInvoice")} />
+        <PageHeader title={t('viewInvoice')} />
       </PageContent>
-    );
+    )
   }
 
-  const { invoice, lineItems, paymentMethod } = result;
+  const { invoice, lineItems, paymentMethod } = result
   const canModify =
-    invoice.status === "unpaid" || invoice.status === "partially_paid";
+    invoice.status === 'unpaid' || invoice.status === 'partially_paid'
 
   const handleMarkPaid = async () => {
-    const res = await markPaid.mutateAsync(id);
+    const res = await markPaid.mutateAsync(id)
     if (res.ok) {
-      toast.success(st("paid"));
+      toast.success(st('paid'))
     } else {
-      toast.error(res.error ?? "Failed");
+      toast.error(res.error ?? 'Failed')
     }
-  };
+  }
 
   const handleVoid = async () => {
-    const res = await voidInv.mutateAsync(id);
+    const res = await voidInv.mutateAsync(id)
     if (res.ok) {
-      toast.success(t("voidInvoice"));
+      toast.success(t('voidInvoice'))
     } else {
-      toast.error(res.error ?? "Failed");
+      toast.error(res.error ?? 'Failed')
     }
-  };
+  }
 
   const handleConfirmPayment = async (paymentId: string) => {
-    const res = await confirmPayment.mutateAsync(paymentId);
+    const res = await confirmPayment.mutateAsync(paymentId)
     if (res.ok) {
-      toast.success(t("paymentConfirmed"));
+      toast.success(t('paymentConfirmed'))
     } else {
-      toast.error(res.error ?? "Failed");
+      toast.error(res.error ?? 'Failed')
     }
-  };
+  }
 
   const handleRejectPayment = async (paymentId: string, reason: string) => {
     const res = await rejectPayment.mutateAsync({
       paymentId,
       reason,
-    });
+    })
     if (res.ok) {
-      toast.success(t("paymentRejected"));
-      setRejectDialogId(null);
+      toast.success(t('paymentRejected'))
+      setRejectDialogId(null)
     } else {
-      toast.error(res.error ?? "Failed");
+      toast.error(res.error ?? 'Failed')
     }
-  };
+  }
 
   const fmt = (n: number) =>
-    new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
+    new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
       minimumFractionDigits: 0,
-    }).format(n);
+    }).format(n)
 
   return (
     <PageContent>
-      <PageHeader title={`${t("viewInvoice")} — ${invoice.invoiceNumber}`} />
+      <PageHeader title={`${t('viewInvoice')} — ${invoice.invoiceNumber}`} />
 
       <div className="mb-4 flex items-center gap-2">
         <StatusBadge status={invoice.status} />
@@ -320,7 +320,7 @@ export function InvoiceDetailPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>{t("customer")}</CardTitle>
+            <CardTitle>{t('customer')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="font-medium">{invoice.customerName}</p>
@@ -329,7 +329,7 @@ export function InvoiceDetailPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t("total")}</CardTitle>
+            <CardTitle>{t('total')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="font-bold">{fmt(invoice.total)}</p>
@@ -338,7 +338,7 @@ export function InvoiceDetailPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t("dueDate")}</CardTitle>
+            <CardTitle>{t('dueDate')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p>{invoice.dueDate}</p>
@@ -347,7 +347,7 @@ export function InvoiceDetailPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t("paymentMethod")}</CardTitle>
+            <CardTitle>{t('paymentMethod')}</CardTitle>
           </CardHeader>
           <CardContent>
             {paymentMethod ? (
@@ -363,7 +363,7 @@ export function InvoiceDetailPage() {
 
       <Card className="mt-4">
         <CardHeader>
-          <CardTitle>{t("lineItems")}</CardTitle>
+          <CardTitle>{t('lineItems')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -390,19 +390,19 @@ export function InvoiceDetailPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Banknote className="h-5 w-5" />
-            {t("payments")}
+            {t('payments')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {balance && (
             <div className="grid grid-cols-2 gap-3 rounded-lg bg-muted p-4 md:grid-cols-4">
               <div>
-                <p className="text-sm text-muted-foreground">{t("total")}</p>
+                <p className="text-sm text-muted-foreground">{t('total')}</p>
                 <p className="font-semibold">{fmt(balance.total)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">
-                  {t("paidAmount")}
+                  {t('paidAmount')}
                 </p>
                 <p className="font-semibold text-success">
                   {fmt(balance.confirmedAmount)}
@@ -410,7 +410,7 @@ export function InvoiceDetailPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">
-                  {t("pendingAmount")}
+                  {t('pendingAmount')}
                 </p>
                 <p className="font-semibold text-warning">
                   {fmt(balance.pendingAmount)}
@@ -418,7 +418,7 @@ export function InvoiceDetailPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">
-                  {t("remaining")}
+                  {t('remaining')}
                 </p>
                 <p className="font-semibold">{fmt(balance.remaining)}</p>
               </div>
@@ -428,7 +428,7 @@ export function InvoiceDetailPage() {
           {payments && payments.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground">
-                {t("paymentHistory")}
+                {t('paymentHistory')}
               </p>
               {payments.map((pm) => (
                 <div
@@ -440,7 +440,7 @@ export function InvoiceDetailPage() {
                       <p className="font-medium">{fmt(pm.amount)}</p>
                       <Badge
                         variant={
-                          pm.status === "rejected" ? "destructive" : "secondary"
+                          pm.status === 'rejected' ? 'destructive' : 'secondary'
                         }
                       >
                         {pm.status}
@@ -448,11 +448,11 @@ export function InvoiceDetailPage() {
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {pm.method}
-                      {pm.reference ? ` — ${pm.reference}` : ""}
+                      {pm.reference ? ` — ${pm.reference}` : ''}
                     </p>
                     {pm.receivedAt && (
                       <p className="text-xs text-muted-foreground">
-                        {new Date(pm.receivedAt).toLocaleDateString("id-ID")}
+                        {new Date(pm.receivedAt).toLocaleDateString('id-ID')}
                       </p>
                     )}
                   </div>
@@ -468,7 +468,7 @@ export function InvoiceDetailPage() {
                         </a>
                       </Button>
                     )}
-                    {pm.status === "pending" && (
+                    {pm.status === 'pending' && (
                       <>
                         <Button
                           variant="outline"
@@ -477,7 +477,7 @@ export function InvoiceDetailPage() {
                           disabled={confirmPayment.isPending}
                         >
                           <CheckCircle2 className="mr-1 h-3 w-3" />
-                          {t("confirmSimple")}
+                          {t('confirmSimple')}
                         </Button>
                         <Button
                           variant="ghost"
@@ -485,7 +485,7 @@ export function InvoiceDetailPage() {
                           onClick={() => setRejectDialogId(pm.id)}
                         >
                           <XCircle className="mr-1 h-3 w-3" />
-                          {t("rejectSimple")}
+                          {t('rejectSimple')}
                         </Button>
                       </>
                     )}
@@ -510,7 +510,7 @@ export function InvoiceDetailPage() {
                 disabled={markPaid.isPending}
               >
                 <CheckCircle2 className="mr-2 h-4 w-4" />
-                {t("markAsPaid")}
+                {t('markAsPaid')}
               </Button>
               <Button
                 variant="outline"
@@ -519,7 +519,7 @@ export function InvoiceDetailPage() {
                 disabled={voidInv.isPending}
               >
                 <XCircle className="mr-2 h-4 w-4" />
-                {t("voidInvoice")}
+                {t('voidInvoice')}
               </Button>
             </div>
           )}
@@ -530,7 +530,7 @@ export function InvoiceDetailPage() {
         open={!!rejectDialogId}
         onOpenChange={(open_) => {
           if (!open_) {
-            setRejectDialogId(null);
+            setRejectDialogId(null)
           }
         }}
         paymentId={rejectDialogId}
@@ -538,5 +538,5 @@ export function InvoiceDetailPage() {
         isPending={rejectPayment.isPending}
       />
     </PageContent>
-  );
+  )
 }

@@ -303,7 +303,8 @@ export async function getOrder(
     customerPhone: customer?.phone ?? null,
     customerPhotoAssetId: customer?.photoAssetId ?? null,
     customerEmail: customer?.email ?? null,
-    shippingAddress: (orderRows[0].shippingAddress ?? null) as ShippingAddress | null,
+    shippingAddress: (orderRows[0].shippingAddress ??
+      null) as ShippingAddress | null,
   }
 }
 

@@ -9,17 +9,17 @@ import {
   FormSection,
   useAppForm,
 } from '#/components/app/form'
-import { Input } from '#/components/ui/input'
-import { Label } from '#/components/ui/label'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
+import { Input } from '#/components/ui/input'
+import { Label } from '#/components/ui/label'
 import type { ShippingAddress } from '#/features/address/model'
-import { useCompleteProduction } from '#/features/orders/hooks'
 import { usePaymentMethods } from '#/features/invoices/hooks'
+import { useCompleteProduction } from '#/features/orders/hooks'
 
 type OrderSummary = {
   id: string
@@ -85,7 +85,8 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
         courier: value.courier || undefined,
         trackingNumber: value.trackingNumber || undefined,
         shippingFee: shippingAmount > 0 ? shippingAmount : undefined,
-        shippingFeeDescription: shippingAmount > 0 ? value.shippingFeeDescription : undefined,
+        shippingFeeDescription:
+          shippingAmount > 0 ? value.shippingFeeDescription : undefined,
         invoicePercentage: 100, // Always pay remaining 100%
         invoiceDueDate: value.dueDate,
         invoicePaymentMethodId: value.paymentMethodId,
@@ -149,19 +150,28 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
 
               <form.AppField name="courier">
                 {(field) => (
-                  <field.TextField label={t('courier')} placeholder={t('courierPlaceholder')} />
+                  <field.TextField
+                    label={t('courier')}
+                    placeholder={t('courierPlaceholder')}
+                  />
                 )}
               </form.AppField>
 
               <form.AppField name="trackingNumber">
                 {(field) => (
-                  <field.TextField label={t('trackingNumber')} placeholder={t('trackingNumberPlaceholder')} />
+                  <field.TextField
+                    label={t('trackingNumber')}
+                    placeholder={t('trackingNumberPlaceholder')}
+                  />
                 )}
               </form.AppField>
 
               <div>
                 <Label htmlFor="shippingFee" className="text-sm font-medium">
-                  {t('shipmentFee')} <span className="text-muted-foreground font-normal">(optional)</span>
+                  {t('shipmentFee')}{' '}
+                  <span className="text-muted-foreground font-normal">
+                    (optional)
+                  </span>
                 </Label>
                 <Input
                   id="shippingFee"
@@ -181,7 +191,10 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
               {showShippingDesc && (
                 <form.AppField name="shippingFeeDescription">
                   {(field) => (
-                    <field.TextField label="Description" placeholder="e.g., Shipping Fee" />
+                    <field.TextField
+                      label="Description"
+                      placeholder="e.g., Shipping Fee"
+                    />
                   )}
                 </form.AppField>
               )}
@@ -202,15 +215,11 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
               </form.AppField>
 
               <form.AppField name="dueDate">
-                {(field) => (
-                  <field.TextField label={it('dueDate')} />
-                )}
+                {(field) => <field.TextField label={it('dueDate')} />}
               </form.AppField>
 
               <form.AppField name="notes">
-                {(field) => (
-                  <field.TextareaField label={it('notes')} />
-                )}
+                {(field) => <field.TextareaField label={it('notes')} />}
               </form.AppField>
             </FormGrid>
           </FormSection>
@@ -228,11 +237,17 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Already Paid</span>
-                <span className="font-medium text-green-600">{fmt(order.invoicedAmount)}</span>
+                <span className="font-medium text-green-600">
+                  {fmt(order.invoicedAmount)}
+                </span>
               </div>
               <div className="flex justify-between border-t pt-2">
-                <span className="text-muted-foreground">{t('remainingPayment')}</span>
-                <span className="font-medium text-orange-600">{fmt(order.remainingAmount)}</span>
+                <span className="text-muted-foreground">
+                  {t('remainingPayment')}
+                </span>
+                <span className="font-medium text-orange-600">
+                  {fmt(order.remainingAmount)}
+                </span>
               </div>
               {shippingAmount > 0 && (
                 <div className="flex justify-between">
@@ -242,7 +257,9 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
               )}
               <div className="flex justify-between border-t pt-2 mt-2">
                 <span className="font-semibold">Total</span>
-                <span className="font-bold text-orange-600 text-lg">{fmt(invoiceTotal)}</span>
+                <span className="font-bold text-orange-600 text-lg">
+                  {fmt(invoiceTotal)}
+                </span>
               </div>
             </div>
           </div>
