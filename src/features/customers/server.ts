@@ -41,9 +41,9 @@ export const listCustomersFn = createServerFn({ method: 'GET' })
 export const createCustomerFn = createServerFn({ method: 'POST' })
   .inputValidator((input: CustomerInput) => input)
   .handler(
-    async ({ data }): Promise<
-      { ok: true; id: string } | { ok: false; error: string }
-    > => {
+    async ({
+      data,
+    }): Promise<{ ok: true; id: string } | { ok: false; error: string }> => {
       const orgId = await resolveOrgId()
       try {
         const id = await createCustomer({ ...data, orgId })

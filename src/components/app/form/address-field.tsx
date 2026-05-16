@@ -1,7 +1,7 @@
-import { XIcon } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useTranslations } from "use-intl";
-
+import { XIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useTranslations } from 'use-intl'
+import { Button } from '#/components/ui/button'
 import {
   Command,
   CommandEmpty,
@@ -9,33 +9,31 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "#/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "#/components/ui/popover";
-import { Spinner } from "#/components/ui/spinner";
-import { Textarea } from "#/components/ui/textarea";
-import { useSearchAreas } from "#/features/address/hooks";
-import type { BiteshipArea } from "#/features/address/model";
-
-import { useFieldContext } from "./form-context";
-import type { FieldProps } from "./form-fields-shared";
-import { firstError } from "./form-utils";
+} from '#/components/ui/command'
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupText,
-} from "#/components/ui/input-group";
-import { Button } from "#/components/ui/button";
-import { cn } from "#/lib/utils";
+} from '#/components/ui/input-group'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '#/components/ui/popover'
+import { Spinner } from '#/components/ui/spinner'
+import { Textarea } from '#/components/ui/textarea'
+import { useSearchAreas } from '#/features/address/hooks'
+import type { BiteshipArea } from '#/features/address/model'
+import { cn } from '#/lib/utils'
+import { useFieldContext } from './form-context'
+import type { FieldProps } from './form-fields-shared'
+import { firstError } from './form-utils'
 
 export type AddressValue = {
-  areaId: string;
-  areaName: string;
-  streetAddress: string;
-};
+  areaId: string
+  areaName: string
+  streetAddress: string
+}
 
 export function AddressField({
   label,
@@ -44,57 +42,57 @@ export function AddressField({
   disabled,
   showAreaSearch = true,
 }: FieldProps & { showAreaSearch?: boolean }) {
-  const field = useFieldContext<AddressValue>();
-  const error = firstError(field.state.meta.errors);
-  const t = useTranslations("address");
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const field = useFieldContext<AddressValue>()
+  const error = firstError(field.state.meta.errors)
+  const t = useTranslations('address')
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), 300);
-    return () => clearTimeout(timer);
-  }, [query]);
+    const timer = setTimeout(() => setDebouncedQuery(query), 300)
+    return () => clearTimeout(timer)
+  }, [query])
 
-  const { data: results = [], isFetching } = useSearchAreas(debouncedQuery);
+  const { data: results = [], isFetching } = useSearchAreas(debouncedQuery)
 
-  const value = field.state.value;
+  const value = field.state.value
   const selectedArea: BiteshipArea | null =
     value.areaId && value.areaName
-      ? { id: value.areaId, name: value.areaName, area: "" }
-      : null;
+      ? { id: value.areaId, name: value.areaName, area: '' }
+      : null
 
   function handleSearch(searchQuery: string) {
-    setQuery(searchQuery);
+    setQuery(searchQuery)
   }
 
   function handleSelect(areaId: string) {
-    const area = results.find((a) => a.id === areaId) ?? null;
+    const area = results.find((a) => a.id === areaId) ?? null
     if (area) {
       field.handleChange({
         ...value,
         areaId: area.id,
         areaName: area.name,
-      });
+      })
     }
-    setQuery("");
-    setOpen(false);
-    field.handleBlur();
+    setQuery('')
+    setOpen(false)
+    field.handleBlur()
   }
 
   function handleClear() {
     field.handleChange({
       ...value,
-      areaId: "",
-      areaName: "",
-    });
-    setQuery("");
-    setDebouncedQuery("");
-    field.handleBlur();
+      areaId: '',
+      areaName: '',
+    })
+    setQuery('')
+    setDebouncedQuery('')
+    field.handleBlur()
   }
 
   function handleStreetChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    field.handleChange({ ...value, streetAddress: e.target.value });
+    field.handleChange({ ...value, streetAddress: e.target.value })
   }
 
   return (
@@ -116,13 +114,13 @@ export function AddressField({
               <InputGroup>
                 <InputGroupText
                   className={cn(
-                    "w-full pl-3 cursor-default",
-                    selectedArea ? "text-foreground" : "",
+                    'w-full pl-3 cursor-default',
+                    selectedArea ? 'text-foreground' : '',
                   )}
                 >
                   {selectedArea
                     ? selectedArea.name
-                    : t("areaSearchPlaceholder")}
+                    : t('areaSearchPlaceholder')}
                 </InputGroupText>
                 <InputGroupAddon align="inline-end" className="cursor-default!">
                   <Button
@@ -131,15 +129,15 @@ export function AddressField({
                     className="cursor-pointer"
                     type="button"
                     onClick={(e) => {
-                      e.stopPropagation();
-                      handleClear();
+                      e.stopPropagation()
+                      handleClear()
                     }}
                   >
                     <XIcon
                       className="size-4 opacity-50"
                       onClick={(e) => {
-                        e.stopPropagation();
-                        handleClear();
+                        e.stopPropagation()
+                        handleClear()
                       }}
                     />
                   </Button>
@@ -148,12 +146,12 @@ export function AddressField({
             </PopoverTrigger>
             <PopoverContent
               className="p-0"
-              style={{ width: "var(--radix-popper-anchor-width)" }}
+              style={{ width: 'var(--radix-popper-anchor-width)' }}
               align="start"
             >
               <Command shouldFilter={false}>
                 <CommandInput
-                  placeholder={t("areaSearchPlaceholder")}
+                  placeholder={t('areaSearchPlaceholder')}
                   className="w-full"
                   value={query}
                   onValueChange={handleSearch}
@@ -162,16 +160,16 @@ export function AddressField({
                   {isFetching && (
                     <div className="flex items-center justify-center gap-2 px-3 py-6 text-sm text-muted-foreground">
                       <Spinner className="size-4" />
-                      <span>{t("searchingAreas")}</span>
+                      <span>{t('searchingAreas')}</span>
                     </div>
                   )}
                   {!isFetching && !query && (
                     <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-                      {t("startTypingToSearch")}
+                      {t('startTypingToSearch')}
                     </div>
                   )}
                   {!isFetching && query && results.length === 0 && (
-                    <CommandEmpty>{t("noResults")}</CommandEmpty>
+                    <CommandEmpty>{t('noResults')}</CommandEmpty>
                   )}
                   {!isFetching && query && results.length > 0 && (
                     <CommandGroup>
@@ -198,11 +196,11 @@ export function AddressField({
           value={value.streetAddress}
           onChange={handleStreetChange}
           onBlur={field.handleBlur}
-          placeholder={t("streetAddressPlaceholder")}
+          placeholder={t('streetAddressPlaceholder')}
           disabled={disabled}
         />
       </div>
       {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
     </div>
-  );
+  )
 }
