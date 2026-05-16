@@ -105,7 +105,7 @@ export function AcceptInvitationPage({
             onClick={() => acceptMutation.mutate()}
             disabled={acceptMutation.isPending}
           >
-            <Check className="mr-2 h-4 w-4" />
+            <Check className="mr-2 size-4" />
             {t('accept')}
           </Button>
           <Button
@@ -114,7 +114,7 @@ export function AcceptInvitationPage({
             onClick={() => rejectMutation.mutate()}
             disabled={rejectMutation.isPending}
           >
-            <X className="mr-2 h-4 w-4" />
+            <X className="mr-2 size-4" />
             {t('reject')}
           </Button>
         </CardFooter>

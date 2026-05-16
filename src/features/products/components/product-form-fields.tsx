@@ -118,7 +118,7 @@ export const ProductFormFields = withForm({
                         })
                       }}
                     >
-                      <Plus className="h-4 w-4 mr-1" />
+                      <Plus className="size-4 mr-1" />
                       {t('pricing.addBreakpoint')}
                     </Button>
                   </div>
@@ -159,7 +159,7 @@ export const ProductFormFields = withForm({
                           onClick={() => breakpointsField.removeValue(i)}
                           className="mb-0.5"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="size-4" />
                         </Button>
                       </div>
                     ))

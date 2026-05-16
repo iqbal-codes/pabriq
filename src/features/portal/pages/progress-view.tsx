@@ -15,12 +15,49 @@ const currencyFormatter = new Intl.NumberFormat('en-ID', {
   minimumFractionDigits: 0,
 })
 
+import { useEffect, useState } from 'react'
 import {
   useOrderTimeline,
   usePortalGetInvoiceUploadUrl,
   useSubmitPaymentProof,
 } from '../hooks'
 import type { PortalOrder } from '../model'
+
+function EstimatedCompletion({
+  createdAt,
+  maxDays,
+  locale,
+}: {
+  createdAt: Date | string
+  maxDays: number
+  locale: string
+}) {
+  const t = useTranslations('portal')
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <span className="text-sm text-muted-foreground">
+        {t('estimatedCompletion', { date: '' })}
+      </span>
+    )
+  }
+
+  const estimatedDate = new Date(createdAt)
+  estimatedDate.setDate(estimatedDate.getDate() + maxDays)
+  const formattedDate = new Intl.DateTimeFormat(locale, {
+    dateStyle: 'long',
+  }).format(estimatedDate)
+
+  return (
+    <span className="text-sm text-muted-foreground">
+      {t('estimatedCompletion', { date: formattedDate })}
+    </span>
+  )
+}
 
 export function ProgressView({
   order,
@@ -96,7 +133,7 @@ export function ProgressView({
         orgLogoAssetId={order.orgLogoAssetId}
         title={order.orderNumber ?? t('orderSummary')}
       />
-      <div className="mx-auto max-w-2xl px-4 py-4">
+      <div className="mx-auto max-w-2xl p-4">
         <Card className="p-4 md:p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -118,7 +155,7 @@ export function ProgressView({
 
           {isCompleted && (
             <div className="rounded-lg bg-secondary p-4 text-center">
-              <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-primary" />
+              <CheckCircle2 className="mx-auto mb-2 size-8 text-primary" />
               <p className="text-sm text-secondary-foreground">
                 {t('completedThanks')}
               </p>
@@ -135,16 +172,13 @@ export function ProgressView({
           {maxDays > 0 && (
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-3">
-                <CalendarClock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <CalendarClock className="size-4 shrink-0 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
-                  {(() => {
-                    const estimatedDate = new Date(order.createdAt)
-                    estimatedDate.setDate(estimatedDate.getDate() + maxDays)
-                    const formattedDate = new Intl.DateTimeFormat(locale, {
-                      dateStyle: 'long',
-                    }).format(estimatedDate)
-                    return t('estimatedCompletion', { date: formattedDate })
-                  })()}
+                  <EstimatedCompletion
+                    createdAt={order.createdAt}
+                    maxDays={maxDays}
+                    locale={locale}
+                  />
                 </p>
               </div>
             </div>

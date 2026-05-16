@@ -384,7 +384,7 @@ export function ViewOrderPage() {
                   size="sm"
                   onClick={() => setInvoiceModalOpen(true)}
                 >
-                  <Plus className="mr-1 h-4 w-4" />
+                  <Plus className="mr-1 size-4" />
                   {it('createInvoice')}
                 </Button>
               </CardTitle>
@@ -404,7 +404,7 @@ export function ViewOrderPage() {
                       <div className="min-w-0 flex-1">
                         <p className="font-medium">{inv.invoiceNumber}</p>
                         <p className="text-sm text-muted-foreground">
-                          {inv.percentage && <>{inv.percentage}% — </>}
+                          {inv.percentage && <>{inv.percentage}%: </>}
                           {currencyFormatter.format(inv.total)}
                         </p>
                       </div>
@@ -424,7 +424,7 @@ export function ViewOrderPage() {
                         </Badge>
                         <Button variant="ghost" size="icon-sm" asChild>
                           <Link to="/invoices/$id" params={{ id: inv.id }}>
-                            <FileText className="h-4 w-4" />
+                            <FileText className="size-4" />
                           </Link>
                         </Button>
                       </div>

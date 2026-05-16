@@ -124,7 +124,7 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
       meta: { label: t('name'), mobileRole: 'title' },
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
+          <Avatar className="size-8">
             <AvatarImage
               src={row.original.user.image ?? ''}
               alt={row.original.user.name}
@@ -165,7 +165,7 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1">
                 {t(roleLabelKey)}
-                <ChevronDown className="h-3 w-3" />
+                <ChevronDown className="size-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -274,7 +274,7 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
               size="icon-sm"
               onClick={() => setRemoveTarget(member)}
             >
-              <UserMinus className="h-4 w-4" />
+              <UserMinus className="size-4" />
             </Button>
           ) : null
         }
@@ -307,7 +307,7 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
                   size="icon-sm"
                   onClick={() => setCancelTarget(inv.id)}
                 >
-                  <UserMinus className="h-4 w-4" />
+                  <UserMinus className="size-4" />
                 </Button>
               ) : null
             }

@@ -1,9 +1,9 @@
 import { z } from 'zod'
 
-export const emailSchema = z.email()
-export const phoneNumberSchema = z.string().regex(/^\d{8,16}$/)
+const emailSchema = z.email()
+const phoneNumberSchema = z.string().regex(/^\d{8,16}$/)
 
-export const pricingBreakpointSchema = z.object({
+const pricingBreakpointSchema = z.object({
   minQuantity: z.number().min(1, 'Min quantity must be at least 1'),
   unitPrice: z.number().min(0, 'Unit price must not be negative'),
 })

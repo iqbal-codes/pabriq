@@ -83,7 +83,9 @@ export function AreaSearchField({
               variant="outline"
               role="combobox"
               aria-expanded={open}
+              aria-controls={open ? 'area-search-listbox' : undefined}
               className="w-full justify-between font-normal"
+              aria-haspopup="listbox"
               disabled={disabled}
             >
               {value ? (
@@ -112,11 +114,9 @@ export function AreaSearchField({
                 value={query}
                 onValueChange={handleSearch}
               />
-              <CommandList>
+              <CommandList id="area-search-listbox">
                 {isFetching && (
-                  <div className="py-2 px-2 text-sm text-muted-foreground">
-                    ...
-                  </div>
+                  <div className="p-2 text-sm text-muted-foreground">...</div>
                 )}
                 {!isFetching && query && results.length === 0 && (
                   <CommandEmpty>{t('noResults')}</CommandEmpty>

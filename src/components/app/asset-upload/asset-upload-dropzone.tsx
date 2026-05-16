@@ -19,14 +19,14 @@ function formatBytes(bytes: number): string {
 function DropzoneIcon({ status }: { status: UploadItem['status'] }) {
   switch (status) {
     case 'done':
-      return <CheckCircle className="h-8 w-8 text-success" />
+      return <CheckCircle className="size-8 text-success" />
     case 'failed':
-      return <AlertCircle className="h-8 w-8 text-destructive" />
+      return <AlertCircle className="size-8 text-destructive" />
     case 'uploading':
     case 'processing':
-      return <RefreshCw className="h-8 w-8 text-primary animate-spin" />
+      return <RefreshCw className="size-8 text-primary animate-spin" />
     default:
-      return <Upload className="h-8 w-8 text-muted-foreground" />
+      return <Upload className="size-8 text-muted-foreground" />
   }
 }
 
@@ -67,12 +67,12 @@ function UploadItemRow({ item, onRemove, onRetry }: UploadItemRowProps) {
       </div>
       {item.status === 'failed' && (
         <Button variant="ghost" size="sm" onClick={() => onRetry(item.id)}>
-          <RefreshCw className="h-4 w-4" />
+          <RefreshCw className="size-4" />
           <span className="sr-only">{t('actions.retry')}</span>
         </Button>
       )}
       <Button variant="ghost" size="sm" onClick={() => onRemove(item.id)}>
-        <X className="h-4 w-4" />
+        <X className="size-4" />
         <span className="sr-only">{t('actions.remove')}</span>
       </Button>
     </div>
@@ -127,7 +127,7 @@ export function AssetUploadDropzone(props: AssetUploadDropzoneProps) {
         )}
       >
         <input {...getInputProps()} />
-        <Upload className="h-10 w-10 text-muted-foreground mb-4" />
+        <Upload className="size-10 text-muted-foreground mb-4" />
         <p className="text-sm font-medium">{t('dropzone.title')}</p>
         <p className="text-xs text-muted-foreground mt-1">
           {t('dropzone.hint')}

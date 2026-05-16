@@ -81,24 +81,24 @@ function RequirementResponses({
       </div>
       {hasFiles && (
         <div className="grid grid-cols-4 gap-2">
-          {responses
-            .filter((r) => r.assetIds && r.assetIds.length > 0)
-            .flatMap((r) =>
-              (r.assetIds ?? []).map((assetId) => (
-                <AssetImage
-                  key={assetId}
-                  assetId={assetId}
-                  assetKind="image"
-                  className="h-12 w-12 rounded-md object-cover"
-                />
-              )),
-            )}
+          {responses.flatMap((r) =>
+            r.assetIds && r.assetIds.length > 0
+              ? r.assetIds.map((assetId) => (
+                  <AssetImage
+                    key={assetId}
+                    assetId={assetId}
+                    assetKind="image"
+                    className="size-12 rounded-md object-cover"
+                  />
+                ))
+              : [],
+          )}
         </div>
       )}
       {hasValues && (
         <div className="space-y-1">
           {responses
-            .filter((r) => r.value)
+            .flatMap((r) => (r.value ? [r] : []))
             .map((r) => (
               <div key={r.requirementName} className="text-xs">
                 <span className="font-medium text-muted-foreground">

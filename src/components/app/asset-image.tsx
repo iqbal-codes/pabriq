@@ -54,7 +54,7 @@ export function AssetImage({ assetId, assetKind, className }: AssetImageProps) {
           className,
         )}
       >
-        <Package className="h-5 w-5 text-muted-foreground" />
+        <Package className="size-5 text-muted-foreground" />
       </div>
     )
   }

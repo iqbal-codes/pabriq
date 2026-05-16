@@ -1,4 +1,5 @@
 import { flexRender, type Row } from '@tanstack/react-table'
+import type { ReactNode } from 'react'
 import { Card } from '#/components/ui/card'
 import type { AppColumnMeta } from './data-table-utils'
 
@@ -76,24 +77,22 @@ export function DataTableMobileCard<TData>({
           })}
         </div>
       )}
-      {row.getVisibleCells().find((c) => {
-        const meta = c.column.columnDef.meta as AppColumnMeta | undefined
-        return meta?.mobileRole === 'actions'
-      }) && (
-        <div className="flex justify-end gap-1">
-          {row
-            .getVisibleCells()
-            .filter((c) => {
-              const meta = c.column.columnDef.meta as AppColumnMeta | undefined
-              return meta?.mobileRole === 'actions'
-            })
-            .map((c) => (
+      {(() => {
+        const actionCells: ReactNode[] = []
+        for (const c of row.getVisibleCells()) {
+          const meta = c.column.columnDef.meta as AppColumnMeta | undefined
+          if (meta?.mobileRole === 'actions') {
+            actionCells.push(
               <div key={c.id}>
                 {flexRender(c.column.columnDef.cell, c.getContext())}
-              </div>
-            ))}
-        </div>
-      )}
+              </div>,
+            )
+          }
+        }
+        return actionCells.length > 0 ? (
+          <div className="flex justify-end gap-1">{actionCells}</div>
+        ) : null
+      })()}
     </Card>
   )
 }

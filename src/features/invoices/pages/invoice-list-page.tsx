@@ -140,7 +140,7 @@ export function InvoiceListPage() {
         rowActions={(row) => (
           <Button variant="ghost" size="icon-sm" asChild>
             <Link to="/invoices/$id" params={{ id: row.id }}>
-              <FileText className="h-4 w-4" />
+              <FileText className="size-4" />
             </Link>
           </Button>
         )}

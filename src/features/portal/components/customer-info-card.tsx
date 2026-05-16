@@ -38,7 +38,7 @@ export function CustomerInfoCard({
           <p className="text-sm text-card-foreground">{name}</p>
           {phone && (
             <p className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Phone className="h-3 w-3" />
+              <Phone className="size-3" />
               {phone}
             </p>
           )}

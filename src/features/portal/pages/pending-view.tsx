@@ -21,7 +21,7 @@ export function PendingView({ order }: { order: PortalOrder }) {
       <div className="flex items-center justify-center py-12">
         <div className="mx-4 max-w-md rounded-lg border border-border bg-card p-8 text-center shadow-sm">
           <div className="mb-4 flex justify-center">
-            <CheckCircle2 className="h-12 w-12 text-primary" />
+            <CheckCircle2 className="size-12 text-primary" />
           </div>
           <h1 className="text-xl font-semibold text-card-foreground">
             {t('waitApproval')}
@@ -34,7 +34,7 @@ export function PendingView({ order }: { order: PortalOrder }) {
           {waUrl && (
             <Button asChild variant="outline" className="mt-6 w-full">
               <a href={waUrl} target="_blank" rel="noopener noreferrer">
-                <MessageCircle className="mr-2 h-4 w-4" />
+                <MessageCircle className="mr-2 size-4" />
                 {t('chatOnWhatsApp')}
               </a>
             </Button>

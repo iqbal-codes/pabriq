@@ -72,6 +72,12 @@ function InputGroupAddon({
         }
         e.currentTarget.parentElement?.querySelector("input")?.focus()
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          const input = e.currentTarget.parentElement?.querySelector("input")
+          if (input) input.focus()
+        }
+      }}
       {...props}
     />
   )

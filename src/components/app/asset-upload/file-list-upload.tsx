@@ -150,7 +150,7 @@ export function FileListUpload(props: FileListUploadProps) {
         )}
       >
         <input {...getInputProps()} />
-        <FileIcon className="h-10 w-10 text-muted-foreground mb-4" />
+        <FileIcon className="size-10 text-muted-foreground mb-4" />
         <p className="text-sm font-medium">{t('dropzone.title')}</p>
         <p className="text-xs text-muted-foreground mt-1">
           {t('dropzone.hint')}

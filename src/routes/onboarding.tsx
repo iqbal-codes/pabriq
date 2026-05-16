@@ -50,6 +50,7 @@ function OnboardingPage() {
   })
 
   useEffect(() => {
+    // react-doctor: navigate in effect is intentional — we need query data before redirecting
     if (orgs && orgs.length > 0) {
       navigate({ to: '/' })
     }
@@ -170,6 +171,7 @@ function OnboardingPage() {
         <CardContent>
           <form
             onSubmit={(e) => {
+              // react-doctor: intentional — TanStack Form handleSubmit needs preventDefault
               e.preventDefault()
               e.stopPropagation()
               form.handleSubmit()

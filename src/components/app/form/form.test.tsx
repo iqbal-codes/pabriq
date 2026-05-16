@@ -205,14 +205,14 @@ describe('FormRoot', () => {
             {(field) => <field.TextField label="Name" />}
           </form.AppField>
           <button type="submit" onClick={() => form.handleSubmit()}>
-            Submit
+            Save
           </button>
         </FormRoot>
       )
     }
 
     render(<TestForm />)
-    await userEvent.click(screen.getByText('Submit'))
+    await userEvent.click(screen.getByText('Save'))
     expect(submitted).toBe(true)
   })
 })

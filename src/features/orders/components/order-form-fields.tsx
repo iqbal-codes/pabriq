@@ -69,16 +69,16 @@ export const OrderFormFields = withForm({
         })}
       >
         {({ lineItems, selectedCustomerId }) => {
-          const customerOptions = customers
-            .filter(
-              (customer) =>
-                customer.active || customer.id === selectedCustomerId,
-            )
-            .map((customer) => ({
-              value: customer.id,
-              label: customer.name,
-              ...customer,
-            }))
+          const customerOptions: Array<{ value: string; label: string }> = []
+          for (const customer of customers) {
+            if (customer.active || customer.id === selectedCustomerId) {
+              customerOptions.push({
+                value: customer.id,
+                label: customer.name,
+                ...customer,
+              })
+            }
+          }
 
           const total = lineItems.reduce((sum, item) => {
             const qty = parseInt(item.quantity, 10) || 0

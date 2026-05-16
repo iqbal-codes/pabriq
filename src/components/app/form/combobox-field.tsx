@@ -1,7 +1,7 @@
 'use client'
 
 import { CheckIcon, ChevronsUpDownIcon, XIcon } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations } from 'use-intl'
 
 import { Badge } from '#/components/ui/badge'
@@ -72,7 +72,7 @@ function ComboboxFieldSingle({
   const t = useTranslations('combobox')
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const debouncedQueryRef = useRef('')
   const [knownOptions, setKnownOptions] = useState<ComboboxOption[]>([])
   const [isFetching, setIsFetching] = useState(false)
 
@@ -83,29 +83,31 @@ function ComboboxFieldSingle({
   }, [staticOptions])
 
   useEffect(() => {
-    if (!search || !debouncedQuery) return
+    if (!query || !search) {
+      debouncedQueryRef.current = ''
+      return
+    }
     let cancelled = false
-    setIsFetching(true)
-    search(debouncedQuery).then((results) => {
-      if (cancelled) return
-      setKnownOptions((prev) => {
-        const map = new Map(prev.map((o) => [o.value, o]))
-        for (const opt of results) {
-          map.set(opt.value, opt)
-        }
-        return Array.from(map.values())
+    const timer = setTimeout(() => {
+      debouncedQueryRef.current = query
+      setIsFetching(true)
+      search(query).then((results) => {
+        if (cancelled) return
+        setKnownOptions((prev) => {
+          const map = new Map(prev.map((o) => [o.value, o]))
+          for (const opt of results) {
+            map.set(opt.value, opt)
+          }
+          return Array.from(map.values())
+        })
+        if (!cancelled) setIsFetching(false)
       })
-      setIsFetching(false)
-    })
+    }, searchDelay)
     return () => {
       cancelled = true
+      clearTimeout(timer)
     }
-  }, [debouncedQuery, search])
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), searchDelay)
-    return () => clearTimeout(timer)
-  }, [query, searchDelay])
+  }, [query, search, searchDelay])
 
   const value = field.state.value
   const activeOptions = staticOptions ?? knownOptions
@@ -126,7 +128,7 @@ function ComboboxFieldSingle({
     e.stopPropagation()
     field.handleChange('')
     setQuery('')
-    setDebouncedQuery('')
+    debouncedQueryRef.current = ''
     field.handleBlur()
   }
 
@@ -248,7 +250,7 @@ function ComboboxFieldMulti({
   const t = useTranslations('combobox')
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const debouncedQueryRef = useRef('')
   const [knownOptions, setKnownOptions] = useState<ComboboxOption[]>([])
   const [isFetching, setIsFetching] = useState(false)
 
@@ -259,29 +261,31 @@ function ComboboxFieldMulti({
   }, [staticOptions])
 
   useEffect(() => {
-    if (!search || !debouncedQuery) return
+    if (!query || !search) {
+      debouncedQueryRef.current = ''
+      return
+    }
     let cancelled = false
-    setIsFetching(true)
-    search(debouncedQuery).then((results) => {
-      if (cancelled) return
-      setKnownOptions((prev) => {
-        const map = new Map(prev.map((o) => [o.value, o]))
-        for (const opt of results) {
-          map.set(opt.value, opt)
-        }
-        return Array.from(map.values())
+    const timer = setTimeout(() => {
+      debouncedQueryRef.current = query
+      setIsFetching(true)
+      search(query).then((results) => {
+        if (cancelled) return
+        setKnownOptions((prev) => {
+          const map = new Map(prev.map((o) => [o.value, o]))
+          for (const opt of results) {
+            map.set(opt.value, opt)
+          }
+          return Array.from(map.values())
+        })
+        if (!cancelled) setIsFetching(false)
       })
-      setIsFetching(false)
-    })
+    }, searchDelay)
     return () => {
       cancelled = true
+      clearTimeout(timer)
     }
-  }, [debouncedQuery, search])
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), searchDelay)
-    return () => clearTimeout(timer)
-  }, [query, searchDelay])
+  }, [query, search, searchDelay])
 
   const values = field.state.value ?? []
   const activeOptions = staticOptions ?? knownOptions

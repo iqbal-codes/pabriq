@@ -9,9 +9,8 @@ const R2_ENDPOINT = process.env.R2_ENDPOINT ?? ''
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID ?? ''
 const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY ?? ''
 const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME ?? ''
-const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL ?? ''
 
-export const r2Client = new S3Client({
+const r2Client = new S3Client({
   region: 'auto',
   endpoint: R2_ENDPOINT,
   credentials: {
@@ -20,24 +19,6 @@ export const r2Client = new S3Client({
   },
   forcePathStyle: true,
 })
-
-export async function uploadToR2(
-  key: string,
-  body: Buffer | Uint8Array | Blob,
-  contentType: string,
-  metadata?: Record<string, string>,
-): Promise<{ etag: string }> {
-  const command = new PutObjectCommand({
-    Bucket: R2_BUCKET_NAME,
-    Key: key,
-    Body: body,
-    ContentType: contentType,
-    Metadata: metadata,
-  })
-
-  const result = await r2Client.send(command)
-  return { etag: result.ETag ?? '' }
-}
 
 export async function generateSignedDownloadUrl(
   key: string,
@@ -85,26 +66,3 @@ export function buildR2Key(
 ): string {
   return `org/${orgId}/${ownerType}/${ownerIdOrDraftId}/${assetId}/${variant}.${ext}`
 }
-
-export function parseR2Key(key: string): {
-  orgId: string
-  ownerType: string
-  ownerIdOrDraftId: string
-  assetId: string
-  variant: string
-  ext: string
-} | null {
-  const parts = key.split('/')
-  if (parts.length !== 6) return null
-
-  const [, orgId, ownerType, ownerIdOrDraftId, assetId, filename] = parts
-  const lastDotIndex = filename.lastIndexOf('.')
-  if (lastDotIndex === -1) return null
-
-  const variant = filename.substring(0, lastDotIndex)
-  const ext = filename.substring(lastDotIndex + 1)
-
-  return { orgId, ownerType, ownerIdOrDraftId, assetId, variant, ext }
-}
-
-export { R2_BUCKET_NAME, R2_PUBLIC_URL }

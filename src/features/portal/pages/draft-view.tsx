@@ -68,19 +68,23 @@ export function DraftView({
         }
       }
 
-      for (const li of value.lineItems) {
-        const orig = order.lineItems.find((o) => o.id === li.id)
-        if (!orig) continue
-        const nameChanged = li.name !== (orig.name ?? '')
-        const notesChanged = li.notes !== (orig.notes ?? '')
-        if (nameChanged || notesChanged) {
-          await updateLineItem.mutateAsync({
+      const origItemMap = new Map(order.lineItems.map((o) => [o.id, o]))
+      const lineItemUpdates = value.lineItems
+        .filter((li) => {
+          const orig = origItemMap.get(li.id)
+          if (!orig) return false
+          return (
+            li.name !== (orig.name ?? '') || li.notes !== (orig.notes ?? '')
+          )
+        })
+        .map((li) =>
+          updateLineItem.mutateAsync({
             itemId: li.id,
             name: li.name || undefined,
             notes: li.notes || undefined,
-          })
-        }
-      }
+          }),
+        )
+      await Promise.all(lineItemUpdates)
 
       const result = await confirmOrder.mutateAsync({
         orderId: order.id,
@@ -104,7 +108,7 @@ export function DraftView({
           orgLogoAssetId={order.orgLogoAssetId}
           title={t('title')}
         />
-        <div className="mx-auto max-w-2xl px-4 py-4">
+        <div className="mx-auto max-w-2xl p-4">
           <div className="space-y-6">
             {hasCustomer ? (
               <CustomerInfoCard

@@ -94,11 +94,12 @@ export const approveOrderFn = createServerFn({ method: 'POST' })
       const headers = getRequestHeaders()
       const session = await auth.api.getSession({ headers })
       const userId = session?.user.id ?? 'unknown'
-      const { approveOrder } = await import('./model')
+      const [{ approveOrder }, { spawnTasksForApprovedOrder }] =
+        await Promise.all([
+          import('./model'),
+          import('#/features/production/spawner'),
+        ])
       await approveOrder(data.id, orgId, userId)
-      const { spawnTasksForApprovedOrder } = await import(
-        '#/features/production/spawner'
-      )
       await spawnTasksForApprovedOrder(data.id, orgId)
       return { ok: true }
     } catch (e) {

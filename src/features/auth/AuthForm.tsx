@@ -69,6 +69,7 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
           <form
             className="space-y-6"
             onSubmit={(e) => {
+              // react-doctor: intentional — TanStack Form handleSubmit needs preventDefault
               e.preventDefault()
               e.stopPropagation()
               form.handleSubmit()

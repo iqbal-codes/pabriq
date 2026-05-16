@@ -55,20 +55,22 @@ export function createPortalR2UploaderAdapter(
       const arrayBuffer = await item.file.arrayBuffer()
       onProgress?.(5)
 
-      const checksumSha256 = await computeSha256(arrayBuffer)
-      onProgress?.(10)
-
       const contentType = item.file.type || 'application/octet-stream'
 
-      const { uploadUrl, storageKey, assetId } = await portalGetUploadUrlFn({
-        data: {
-          token: config.token,
-          fileName: item.file.name,
-          fileType: contentType,
-          fileSize: item.file.size,
-          lineItemId: config.ownerId ?? '',
-        },
-      })
+      const [checksumSha256, { uploadUrl, storageKey, assetId }] =
+        await Promise.all([
+          computeSha256(arrayBuffer),
+          portalGetUploadUrlFn({
+            data: {
+              token: config.token,
+              fileName: item.file.name,
+              fileType: contentType,
+              fileSize: item.file.size,
+              lineItemId: config.ownerId ?? '',
+            },
+          }),
+        ])
+      onProgress?.(10)
 
       await uploadToSignedUrl(uploadUrl, arrayBuffer, contentType, (pct) => {
         onProgress?.(10 + Math.round(pct * 0.7))

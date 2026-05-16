@@ -4,33 +4,29 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import type { LucideIcon } from 'lucide-react'
-import { AlertCircle, PackageOpen, RefreshCw, SearchX, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  EmptyState,
-  type EmptyStateAction,
-} from '#/components/app/page-shell/empty-state'
+import { X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import type { EmptyStateAction } from '#/components/app/page-shell/empty-state'
 import { Button } from '#/components/ui/button'
 import { Checkbox } from '#/components/ui/checkbox'
-import { Skeleton } from '#/components/ui/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '#/components/ui/table'
 import { useIsMobile } from '#/hooks/use-mobile'
-import { cn } from '#/lib/utils'
 import { DataTableProvider } from './data-table-context'
+import { DataTableDesktopView } from './data-table-desktop-view'
 import { DataTableFilterPanel } from './data-table-filter-panel'
 import {
   DataTableActiveFilterChips,
   DataTableFilterTrigger,
 } from './data-table-filter-trigger'
-import { DataTableMobileCard } from './data-table-mobile-card'
-import { DataTablePagination } from './data-table-pagination'
+import { DataTableMobileView } from './data-table-mobile-view'
+import {
+  DataTableDesktopSkeleton,
+  DataTableMobileSkeleton,
+} from './data-table-skeleton'
+import {
+  DataTableEmptyRender,
+  DataTableErrorRender,
+  DataTableNoResultsRender,
+} from './data-table-state-render'
 import { DataTableToolbar } from './data-table-toolbar'
 import type {
   AppColumnDef,
@@ -46,15 +42,7 @@ import {
   setStoredVisibility,
 } from './data-table-utils'
 import { DataTableViewOptions } from './data-table-view-options'
-
-const DESKTOP_SKELETON = [
-  'skeleton-0',
-  'skeleton-1',
-  'skeleton-2',
-  'skeleton-3',
-  'skeleton-4',
-]
-const MOBILE_SKELETON = ['s-card-0', 's-card-1', 's-card-2']
+import { useDataTableAccumulation } from './use-data-table-accumulation'
 
 type DataTableProps<TData> = {
   columns: AppColumnDef<TData>[]
@@ -136,104 +124,19 @@ export function DataTable<TData>({
   filters,
 }: DataTableProps<TData>) {
   const isMobile = useIsMobile()
-  const prevIsMobileRef = useRef(isMobile)
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
 
-  const [displayData, setDisplayData] = useState<TData[]>(data)
-  const accumulatedDataRef = useRef<TData[]>([])
-  const lastAccumulatedPageRef = useRef(page)
-  const seenIdsRef = useRef<Set<string>>(new Set())
-  const lastDataRef = useRef<TData[]>([])
-
-  useEffect(() => {
-    if (!isMobile) {
-      accumulatedDataRef.current = data
-      setDisplayData(data)
-      lastAccumulatedPageRef.current = page
-      seenIdsRef.current = new Set(data.map(getRowId))
-      lastDataRef.current = data
-      return
-    }
-
-    if (data === lastDataRef.current && page === lastAccumulatedPageRef.current)
-      return
-
-    if (
-      data === lastDataRef.current &&
-      page !== lastAccumulatedPageRef.current
-    ) {
-      lastDataRef.current = data
-      return
-    }
-
-    lastDataRef.current = data
-
-    const hasNewItems = data.some(
-      (item) => !seenIdsRef.current.has(getRowId(item)),
-    )
-
-    if (hasNewItems && page === lastAccumulatedPageRef.current + 1) {
-      accumulatedDataRef.current = [...accumulatedDataRef.current, ...data]
-      lastAccumulatedPageRef.current = page
-    } else if (page !== lastAccumulatedPageRef.current) {
-      accumulatedDataRef.current = data
-      lastAccumulatedPageRef.current = page
-    } else {
-      accumulatedDataRef.current = data
-    }
-
-    seenIdsRef.current = new Set(accumulatedDataRef.current.map(getRowId))
-    setDisplayData([...accumulatedDataRef.current])
-  }, [isMobile, page, data, getRowId])
-
-  useEffect(() => {
-    if (prevIsMobileRef.current !== isMobile) {
-      prevIsMobileRef.current = isMobile
-      if (page !== 1) {
-        onPageChange(1)
-      }
-    }
-  }, [isMobile, page, onPageChange])
-
-  const sentinelRef = useRef<HTMLDivElement>(null)
-  const loadingMoreRef = useRef(false)
-
-  useEffect(() => {
-    if (!isMobile) {
-      loadingMoreRef.current = false
-      return
-    }
-    if (page * perPage >= totalRows) return
-    if (isRefetching || isLoading) {
-      loadingMoreRef.current = true
-      return
-    }
-    loadingMoreRef.current = false
-
-    const el = sentinelRef.current
-    if (!el) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting && !loadingMoreRef.current) {
-          loadingMoreRef.current = true
-          onPageChange(page + 1)
-        }
-      },
-      { rootMargin: '400px' },
-    )
-
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [
-    isMobile,
+  const { displayData, sentinelRef } = useDataTableAccumulation(
+    data,
     page,
-    perPage,
-    totalRows,
-    isRefetching,
-    isLoading,
+    isMobile,
+    getRowId,
     onPageChange,
-  ])
+    totalRows,
+    perPage,
+    !!isRefetching,
+    !!isLoading,
+  )
 
   const filterLabels = useMemo(
     () => ({
@@ -396,19 +299,6 @@ export function DataTable<TData>({
       : {}),
   })
 
-  const handleSort = useCallback(
-    (field: string) => {
-      if (!onSortChange) return
-      if (sort?.field === field) {
-        const next = sort.direction === 'asc' ? 'desc' : 'asc'
-        onSortChange({ field, direction: next })
-      } else {
-        onSortChange({ field, direction: 'asc' })
-      }
-    },
-    [onSortChange, sort],
-  )
-
   const selectedRowIds = useMemo(
     () => table.getSelectedRowModel().rows.map((r) => r.id),
     [table],
@@ -435,19 +325,6 @@ export function DataTable<TData>({
       table.resetRowSelection()
     }
   }, [hasActiveFilters, page, perPage, sort, table])
-
-  const visibleEmptyColumns = useMemo(
-    () =>
-      allColumns.filter((col) => {
-        if ('accessorKey' in col || 'id' in col) {
-          const id = 'accessorKey' in col ? col.accessorKey : col.id
-          if (id === 'select') return false
-          return columnVisibility[id as string] !== false
-        }
-        return false
-      }),
-    [allColumns, columnVisibility],
-  )
 
   const hasStructuredFilters = filterActiveCount > 0
   const filterTrigger = filters ? (
@@ -489,6 +366,28 @@ export function DataTable<TData>({
     hasStructuredFilters,
   }
 
+  const stateRenderProps = {
+    allColumns,
+    columnVisibility,
+    labels,
+    error,
+    errorMessage,
+    onRefetch,
+    emptyState,
+    emptyIcon,
+    emptyTitle,
+    emptyDescription,
+    emptyAction,
+    noResultsState,
+    noResultsIcon,
+    noResultsTitle,
+    noResultsDescription,
+    noResultsAction,
+    hasActiveFilters,
+    onClearFilters,
+  }
+
+  // Error state
   if (error) {
     return (
       <DataTableProvider
@@ -503,72 +402,13 @@ export function DataTable<TData>({
             slotContext={slotContext}
             {...toolbarFilterProps}
           />
-          <div className="rounded-xl border bg-muted/50 p-1.5">
-            <div className="rounded-lg border bg-background">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50 *:px-3 sm:*:px-4">
-                    {visibleEmptyColumns.map((col) => {
-                      if ('accessorKey' in col || 'id' in col) {
-                        const id =
-                          'accessorKey' in col ? col.accessorKey : col.id
-                        const meta = col.meta as AppColumnMeta | undefined
-                        return (
-                          <TableHead
-                            key={id as string}
-                            className={cn(
-                              meta?.align === 'end' && 'text-right',
-                              meta?.align === 'center' && 'text-center',
-                              meta?.headerClassName,
-                            )}
-                          >
-                            {meta?.label || (id as string)}
-                          </TableHead>
-                        )
-                      }
-                      return null
-                    })}
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  <TableRow>
-                    <TableCell
-                      colSpan={visibleEmptyColumns.length}
-                      className="text-center"
-                    >
-                      <div className="flex flex-col items-center justify-center py-12 text-center">
-                        <div className="rounded-full bg-muted p-4">
-                          <AlertCircle className="size-8 text-destructive" />
-                        </div>
-                        <h3 className="mt-4 font-semibold">
-                          {labels.errorTitle}
-                        </h3>
-                        <p className="mt-1 text-sm text-muted-foreground max-w-sm">
-                          {errorMessage || error}
-                        </p>
-                        {onRefetch && (
-                          <Button
-                            variant="outline"
-                            className="mt-4"
-                            onClick={onRefetch}
-                          >
-                            <RefreshCw className="mr-2 size-4" />
-                            {labels.errorRetry}
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+          <DataTableErrorRender {...stateRenderProps} />
         </div>
       </DataTableProvider>
     )
   }
 
+  // Loading state
   if (isLoading) {
     return (
       <DataTableProvider
@@ -584,70 +424,18 @@ export function DataTable<TData>({
             {...toolbarFilterProps}
           />
           <div className="hidden md:block">
-            <div className="rounded-xl border bg-muted/50 p-1.5">
-              <div className="rounded-lg border bg-background">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {allColumns.map((col) => {
-                        if ('accessorKey' in col || 'id' in col) {
-                          const id =
-                            'accessorKey' in col ? col.accessorKey : col.id
-                          if (id === 'select') return null
-                          const isHidden =
-                            columnVisibility[id as string] === false
-                          if (isHidden) return null
-                          return (
-                            <TableHead key={id as string}>
-                              <Skeleton className="h-4 w-24" />
-                            </TableHead>
-                          )
-                        }
-                        return null
-                      })}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {DESKTOP_SKELETON.map((key) => (
-                      <TableRow key={key}>
-                        {allColumns.map((col) => {
-                          if ('accessorKey' in col || 'id' in col) {
-                            const id =
-                              'accessorKey' in col ? col.accessorKey : col.id
-                            if (id === 'select') return null
-                            const isHidden =
-                              columnVisibility[id as string] === false
-                            if (isHidden) return null
-                            return (
-                              <TableCell key={id as string}>
-                                <Skeleton className="h-4 w-full" />
-                              </TableCell>
-                            )
-                          }
-                          return null
-                        })}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
+            <DataTableDesktopSkeleton
+              allColumns={allColumns}
+              columnVisibility={columnVisibility}
+            />
           </div>
-
-          <div className="space-y-3 md:hidden">
-            {MOBILE_SKELETON.map((key) => (
-              <div key={key} className="rounded-lg border p-4 space-y-2">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-                <Skeleton className="h-3 w-1/3" />
-              </div>
-            ))}
-          </div>
+          <DataTableMobileSkeleton />
         </div>
       </DataTableProvider>
     )
   }
 
+  // Empty state (no data, no filters)
   if (data.length === 0 && !hasActiveFilters) {
     return (
       <DataTableProvider
@@ -662,66 +450,13 @@ export function DataTable<TData>({
             slotContext={slotContext}
             {...toolbarFilterProps}
           />
-          <div className="rounded-xl border bg-muted/50 p-1.5">
-            <div className="rounded-lg border bg-background">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50 *:px-3 sm:*:px-4">
-                    {visibleEmptyColumns.map((col) => {
-                      if ('accessorKey' in col || 'id' in col) {
-                        const id =
-                          'accessorKey' in col ? col.accessorKey : col.id
-                        const meta = col.meta as AppColumnMeta | undefined
-                        return (
-                          <TableHead
-                            key={id as string}
-                            className={cn(
-                              meta?.align === 'end' && 'text-right',
-                              meta?.align === 'center' && 'text-center',
-                              meta?.headerClassName,
-                            )}
-                          >
-                            {meta?.label || (id as string)}
-                          </TableHead>
-                        )
-                      }
-                      return null
-                    })}
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  <TableRow>
-                    <TableCell
-                      colSpan={visibleEmptyColumns.length}
-                      className="text-center"
-                    >
-                      {emptyState ??
-                        (emptyTitle ? (
-                          <EmptyState
-                            icon={emptyIcon ?? PackageOpen}
-                            title={emptyTitle}
-                            description={emptyDescription ?? ''}
-                            action={emptyAction}
-                          />
-                        ) : (
-                          <EmptyState
-                            icon={PackageOpen}
-                            title={labels.loading}
-                            description=""
-                          />
-                        ))}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+          <DataTableEmptyRender {...stateRenderProps} />
         </div>
       </DataTableProvider>
     )
   }
 
+  // No results state (data filtered, but no matches)
   if (data.length === 0 && hasActiveFilters) {
     return (
       <DataTableProvider
@@ -736,78 +471,13 @@ export function DataTable<TData>({
             slotContext={slotContext}
             {...toolbarFilterProps}
           />
-          <div className="rounded-xl border bg-muted/50 p-1.5">
-            <div className="rounded-lg border bg-background">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50 *:px-3 sm:*:px-4">
-                    {visibleEmptyColumns.map((col) => {
-                      if ('accessorKey' in col || 'id' in col) {
-                        const id =
-                          'accessorKey' in col ? col.accessorKey : col.id
-                        const meta = col.meta as AppColumnMeta | undefined
-                        return (
-                          <TableHead
-                            key={id as string}
-                            className={cn(
-                              meta?.align === 'end' && 'text-right',
-                              meta?.align === 'center' && 'text-center',
-                              meta?.headerClassName,
-                            )}
-                          >
-                            {meta?.label || (id as string)}
-                          </TableHead>
-                        )
-                      }
-                      return null
-                    })}
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  <TableRow>
-                    <TableCell
-                      colSpan={visibleEmptyColumns.length}
-                      className="text-center"
-                    >
-                      {noResultsState ??
-                        (noResultsTitle ? (
-                          <EmptyState
-                            icon={noResultsIcon ?? SearchX}
-                            title={noResultsTitle}
-                            description={noResultsDescription ?? ''}
-                            action={noResultsAction}
-                          />
-                        ) : (
-                          <div className="flex flex-col items-center justify-center py-12 text-center">
-                            <div className="rounded-full bg-muted p-4">
-                              <SearchX className="size-8 text-muted-foreground" />
-                            </div>
-                            <h3 className="mt-4 font-semibold">
-                              {labels.loading}
-                            </h3>
-                            {onClearFilters && (
-                              <Button
-                                variant="outline"
-                                className="mt-4"
-                                onClick={onClearFilters}
-                              >
-                                {labels.clearFilters}
-                              </Button>
-                            )}
-                          </div>
-                        ))}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+          <DataTableNoResultsRender {...stateRenderProps} />
         </div>
       </DataTableProvider>
     )
   }
 
+  // Normal render
   return (
     <DataTableProvider
       tableId={tableId}
@@ -823,130 +493,29 @@ export function DataTable<TData>({
           {...toolbarFilterProps}
         />
 
-        <div className="relative">
-          <div className="hidden md:block">
-            <div className="rounded-xl border bg-muted/50 p-1.5">
-              <div className="rounded-lg border bg-background">
-                <Table>
-                  <TableHeader>
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <TableRow key={headerGroup.id} className="bg-muted/50">
-                        {headerGroup.headers.map((header) => {
-                          const meta = header.column.columnDef.meta as
-                            | AppColumnMeta
-                            | undefined
-                          return (
-                            <TableHead
-                              key={header.id}
-                              className={cn(
-                                meta?.align === 'end' && 'text-right',
-                                meta?.align === 'center' && 'text-center',
-                                meta?.headerClassName,
-                              )}
-                            >
-                              {header.column.getCanSort() && onSortChange ? (
-                                <button
-                                  type="button"
-                                  className="flex items-center gap-1 hover:text-foreground cursor-pointer"
-                                  onClick={() =>
-                                    handleSort(header.column.id as string)
-                                  }
-                                >
-                                  {flexRender(
-                                    header.column.columnDef.header,
-                                    header.getContext(),
-                                  )}
-                                  {sort?.field === header.column.id && (
-                                    <span className="text-xs">
-                                      {sort.direction === 'asc' ? '↑' : '↓'}
-                                    </span>
-                                  )}
-                                </button>
-                              ) : (
-                                flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext(),
-                                )
-                              )}
-                            </TableHead>
-                          )
-                        })}
-                      </TableRow>
-                    ))}
-                  </TableHeader>
-                  <TableBody>
-                    {table.getRowModel().rows.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        data-state={row.getIsSelected() && 'selected'}
-                        onClick={() => onRowClick?.(row.original)}
-                        className={cn(onRowClick && 'cursor-pointer')}
-                      >
-                        {row.getVisibleCells().map((cell) => {
-                          const meta = cell.column.columnDef.meta as
-                            | AppColumnMeta
-                            | undefined
-                          return (
-                            <TableCell
-                              key={cell.id}
-                              className={cn(
-                                meta?.align === 'end' && 'text-right',
-                                meta?.align === 'center' && 'text-center',
-                                meta?.cellClassName,
-                              )}
-                            >
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext(),
-                              )}
-                            </TableCell>
-                          )
-                        })}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          </div>
+        <DataTableDesktopView
+          table={table}
+          sort={sort}
+          onSortChange={onSortChange}
+          onRowClick={onRowClick}
+          isRefetching={isRefetching}
+          labels={labels}
+          page={page}
+          perPage={perPage}
+          totalRows={totalRows}
+          onPageChange={onPageChange}
+          onPerPageChange={onPerPageChange}
+        />
 
-          <div className="space-y-3 md:hidden">
-            {table.getRowModel().rows.map((row) => (
-              <DataTableMobileCard
-                key={row.id}
-                row={row}
-                customCard={customMobileCard}
-              />
-            ))}
-          </div>
-
-          {isRefetching && (
-            <div className="absolute inset-0 z-10 hidden md:flex items-center justify-center rounded-xl bg-background/60 backdrop-blur-[1px]">
-              <RefreshCw className="size-6 animate-spin text-muted-foreground" />
-            </div>
-          )}
-        </div>
-
-        <div className="hidden md:block">
-          <DataTablePagination
-            labels={labels}
-            page={page}
-            perPage={perPage}
-            totalRows={totalRows}
-            onPageChange={onPageChange}
-            onPerPageChange={onPerPageChange}
-            disabled={isRefetching}
-          />
-        </div>
-
-        {isMobile && (
-          <div ref={sentinelRef} className="flex justify-center py-4">
-            {isRefetching && (
-              <RefreshCw className="size-5 animate-spin text-muted-foreground" />
-            )}
-          </div>
-        )}
+        <DataTableMobileView
+          table={table}
+          customMobileCard={customMobileCard}
+          isRefetching={isRefetching}
+          isMobile={isMobile}
+          sentinelRef={sentinelRef}
+        />
       </div>
+
       {filters && (
         <DataTableFilterPanel
           open={isFilterPanelOpen}

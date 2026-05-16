@@ -223,7 +223,7 @@ export function CreateInvoicePage() {
                           setCustomPercentage((p) => Math.max(1, p - 10))
                         }
                       >
-                        <Minus className="h-3 w-3" />
+                        <Minus className="size-3" />
                       </Button>
                       <span className="w-16 text-center font-medium">
                         {customPercentage}%
@@ -235,7 +235,7 @@ export function CreateInvoicePage() {
                           setCustomPercentage((p) => Math.min(100, p + 10))
                         }
                       >
-                        <Plus className="h-3 w-3" />
+                        <Plus className="size-3" />
                       </Button>
                     </div>
                   )}
@@ -383,7 +383,7 @@ export function CreateInvoicePage() {
                           type="button"
                           onClick={() => itemsField.removeValue(i)}
                         >
-                          <Minus className="h-4 w-4" />
+                          <Minus className="size-4" />
                         </Button>
                       </div>
                     ))}
@@ -399,7 +399,7 @@ export function CreateInvoicePage() {
                         })
                       }
                     >
-                      <Plus className="mr-2 h-4 w-4" />
+                      <Plus className="mr-2 size-4" />
                       {t('addItem')}
                     </Button>
                   </div>

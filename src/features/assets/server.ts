@@ -103,8 +103,10 @@ export const finalizeUpload = createServerFn({ method: 'POST' })
       }[]
     }> => {
       const orgId = await resolveOrgId()
-      const userId = await resolveUserId()
-      const { db } = await import('#/db/index')
+      const [userId, { db }] = await Promise.all([
+        resolveUserId(),
+        import('#/db/index'),
+      ])
 
       const limits = USAGE_LIMITS[data.usage]
       if (data.sizeBytes > limits.maxBytes) {
@@ -279,8 +281,7 @@ export const getUploadUrl = createServerFn({ method: 'POST' })
 export const getAssetSignedUrl = createServerFn({ method: 'GET' })
   .inputValidator((input: { assetId: string; variantKey: VariantKey }) => input)
   .handler(async ({ data }): Promise<{ url: string; expiresAt: number }> => {
-    await resolveOrgId()
-    const { db } = await import('#/db/index')
+    const [, { db }] = await Promise.all([resolveOrgId(), import('#/db/index')])
 
     const requestedVariant = await db
       .select()

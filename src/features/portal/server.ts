@@ -153,8 +153,10 @@ export const portalGetInvoiceUploadUrlFn = createServerFn({ method: 'POST' })
     async ({
       data,
     }): Promise<{ uploadUrl: string; storageKey: string; assetId: string }> => {
-      const orgId = await getOrgIdFromToken(data.token)
-      const { buildUploadUrl } = await import('#/features/assets/model')
+      const [orgId, { buildUploadUrl }] = await Promise.all([
+        getOrgIdFromToken(data.token),
+        import('#/features/assets/model'),
+      ])
       return buildUploadUrl(
         orgId,
         'invoice',

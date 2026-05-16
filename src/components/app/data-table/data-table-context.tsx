@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from 'react'
+import { createContext, use, useCallback, useMemo, useState } from 'react'
 import type { DataTableSlotContext } from './data-table-utils'
 
 type SelectionState = {
@@ -26,7 +20,7 @@ const DataTableContext = createContext<DataTableContextValue<unknown> | null>(
 )
 
 export function useDataTableContext<TData>() {
-  const ctx = useContext(DataTableContext)
+  const ctx = use(DataTableContext)
   if (!ctx) throw new Error('useDataTableContext must be used within DataTable')
   return ctx as unknown as DataTableContextValue<TData>
 }

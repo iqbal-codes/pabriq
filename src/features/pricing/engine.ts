@@ -58,7 +58,7 @@ export function calculateUnitPrice(input: PricingInput): PricingResult {
     }
   }
 
-  const sorted = [...input.breakpoints].sort(
+  const sorted = input.breakpoints.toSorted(
     (a, b) => a.minQuantity - b.minQuantity,
   )
 

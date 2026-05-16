@@ -91,34 +91,37 @@ export const listProductsFn = createServerFn({ method: 'GET' })
     const page = data.page ?? 1
     const perPage = data.perPage ?? 25
 
-    const rows = await db
-      .select({
-        id: productsTable.id,
-        name: productsTable.name,
-        description: productsTable.description,
-        active: productsTable.active,
-        primaryImageAssetId: productsTable.primaryImageAssetId,
-        basePrice: productsTable.basePrice,
-        productionDays: productsTable.productionDays,
-        minQuantity: productsTable.minQuantity,
-        maxQuantity: productsTable.maxQuantity,
-        pricingMode: sql<'interpolated' | 'step'>`${productsTable.pricingMode}`,
-        minDiscountPrice: sql<number | null>`(
+    const [rows, countResult] = await Promise.all([
+      db
+        .select({
+          id: productsTable.id,
+          name: productsTable.name,
+          description: productsTable.description,
+          active: productsTable.active,
+          primaryImageAssetId: productsTable.primaryImageAssetId,
+          basePrice: productsTable.basePrice,
+          productionDays: productsTable.productionDays,
+          minQuantity: productsTable.minQuantity,
+          maxQuantity: productsTable.maxQuantity,
+          pricingMode: sql<
+            'interpolated' | 'step'
+          >`${productsTable.pricingMode}`,
+          minDiscountPrice: sql<number | null>`(
           SELECT MIN(b.unit_price)
           FROM ${breakpointsTable} b
           WHERE b.product_id = products.id
         )`,
-      })
-      .from(productsTable)
-      .where(allConditions)
-      .orderBy(orderBy)
-      .limit(perPage)
-      .offset((page - 1) * perPage)
-
-    const countResult = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(productsTable)
-      .where(allConditions)
+        })
+        .from(productsTable)
+        .where(allConditions)
+        .orderBy(orderBy)
+        .limit(perPage)
+        .offset((page - 1) * perPage),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(productsTable)
+        .where(allConditions),
+    ])
 
     return {
       rows,
@@ -180,29 +183,34 @@ export const calculateProductPriceFn = createServerFn({ method: 'GET' })
     }) => input,
   )
   .handler(async ({ data }) => {
-    const { db } = await import('#/db/index')
-    const { pricingBreakpoints, products: productsTable } = await import(
-      '#/db/schema'
-    )
-    const { eq, asc } = await import('drizzle-orm')
+    const [
+      { db },
+      { pricingBreakpoints, products: productsTable },
+      { eq, asc },
+    ] = await Promise.all([
+      import('#/db/index'),
+      import('#/db/schema'),
+      import('drizzle-orm'),
+    ])
 
-    const rows = await db
-      .select({
-        minQuantity: pricingBreakpoints.minQuantity,
-        unitPrice: pricingBreakpoints.unitPrice,
-      })
-      .from(pricingBreakpoints)
-      .where(eq(pricingBreakpoints.productId, data.productId))
-      .orderBy(asc(pricingBreakpoints.minQuantity))
-
-    const [product] = await db
-      .select({
-        basePrice: productsTable.basePrice,
-        minQuantity: productsTable.minQuantity,
-      })
-      .from(productsTable)
-      .where(eq(productsTable.id, data.productId))
-      .limit(1)
+    const [rows, [product]] = await Promise.all([
+      db
+        .select({
+          minQuantity: pricingBreakpoints.minQuantity,
+          unitPrice: pricingBreakpoints.unitPrice,
+        })
+        .from(pricingBreakpoints)
+        .where(eq(pricingBreakpoints.productId, data.productId))
+        .orderBy(asc(pricingBreakpoints.minQuantity)),
+      db
+        .select({
+          basePrice: productsTable.basePrice,
+          minQuantity: productsTable.minQuantity,
+        })
+        .from(productsTable)
+        .where(eq(productsTable.id, data.productId))
+        .limit(1),
+    ])
 
     if (!product) {
       return { ok: false as const, error: 'Product not found' }

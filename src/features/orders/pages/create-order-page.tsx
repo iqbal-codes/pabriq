@@ -162,14 +162,14 @@ export function CreateOrderPage() {
                 disabled={isGeneratingLink}
                 className="w-full"
               >
-                <Link2 className="mr-2 h-4 w-4" />
+                <Link2 className="mr-2 size-4" />
                 {t('generateLink')}
               </Button>
             ) : (
               <div className="flex gap-2">
                 <Input value={portalUrl} readOnly className="flex-1" />
                 <Button onClick={handleCopyLink} variant="outline" size="icon">
-                  <Copy className="h-4 w-4" />
+                  <Copy className="size-4" />
                 </Button>
               </div>
             )}

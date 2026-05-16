@@ -157,7 +157,7 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                       size="icon-sm"
                       onClick={() => setCustomPct((p) => Math.max(5, p - 5))}
                     >
-                      <Minus className="h-3 w-3" />
+                      <Minus className="size-3" />
                     </Button>
                     <span className="w-16 text-center font-medium tabular-nums">
                       {customPct}%
@@ -168,7 +168,7 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                       size="icon-sm"
                       onClick={() => setCustomPct((p) => Math.min(100, p + 5))}
                     >
-                      <Plus className="h-3 w-3" />
+                      <Plus className="size-3" />
                     </Button>
                     <span className="text-sm text-muted-foreground">
                       (5% steps)

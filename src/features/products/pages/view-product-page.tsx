@@ -139,9 +139,11 @@ export function ViewProductPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {breakpoints.map((bp, i) => (
-                      // biome-ignore lint/suspicious/noArrayIndexKey: breakpoints don't have stable IDs
-                      <tr key={i} className="border-b last:border-0">
+                    {breakpoints.map((bp) => (
+                      <tr
+                        key={`bp-${bp.minQuantity}`}
+                        className="border-b last:border-0"
+                      >
                         <td className="py-1 pr-4">{bp.minQuantity}</td>
                         <td className="py-1">
                           {currencyFormatter.format(bp.unitPrice)}

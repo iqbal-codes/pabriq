@@ -391,7 +391,7 @@ export function InvoiceDetailPage() {
       <Card className="mt-4">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Banknote className="h-5 w-5" />
+            <Banknote className="size-5" />
             {t('payments')}
           </CardTitle>
         </CardHeader>
@@ -466,7 +466,7 @@ export function InvoiceDetailPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          <ExternalLink className="h-4 w-4" />
+                          <ExternalLink className="size-4" />
                         </a>
                       </Button>
                     )}
@@ -478,7 +478,7 @@ export function InvoiceDetailPage() {
                           onClick={() => handleConfirmPayment(pm.id)}
                           disabled={confirmPayment.isPending}
                         >
-                          <CheckCircle2 className="mr-1 h-3 w-3" />
+                          <CheckCircle2 className="mr-1 size-3" />
                           {t('confirmSimple')}
                         </Button>
                         <Button
@@ -486,7 +486,7 @@ export function InvoiceDetailPage() {
                           size="sm"
                           onClick={() => setRejectDialogId(pm.id)}
                         >
-                          <XCircle className="mr-1 h-3 w-3" />
+                          <XCircle className="mr-1 size-3" />
                           {t('rejectSimple')}
                         </Button>
                       </>
@@ -511,7 +511,7 @@ export function InvoiceDetailPage() {
                 onClick={handleMarkPaid}
                 disabled={markPaid.isPending}
               >
-                <CheckCircle2 className="mr-2 h-4 w-4" />
+                <CheckCircle2 className="mr-2 size-4" />
                 {t('markAsPaid')}
               </Button>
               <Button
@@ -520,7 +520,7 @@ export function InvoiceDetailPage() {
                 onClick={handleVoid}
                 disabled={voidInv.isPending}
               >
-                <XCircle className="mr-2 h-4 w-4" />
+                <XCircle className="mr-2 size-4" />
                 {t('voidInvoice')}
               </Button>
             </div>

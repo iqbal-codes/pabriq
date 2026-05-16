@@ -76,6 +76,8 @@ export function DataTableFilterCombobox(props: DataTableFilterComboboxProps) {
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            aria-controls={open ? 'filter-combobox-single-list' : undefined}
+            aria-haspopup="listbox"
             className="w-full justify-between font-normal"
           >
             {selectedLabel ? (
@@ -93,7 +95,7 @@ export function DataTableFilterCombobox(props: DataTableFilterComboboxProps) {
               value={search}
               onValueChange={setSearch}
             />
-            <CommandList>
+            <CommandList id="filter-combobox-single-list">
               <CommandEmpty>
                 {noOptionsLabel ?? emptyLabel ?? 'No options'}
               </CommandEmpty>
@@ -138,6 +140,8 @@ export function DataTableFilterCombobox(props: DataTableFilterComboboxProps) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-controls={open ? 'filter-combobox-multi-list' : undefined}
+          aria-haspopup="listbox"
           className="flex h-auto min-h-10 w-full justify-between gap-1.5 py-2 font-normal"
         >
           <div className="flex flex-wrap gap-1">
@@ -173,7 +177,7 @@ export function DataTableFilterCombobox(props: DataTableFilterComboboxProps) {
             value={search}
             onValueChange={setSearch}
           />
-          <CommandList>
+          <CommandList id="filter-combobox-multi-list">
             <CommandEmpty>
               {noOptionsLabel ?? emptyLabel ?? 'No options'}
             </CommandEmpty>

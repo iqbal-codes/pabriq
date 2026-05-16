@@ -90,7 +90,7 @@ export type UpdateOrgSettingsInput = {
   logoAssetId?: string | null
 }
 
-export async function upsertOrgAddress(
+async function upsertOrgAddress(
   orgId: string,
   existingAddressId: string | null | undefined,
   address: { areaId: string; areaName: string; streetAddress: string },
@@ -148,8 +148,10 @@ export const updateOrgSettingsFn = createServerFn({ method: 'POST' })
           data.address !== undefined ||
           data.logoAssetId !== undefined
         ) {
-          const { db } = await import('#/db/index')
-          const { organizationProfiles } = await import('#/db/schema')
+          const [{ db }, { organizationProfiles }] = await Promise.all([
+            import('#/db/index'),
+            import('#/db/schema'),
+          ])
 
           const [existing] = await db
             .select({

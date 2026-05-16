@@ -1,4 +1,4 @@
-import { createContext, useContext, useRef } from 'react'
+import { createContext, use, useRef } from 'react'
 import { FieldGroup, FieldLegend, FieldSet } from '#/components/ui/field'
 import { cn } from '#/lib/utils'
 
@@ -9,7 +9,7 @@ type FormRootContextValue = {
 const FormRootContext = createContext<FormRootContextValue | null>(null)
 
 export function useFormRootContext() {
-  const ctx = useContext(FormRootContext)
+  const ctx = use(FormRootContext)
   if (!ctx) throw new Error('useFormRootContext must be used within FormRoot')
   return ctx
 }
@@ -35,6 +35,7 @@ export function FormRoot({
       <form
         className={cn('space-y-6', className)}
         onSubmit={(e) => {
+          // react-doctor: intentional — TanStack Form handleSubmit needs preventDefault
           e.preventDefault()
           e.stopPropagation()
           form.handleSubmit()

@@ -739,9 +739,19 @@ export async function getOrderTasksTimeline(
       ),
     )
     .orderBy(asc(taskActivity.createdAt))
+
+  // Build index: taskId → activities
+  const activitiesByTaskId = new Map<string, typeof activities>()
+  for (const activity of activities) {
+    const list = activitiesByTaskId.get(activity.taskId) ?? []
+    list.push(activity)
+    activitiesByTaskId.set(activity.taskId, list)
+  }
+
   const events: OrderTaskEvent[] = []
   for (const task of tasks) {
-    const taskActivities = activities.filter((a) => a.taskId === task.id)
+    const productName = task.context?.productName ?? ''
+    const taskActivities = activitiesByTaskId.get(task.id) ?? []
     const createdActivity = taskActivities.find((a) => a.type === 'created')
     if (createdActivity) {
       events.push({
@@ -749,7 +759,7 @@ export async function getOrderTasksTimeline(
         taskId: task.id,
         lineItemId: task.lineItemId,
         taskNumber: task.taskNumber ?? null,
-        productName: task.context?.productName ?? '',
+        productName,
         type: 'created',
         fromStageName: null,
         toStageName: stageNameMap.get(task.stageId ?? '') ?? null,
@@ -774,10 +784,11 @@ export async function getOrderTasksTimeline(
         assetIds?: string[]
       }> | null
 
+      const responseMap = new Map(
+        (requirementResponses ?? []).map((r) => [r.requirementIndex, r]),
+      )
       const formattedResponses = stageReqs.map((req, idx) => {
-        const response = requirementResponses?.find(
-          (r) => r.requirementIndex === idx,
-        )
+        const response = responseMap.get(idx)
         return {
           requirementName: req.name,
           value: response?.value as string | undefined,
@@ -794,7 +805,7 @@ export async function getOrderTasksTimeline(
         taskId: task.id,
         lineItemId: task.lineItemId,
         taskNumber: task.taskNumber ?? null,
-        productName: task.context?.productName ?? '',
+        productName,
         type: 'stage_transition',
         fromStageName: trans.fromStageId
           ? (stageNameMap.get(trans.fromStageId) ?? null)
@@ -823,7 +834,7 @@ export async function getOrderTasksTimeline(
         taskId: task.id,
         lineItemId: task.lineItemId,
         taskNumber: task.taskNumber ?? null,
-        productName: task.context?.productName ?? '',
+        productName,
         type: 'completed',
         fromStageName: stageNameMap.get(task.stageId ?? '') ?? null,
         toStageName: null,

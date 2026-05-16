@@ -22,7 +22,7 @@ export function RejectedView({ order }: { order: PortalOrder }) {
       <div className="flex items-center justify-center py-12">
         <div className="mx-4 max-w-md rounded-lg border border-border bg-card p-8 text-center shadow-sm">
           <div className="mb-4 flex justify-center">
-            <XCircle className="h-12 w-12 text-destructive" />
+            <XCircle className="size-12 text-destructive" />
           </div>
           <h1 className="text-xl font-semibold text-card-foreground">
             {t('rejectedTitle')}

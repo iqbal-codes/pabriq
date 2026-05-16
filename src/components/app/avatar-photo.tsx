@@ -13,9 +13,10 @@ type AvatarPhotoProps = {
 function getInitials(name: string): string {
   const initials = name
     .split(' ')
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .map((part) => part[0])
+    .flatMap((part) => {
+      const trimmed = part.trim()
+      return trimmed ? [trimmed[0]] : []
+    })
     .join('')
     .slice(0, 2)
     .toUpperCase()

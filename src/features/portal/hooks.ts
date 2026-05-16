@@ -86,6 +86,7 @@ export function useSavePortalAddress() {
 }
 
 export function usePortalGetUploadUrl() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: {
       token: string
@@ -94,10 +95,14 @@ export function usePortalGetUploadUrl() {
       fileSize: number
       lineItemId: string
     }) => portalGetUploadUrlFn({ data: input }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.portal.all })
+    },
   })
 }
 
 export function usePortalGetInvoiceUploadUrl() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: {
       token: string
@@ -106,6 +111,9 @@ export function usePortalGetInvoiceUploadUrl() {
       fileType: string
       fileSize: number
     }) => portalGetInvoiceUploadUrlFn({ data: input }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.portal.all })
+    },
   })
 }
 

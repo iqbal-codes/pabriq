@@ -35,7 +35,7 @@ export function PaymentSection({ invoices, onUpload }: Props) {
     <Card className="mt-4">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
+          <FileText className="size-5" />
           {t('title')}
         </CardTitle>
       </CardHeader>
@@ -57,7 +57,7 @@ export function PaymentSection({ invoices, onUpload }: Props) {
                   )}
                   {isPending ? (
                     <Badge variant="secondary">
-                      <Clock className="mr-1 h-3 w-3" />
+                      <Clock className="mr-1 size-3" />
                       {t('pendingConfirmation')}
                     </Badge>
                   ) : (
@@ -147,9 +147,9 @@ export function PaymentSection({ invoices, onUpload }: Props) {
                     }
                   >
                     {uploadingId === inv.id ? (
-                      <Clock className="mr-2 h-4 w-4 animate-spin" />
+                      <Clock className="mr-2 size-4 animate-spin" />
                     ) : (
-                      <Upload className="mr-2 h-4 w-4" />
+                      <Upload className="mr-2 size-4" />
                     )}
                     {t('uploadProof')}
                   </Button>
@@ -163,7 +163,7 @@ export function PaymentSection({ invoices, onUpload }: Props) {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <FileText className="mr-2 h-4 w-4" />
+                    <FileText className="mr-2 size-4" />
                     {t('downloadInvoice')}
                   </a>
                 </Button>

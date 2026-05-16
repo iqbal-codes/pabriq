@@ -30,11 +30,14 @@ export async function spawnTasksForApprovedOrder(
     : 1
   const now = new Date()
 
+  const taskValues: (typeof tasksTable.$inferInsert)[] = []
+  const activityValues: (typeof activityTable.$inferInsert)[] = []
+
   for (const item of lineItems) {
     const id = crypto.randomUUID()
     const taskNumber = `TSK-${nextNum}`
     nextNum++
-    await db.insert(tasksTable).values({
+    taskValues.push({
       id,
       orgId,
       orderId,
@@ -54,7 +57,7 @@ export async function spawnTasksForApprovedOrder(
       updatedAt: now,
     })
 
-    await db.insert(activityTable).values({
+    activityValues.push({
       id: crypto.randomUUID(),
       orgId,
       taskId: id,
@@ -66,6 +69,11 @@ export async function spawnTasksForApprovedOrder(
       createdAt: now,
     })
   }
+
+  await Promise.all([
+    db.insert(tasksTable).values(taskValues),
+    db.insert(activityTable).values(activityValues),
+  ])
 }
 
 export async function spawnProductionTasks(
@@ -92,11 +100,14 @@ export async function spawnProductionTasks(
     : 1
   const now = new Date()
 
+  const taskValues: (typeof tasksTable.$inferInsert)[] = []
+  const activityValues: (typeof activityTable.$inferInsert)[] = []
+
   for (const item of lineItems) {
     const id = crypto.randomUUID()
     const taskNumber = `TSK-${nextNum}`
     nextNum++
-    await db.insert(tasksTable).values({
+    taskValues.push({
       id,
       orgId,
       orderId,
@@ -116,7 +127,7 @@ export async function spawnProductionTasks(
       updatedAt: now,
     })
 
-    await db.insert(activityTable).values({
+    activityValues.push({
       id: crypto.randomUUID(),
       orgId,
       taskId: id,
@@ -128,6 +139,11 @@ export async function spawnProductionTasks(
       createdAt: now,
     })
   }
+
+  await Promise.all([
+    db.insert(tasksTable).values(taskValues),
+    db.insert(activityTable).values(activityValues),
+  ])
 }
 
 export async function archiveBoardTasks(

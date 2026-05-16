@@ -64,7 +64,10 @@ type CreateOrgResult =
 export const createOrganization = createServerFn({ method: 'POST' })
   .inputValidator((input: { name: string }) => input)
   .handler(async ({ data }): Promise<CreateOrgResult> => {
-    const auth = await import('#/lib/auth').then((m) => m.auth)
+    const [auth, { db }] = await Promise.all([
+      import('#/lib/auth').then((m) => m.auth),
+      import('#/db/index'),
+    ])
     const headers = getRequestHeaders()
 
     const trimmed = data.name.trim()
@@ -79,7 +82,6 @@ export const createOrganization = createServerFn({ method: 'POST' })
           body: { name: trimmed, slug: trySlug },
         })
 
-        const { db } = await import('#/db/index')
         const orgs = await db
           .select({ id: organizationTable.id })
           .from(organizationTable)
