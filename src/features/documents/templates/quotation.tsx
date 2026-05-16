@@ -192,13 +192,15 @@ const styles = StyleSheet.create({
   },
 })
 
+const currencyFormatter = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount)
+  return currencyFormatter.format(amount)
 }
 
 function formatDate(date: Date): string {

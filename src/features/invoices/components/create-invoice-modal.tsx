@@ -18,6 +18,12 @@ import {
 } from '#/components/ui/dialog'
 import { useCreateInvoice, usePaymentMethods } from '#/features/invoices/hooks'
 
+const currencyFormatter = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+})
+
 type OrderSummary = {
   id: string
   orderNumber: string | null
@@ -90,12 +96,7 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
     },
   })
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(n)
+  const fmt = (n: number) => currencyFormatter.format(n)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

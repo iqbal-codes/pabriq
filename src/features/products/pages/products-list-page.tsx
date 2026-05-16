@@ -24,16 +24,17 @@ import { useProductsList } from '#/features/products/hooks'
 import type { ProductRow } from '#/features/products/server'
 import { Route } from '#/routes/_org/products/index'
 
+const currencyFormatter = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+})
+
 function formatPrice(
   basePrice: number,
   minDiscountPrice: number | null,
 ): string {
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(n)
+  const fmt = (n: number) => currencyFormatter.format(n)
   if (minDiscountPrice != null) {
     return `${fmt(minDiscountPrice)} ~ ${fmt(basePrice)}`
   }

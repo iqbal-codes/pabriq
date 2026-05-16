@@ -8,6 +8,13 @@ import {
   useSavePortalAddress,
   useUpdatePortalLineItem,
 } from '../hooks'
+
+const currencyFormatter = new Intl.NumberFormat('en-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+})
+
 import type { PortalOrder } from '../model'
 
 export function DraftView({
@@ -171,17 +178,11 @@ export function DraftView({
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {t('quantity')}: {item.quantity} ×{' '}
-                          {new Intl.NumberFormat('en-ID', {
-                            style: 'currency',
-                            currency: 'IDR',
-                          }).format(item.unitPrice)}
+                          {currencyFormatter.format(item.unitPrice)}
                         </p>
                       </div>
                       <p className="text-sm font-medium text-card-foreground">
-                        {new Intl.NumberFormat('en-ID', {
-                          style: 'currency',
-                          currency: 'IDR',
-                        }).format(item.total)}
+                        {currencyFormatter.format(item.total)}
                       </p>
                     </div>
                     <form.AppField name={`lineItems[${i}].name`}>
@@ -218,10 +219,7 @@ export function DraftView({
                     {t('orderTotal')}
                   </p>
                   <p className="text-lg font-semibold text-card-foreground">
-                    {new Intl.NumberFormat('en-ID', {
-                      style: 'currency',
-                      currency: 'IDR',
-                    }).format(order.total)}
+                    {currencyFormatter.format(order.total)}
                   </p>
                 </div>
               </div>

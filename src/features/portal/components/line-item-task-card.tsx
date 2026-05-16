@@ -13,6 +13,11 @@ import {
 import type { OrderTaskEvent, PortalLineItem } from '../model'
 import { OrderTimeline } from './order-timeline'
 
+const currencyFormatter = new Intl.NumberFormat('en-ID', {
+  style: 'currency',
+  currency: 'IDR',
+})
+
 export function LineItemTaskCard({
   item,
   events,
@@ -33,11 +38,7 @@ export function LineItemTaskCard({
               {item.name || item.productName}
             </p>
             <p className="text-xs text-muted-foreground">
-              {item.quantity} ×{' '}
-              {new Intl.NumberFormat('en-ID', {
-                style: 'currency',
-                currency: 'IDR',
-              }).format(item.unitPrice)}
+              {item.quantity} × {currencyFormatter.format(item.unitPrice)}
             </p>
             {item.notes && (
               <p className="mt-1 text-xs text-muted-foreground truncate">
@@ -50,10 +51,7 @@ export function LineItemTaskCard({
               <Badge variant="secondary">{item.currentStageName}</Badge>
             )}
             <p className="text-sm font-medium">
-              {new Intl.NumberFormat('en-ID', {
-                style: 'currency',
-                currency: 'IDR',
-              }).format(item.total)}
+              {currencyFormatter.format(item.total)}
             </p>
             {item.assetIds.length > 0 && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -74,17 +72,10 @@ export function LineItemTaskCard({
           <div className="space-y-1">
             <div className="flex flex-row items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                {item.quantity} ×{' '}
-                {new Intl.NumberFormat('en-ID', {
-                  style: 'currency',
-                  currency: 'IDR',
-                }).format(item.unitPrice)}
+                {item.quantity} × {currencyFormatter.format(item.unitPrice)}
               </p>
               <p className="text-base font-semibold text-card-foreground">
-                {new Intl.NumberFormat('en-ID', {
-                  style: 'currency',
-                  currency: 'IDR',
-                }).format(item.total)}
+                {currencyFormatter.format(item.total)}
               </p>
             </div>
             {item.notes && (

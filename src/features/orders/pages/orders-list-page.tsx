@@ -25,6 +25,12 @@ import type { OrderRow } from '#/features/orders/model'
 import { generateOrderTokenFn } from '#/features/portal/server'
 import { Route } from '#/routes/_org/orders/index'
 
+const currencyFormatter = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+})
+
 export function OrdersListPage() {
   const ctx = Route.useRouteContext() as { org: { id: string } }
   const t = useTranslations('orders')
@@ -182,13 +188,7 @@ export function OrdersListPage() {
       header: t('total'),
       meta: { label: t('total'), mobileRole: 'meta' },
       cell: ({ row }) => (
-        <span>
-          {new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0,
-          }).format(row.original.total)}
-        </span>
+        <span>{currencyFormatter.format(row.original.total)}</span>
       ),
     },
   ]

@@ -123,21 +123,23 @@ describe('production stages', () => {
   })
 
   it('reorders stages', async () => {
-    const s1 = await createStage({
-      orgId: org1Id,
-      name: 'First',
-      orderIndex: 0,
-    })
-    const s2 = await createStage({
-      orgId: org1Id,
-      name: 'Second',
-      orderIndex: 1,
-    })
-    const s3 = await createStage({
-      orgId: org1Id,
-      name: 'Third',
-      orderIndex: 2,
-    })
+    const [s1, s2, s3] = await Promise.all([
+      createStage({
+        orgId: org1Id,
+        name: 'First',
+        orderIndex: 0,
+      }),
+      createStage({
+        orgId: org1Id,
+        name: 'Second',
+        orderIndex: 1,
+      }),
+      createStage({
+        orgId: org1Id,
+        name: 'Third',
+        orderIndex: 2,
+      }),
+    ])
 
     const stagesBefore = await listStages(org1Id)
     expect(stagesBefore.map((s) => s.name)).toEqual([

@@ -23,6 +23,13 @@ import {
   AlertDialogTitle,
 } from '#/components/ui/alert-dialog'
 import { Badge } from '#/components/ui/badge'
+
+const currencyFormatter = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+})
+
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import {
@@ -299,12 +306,7 @@ export function InvoiceDetailPage() {
     }
   }
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(n)
+  const fmt = (n: number) => currencyFormatter.format(n)
 
   return (
     <PageContent>

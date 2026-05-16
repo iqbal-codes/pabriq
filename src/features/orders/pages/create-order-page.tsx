@@ -27,6 +27,12 @@ import { useGenerateOrderToken } from '#/features/portal/hooks'
 import { useProductsList } from '#/features/products/hooks'
 import { Route } from '#/routes/_org/orders/new'
 
+const currencyFormatter = new Intl.NumberFormat('en-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+})
+
 export function CreateOrderPage() {
   const navigate = useNavigate()
   const ctx = Route.useRouteContext() as { org: { id: string } }
@@ -142,10 +148,7 @@ export function CreateOrderPage() {
                   <p className="font-medium">{createdOrder.customerName}</p>
                   <p className="text-sm text-muted-foreground">
                     {`${t('totalLabel')}: `}
-                    {new Intl.NumberFormat('en-ID', {
-                      style: 'currency',
-                      currency: 'IDR',
-                    }).format(createdOrder.total)}
+                    {currencyFormatter.format(createdOrder.total)}
                   </p>
                 </div>
               )}

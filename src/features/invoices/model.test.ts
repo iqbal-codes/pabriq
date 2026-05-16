@@ -230,20 +230,22 @@ describe('createInvoice', () => {
       dueDate: '2026-06-01',
       lineItems: [{ description: 'Item', quantity: 1, unitPrice: 10 }],
     })
-    const r2 = await createInvoice(org1Id, {
-      customerId: 'cust-1',
-      customerName: 'C1',
-      paymentMethodId: 'pm-1',
-      dueDate: '2026-06-01',
-      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 10 }],
-    })
-    const r3 = await createInvoice(org2Id, {
-      customerId: 'cust-2',
-      customerName: 'C2',
-      paymentMethodId: 'pm-2',
-      dueDate: '2026-06-01',
-      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 10 }],
-    })
+    const [r2, r3] = await Promise.all([
+      createInvoice(org1Id, {
+        customerId: 'cust-1',
+        customerName: 'C1',
+        paymentMethodId: 'pm-1',
+        dueDate: '2026-06-01',
+        lineItems: [{ description: 'Item', quantity: 1, unitPrice: 10 }],
+      }),
+      createInvoice(org2Id, {
+        customerId: 'cust-2',
+        customerName: 'C2',
+        paymentMethodId: 'pm-2',
+        dueDate: '2026-06-01',
+        lineItems: [{ description: 'Item', quantity: 1, unitPrice: 10 }],
+      }),
+    ])
 
     expect(r1.invoice.invoiceNumber).toBe(
       `INV-${new Date().getFullYear()}-0001`,

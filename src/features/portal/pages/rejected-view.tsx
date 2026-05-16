@@ -4,6 +4,12 @@ import { Button } from '#/components/ui/button'
 import { PortalHeader } from '#/features/portal/components/portal-header'
 import type { PortalOrder } from '../model'
 
+const currencyFormatter = new Intl.NumberFormat('en-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+})
+
 export function RejectedView({ order }: { order: PortalOrder }) {
   const t = useTranslations('portal')
 
@@ -41,10 +47,7 @@ export function RejectedView({ order }: { order: PortalOrder }) {
                     {item.name || item.productName} × {item.quantity}
                   </span>
                   <span className="font-medium text-card-foreground">
-                    {new Intl.NumberFormat('en-ID', {
-                      style: 'currency',
-                      currency: 'IDR',
-                    }).format(item.total)}
+                    {currencyFormatter.format(item.total)}
                   </span>
                 </div>
               ))}
@@ -54,10 +57,7 @@ export function RejectedView({ order }: { order: PortalOrder }) {
                 {t('orderTotal')}
               </span>
               <span className="font-semibold text-card-foreground">
-                {new Intl.NumberFormat('en-ID', {
-                  style: 'currency',
-                  currency: 'IDR',
-                }).format(order.total)}
+                {currencyFormatter.format(order.total)}
               </span>
             </div>
           </div>

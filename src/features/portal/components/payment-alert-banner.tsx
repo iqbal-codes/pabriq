@@ -3,6 +3,12 @@ import { useTranslations } from 'use-intl'
 import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert'
 import type { PortalInvoice } from '../model'
 
+const currencyFormatter = new Intl.NumberFormat('en-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+})
+
 function daysFromDue(dueDate: string): number {
   const due = new Date(dueDate)
   const now = new Date()
@@ -38,21 +44,18 @@ export function PaymentAlertBanner({
     const overdueCount = unpaid.filter(
       (inv) => daysFromDue(inv.dueDate) < 0,
     ).length
-    description = `${t('paymentUnpaid', { count: unpaid.length, amount: new Intl.NumberFormat('en-ID', { style: 'currency', currency: 'IDR' }).format(totalUnpaid) })} • ${overdueCount} ${t('paymentOverdue').toLowerCase()}`
+    description = `${t('paymentUnpaid', { count: unpaid.length, amount: currencyFormatter.format(totalUnpaid) })} • ${overdueCount} ${t('paymentOverdue').toLowerCase()}`
   } else if (hasDueSoon) {
     const soonDays = Math.min(
       ...unpaid
         .filter((inv) => daysFromDue(inv.dueDate) >= 0)
         .map((inv) => daysFromDue(inv.dueDate)),
     )
-    description = `${t('paymentUnpaid', { count: unpaid.length, amount: new Intl.NumberFormat('en-ID', { style: 'currency', currency: 'IDR' }).format(totalUnpaid) })} • ${t('paymentDueSoon', { days: soonDays })}`
+    description = `${t('paymentUnpaid', { count: unpaid.length, amount: currencyFormatter.format(totalUnpaid) })} • ${t('paymentDueSoon', { days: soonDays })}`
   } else {
     description = t('paymentUnpaid', {
       count: unpaid.length,
-      amount: new Intl.NumberFormat('en-ID', {
-        style: 'currency',
-        currency: 'IDR',
-      }).format(totalUnpaid),
+      amount: currencyFormatter.format(totalUnpaid),
     })
   }
 

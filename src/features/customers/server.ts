@@ -14,14 +14,16 @@ import {
 } from './model'
 
 async function resolveOrgId(): Promise<string> {
-  const { auth } = await import('#/lib/auth')
+  const [{ auth }, { db }, { member }, { eq }] = await Promise.all([
+    import('#/lib/auth'),
+    import('#/db/index'),
+    import('#/db/schema'),
+    import('drizzle-orm'),
+  ])
   const headers = getRequestHeaders()
   const session = await auth.api.getSession({ headers })
   if (!session) throw new Error('Not authenticated')
 
-  const { db } = await import('#/db/index')
-  const { member } = await import('#/db/schema')
-  const { eq } = await import('drizzle-orm')
   const memberships = await db
     .select({ orgId: member.organizationId })
     .from(member)

@@ -7,13 +7,15 @@ import type { AssetKind, OwnerType, Usage, VariantKey } from './model'
 import { IMAGE_MIME_TYPES, USAGE_LIMITS, VIDEO_MIME_TYPES } from './model'
 
 async function resolveOrgId(): Promise<string> {
-  const { auth } = await import('#/lib/auth')
+  const [{ auth }, { db }, { member }] = await Promise.all([
+    import('#/lib/auth'),
+    import('#/db/index'),
+    import('#/db/schema'),
+  ])
   const headers = getRequestHeaders()
   const session = await auth.api.getSession({ headers })
   if (!session) throw new Error('Not authenticated')
 
-  const { db } = await import('#/db/index')
-  const { member } = await import('#/db/schema')
   const memberships = await db
     .select({ orgId: member.organizationId })
     .from(member)

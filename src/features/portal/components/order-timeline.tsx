@@ -126,8 +126,8 @@ export function OrderTimeline({ events }: Props) {
           </div>
           <div className="pb-3 min-w-0 flex-1">
             <p className="text-xs text-muted-foreground">
-              {new Date(event.createdAt).toLocaleDateString()}{' '}
-              {new Date(event.createdAt).toLocaleTimeString([], {
+              {new Date(event.createdAt).toLocaleDateString('id-ID')}{' '}
+              {new Date(event.createdAt).toLocaleTimeString('id-ID', {
                 hour: '2-digit',
                 minute: '2-digit',
               })}

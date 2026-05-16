@@ -1,11 +1,17 @@
 import { Clock, FileText, Upload } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import type { PortalInvoice } from '../model'
+
+const currencyFormatter = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+})
 
 type Props = {
   invoices: PortalInvoice[]
@@ -16,6 +22,11 @@ export function PaymentSection({ invoices, onUpload }: Props) {
   const t = useTranslations('invoices')
   const st = useTranslations('status')
   const [uploadingId, setUploadingId] = useState<string | null>(null)
+  const [now, setNow] = useState<Date | null>(null)
+
+  useEffect(() => {
+    setNow(new Date())
+  }, [])
 
   const visibleInvoices = invoices.filter((inv) => inv.status !== 'void')
   if (visibleInvoices.length === 0) return null
@@ -31,7 +42,7 @@ export function PaymentSection({ invoices, onUpload }: Props) {
       <CardContent className="space-y-4">
         {visibleInvoices.map((inv) => {
           const isUnpaid = inv.status === 'unpaid'
-          const isOverdue = isUnpaid && new Date(inv.dueDate) < new Date()
+          const isOverdue = isUnpaid && now && new Date(inv.dueDate) < now
           const isPending = isUnpaid && inv.hasPaymentProof
 
           return (
@@ -78,11 +89,7 @@ export function PaymentSection({ invoices, onUpload }: Props) {
 
               <div className="mb-2">
                 <p className="text-lg font-bold">
-                  {new Intl.NumberFormat('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                    minimumFractionDigits: 0,
-                  }).format(inv.total)}
+                  {currencyFormatter.format(inv.total)}
                 </p>
                 {isUnpaid && (
                   <p className="text-sm text-muted-foreground">

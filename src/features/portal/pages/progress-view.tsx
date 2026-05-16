@@ -8,6 +8,13 @@ import { PaymentAlertBanner } from '../components/payment-alert-banner'
 import { PaymentSection } from '../components/payment-section'
 import { PortalHeader } from '../components/portal-header'
 import { ShippingAddressCard } from '../components/shipping-address-card'
+
+const currencyFormatter = new Intl.NumberFormat('en-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+})
+
 import {
   useOrderTimeline,
   usePortalGetInvoiceUploadUrl,
@@ -159,10 +166,7 @@ export function ProgressView({
             <div>
               <p className="text-sm text-muted-foreground">{t('orderTotal')}</p>
               <p className="text-lg font-semibold text-card-foreground">
-                {new Intl.NumberFormat('en-ID', {
-                  style: 'currency',
-                  currency: 'IDR',
-                }).format(order.total)}
+                {currencyFormatter.format(order.total)}
               </p>
             </div>
           </div>

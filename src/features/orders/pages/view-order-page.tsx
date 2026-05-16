@@ -14,6 +14,14 @@ import {
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
+
+const currencyFormatter = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+})
+const dateFormatter = new Intl.DateTimeFormat('id-ID')
+
 import { AssetImage } from '#/components/app/asset-image'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
@@ -109,6 +117,11 @@ export function ViewOrderPage() {
   const generateToken = useMutation({
     mutationFn: async (orderId: string) => {
       return generateOrderTokenFn({ data: { orderId } })
+    },
+    onSuccess: (_result, orderId) => {
+      queryClient.invalidateQueries({
+        queryKey: ['orders', 'detail', orderId],
+      })
     },
   })
 
@@ -223,8 +236,7 @@ export function ViewOrderPage() {
 
       {order.validUntil && order.status === 'draft' && (
         <span className="text-sm text-muted-foreground">
-          {t('validUntil')}:{' '}
-          {new Intl.DateTimeFormat('id-ID').format(order.validUntil)}
+          {t('validUntil')}: {dateFormatter.format(order.validUntil)}
         </span>
       )}
 
@@ -338,11 +350,7 @@ export function ViewOrderPage() {
             <div>
               <p className="text-sm text-muted-foreground">{t('total')}</p>
               <p className="text-lg font-semibold">
-                {new Intl.NumberFormat('id-ID', {
-                  style: 'currency',
-                  currency: 'IDR',
-                  minimumFractionDigits: 0,
-                }).format(order.total)}
+                {currencyFormatter.format(order.total)}
               </p>
             </div>
           </CardContent>
@@ -397,11 +405,7 @@ export function ViewOrderPage() {
                         <p className="font-medium">{inv.invoiceNumber}</p>
                         <p className="text-sm text-muted-foreground">
                           {inv.percentage && <>{inv.percentage}% — </>}
-                          {new Intl.NumberFormat('id-ID', {
-                            style: 'currency',
-                            currency: 'IDR',
-                            minimumFractionDigits: 0,
-                          }).format(inv.total)}
+                          {currencyFormatter.format(inv.total)}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -532,22 +536,11 @@ function LineItemRow({
         <div className="flex-1 min-w-0">
           <p className="font-medium">{item.name || item.productId}</p>
           <p className="text-sm text-muted-foreground">
-            {item.quantity} ×{' '}
-            {new Intl.NumberFormat('id-ID', {
-              style: 'currency',
-              currency: 'IDR',
-              minimumFractionDigits: 0,
-            }).format(item.unitPrice)}
+            {item.quantity} × {currencyFormatter.format(item.unitPrice)}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <p className="font-medium">
-            {new Intl.NumberFormat('id-ID', {
-              style: 'currency',
-              currency: 'IDR',
-              minimumFractionDigits: 0,
-            }).format(item.total)}
-          </p>
+          <p className="font-medium">{currencyFormatter.format(item.total)}</p>
           {task && (
             <Badge variant="secondary" className="text-xs">
               {task.stage?.name ??

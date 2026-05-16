@@ -13,6 +13,12 @@ import { useInvoicesList } from '#/features/invoices/hooks'
 import type { InvoiceRow } from '#/features/invoices/model'
 import { Route } from '#/routes/_org/invoices/index'
 
+const currencyFormatter = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+})
+
 export function InvoiceListPage() {
   const ctx = Route.useRouteContext() as { org: { id: string } }
   const t = useTranslations('invoices')
@@ -67,13 +73,7 @@ export function InvoiceListPage() {
         header: t('total'),
         meta: { label: t('total') },
         cell: ({ row }: { row: { original: InvoiceRow } }) => (
-          <span>
-            {new Intl.NumberFormat('id-ID', {
-              style: 'currency',
-              currency: 'IDR',
-              minimumFractionDigits: 0,
-            }).format(row.original.total)}
-          </span>
+          <span>{currencyFormatter.format(row.original.total)}</span>
         ),
       },
       {

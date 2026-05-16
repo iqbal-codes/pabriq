@@ -229,28 +229,30 @@ export async function listOrders(
         : desc(sortCol)
       : desc(ordersTable.createdAt)
 
-  const rows = await db
-    .select({
-      id: ordersTable.id,
-      customerName: customersTable.name,
-      status: ordersTable.status,
-      total: ordersTable.total,
-      orderNumber: ordersTable.orderNumber,
-      orderToken: ordersTable.orderToken,
-      createdAt: ordersTable.createdAt,
-    })
-    .from(ordersTable)
-    .leftJoin(customersTable, eq(ordersTable.customerId, customersTable.id))
-    .where(allConditions)
-    .orderBy(sortDir)
-    .limit(perPage)
-    .offset((page - 1) * perPage)
-
-  const countResult = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(ordersTable)
-    .leftJoin(customersTable, eq(ordersTable.customerId, customersTable.id))
-    .where(allConditions)
+  const [rows, countResult] = await Promise.all([
+    db
+      .select({
+        id: ordersTable.id,
+        customerId: ordersTable.customerId,
+        customerName: customersTable.name,
+        status: ordersTable.status,
+        total: ordersTable.total,
+        orderNumber: ordersTable.orderNumber,
+        orderToken: ordersTable.orderToken,
+        createdAt: ordersTable.createdAt,
+      })
+      .from(ordersTable)
+      .leftJoin(customersTable, eq(ordersTable.customerId, customersTable.id))
+      .where(allConditions)
+      .orderBy(sortDir)
+      .limit(perPage)
+      .offset((page - 1) * perPage),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(ordersTable)
+      .leftJoin(customersTable, eq(ordersTable.customerId, customersTable.id))
+      .where(allConditions),
+  ])
 
   return {
     rows,

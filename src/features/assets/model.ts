@@ -115,8 +115,7 @@ export async function buildUploadUrl(
   fileSize: number,
   usage: Usage,
 ): Promise<BuildUploadUrlResult> {
-  const { generateSignedUploadUrl } = await import('#/lib/r2')
-  const { buildR2Key } = await import('#/lib/r2')
+  const { generateSignedUploadUrl, buildR2Key } = await import('#/lib/r2')
 
   const limits = USAGE_LIMITS[usage]
   if (fileSize > limits.maxBytes) {

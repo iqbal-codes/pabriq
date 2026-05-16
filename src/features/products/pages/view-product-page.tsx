@@ -7,6 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { useProduct, useProductBreakpoints } from '#/features/products/hooks'
 import { Route } from '#/routes/_org/products/$id/index'
 
+const currencyFormatter = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+})
+
 export function ViewProductPage() {
   const { id } = Route.useParams()
   const product = useProduct(id).data
@@ -84,11 +90,7 @@ export function ViewProductPage() {
                   {t('basePrice')}
                 </p>
                 <p className="font-medium">
-                  {new Intl.NumberFormat('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                    minimumFractionDigits: 0,
-                  }).format(product.basePrice)}
+                  {currencyFormatter.format(product.basePrice)}
                 </p>
               </div>
               <div>
@@ -142,11 +144,7 @@ export function ViewProductPage() {
                       <tr key={i} className="border-b last:border-0">
                         <td className="py-1 pr-4">{bp.minQuantity}</td>
                         <td className="py-1">
-                          {new Intl.NumberFormat('id-ID', {
-                            style: 'currency',
-                            currency: 'IDR',
-                            minimumFractionDigits: 0,
-                          }).format(bp.unitPrice)}
+                          {currencyFormatter.format(bp.unitPrice)}
                         </td>
                       </tr>
                     ))}

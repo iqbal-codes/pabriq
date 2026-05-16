@@ -107,8 +107,10 @@ export const setOrganizationLogo = createServerFn({ method: 'POST' })
   .inputValidator((input: { orgId: string; logoAssetId: string }) => input)
   .handler(
     async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
-      const { db } = await import('#/db/index')
-      const { organizationProfiles } = await import('#/db/schema')
+      const [{ db }, { organizationProfiles }] = await Promise.all([
+        import('#/db/index'),
+        import('#/db/schema'),
+      ])
 
       try {
         const existing = await db

@@ -375,28 +375,29 @@ export async function listInvoices(
   const perPage = params.perPage ?? 25
   const today = new Date().toISOString().split('T')[0]
 
-  const rows = await db
-    .select({
-      id: invoicesTable.id,
-      invoiceNumber: invoicesTable.invoiceNumber,
-      customerName: invoicesTable.customerName,
-      status: invoicesTable.status,
-      total: invoicesTable.total,
-      percentage: invoicesTable.percentage,
-      dueDate: invoicesTable.dueDate,
-      createdAt: invoicesTable.createdAt,
-      overdue: sql<boolean>`(${invoicesTable.status} IN ('unpaid') AND ${invoicesTable.dueDate} < ${today}::date)`,
-    })
-    .from(invoicesTable)
-    .where(allConditions)
-    .orderBy(desc(invoicesTable.createdAt))
-    .limit(perPage)
-    .offset((page - 1) * perPage)
-
-  const countResult = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(invoicesTable)
-    .where(allConditions)
+  const [rows, countResult] = await Promise.all([
+    db
+      .select({
+        id: invoicesTable.id,
+        invoiceNumber: invoicesTable.invoiceNumber,
+        customerName: invoicesTable.customerName,
+        status: invoicesTable.status,
+        total: invoicesTable.total,
+        percentage: invoicesTable.percentage,
+        dueDate: invoicesTable.dueDate,
+        createdAt: invoicesTable.createdAt,
+        overdue: sql<boolean>`(${invoicesTable.status} IN ('unpaid') AND ${invoicesTable.dueDate} < ${today}::date)`,
+      })
+      .from(invoicesTable)
+      .where(allConditions)
+      .orderBy(desc(invoicesTable.createdAt))
+      .limit(perPage)
+      .offset((page - 1) * perPage),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(invoicesTable)
+      .where(allConditions),
+  ])
 
   return {
     rows: rows as InvoiceRow[],

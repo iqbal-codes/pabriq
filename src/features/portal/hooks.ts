@@ -60,13 +60,18 @@ export function useGenerateOrderToken() {
 }
 
 export function useUpdatePortalLineItem() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: { itemId: string } & UpdatePortalLineItemInput) =>
       updatePortalLineItemFn({ data: input }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.portal.all })
+    },
   })
 }
 
 export function useSavePortalAddress() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: {
       orderId: string
@@ -74,6 +79,9 @@ export function useSavePortalAddress() {
       areaName: string
       streetAddress: string
     }) => savePortalAddressFn({ data: input }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.portal.all })
+    },
   })
 }
 
@@ -120,6 +128,7 @@ export function useSubmitPaymentProof() {
 }
 
 export function usePortalFinalizeUpload() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: {
       token: string
@@ -131,5 +140,8 @@ export function usePortalFinalizeUpload() {
       checksumSha256?: string
       storageKey: string
     }) => portalFinalizeUploadFn({ data: input }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.portal.all })
+    },
   })
 }

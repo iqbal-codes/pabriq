@@ -24,6 +24,13 @@ import {
   TableHeader,
   TableRow,
 } from '#/components/ui/table'
+
+const currencyFormatter = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+})
+
 import {
   useCreateInvoice,
   useOrderForInvoice,
@@ -111,12 +118,7 @@ export function CreateInvoicePage() {
     },
   })
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(n)
+  const fmt = (n: number) => currencyFormatter.format(n)
 
   return (
     <PageContent>

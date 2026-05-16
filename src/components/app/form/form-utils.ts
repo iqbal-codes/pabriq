@@ -14,10 +14,12 @@ export function formatPhone(displayValue: string): string {
   return parts.join('-')
 }
 
+const numberFormatter = new Intl.NumberFormat('id-ID')
+
 export function formatNumber(displayValue: NumericDisplayValue): string {
   const digits = stripNonDigits(displayValue)
   if (!digits) return ''
-  return new Intl.NumberFormat('id-ID').format(Number(digits))
+  return numberFormatter.format(Number(digits))
 }
 
 export function stripNumberFormatting(

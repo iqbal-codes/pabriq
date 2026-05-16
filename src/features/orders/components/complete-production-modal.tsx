@@ -21,6 +21,12 @@ import type { ShippingAddress } from '#/features/address/model'
 import { usePaymentMethods } from '#/features/invoices/hooks'
 import { useCompleteProduction } from '#/features/orders/hooks'
 
+const currencyFormatter = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+})
+
 type OrderSummary = {
   id: string
   orderNumber: string | null
@@ -104,13 +110,6 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
 
   const shippingAmount = Number.parseFloat(shippingFeeRaw) || 0
   const invoiceTotal = order.remainingAmount + shippingAmount
-
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(n)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -233,12 +232,14 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Order Total</span>
-                <span className="font-medium">{fmt(order.total)}</span>
+                <span className="font-medium">
+                  {currencyFormatter.format(order.total)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Already Paid</span>
                 <span className="font-medium text-green-600">
-                  {fmt(order.invoicedAmount)}
+                  {currencyFormatter.format(order.invoicedAmount)}
                 </span>
               </div>
               <div className="flex justify-between border-t pt-2">
@@ -246,19 +247,21 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
                   {t('remainingPayment')}
                 </span>
                 <span className="font-medium text-orange-600">
-                  {fmt(order.remainingAmount)}
+                  {currencyFormatter.format(order.remainingAmount)}
                 </span>
               </div>
               {shippingAmount > 0 && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping Fee</span>
-                  <span className="font-medium">+{fmt(shippingAmount)}</span>
+                  <span className="font-medium">
+                    +{currencyFormatter.format(shippingAmount)}
+                  </span>
                 </div>
               )}
               <div className="flex justify-between border-t pt-2 mt-2">
                 <span className="font-semibold">Total</span>
                 <span className="font-bold text-orange-600 text-lg">
-                  {fmt(invoiceTotal)}
+                  {currencyFormatter.format(invoiceTotal)}
                 </span>
               </div>
             </div>

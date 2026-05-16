@@ -145,19 +145,33 @@ export async function getPortalOrder(
       )[0]
     : null
 
-  const itemRows = await db
-    .select()
-    .from(orderLineItems)
-    .where(eq(orderLineItems.orderId, order.id))
-
-  const productRows = await db
-    .select({
-      id: products.id,
-      name: products.name,
-      productionDays: products.productionDays,
-    })
-    .from(products)
-    .where(eq(products.orgId, order.orgId))
+  const [itemRows, productRows, allStages, taskRows] = await Promise.all([
+    db
+      .select()
+      .from(orderLineItems)
+      .where(eq(orderLineItems.orderId, order.id)),
+    db
+      .select({
+        id: products.id,
+        name: products.name,
+        productionDays: products.productionDays,
+      })
+      .from(products)
+      .where(eq(products.orgId, order.orgId)),
+    db
+      .select({ id: productionStages.id, name: productionStages.name })
+      .from(productionStages)
+      .where(eq(productionStages.orgId, order.orgId)),
+    db
+      .select({
+        id: productionTasks.id,
+        taskNumber: productionTasks.taskNumber,
+        lineItemId: productionTasks.lineItemId,
+        stageId: productionTasks.stageId,
+      })
+      .from(productionTasks)
+      .where(eq(productionTasks.orderId, order.id)),
+  ])
 
   const productNameMap = new Map(productRows.map((p) => [p.id, p.name]))
   const productDaysMap = new Map(
@@ -203,22 +217,7 @@ export async function getPortalOrder(
     assetsByLineItem.set(asset.ownerId, assetList)
   }
 
-  const allStages = await db
-    .select({ id: productionStages.id, name: productionStages.name })
-    .from(productionStages)
-    .where(eq(productionStages.orgId, order.orgId))
-
   const stageNameMap = new Map(allStages.map((s) => [s.id, s.name]))
-  // Use raw SQL query for task table
-  const taskRows = await db
-    .select({
-      id: productionTasks.id,
-      taskNumber: productionTasks.taskNumber,
-      lineItemId: productionTasks.lineItemId,
-      stageId: productionTasks.stageId,
-    })
-    .from(productionTasks)
-    .where(eq(productionTasks.orderId, order.id))
 
   const taskByLineItem = new Map(taskRows.map((t) => [t.lineItemId, t]))
 

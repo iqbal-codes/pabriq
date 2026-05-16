@@ -5,14 +5,16 @@ import type { CreateStageInput, Stage, UpdateStageInput } from './model'
 export type MutationResult = { ok: true } | { ok: false; error: string }
 
 async function resolveOrgId(): Promise<string> {
-  const { auth } = await import('#/lib/auth')
+  const [{ auth }, { db }, { member }, { eq }] = await Promise.all([
+    import('#/lib/auth'),
+    import('#/db/index'),
+    import('#/db/schema'),
+    import('drizzle-orm'),
+  ])
   const headers = getRequestHeaders()
   const session = await auth.api.getSession({ headers })
   if (!session) throw new Error('Not authenticated')
 
-  const { db } = await import('#/db/index')
-  const { member } = await import('#/db/schema')
-  const { eq } = await import('drizzle-orm')
   const memberships = await db
     .select({ orgId: member.organizationId, role: member.role })
     .from(member)
@@ -24,14 +26,16 @@ async function resolveOrgId(): Promise<string> {
 }
 
 async function resolveOrgAndRole(): Promise<{ orgId: string; role: string }> {
-  const { auth } = await import('#/lib/auth')
+  const [{ auth }, { db }, { member }, { eq }] = await Promise.all([
+    import('#/lib/auth'),
+    import('#/db/index'),
+    import('#/db/schema'),
+    import('drizzle-orm'),
+  ])
   const headers = getRequestHeaders()
   const session = await auth.api.getSession({ headers })
   if (!session) throw new Error('Not authenticated')
 
-  const { db } = await import('#/db/index')
-  const { member } = await import('#/db/schema')
-  const { eq } = await import('drizzle-orm')
   const memberships = await db
     .select({ orgId: member.organizationId, role: member.role })
     .from(member)
@@ -149,11 +153,13 @@ export const advanceTaskFn = createServerFn({ method: 'POST' })
       { ok: true; pendingApproval: boolean } | { ok: false; error: string }
     > => {
       const orgId = await resolveOrgId()
-      const { auth } = await import('#/lib/auth')
+      const [{ auth }, { advanceTask }] = await Promise.all([
+        import('#/lib/auth'),
+        import('./model'),
+      ])
       const headers = getRequestHeaders()
       const session = await auth.api.getSession({ headers })
       try {
-        const { advanceTask } = await import('./model')
         return await advanceTask(
           data.taskId,
           orgId,
@@ -172,11 +178,14 @@ export const advanceTaskFn = createServerFn({ method: 'POST' })
 export const approveTaskAdvanceFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { taskId: string; reviewNotes?: string }) => input)
   .handler(async ({ data }) => {
-    const { orgId, role } = await resolveOrgAndRole()
-    const { auth } = await import('#/lib/auth')
+    const [{ orgId, role }, { auth }, { approveTaskAdvance }] =
+      await Promise.all([
+        resolveOrgAndRole(),
+        import('#/lib/auth'),
+        import('./model'),
+      ])
     const headers = getRequestHeaders()
     const session = await auth.api.getSession({ headers })
-    const { approveTaskAdvance } = await import('./model')
     return approveTaskAdvance(
       data.taskId,
       orgId,
@@ -189,12 +198,15 @@ export const approveTaskAdvanceFn = createServerFn({ method: 'POST' })
 export const rejectTaskAdvanceFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { taskId: string; reviewNotes?: string }) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
-    const { orgId, role } = await resolveOrgAndRole()
+    const [{ orgId, role }, { auth }, { rejectTaskAdvance }] =
+      await Promise.all([
+        resolveOrgAndRole(),
+        import('#/lib/auth'),
+        import('./model'),
+      ])
+    const headers = getRequestHeaders()
+    const session = await auth.api.getSession({ headers })
     try {
-      const { auth } = await import('#/lib/auth')
-      const headers = getRequestHeaders()
-      const session = await auth.api.getSession({ headers })
-      const { rejectTaskAdvance } = await import('./model')
       await rejectTaskAdvance(
         data.taskId,
         orgId,
@@ -215,11 +227,13 @@ export const saveTaskCommentFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { taskId: string; text: string }) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
     const orgId = await resolveOrgId()
+    const [{ auth }, { saveTaskComment }] = await Promise.all([
+      import('#/lib/auth'),
+      import('./model'),
+    ])
+    const headers = getRequestHeaders()
+    const session = await auth.api.getSession({ headers })
     try {
-      const { auth } = await import('#/lib/auth')
-      const headers = getRequestHeaders()
-      const session = await auth.api.getSession({ headers })
-      const { saveTaskComment } = await import('./model')
       await saveTaskComment(
         data.taskId,
         orgId,
@@ -305,9 +319,13 @@ export const listTasksByOrderIdFn = createServerFn({ method: 'GET' })
   .inputValidator((input: { orderId: string }) => input)
   .handler(async ({ data }) => {
     const orgId = await resolveOrgId()
-    const { db } = await import('#/db/index')
-    const { productionTasks } = await import('#/db/schema')
-    const { eq, and } = await import('drizzle-orm')
+    const [{ db }, { productionTasks }, { eq, and }, { listStages }] =
+      await Promise.all([
+        import('#/db/index'),
+        import('#/db/schema'),
+        import('drizzle-orm'),
+        import('./model'),
+      ])
 
     const rows = await db
       .select()
@@ -318,9 +336,6 @@ export const listTasksByOrderIdFn = createServerFn({ method: 'GET' })
           eq(productionTasks.orderId, data.orderId),
         ),
       )
-
-    // Get stages for these tasks
-    const { listStages } = await import('./model')
     const allStages = await listStages(orgId, undefined)
     const stageMap = new Map(allStages.map((s) => [s.id, s]))
 

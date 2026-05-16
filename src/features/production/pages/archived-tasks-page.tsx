@@ -3,6 +3,12 @@ import { parseAsInteger, parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { useTranslations } from 'use-intl'
 import type { AppColumnDef, DataTableLabels } from '#/components/app/data-table'
+
+const dateTimeFormatter = new Intl.DateTimeFormat('id-ID', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+})
+
 import { DataTable, DataTableSearch } from '#/components/app/data-table'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { useArchivedTasks } from '../hooks'
@@ -77,10 +83,7 @@ export function ArchivedTasksPage({ orgId }: Props) {
       meta: { label: t('archivedDate'), mobileRole: 'meta' },
       cell: ({ row }) => (
         <span>
-          {new Intl.DateTimeFormat('id-ID', {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-          }).format(new Date(row.original.archivedAt))}
+          {dateTimeFormatter.format(new Date(row.original.archivedAt))}
         </span>
       ),
     },

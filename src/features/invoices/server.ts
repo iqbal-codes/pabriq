@@ -46,14 +46,16 @@ export type OrderForInvoice = {
 type MutationResult = { ok: true } | { ok: false; error: string }
 
 async function resolveOrgId(): Promise<string> {
-  const { auth } = await import('#/lib/auth')
+  const [{ auth }, { db }, { member }, { eq }] = await Promise.all([
+    import('#/lib/auth'),
+    import('#/db/index'),
+    import('#/db/schema'),
+    import('drizzle-orm'),
+  ])
   const headers = getRequestHeaders()
   const session = await auth.api.getSession({ headers })
   if (!session) throw new Error('Not authenticated')
 
-  const { db } = await import('#/db/index')
-  const { member } = await import('#/db/schema')
-  const { eq } = await import('drizzle-orm')
   const memberships = await db
     .select({ orgId: member.organizationId })
     .from(member)
@@ -100,12 +102,14 @@ export const markInvoicePaidFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
     const orgId = await resolveOrgId()
+    const [{ auth }, { markInvoicePaid }] = await Promise.all([
+      import('#/lib/auth'),
+      import('./model'),
+    ])
+    const headers = getRequestHeaders()
+    const session = await auth.api.getSession({ headers })
+    const userId = session?.user.id ?? 'unknown'
     try {
-      const { auth } = await import('#/lib/auth')
-      const headers = getRequestHeaders()
-      const session = await auth.api.getSession({ headers })
-      const userId = session?.user.id ?? 'unknown'
-      const { markInvoicePaid } = await import('./model')
       await markInvoicePaid(data.id, orgId, userId)
       return { ok: true }
     } catch (e) {
@@ -339,28 +343,62 @@ export const getOrderForInvoiceFn = createServerFn({ method: 'GET' })
   .handler(async ({ data }): Promise<OrderForInvoice> => {
     const orgId = await resolveOrgId()
 
-    const { db } = await import('#/db/index')
-    const {
-      orders: ordersTable,
-      orderLineItems: orderLineItemsTable,
-      invoices: invoicesTable,
-    } = await import('#/db/schema')
-    const { eq, and } = await import('drizzle-orm')
+    const [
+      { db },
+      {
+        orders: ordersTable,
+        orderLineItems: orderLineItemsTable,
+        invoices: invoicesTable,
+        customers: customersTable,
+      },
+      { eq, and },
+    ] = await Promise.all([
+      import('#/db/index'),
+      import('#/db/schema'),
+      import('drizzle-orm'),
+    ])
 
-    // Fetch order
-    const orderRows = await db
-      .select()
-      .from(ordersTable)
-      .where(
-        and(eq(ordersTable.id, data.orderId), eq(ordersTable.orgId, orgId)),
-      )
-      .limit(1)
+    // Fetch order, line items, and existing invoices in parallel
+    const [orderRows, itemRows, invoiceRows] = await Promise.all([
+      db
+        .select()
+        .from(ordersTable)
+        .where(
+          and(eq(ordersTable.id, data.orderId), eq(ordersTable.orgId, orgId)),
+        )
+        .limit(1),
+      db
+        .select({
+          id: orderLineItemsTable.id,
+          name: orderLineItemsTable.name,
+          quantity: orderLineItemsTable.quantity,
+          unitPrice: orderLineItemsTable.unitPrice,
+          total: orderLineItemsTable.total,
+        })
+        .from(orderLineItemsTable)
+        .where(eq(orderLineItemsTable.orderId, data.orderId)),
+      db
+        .select({
+          id: invoicesTable.id,
+          invoiceNumber: invoicesTable.invoiceNumber,
+          percentage: invoicesTable.percentage,
+          total: invoicesTable.total,
+          status: invoicesTable.status,
+        })
+        .from(invoicesTable)
+        .where(
+          and(
+            eq(invoicesTable.orderId, data.orderId),
+            eq(invoicesTable.orgId, orgId),
+            eq(invoicesTable.status, 'paid'),
+          ),
+        ),
+    ])
 
     if (orderRows.length === 0) throw new Error('Order not found')
     const order = orderRows[0]
 
-    // Fetch customer info
-    const { customers: customersTable } = await import('#/db/schema')
+    // Fetch customer info (depends on order.customerId)
     const customerRows = order.customerId
       ? await db
           .select({
@@ -372,36 +410,6 @@ export const getOrderForInvoiceFn = createServerFn({ method: 'GET' })
           .where(eq(customersTable.id, order.customerId))
           .limit(1)
       : []
-
-    // Fetch order line items
-    const itemRows = await db
-      .select({
-        id: orderLineItemsTable.id,
-        name: orderLineItemsTable.name,
-        quantity: orderLineItemsTable.quantity,
-        unitPrice: orderLineItemsTable.unitPrice,
-        total: orderLineItemsTable.total,
-      })
-      .from(orderLineItemsTable)
-      .where(eq(orderLineItemsTable.orderId, data.orderId))
-
-    // Fetch existing invoices for this order
-    const invoiceRows = await db
-      .select({
-        id: invoicesTable.id,
-        invoiceNumber: invoicesTable.invoiceNumber,
-        percentage: invoicesTable.percentage,
-        total: invoicesTable.total,
-        status: invoicesTable.status,
-      })
-      .from(invoicesTable)
-      .where(
-        and(
-          eq(invoicesTable.orderId, data.orderId),
-          eq(invoicesTable.orgId, orgId),
-          eq(invoicesTable.status, 'paid'),
-        ),
-      )
 
     const invoicedPercentage = invoiceRows.reduce(
       (sum, inv) => sum + (inv.percentage ?? 0),

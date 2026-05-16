@@ -193,7 +193,7 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
       meta: { label: t('joined'), mobileRole: 'meta' },
       cell: ({ row }) => (
         <span className="text-muted-foreground text-sm">
-          {new Date(row.original.createdAt).toLocaleDateString()}
+          {new Date(row.original.createdAt).toLocaleDateString('id-ID')}
         </span>
       ),
     },

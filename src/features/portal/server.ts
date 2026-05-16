@@ -26,8 +26,10 @@ export const portalGetUploadUrlFn = createServerFn({ method: 'POST' })
     async ({
       data,
     }): Promise<{ uploadUrl: string; storageKey: string; assetId: string }> => {
-      const orgId = await getOrgIdFromToken(data.token)
-      const { buildUploadUrl } = await import('#/features/assets/model')
+      const [orgId, { buildUploadUrl }] = await Promise.all([
+        getOrgIdFromToken(data.token),
+        import('#/features/assets/model'),
+      ])
       return buildUploadUrl(
         orgId,
         'order',
@@ -54,8 +56,10 @@ export const portalFinalizeUploadFn = createServerFn({ method: 'POST' })
     }) => input,
   )
   .handler(async ({ data }) => {
-    const orgId = await getOrgIdFromToken(data.token)
-    const { insertAsset } = await import('#/features/assets/model')
+    const [orgId, { insertAsset }] = await Promise.all([
+      getOrgIdFromToken(data.token),
+      import('#/features/assets/model'),
+    ])
     const result = await insertAsset({
       assetId: data.assetId,
       orgId,
@@ -178,8 +182,10 @@ export const submitPaymentProofFn = createServerFn({ method: 'POST' })
   .handler(
     async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
       try {
-        const orgId = await getOrgIdFromToken(data.token)
-        const { insertAsset } = await import('#/features/assets/model')
+        const [orgId, { insertAsset }] = await Promise.all([
+          getOrgIdFromToken(data.token),
+          import('#/features/assets/model'),
+        ])
         await insertAsset({
           assetId: data.assetId,
           orgId,

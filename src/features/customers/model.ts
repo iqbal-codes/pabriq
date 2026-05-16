@@ -178,25 +178,26 @@ export async function listCustomers(
   const page = params.page ?? 1
   const perPage = params.perPage ?? 25
 
-  const rows = await db
-    .select({
-      id: customersTable.id,
-      name: customersTable.name,
-      email: customersTable.email,
-      phone: customersTable.phone,
-      active: customersTable.active,
-      photoAssetId: customersTable.photoAssetId,
-    })
-    .from(customersTable)
-    .where(allConditions)
-    .orderBy(orderBy)
-    .limit(perPage)
-    .offset((page - 1) * perPage)
-
-  const countResult = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(customersTable)
-    .where(allConditions)
+  const [rows, countResult] = await Promise.all([
+    db
+      .select({
+        id: customersTable.id,
+        name: customersTable.name,
+        email: customersTable.email,
+        phone: customersTable.phone,
+        active: customersTable.active,
+        photoAssetId: customersTable.photoAssetId,
+      })
+      .from(customersTable)
+      .where(allConditions)
+      .orderBy(orderBy)
+      .limit(perPage)
+      .offset((page - 1) * perPage),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(customersTable)
+      .where(allConditions),
+  ])
 
   return {
     rows,
