@@ -1,28 +1,28 @@
-import { FileIcon } from "lucide-react";
-import { useTranslations } from "use-intl";
-import { AssetFileList } from "#/components/app/asset-file";
-import { Badge } from "#/components/ui/badge";
-import { Card } from "#/components/ui/card";
+import { FileIcon } from 'lucide-react'
+import { useTranslations } from 'use-intl'
+import { AssetFileList } from '#/components/app/asset-file'
+import { Badge } from '#/components/ui/badge'
+import { Card } from '#/components/ui/card'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "#/components/ui/dialog";
-import type { OrderTaskEvent, PortalLineItem } from "../model";
-import { OrderTimeline } from "./order-timeline";
+} from '#/components/ui/dialog'
+import type { OrderTaskEvent, PortalLineItem } from '../model'
+import { OrderTimeline } from './order-timeline'
 
 export function LineItemTaskCard({
   item,
   events,
 }: {
-  item: PortalLineItem;
-  events: OrderTaskEvent[];
+  item: PortalLineItem
+  events: OrderTaskEvent[]
 }) {
-  const t = useTranslations("portal");
+  const t = useTranslations('portal')
 
-  const itemEvents = events.filter((e) => e.taskId === item.taskId);
+  const itemEvents = events.filter((e) => e.taskId === item.taskId)
 
   return (
     <Dialog>
@@ -33,10 +33,10 @@ export function LineItemTaskCard({
               {item.name || item.productName}
             </p>
             <p className="text-xs text-muted-foreground">
-              {item.quantity} ×{" "}
-              {new Intl.NumberFormat("en-ID", {
-                style: "currency",
-                currency: "IDR",
+              {item.quantity} ×{' '}
+              {new Intl.NumberFormat('en-ID', {
+                style: 'currency',
+                currency: 'IDR',
               }).format(item.unitPrice)}
             </p>
             {item.notes && (
@@ -50,9 +50,9 @@ export function LineItemTaskCard({
               <Badge variant="secondary">{item.currentStageName}</Badge>
             )}
             <p className="text-sm font-medium">
-              {new Intl.NumberFormat("en-ID", {
-                style: "currency",
-                currency: "IDR",
+              {new Intl.NumberFormat('en-ID', {
+                style: 'currency',
+                currency: 'IDR',
               }).format(item.total)}
             </p>
             {item.assetIds.length > 0 && (
@@ -74,36 +74,36 @@ export function LineItemTaskCard({
           <div className="space-y-1">
             <div className="flex flex-row items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                {item.quantity} ×{" "}
-                {new Intl.NumberFormat("en-ID", {
-                  style: "currency",
-                  currency: "IDR",
+                {item.quantity} ×{' '}
+                {new Intl.NumberFormat('en-ID', {
+                  style: 'currency',
+                  currency: 'IDR',
                 }).format(item.unitPrice)}
               </p>
               <p className="text-base font-semibold text-card-foreground">
-                {new Intl.NumberFormat("en-ID", {
-                  style: "currency",
-                  currency: "IDR",
+                {new Intl.NumberFormat('en-ID', {
+                  style: 'currency',
+                  currency: 'IDR',
                 }).format(item.total)}
               </p>
             </div>
             {item.notes && (
               <div>
-                <h3 className="text-sm font-semibold">{t("notes")}</h3>
+                <h3 className="text-sm font-semibold">{t('notes')}</h3>
                 <p className="text-sm text-muted-foreground">{item.notes}</p>
               </div>
             )}
           </div>
           {item.assetIds.length > 0 && (
             <div>
-              <h3 className="mb-2 text-sm font-semibold">{t("attachment")}</h3>
+              <h3 className="mb-2 text-sm font-semibold">{t('attachment')}</h3>
               <AssetFileList assetIds={item.assetIds} layout="list" />
             </div>
           )}
           {item.taskId && (
             <div>
               <h3 className="mb-2 text-sm font-semibold">
-                {t("taskTimeline")}
+                {t('taskTimeline')}
               </h3>
               {itemEvents.length > 0 ? (
                 <OrderTimeline events={itemEvents} />
@@ -117,5 +117,5 @@ export function LineItemTaskCard({
         </div>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

@@ -327,7 +327,10 @@ export const listTasksByOrderIdFn = createServerFn({ method: 'GET' })
     return rows.map((t) => ({
       task: {
         ...t,
-        context: t.context as Record<string, string | number | boolean | null> | null,
+        context: t.context as Record<
+          string,
+          string | number | boolean | null
+        > | null,
       },
       stage: t.stageId ? (stageMap.get(t.stageId) ?? null) : null,
     }))

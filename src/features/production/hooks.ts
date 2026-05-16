@@ -233,8 +233,12 @@ export function useTaskMutations() {
       } else {
         toast.success(t('movedToStage'))
       }
-      queryClient.invalidateQueries({ queryKey: queryKeys.production.task(vars.taskId) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.production.activities(vars.taskId) })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.production.task(vars.taskId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.production.activities(vars.taskId),
+      })
       invalidate()
     },
   })
@@ -251,8 +255,12 @@ export function useTaskMutations() {
         return
       }
       toast.success(t('approved'))
-      queryClient.invalidateQueries({ queryKey: queryKeys.production.task(vars.taskId) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.production.activities(vars.taskId) })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.production.task(vars.taskId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.production.activities(vars.taskId),
+      })
       invalidate()
     },
   })
@@ -269,8 +277,12 @@ export function useTaskMutations() {
         return
       }
       toast.success(t('rejected'))
-      queryClient.invalidateQueries({ queryKey: queryKeys.production.task(vars.taskId) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.production.activities(vars.taskId) })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.production.task(vars.taskId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.production.activities(vars.taskId),
+      })
       invalidate()
     },
   })

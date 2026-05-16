@@ -282,8 +282,8 @@ export function TaskDetailModal({
             task.status === 'in_progress' &&
             (nextStage || currentStageIndex === activeStages.length - 1) && (
               <Button onClick={handleAdvanceClick}>
-                {(nextStage?.name === 'Selesai' ||
-                  currentStageIndex === activeStages.length - 1)
+                {nextStage?.name === 'Selesai' ||
+                currentStageIndex === activeStages.length - 1
                   ? 'Selesai'
                   : task.board === 'pre_production' &&
                       currentStageIndex === activeStages.length - 1

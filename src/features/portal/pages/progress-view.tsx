@@ -27,11 +27,17 @@ export function ProgressView({
 
   const shouldFetchTimeline =
     token &&
-    ['production', 'in_delivery', 'completed', 'approved', 'in_progress'].includes(
-      order.status,
-    )
+    [
+      'production',
+      'in_delivery',
+      'completed',
+      'approved',
+      'in_progress',
+    ].includes(order.status)
 
-  const { data: timelineEvents } = useOrderTimeline(shouldFetchTimeline ? token : '')
+  const { data: timelineEvents } = useOrderTimeline(
+    shouldFetchTimeline ? token : '',
+  )
 
   const getUploadUrl = usePortalGetInvoiceUploadUrl()
   const submitProof = useSubmitPaymentProof()

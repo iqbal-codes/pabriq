@@ -1,38 +1,38 @@
-import { Clock, FileText, Upload } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-import { useTranslations } from "use-intl";
-import { Badge } from "#/components/ui/badge";
-import { Button } from "#/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
-import type { PortalInvoice } from "../model";
+import { Clock, FileText, Upload } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import { useTranslations } from 'use-intl'
+import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import type { PortalInvoice } from '../model'
 
 type Props = {
-  invoices: PortalInvoice[];
-  onUpload: (invoiceId: string, file: File) => Promise<void>;
-};
+  invoices: PortalInvoice[]
+  onUpload: (invoiceId: string, file: File) => Promise<void>
+}
 
 export function PaymentSection({ invoices, onUpload }: Props) {
-  const t = useTranslations("invoices");
-  const st = useTranslations("status");
-  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const t = useTranslations('invoices')
+  const st = useTranslations('status')
+  const [uploadingId, setUploadingId] = useState<string | null>(null)
 
-  const visibleInvoices = invoices.filter((inv) => inv.status !== "void");
-  if (visibleInvoices.length === 0) return null;
+  const visibleInvoices = invoices.filter((inv) => inv.status !== 'void')
+  if (visibleInvoices.length === 0) return null
 
   return (
     <Card className="mt-4">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          {t("title")}
+          {t('title')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {visibleInvoices.map((inv) => {
-          const isUnpaid = inv.status === "unpaid";
-          const isOverdue = isUnpaid && new Date(inv.dueDate) < new Date();
-          const isPending = isUnpaid && inv.hasPaymentProof;
+          const isUnpaid = inv.status === 'unpaid'
+          const isOverdue = isUnpaid && new Date(inv.dueDate) < new Date()
+          const isPending = isUnpaid && inv.hasPaymentProof
 
           return (
             <div key={inv.id} className="rounded-lg border p-4">
@@ -42,34 +42,34 @@ export function PaymentSection({ invoices, onUpload }: Props) {
                 </div>
                 <div className="flex items-center gap-2">
                   {isOverdue && (
-                    <Badge variant="destructive">{t("overdue")}</Badge>
+                    <Badge variant="destructive">{t('overdue')}</Badge>
                   )}
                   {isPending ? (
                     <Badge variant="secondary">
                       <Clock className="mr-1 h-3 w-3" />
-                      {t("pendingConfirmation")}
+                      {t('pendingConfirmation')}
                     </Badge>
                   ) : (
-                    <Badge variant={isUnpaid ? "default" : "secondary"}>
+                    <Badge variant={isUnpaid ? 'default' : 'secondary'}>
                       {st(
                         inv.status as
-                          | "draft"
-                          | "pending"
-                          | "approved"
-                          | "production"
-                          | "in_delivery"
-                          | "completed"
-                          | "cancelled"
-                          | "rejected"
-                          | "active"
-                          | "inactive"
-                          | "paid"
-                          | "partially_paid"
-                          | "unpaid"
-                          | "void"
-                          | "overdue"
-                          | "pendingPayment"
-                          | "failed",
+                          | 'draft'
+                          | 'pending'
+                          | 'approved'
+                          | 'production'
+                          | 'in_delivery'
+                          | 'completed'
+                          | 'cancelled'
+                          | 'rejected'
+                          | 'active'
+                          | 'inactive'
+                          | 'paid'
+                          | 'partially_paid'
+                          | 'unpaid'
+                          | 'void'
+                          | 'overdue'
+                          | 'pendingPayment'
+                          | 'failed',
                       )}
                     </Badge>
                   )}
@@ -78,15 +78,15 @@ export function PaymentSection({ invoices, onUpload }: Props) {
 
               <div className="mb-2">
                 <p className="text-lg font-bold">
-                  {new Intl.NumberFormat("id-ID", {
-                    style: "currency",
-                    currency: "IDR",
+                  {new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
                     minimumFractionDigits: 0,
                   }).format(inv.total)}
                 </p>
                 {isUnpaid && (
                   <p className="text-sm text-muted-foreground">
-                    {t("dueDate")}: {inv.dueDate}
+                    {t('dueDate')}: {inv.dueDate}
                   </p>
                 )}
               </div>
@@ -115,19 +115,19 @@ export function PaymentSection({ invoices, onUpload }: Props) {
                     className="hidden"
                     accept="image/*,application/pdf"
                     onChange={(e) => {
-                      const file = e.target.files?.[0];
+                      const file = e.target.files?.[0]
                       if (file) {
-                        setUploadingId(inv.id);
+                        setUploadingId(inv.id)
                         onUpload(inv.id, file)
                           .then(() => {
-                            toast.success(t("pendingConfirmation"));
+                            toast.success(t('pendingConfirmation'))
                           })
                           .catch(() => {
-                            toast.error("Upload failed");
+                            toast.error('Upload failed')
                           })
                           .finally(() => {
-                            setUploadingId(null);
-                          });
+                            setUploadingId(null)
+                          })
                       }
                     }}
                   />
@@ -144,32 +144,27 @@ export function PaymentSection({ invoices, onUpload }: Props) {
                     ) : (
                       <Upload className="mr-2 h-4 w-4" />
                     )}
-                    {t("uploadProof")}
+                    {t('uploadProof')}
                   </Button>
                 </div>
               )}
 
               <div className="mt-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full"
-                  asChild
-                >
+                <Button variant="ghost" size="sm" className="w-full" asChild>
                   <a
                     href={`/api/documents/invoices/token/${inv.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     <FileText className="mr-2 h-4 w-4" />
-                    {t("downloadInvoice")}
+                    {t('downloadInvoice')}
                   </a>
                 </Button>
               </div>
             </div>
-          );
+          )
         })}
       </CardContent>
     </Card>
-  );
+  )
 }

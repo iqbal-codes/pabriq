@@ -595,7 +595,6 @@ export async function approveTaskAdvance(
       })
       .where(eq(tasksTable.id, taskId))
 
-
     await logActivity({
       orgId,
       taskId,
