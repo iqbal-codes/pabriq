@@ -481,8 +481,8 @@ describe('task advancement', () => {
     expect(task[0].stageId).toBeDefined()
   })
 
-  it('advances queued task to first stage with pending approval', async () => {
-    await createStage({
+  it('advances queued task to first stage even when it requires approval', async () => {
+    const designStage = await createStage({
       orgId: org1Id,
       name: 'Design',
       orderIndex: 0,
@@ -494,27 +494,29 @@ describe('task advancement', () => {
     const result = await advanceTask(taskId, org1Id, 'operator-1')
 
     expect(result.ok).toBe(true)
-    if (result.ok) expect(result.pendingApproval).toBe(true)
+    if (result.ok) expect(result.pendingApproval).toBe(false)
 
     const task = await db
       .select()
       .from(tasksTable)
       .where(eq(tasksTable.id, taskId))
       .limit(1)
-    expect(task[0].status).toBe('pending_approval')
+    expect(task[0].status).toBe('in_progress')
+    expect(task[0].stageId).toBe(designStage.id)
   })
 
   it('approves pending advancement and moves to next stage', async () => {
-    await createStage({
+    await createStage({ orgId: org1Id, name: 'Design', orderIndex: 0 })
+    const productionStage = await createStage({
       orgId: org1Id,
-      name: 'Design',
-      orderIndex: 0,
+      name: 'Production',
+      orderIndex: 1,
       needApproval: true,
     })
-    await createStage({ orgId: org1Id, name: 'Production', orderIndex: 1 })
 
     const { taskId } = await seedTask(org1Id)
 
+    await advanceTask(taskId, org1Id, 'operator-1')
     await advanceTask(taskId, org1Id, 'operator-1')
 
     const result = await approveTaskAdvance(
@@ -534,18 +536,25 @@ describe('task advancement', () => {
       .where(eq(tasksTable.id, taskId))
       .limit(1)
     expect(task[0].status).toBe('in_progress')
+    expect(task[0].stageId).toBe(productionStage.id)
   })
 
   it('rejects pending advancement and returns to in_progress', async () => {
-    await createStage({
+    const designStage = await createStage({
       orgId: org1Id,
       name: 'Design',
       orderIndex: 0,
+    })
+    await createStage({
+      orgId: org1Id,
+      name: 'Production',
+      orderIndex: 1,
       needApproval: true,
     })
 
     const { taskId } = await seedTask(org1Id)
 
+    await advanceTask(taskId, org1Id, 'operator-1')
     await advanceTask(taskId, org1Id, 'operator-1')
 
     await rejectTaskAdvance(
@@ -562,6 +571,7 @@ describe('task advancement', () => {
       .where(eq(tasksTable.id, taskId))
       .limit(1)
     expect(task[0].status).toBe('in_progress')
+    expect(task[0].stageId).toBe(designStage.id)
   })
 
   it('advances through stages then to completed on last stage', async () => {
@@ -761,14 +771,14 @@ describe('task advancement', () => {
     expect(order.status).toBe('approved')
   })
 
-  it('approveTaskAdvance completes pre_production task and advances order to in_progress', async () => {
+  it('moves completed pre_production tasks onto the production board', async () => {
     const preProdStage = await createStage({
       orgId: org1Id,
       name: 'Design',
       orderIndex: 0,
       needApproval: true,
     })
-    await createStage({
+    const productionStage = await createStage({
       orgId: org1Id,
       name: 'Print',
       board: 'production',
@@ -777,11 +787,11 @@ describe('task advancement', () => {
 
     const { taskId, orderId } = await seedTask(org1Id)
 
-    await advanceTask(taskId, org1Id, 'operator-1')
-
-    // Approve to enter Design stage
-    const result = await approveTaskAdvance(taskId, org1Id, 'admin-1', 'admin')
-    expect(result.ok).toBe(true)
+    const enterPreProduction = await advanceTask(taskId, org1Id, 'operator-1')
+    expect(enterPreProduction.ok).toBe(true)
+    if (enterPreProduction.ok) {
+      expect(enterPreProduction.pendingApproval).toBe(false)
+    }
 
     let task = await db
       .select()
@@ -790,9 +800,13 @@ describe('task advancement', () => {
       .limit(1)
       .then((r) => r[0])
     expect(task.stageId).toBe(preProdStage.id)
+    expect(task.board).toBe('pre_production')
 
-    // Advance past final pre_production stage → should complete + advance order
-    await advanceTask(taskId, org1Id, 'operator-1')
+    const transitionResult = await advanceTask(taskId, org1Id, 'operator-1')
+    expect(transitionResult.ok).toBe(true)
+    if (transitionResult.ok) {
+      expect(transitionResult.pendingApproval).toBe(false)
+    }
 
     task = await db
       .select()
@@ -800,17 +814,17 @@ describe('task advancement', () => {
       .where(eq(tasksTable.id, taskId))
       .limit(1)
       .then((r) => r[0])
-    expect(task.status).toBe('completed')
-    expect(task.stageId).toBeNull()
+    expect(task.status).toBe('in_progress')
+    expect(task.board).toBe('production')
+    expect(task.stageId).toBe(productionStage.id)
 
-    // Order must be in_progress now (advanceOrderStatus was called)
     const order = await db
       .select()
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId))
       .limit(1)
       .then((r) => r[0])
-    expect(order.status).toBe('in_progress')
+    expect(order.status).toBe('approved')
   })
 
   it('saves requirementResponses to task context on advance', async () => {
