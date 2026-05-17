@@ -1,8 +1,19 @@
-import { and, asc, desc, eq, ilike, or, type SQL, sql } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   assets as assetsTable,
   customers as customersTable,
+  invoices as invoicesTable,
   orderLineItems as lineItemsTable,
   orders as ordersTable,
   products as productsTable,
@@ -110,6 +121,8 @@ export type OrderRow = {
   orderNumber: string | null
   orderToken: string | null
   createdAt: Date
+  paymentStatus: string
+  dueDate: string | null
 }
 
 export type ListOrdersParams = {
@@ -254,8 +267,54 @@ export async function listOrders(
       .where(allConditions),
   ])
 
+  // Fetch aggregated invoice data for displayed orders
+  const invoiceMap = new Map<
+    string,
+    { paymentStatus: string; dueDate: string | null }
+  >()
+
+  if (rows.length > 0) {
+    const orderIds = rows.map((r) => r.id)
+    const invoiceAggs = await db
+      .select({
+        orderId: invoicesTable.orderId,
+        paymentStatus: sql<string>`CASE
+          WHEN bool_and(${invoicesTable.status} IN ('paid', 'void')) AND bool_or(${invoicesTable.status} = 'paid') THEN 'paid'
+          WHEN bool_and(${invoicesTable.status} = 'void') THEN 'void'
+          WHEN bool_or(${invoicesTable.status} = 'partially_paid') THEN 'partially_paid'
+          ELSE 'unpaid'
+        END`,
+        dueDate: sql<string | null>`
+          MIN(CASE WHEN ${invoicesTable.status} NOT IN ('paid', 'void') THEN ${invoicesTable.dueDate} END)
+        `,
+      })
+      .from(invoicesTable)
+      .where(
+        and(
+          eq(invoicesTable.orgId, params.orgId),
+          inArray(invoicesTable.orderId, orderIds),
+        ),
+      )
+      .groupBy(invoicesTable.orderId)
+
+    for (const agg of invoiceAggs) {
+      if (agg.orderId) {
+        invoiceMap.set(agg.orderId, {
+          paymentStatus: agg.paymentStatus,
+          dueDate: agg.dueDate as string | null,
+        })
+      }
+    }
+  }
+
+  const enrichedRows = rows.map((row) => ({
+    ...row,
+    paymentStatus: invoiceMap.get(row.id)?.paymentStatus ?? 'no_invoice',
+    dueDate: invoiceMap.get(row.id)?.dueDate ?? null,
+  }))
+
   return {
-    rows,
+    rows: enrichedRows,
     totalRows: Number(countResult[0]?.count ?? 0),
   }
 }

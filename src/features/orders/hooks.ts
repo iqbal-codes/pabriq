@@ -6,6 +6,7 @@ import {
 import { queryKeys } from '#/lib/query-keys'
 import type { CreateDraftOrderInput, ListOrdersParams } from './model'
 import {
+  advanceOrderStatusFn,
   approveOrderFn,
   completeProductionFn,
   createDraftOrderFn,
@@ -114,6 +115,20 @@ export function useCompleteProduction() {
         queryKey: queryKeys.orders.detail(variables.id),
       })
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
+    },
+  })
+}
+
+export function useAdvanceOrderStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { id: string }) =>
+      advanceOrderStatusFn({ data: input }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.lists() })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.orders.detail(variables.id),
+      })
     },
   })
 }

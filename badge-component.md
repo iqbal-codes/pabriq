@@ -1,3 +1,15 @@
+# Badge Component
+
+**Path:** `src/components/ui/badge.tsx`
+
+## Full Path
+```
+/Users/efishery/Documents/workspace/labq-projects/30-day-challenges/my-tanstack-app/src/components/ui/badge.tsx
+```
+
+## Content
+
+```tsx
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
@@ -50,3 +62,13 @@ function Badge({
 }
 
 export { Badge, badgeVariants }
+```
+
+## Summary
+
+- **Path:** `src/components/ui/badge.tsx` (19 lines)
+- **Dependencies:** `react`, `class-variance-authority`, `radix-ui` (Slot), `#/lib/utils.ts` (cn)
+- **Exports:** `Badge` (component), `badgeVariants` (CVA config)
+- **Variants:** `default`, `secondary`, `destructive`, `success`, `warning`, `outline`, `ghost`, `link`
+- **Props:** All standard `span` props + `variant` (from CVA) + `asChild` (renders Slot.Root instead of span)
+- **Usage in project:** Imported via `#/components/ui/badge` in at least 3 files: `app/data-table/data-table-filter-combobox.tsx`, `app/asset-file.tsx`, `app/data-table/data-table-filter-trigger.tsx`, plus `status-badge.tsx` wraps it.

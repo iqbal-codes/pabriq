@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { FileText } from 'lucide-react'
+import { Eye, Printer } from 'lucide-react'
 import { parseAsInteger, parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { useTranslations } from 'use-intl'
@@ -7,8 +7,13 @@ import type { AppColumnDef } from '#/components/app/data-table'
 import { DataTable } from '#/components/app/data-table'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
-import { Badge } from '#/components/ui/badge'
+import { StatusBadge } from '#/components/status-badge'
 import { Button } from '#/components/ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '#/components/ui/tooltip'
 import { useInvoicesList } from '#/features/invoices/hooks'
 import type { InvoiceRow } from '#/features/invoices/model'
 import { Route } from '#/routes/_org/invoices/index'
@@ -23,8 +28,6 @@ export function InvoiceListPage() {
   const ctx = Route.useRouteContext() as { org: { id: string } }
   const t = useTranslations('invoices')
   const dt = useTranslations('dataTable')
-  const st = useTranslations('status')
-
   const [search] = useQueryState('q', parseAsString.withDefault(''))
   const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
   const [perPage, setPerPage] = useQueryState(
@@ -89,32 +92,11 @@ export function InvoiceListPage() {
         header: t('status'),
         meta: { label: t('status'), mobileRole: 'badge' },
         cell: ({ row }: { row: { original: InvoiceRow } }) => (
-          <Badge>
-            {st(
-              row.original.status as
-                | 'draft'
-                | 'pending'
-                | 'approved'
-                | 'production'
-                | 'in_delivery'
-                | 'completed'
-                | 'cancelled'
-                | 'rejected'
-                | 'active'
-                | 'inactive'
-                | 'paid'
-                | 'partially_paid'
-                | 'unpaid'
-                | 'void'
-                | 'overdue'
-                | 'pendingPayment'
-                | 'failed',
-            )}
-          </Badge>
+          <StatusBadge status={row.original.status} />
         ),
       },
     ],
-    [t, st],
+    [t],
   )
 
   return (
@@ -138,11 +120,32 @@ export function InvoiceListPage() {
         onPageChange={setPage}
         onPerPageChange={handlePerPageChange}
         rowActions={(row) => (
-          <Button variant="ghost" size="icon-sm" asChild>
-            <Link to="/invoices/$id" params={{ id: row.id }}>
-              <FileText className="size-4" />
-            </Link>
-          </Button>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon-sm" asChild>
+                  <a
+                    href={`/api/documents/invoices/${row.id}/pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Printer className="size-4" />
+                  </a>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('printInvoice')}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon-sm" asChild>
+                  <Link to="/invoices/$id" params={{ id: row.id }}>
+                    <Eye className="size-4" />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('viewInvoice')}</TooltipContent>
+            </Tooltip>
+          </div>
         )}
         labels={{
           clearFilters: dt('clearFilters'),

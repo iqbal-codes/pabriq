@@ -2,11 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
   CheckCircle2,
-  FileText,
+  Eye,
   Link2,
   Mail,
   Phone,
   Plus,
+  Printer,
   Truck,
   User,
   XCircle,
@@ -25,6 +26,7 @@ const dateFormatter = new Intl.DateTimeFormat('id-ID')
 import { AssetImage } from '#/components/app/asset-image'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
+import { StatusBadge } from '#/components/status-badge'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,10 +41,19 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { Textarea } from '#/components/ui/textarea'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '#/components/ui/tooltip'
 import { CreateInvoiceModal } from '#/features/invoices/components/create-invoice-modal'
-import { useInvoicesList } from '#/features/invoices/hooks'
+import {
+  useInvoicePaymentProofs,
+  useInvoicesList,
+  useMarkInvoicePaid,
+} from '#/features/invoices/hooks'
 import { CompleteProductionModal } from '#/features/orders/components/complete-production-modal'
-import { useOrder } from '#/features/orders/hooks'
+import { useAdvanceOrderStatus, useOrder } from '#/features/orders/hooks'
 import { getAssetsForLineItemFn } from '#/features/orders/server'
 import { generateOrderTokenFn } from '#/features/portal/server'
 import {
@@ -168,6 +179,32 @@ export function ViewOrderPage() {
     }
   }
 
+  const invoiceIds = orderInvoices.map((inv) => inv.id)
+  const { data: invoicePayments } = useInvoicePaymentProofs(invoiceIds)
+
+  const markInvoicePaid = useMarkInvoicePaid()
+
+  const handleMarkInvoicePaid = async (invoiceId: string) => {
+    const result = await markInvoicePaid.mutateAsync(invoiceId)
+    if (result.ok) {
+      toast.success(it('invoicePaid'))
+    } else {
+      toast.error(result.error ?? ct('cancel'))
+    }
+  }
+
+  const advanceOrderStatus = useAdvanceOrderStatus()
+
+  const handleCompleteOrder = async () => {
+    if (!data) return
+    const result = await advanceOrderStatus.mutateAsync({ id: data.order.id })
+    if (result.ok) {
+      toast.success(t('orderCompleted'))
+    } else {
+      toast.error(result.error)
+    }
+  }
+
   if (!data) {
     return (
       <PageContent>
@@ -195,11 +232,28 @@ export function ViewOrderPage() {
   const remainingPct = Math.max(0, 100 - invoicedPct)
   const remainingAmt = Math.max(0, order.total - invoicedAmt)
 
+  // Check if a final invoice (100%) has already been generated
+  const totalInvoicedPct = orderInvoices
+    .filter((inv) => inv.status !== 'void')
+    .reduce((sum, inv) => sum + (inv.percentage ?? 0), 0)
+  const hasFinalInvoice = totalInvoicedPct >= 100
+
   // Check if all production tasks are completed
   const allTasksCompleted =
     tasksData?.every((t) => t.task.status === 'completed') ?? true
   const canCompleteProduction =
-    order.status === 'in_progress' && allTasksCompleted
+    order.status === 'in_progress' && allTasksCompleted && !hasFinalInvoice
+
+  // Check if all non-void invoices are paid
+  const activeInvoices = orderInvoices.filter((inv) => inv.status !== 'void')
+  const allInvoicesPaid =
+    activeInvoices.length > 0 &&
+    activeInvoices.every((inv) => inv.status === 'paid')
+  const canCompleteOrder =
+    allInvoicesPaid &&
+    order.status !== 'completed' &&
+    order.status !== 'cancelled' &&
+    order.status !== 'rejected'
 
   return (
     <PageContent>
@@ -207,20 +261,7 @@ export function ViewOrderPage() {
         title={
           <span className="flex items-center gap-2">
             {order.orderNumber ?? '—'}
-            <Badge variant="secondary">
-              {st(
-                order.status as
-                  | 'draft'
-                  | 'pending'
-                  | 'approved'
-                  | 'in_progress'
-                  | 'production'
-                  | 'in_delivery'
-                  | 'completed'
-                  | 'cancelled'
-                  | 'rejected',
-              )}
-            </Badge>
+            <StatusBadge status={order.status} />
           </span>
         }
         backAction={{ label: ct('back'), href: '/orders' }}
@@ -283,6 +324,18 @@ export function ViewOrderPage() {
           >
             <Truck className="size-4" />
             {pt('markAsShipped')}
+          </Button>
+        )}
+
+        {canCompleteOrder && (
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleCompleteOrder}
+            disabled={advanceOrderStatus.isPending}
+          >
+            <CheckCircle2 className="size-4" />
+            {t('completeOrder')}
           </Button>
         )}
       </div>
@@ -396,40 +449,119 @@ export function ViewOrderPage() {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {orderInvoices.map((inv) => (
-                    <div
-                      key={inv.id}
-                      className="flex items-center justify-between rounded-lg border p-3"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium">{inv.invoiceNumber}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {inv.percentage && <>{inv.percentage}%: </>}
-                          {currencyFormatter.format(inv.total)}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge>
-                          {st(
-                            inv.status as
-                              | 'draft'
-                              | 'paid'
-                              | 'unpaid'
-                              | 'void'
-                              | 'partially_paid'
-                              | 'overdue'
-                              | 'pendingPayment'
-                              | 'failed',
+                  {orderInvoices.map((inv) => {
+                    const payments = invoicePayments?.[inv.id] ?? []
+                    const proofPayments = payments.filter((p) => p.proofAssetId)
+                    const canMarkPaid =
+                      inv.status === 'unpaid' || inv.status === 'partially_paid'
+
+                    return (
+                      <div key={inv.id} className="rounded-lg border p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium">{inv.invoiceNumber}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {inv.percentage && <>{inv.percentage}%: </>}
+                              {currencyFormatter.format(inv.total)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge>
+                              {st(
+                                inv.status as
+                                  | 'draft'
+                                  | 'paid'
+                                  | 'unpaid'
+                                  | 'void'
+                                  | 'partially_paid'
+                                  | 'overdue'
+                                  | 'pendingPayment'
+                                  | 'failed',
+                              )}
+                            </Badge>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon-sm"
+                                  asChild
+                                >
+                                  <a
+                                    href={`/api/documents/invoices/${inv.id}/pdf`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <Printer className="size-4" />
+                                  </a>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {it('printInvoice')}
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon-sm" asChild>
+                                  <Link
+                                    to="/invoices/$id"
+                                    params={{ id: inv.id }}
+                                  >
+                                    <Eye className="size-4" />
+                                  </Link>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {it('viewInvoice')}
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          {canMarkPaid && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => handleMarkInvoicePaid(inv.id)}
+                              disabled={markInvoicePaid.isPending}
+                            >
+                              <CheckCircle2 className="mr-1 size-3" />
+                              {it('markAsPaid')}
+                            </Button>
                           )}
-                        </Badge>
-                        <Button variant="ghost" size="icon-sm" asChild>
-                          <Link to="/invoices/$id" params={{ id: inv.id }}>
-                            <FileText className="size-4" />
-                          </Link>
-                        </Button>
+                        </div>
+
+                        {/* Payment proof images */}
+                        {proofPayments.length > 0 && (
+                          <div className="mt-3">
+                            <p className="mb-2 text-xs font-medium text-muted-foreground">
+                              {it('paymentProof')}
+                            </p>
+                            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+                              {proofPayments.map((p) =>
+                                p.proofAssetId ? (
+                                  <a
+                                    key={p.id}
+                                    href={`/api/assets/${p.proofAssetId}/download`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="group relative aspect-square overflow-hidden rounded-lg border"
+                                  >
+                                    <AssetImage
+                                      assetId={p.proofAssetId}
+                                      assetKind="image"
+                                      className="size-full object-cover transition-opacity group-hover:opacity-80"
+                                    />
+                                  </a>
+                                ) : null,
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </CardContent>

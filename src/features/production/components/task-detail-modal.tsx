@@ -3,8 +3,8 @@ import { ArrowRight, CheckCircle2, Clock, XCircle } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
+import { StatusBadge } from '#/components/status-badge'
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar'
-import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import {
   Dialog,
@@ -24,23 +24,6 @@ import {
   useTaskMutations,
 } from '../hooks'
 import { RequirementForm } from './requirement-form'
-
-const STATUS_LABELS = {
-  queued: 'statusQueued',
-  in_progress: 'statusInProgress',
-  pending_approval: 'pendingApproval',
-  completed: 'statusCompleted',
-} as const
-
-type StatusLabelKey = (typeof STATUS_LABELS)[keyof typeof STATUS_LABELS]
-
-function getStatusLabelKey(status: string): StatusLabelKey | null {
-  if (status in STATUS_LABELS) {
-    return STATUS_LABELS[status as keyof typeof STATUS_LABELS]
-  }
-
-  return null
-}
 
 function getInitials(name: string) {
   return name
@@ -127,7 +110,6 @@ export function TaskDetailModal({
   const currentStage =
     currentStageIndex >= 0 ? activeStages[currentStageIndex] : null
   const nextStage = activeStages[currentStageIndex + 1]
-  const statusLabelKey = getStatusLabelKey(task.status)
   const hasRequirements =
     currentStage !== null && currentStage.requirements?.length > 0
 
@@ -161,9 +143,7 @@ export function TaskDetailModal({
 
         <div className="flex items-center justify-between text-sm mb-2">
           <span className="font-mono font-semibold">{task.taskNumber}</span>
-          <Badge variant="secondary">
-            {statusLabelKey ? t(statusLabelKey) : task.status}
-          </Badge>
+          <StatusBadge status={task.status} />
         </div>
 
         <Tabs defaultValue="details" className="w-full">

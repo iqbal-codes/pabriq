@@ -46,6 +46,11 @@ export interface InvoicePdfData {
   subtotal: number
   taxes: number
   total: number
+  alreadyPaid: number
+  shippingAddress: {
+    areaName: string
+    streetAddress: string
+  } | null
   notes: string | null
   paymentMethod: {
     name: string

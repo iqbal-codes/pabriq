@@ -6,6 +6,7 @@ import type { AppColumnDef, DataTableLabels } from '#/components/app/data-table'
 import { DataTable } from '#/components/app/data-table'
 import { FormGrid, FormRoot, useAppForm } from '#/components/app/form'
 import { PageHeader } from '#/components/app/page-shell/page-header'
+import { StatusBadge } from '#/components/status-badge'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -167,9 +168,7 @@ export function PaymentMethodsPage() {
       header: ct('status'),
       meta: { label: ct('status'), mobileRole: 'badge' },
       cell: ({ row }) => (
-        <Badge variant={row.original.active ? 'default' : 'secondary'}>
-          {row.original.active ? t('active') : t('inactive')}
-        </Badge>
+        <StatusBadge status={row.original.active ? 'active' : 'inactive'} />
       ),
     },
   ]

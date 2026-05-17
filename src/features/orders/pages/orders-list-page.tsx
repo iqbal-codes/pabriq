@@ -18,6 +18,7 @@ import {
 } from '#/components/app/data-table'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
+import { StatusBadge } from '#/components/status-badge'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { useOrdersList } from '#/features/orders/hooks'
@@ -166,22 +167,7 @@ export function OrdersListPage() {
       accessorKey: 'status',
       header: t('status'),
       meta: { label: t('status'), mobileRole: 'badge' },
-      cell: ({ row }) => (
-        <Badge variant="secondary">
-          {st(
-            row.original.status as
-              | 'draft'
-              | 'pending'
-              | 'approved'
-              | 'in_progress'
-              | 'production'
-              | 'in_delivery'
-              | 'completed'
-              | 'cancelled'
-              | 'rejected',
-          )}
-        </Badge>
-      ),
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
     },
     {
       accessorKey: 'total',
@@ -190,6 +176,59 @@ export function OrdersListPage() {
       cell: ({ row }) => (
         <span>{currencyFormatter.format(row.original.total)}</span>
       ),
+    },
+    {
+      accessorKey: 'paymentStatus',
+      header: t('paymentStatus'),
+      meta: { label: t('paymentStatus'), mobileRole: 'meta' },
+      cell: ({ row }) => {
+        const status = row.original.paymentStatus
+        if (status === 'no_invoice')
+          return <span className="text-muted-foreground">—</span>
+        return (
+          <Badge
+            variant={
+              status === 'paid'
+                ? 'success'
+                : status === 'unpaid'
+                  ? 'warning'
+                  : status === 'partially_paid'
+                    ? 'outline'
+                    : 'secondary'
+            }
+          >
+            {t(
+              status === 'no_invoice'
+                ? 'paymentNoInvoice'
+                : status === 'paid'
+                  ? 'paymentPaid'
+                  : status === 'unpaid'
+                    ? 'paymentUnpaid'
+                    : status === 'partially_paid'
+                      ? 'paymentPartiallyPaid'
+                      : 'paymentVoid',
+            )}
+          </Badge>
+        )
+      },
+    },
+    {
+      accessorKey: 'dueDate',
+      header: t('dueDate'),
+      meta: { label: t('dueDate'), mobileRole: 'meta' },
+      cell: ({ row }) => {
+        const date = row.original.dueDate
+        if (!date) return <span className="text-muted-foreground">—</span>
+        return (
+          <span>
+            {new Date(`${date}T00:00:00`).toLocaleDateString('id-ID', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })}
+          </span>
+        )
+      },
     },
   ]
 

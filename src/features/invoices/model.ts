@@ -1,6 +1,7 @@
-import { and, desc, eq, ilike, or, type SQL, sql } from 'drizzle-orm'
+import { and, desc, eq, ilike, inArray, or, type SQL, sql } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
+  customers as customersTable,
   invoices as invoicesTable,
   invoiceLineItems as lineItemsTable,
   orderLineItems as orderLineItemsTable,
@@ -143,6 +144,12 @@ export type GetInvoiceResult = {
   invoice: Invoice
   lineItems: InvoiceLineItem[]
   paymentMethod: PaymentMethod | null
+  customer: {
+    id: string
+    name: string
+    phone: string | null
+    photoAssetId: string | null
+  } | null
 }
 
 function generateId(): string {
@@ -340,10 +347,34 @@ export async function getInvoice(
     paymentMethod = (pmRows[0] as PaymentMethod) ?? null
   }
 
+  let customer: GetInvoiceResult['customer'] = null
+  const customerId = invoiceRows[0].customerId
+  if (customerId) {
+    const customerRows = await db
+      .select({
+        id: customersTable.id,
+        name: customersTable.name,
+        phone: customersTable.phone,
+        photoAssetId: customersTable.photoAssetId,
+      })
+      .from(customersTable)
+      .where(eq(customersTable.id, customerId))
+      .limit(1)
+    if (customerRows.length > 0) {
+      customer = {
+        id: customerRows[0].id,
+        name: customerRows[0].name,
+        phone: customerRows[0].phone,
+        photoAssetId: customerRows[0].photoAssetId,
+      }
+    }
+  }
+
   return {
     invoice: invoiceRows[0] as Invoice,
     lineItems: itemRows as InvoiceLineItem[],
     paymentMethod,
+    customer,
   }
 }
 
@@ -724,6 +755,38 @@ export async function getPaymentsForInvoice(
     .orderBy(desc(paymentsTable.createdAt))
 
   return rows as Payment[]
+}
+
+export async function getPaymentsForInvoices(
+  orgId: string,
+  invoiceIds: string[],
+): Promise<Record<string, Payment[]>> {
+  if (invoiceIds.length === 0) return {}
+
+  const rows = await db
+    .select()
+    .from(paymentsTable)
+    .where(
+      and(
+        inArray(paymentsTable.invoiceId, invoiceIds),
+        eq(paymentsTable.orgId, orgId),
+      ),
+    )
+    .orderBy(desc(paymentsTable.createdAt))
+
+  const grouped: Record<string, Payment[]> = {}
+  for (const row of rows) {
+    const invId = row.invoiceId
+    if (!grouped[invId]) grouped[invId] = []
+    grouped[invId].push(row as Payment)
+  }
+
+  // Ensure every requested invoice has an entry
+  for (const invId of invoiceIds) {
+    if (!grouped[invId]) grouped[invId] = []
+  }
+
+  return grouped
 }
 
 export async function getInvoiceBalance(

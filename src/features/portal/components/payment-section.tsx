@@ -2,6 +2,7 @@ import { Clock, FileText, Upload } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
+import { StatusBadge } from '#/components/status-badge'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
@@ -20,7 +21,6 @@ type Props = {
 
 export function PaymentSection({ invoices, onUpload }: Props) {
   const t = useTranslations('invoices')
-  const st = useTranslations('status')
   const [uploadingId, setUploadingId] = useState<string | null>(null)
   const [now, setNow] = useState<Date | null>(null)
 
@@ -61,28 +61,7 @@ export function PaymentSection({ invoices, onUpload }: Props) {
                       {t('pendingConfirmation')}
                     </Badge>
                   ) : (
-                    <Badge variant={isUnpaid ? 'default' : 'secondary'}>
-                      {st(
-                        inv.status as
-                          | 'draft'
-                          | 'pending'
-                          | 'approved'
-                          | 'production'
-                          | 'in_delivery'
-                          | 'completed'
-                          | 'cancelled'
-                          | 'rejected'
-                          | 'active'
-                          | 'inactive'
-                          | 'paid'
-                          | 'partially_paid'
-                          | 'unpaid'
-                          | 'void'
-                          | 'overdue'
-                          | 'pendingPayment'
-                          | 'failed',
-                      )}
-                    </Badge>
+                    <StatusBadge status={inv.status} />
                   )}
                 </div>
               </div>

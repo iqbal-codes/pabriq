@@ -1,6 +1,6 @@
 import { CalendarClock, CheckCircle2 } from 'lucide-react'
 import { useLocale, useTranslations } from 'use-intl'
-import { Badge } from '#/components/ui/badge'
+import { StatusBadge } from '#/components/status-badge'
 import { Card } from '#/components/ui/card'
 import { CustomerInfoCard } from '../components/customer-info-card'
 import { LineItemTaskCard } from '../components/line-item-task-card'
@@ -86,14 +86,6 @@ export function ProgressView({
   const getUploadUrl = usePortalGetInvoiceUploadUrl()
   const submitProof = useSubmitPaymentProof()
 
-  const statusLabel: Record<string, string> = {
-    approved: t('statusApproved'),
-    production: t('statusProduction'),
-    in_delivery: t('statusInDelivery'),
-    completed: t('statusCompleted'),
-    cancelled: t('statusCancelled'),
-  }
-
   const isCompleted = order.status === 'completed'
   const maxDays = order.lineItems.reduce(
     (max, item) => Math.max(max, item.productionDays ?? 0),
@@ -146,11 +138,7 @@ export function ProgressView({
                 </p>
               )}
             </div>
-            {order.status && (
-              <Badge variant="secondary" className="shrink-0 mt-1.5">
-                {statusLabel[order.status] ?? order.status}
-              </Badge>
-            )}
+            {order.status && <StatusBadge status={order.status} />}
           </div>
 
           {isCompleted && (

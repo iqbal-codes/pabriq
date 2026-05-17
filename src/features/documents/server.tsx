@@ -1,6 +1,6 @@
 import { renderToBuffer } from '@react-pdf/renderer'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, ne } from 'drizzle-orm'
 import { db } from '#/db/index'
 import { member } from '#/db/schema'
 import { InvoiceDocument } from './templates/invoice'
@@ -220,6 +220,7 @@ export async function generateInvoicePdf(
     invoices: invoicesTable,
     invoiceLineItems,
     paymentMethods,
+    orders,
   } = await import('#/db/schema')
 
   const invoiceRows = await db
@@ -234,21 +235,29 @@ export async function generateInvoicePdf(
 
   const invoice = invoiceRows[0]
 
-  const [orgPdfInfo, customerPdfInfo, itemRows, pmRows] = await Promise.all([
-    buildOrgPdfInfo(orgId),
-    buildCustomerPdfInfo(invoice.customerId),
-    db
-      .select()
-      .from(invoiceLineItems)
-      .where(eq(invoiceLineItems.invoiceId, invoiceId)),
-    invoice.paymentMethodId
-      ? db
-          .select()
-          .from(paymentMethods)
-          .where(eq(paymentMethods.id, invoice.paymentMethodId))
-          .limit(1)
-      : Promise.resolve([]),
-  ])
+  const [orgPdfInfo, customerPdfInfo, itemRows, pmRows, orderRows] =
+    await Promise.all([
+      buildOrgPdfInfo(orgId),
+      buildCustomerPdfInfo(invoice.customerId),
+      db
+        .select()
+        .from(invoiceLineItems)
+        .where(eq(invoiceLineItems.invoiceId, invoiceId)),
+      invoice.paymentMethodId
+        ? db
+            .select()
+            .from(paymentMethods)
+            .where(eq(paymentMethods.id, invoice.paymentMethodId))
+            .limit(1)
+        : Promise.resolve([]),
+      invoice.orderId
+        ? db
+            .select({ shippingAddress: orders.shippingAddress })
+            .from(orders)
+            .where(eq(orders.id, invoice.orderId))
+            .limit(1)
+        : Promise.resolve([]),
+    ])
 
   const lineItems = itemRows.map(
     (item) =>
@@ -265,6 +274,28 @@ export async function generateInvoicePdf(
   const { taxes } = computeLineItemTaxes(lineItems)
   const paymentMethod = pmRows[0] ?? null
 
+  // Extract shipping address from order
+  type ShippingAddress = { areaName: string; streetAddress: string }
+  const shippingAddress: ShippingAddress | null =
+    (orderRows[0]?.shippingAddress as ShippingAddress | null) ?? null
+
+  // Sum total from other paid invoices for the same order (DP already paid)
+  let alreadyPaid = 0
+  if (invoice.orderId) {
+    const otherPaidInvoices = await db
+      .select({ total: invoicesTable.total })
+      .from(invoicesTable)
+      .where(
+        and(
+          eq(invoicesTable.orderId, invoice.orderId),
+          eq(invoicesTable.orgId, orgId),
+          eq(invoicesTable.status, 'paid'),
+          ne(invoicesTable.id, invoiceId),
+        ),
+      )
+    alreadyPaid = otherPaidInvoices.reduce((sum, inv) => sum + inv.total, 0)
+  }
+
   const pdfData: InvoicePdfData = {
     org: orgPdfInfo,
     invoiceNumber: invoice.invoiceNumber,
@@ -276,6 +307,8 @@ export async function generateInvoicePdf(
     subtotal: invoice.subtotal,
     taxes,
     total: invoice.total,
+    alreadyPaid,
+    shippingAddress,
     notes: invoice.notes ?? null,
     paymentMethod: paymentMethod
       ? {

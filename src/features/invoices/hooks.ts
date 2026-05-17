@@ -19,6 +19,7 @@ import {
   getInvoiceBalanceFn,
   getInvoiceFn,
   getInvoicePaymentsFn,
+  getInvoicePaymentsForInvoicesFn,
   getOrderForInvoiceFn,
   listInvoicesFn,
   listPaymentMethodsFn,
@@ -109,6 +110,14 @@ export function useInvoicePayments(invoiceId: string) {
   return useSuspenseQuery({
     queryKey: queryKeys.invoices.payments(invoiceId),
     queryFn: () => getInvoicePaymentsFn({ data: { invoiceId } }),
+  })
+}
+
+export function useInvoicePaymentProofs(invoiceIds: string[]) {
+  return useQuery({
+    queryKey: [...queryKeys.invoices.all, 'payment-proofs', ...invoiceIds],
+    queryFn: () => getInvoicePaymentsForInvoicesFn({ data: { invoiceIds } }),
+    enabled: invoiceIds.length > 0,
   })
 }
 

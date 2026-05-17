@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslations } from 'use-intl'
+import { Separator } from '#/components/ui/separator'
 import type { BoardTask, Stage } from '../model'
 import { KanbanColumn } from './kanban-column'
 
@@ -39,7 +40,10 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
         count={boardData.queued.length}
         tasks={boardData.queued}
         onClickCard={onClickCard}
+        variant="queue"
       />
+
+      <Separator orientation="vertical" className="h-auto self-stretch" />
 
       {preProdStages.map((stage) => (
         <KanbanColumn
@@ -48,8 +52,13 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
           count={boardData.stages.get(stage.id)?.length ?? 0}
           tasks={boardData.stages.get(stage.id) ?? []}
           onClickCard={onClickCard}
+          variant="preProduction"
         />
       ))}
+
+      {preProdStages.length > 0 && prodStages.length > 0 && (
+        <Separator orientation="vertical" className="h-auto self-stretch" />
+      )}
 
       {prodStages.map((stage) => (
         <KanbanColumn
@@ -58,14 +67,18 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
           count={boardData.stages.get(stage.id)?.length ?? 0}
           tasks={boardData.stages.get(stage.id) ?? []}
           onClickCard={onClickCard}
+          variant="production"
         />
       ))}
+
+      <Separator orientation="vertical" className="h-auto self-stretch" />
 
       <KanbanColumn
         title={t('done')}
         count={boardData.done.length}
         tasks={boardData.done}
         onClickCard={onClickCard}
+        variant="done"
       />
     </div>
   )

@@ -13,6 +13,7 @@ import {
 } from '#/components/app/form'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
+import { StatusBadge } from '#/components/status-badge'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
@@ -131,7 +132,7 @@ export function CreateInvoicePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 Order #{orderData.order.orderNumber ?? '—'}
-                <Badge variant="secondary">{orderData.order.status}</Badge>
+                <StatusBadge status={orderData.order.status} />
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">

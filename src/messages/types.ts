@@ -454,7 +454,6 @@ export type Messages = {
     paymentConfirmed: string;
     paymentRecorded: string;
     paymentRejected: string;
-    invoicePaid: string;
     invalidAmount: string;
     bankTransfer: string;
     gateway: string;
@@ -462,6 +461,13 @@ export type Messages = {
     confirmPayment: string;
     pendingConfirmation: string;
     downloadInvoice: string;
+    downloadProof: string;
+    printInvoice: string;
+    invoiceCreated: string;
+    paymentProofUploaded: string;
+    invoicePaid: string;
+    invoiceVoided: string;
+    viewPaymentProof: string;
     overdue: string;
     noInvoices: string;
     noInvoicesDesc: string;

@@ -18,7 +18,7 @@ import {
 } from '#/components/app/data-table'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
-import { Badge } from '#/components/ui/badge'
+import { StatusBadge } from '#/components/status-badge'
 import { Button } from '#/components/ui/button'
 import { useCustomersList } from '#/features/customers/hooks'
 import type { CustomerRow } from '#/features/customers/model'
@@ -156,9 +156,7 @@ export function CustomersListPage() {
       header: t('active'),
       meta: { label: st('active'), mobileRole: 'badge' },
       cell: ({ row }) => (
-        <Badge variant={row.original.active ? 'default' : 'secondary'}>
-          {row.original.active ? st('active') : st('inactive')}
-        </Badge>
+        <StatusBadge status={row.original.active ? 'active' : 'inactive'} />
       ),
     },
   ]

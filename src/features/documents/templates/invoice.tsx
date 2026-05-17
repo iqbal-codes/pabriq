@@ -36,8 +36,8 @@ const styles = StyleSheet.create({
     width: '50%',
   },
   logo: {
-    maxWidth: 150,
-    maxHeight: 174,
+    maxWidth: 120,
+    maxHeight: 120,
   },
   metaWrap: {
     width: '40%',
@@ -60,8 +60,8 @@ const styles = StyleSheet.create({
   },
   metaLabelText: {
     padding: '4 12',
-    fontSize: 14,
     letterSpacing: 0.2,
+    fontSize: 12,
     color: GRAY_LABEL,
   },
   metaValue: {
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   metaValueText: {
     padding: '4 12',
     textAlign: 'right',
-    fontSize: 14,
+    fontSize: 12,
   },
   addressRow: {
     flexDirection: 'row',
@@ -80,12 +80,13 @@ const styles = StyleSheet.create({
     width: '50%',
   },
   addressTitle: {
-    padding: '4 12 17',
-    fontSize: 17,
+    padding: '4 12',
+    fontSize: 14,
     fontWeight: 600,
   },
   addressBold: {
     padding: '4 12',
+
     fontWeight: 500,
   },
   addressLine: {
@@ -114,13 +115,13 @@ const styles = StyleSheet.create({
   },
   tableCellRight: {
     padding: '4 13 10',
-    textAlign: 'right',
+    textAlign: 'left',
   },
-  colDesc: { width: '31%' },
-  colRate: { width: '17%' },
-  colQty: { width: '17%' },
-  colTax: { width: '17%' },
-  colAmt: { width: '18%' },
+  colDesc: { width: '30%' },
+  colRate: { width: '25%' },
+  colQty: { width: '10%' },
+  colTax: { width: '10%' },
+  colAmt: { width: '25%' },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -130,8 +131,8 @@ const styles = StyleSheet.create({
     width: '50%',
   },
   notesTitle: {
-    padding: '4 12 17',
-    fontSize: 17,
+    padding: '4 12',
+    fontSize: 12,
     fontWeight: 600,
   },
   notesText: {
@@ -139,7 +140,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   pricingSection: {
-    width: '40%',
+    width: '50%',
   },
   pricingLine: {
     flexDirection: 'row',
@@ -153,7 +154,7 @@ const styles = StyleSheet.create({
     padding: '4 12',
     textAlign: 'left',
     fontWeight: 500,
-    fontSize: 15,
+    fontSize: 12,
   },
   pricingValue: {
     width: '50%',
@@ -162,7 +163,7 @@ const styles = StyleSheet.create({
     padding: '4 12',
     textAlign: 'right',
     fontWeight: 500,
-    fontSize: 15,
+    fontSize: 12,
   },
   totalRow: {
     flexDirection: 'row',
@@ -177,7 +178,7 @@ const styles = StyleSheet.create({
   totalLabelText: {
     padding: '4 12',
     textAlign: 'left',
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: 500,
   },
   totalValue: {
@@ -187,8 +188,27 @@ const styles = StyleSheet.create({
   totalValueText: {
     padding: '4 12',
     textAlign: 'right',
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: 500,
+  },
+  alreadyPaidLine: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  alreadyPaidLabelText: {
+    padding: '4 12',
+    textAlign: 'left',
+    fontWeight: 500,
+    fontSize: 12,
+    color: GRAY_LABEL,
+  },
+  alreadyPaidValueText: {
+    padding: '4 12',
+    textAlign: 'right',
+    fontWeight: 500,
+    fontSize: 12,
+    color: GRAY_LABEL,
   },
 })
 
@@ -279,7 +299,7 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
               <Text style={styles.addressLine}>{data.org.email}</Text>
             )}
             {data.org.phone && (
-              <Text style={styles.addressLine}>{data.org.phone}</Text>
+              <Text style={styles.addressLine}>+62{data.org.phone}</Text>
             )}
             {data.org.address && (
               <Text style={styles.addressLine}>{data.org.address}</Text>
@@ -299,12 +319,22 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
             )}
             {data.customer.phone && (
               <Text style={[styles.addressLine, styles.addressRight]}>
-                {data.customer.phone}
+                +62{data.customer.phone}
               </Text>
             )}
             {data.customer.address && (
               <Text style={[styles.addressLine, styles.addressRight]}>
                 {data.customer.address}
+              </Text>
+            )}
+            {data.shippingAddress && (
+              <Text style={[styles.addressLine, styles.addressRight]}>
+                {[
+                  data.shippingAddress.streetAddress,
+                  data.shippingAddress.areaName,
+                ]
+                  .filter(Boolean)
+                  .join(', ')}
               </Text>
             )}
           </View>
@@ -314,14 +344,11 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
           <Text style={[styles.tableHeaderCell, styles.colDesc]}>
             DESCRIPTION
           </Text>
-          <Text style={[styles.tableHeaderCell, styles.colRate]}>
-            RATE, IDR
-          </Text>
-          <Text style={[styles.tableHeaderCell, styles.colQty]}>QTY/HRS</Text>
+          <Text style={[styles.tableHeaderCell, styles.colRate]}>RATE</Text>
+          <Text style={[styles.tableHeaderCell, styles.colQty]}>QTY</Text>
+
           <Text style={[styles.tableHeaderCell, styles.colTax]}>TAX</Text>
-          <Text style={[styles.tableHeaderCell, styles.colAmt]}>
-            AMOUNT, IDR
-          </Text>
+          <Text style={[styles.tableHeaderCell, styles.colAmt]}>AMOUNT</Text>
         </View>
 
         {data.lineItems.map((item) => (
@@ -357,7 +384,6 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
                 </Text>
                 {data.paymentMethod && (
                   <Text style={styles.notesText}>
-                    {data.paymentMethod.name}
                     {data.paymentMethod.bankName ||
                     data.paymentMethod.accountNumber
                       ? `\nBank : ${data.paymentMethod.bankName ?? ''}`
@@ -394,6 +420,18 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
                 </Text>
               </View>
             </View>
+            {data.alreadyPaid > 0 && (
+              <View style={styles.alreadyPaidLine}>
+                <View style={styles.pricingLabel}>
+                  <Text style={styles.alreadyPaidLabelText}>Sudah Dibayar</Text>
+                </View>
+                <View style={styles.pricingValue}>
+                  <Text style={styles.alreadyPaidValueText}>
+                    {formatCurrency(data.alreadyPaid)}
+                  </Text>
+                </View>
+              </View>
+            )}
             <View style={styles.totalRow}>
               <View style={styles.totalLabel}>
                 <Text style={styles.totalLabelText}>Total</Text>

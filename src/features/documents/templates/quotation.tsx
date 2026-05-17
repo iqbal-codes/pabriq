@@ -307,14 +307,10 @@ export function QuotationDocument({ data }: QuotationDocumentProps) {
           <Text style={[styles.tableHeaderCell, styles.colDesc]}>
             DESCRIPTION
           </Text>
-          <Text style={[styles.tableHeaderCell, styles.colRate]}>
-            RATE, IDR
-          </Text>
+          <Text style={[styles.tableHeaderCell, styles.colRate]}>RATE</Text>
           <Text style={[styles.tableHeaderCell, styles.colQty]}>QTY/HRS</Text>
           <Text style={[styles.tableHeaderCell, styles.colTax]}>TAX</Text>
-          <Text style={[styles.tableHeaderCell, styles.colAmt]}>
-            AMOUNT, IDR
-          </Text>
+          <Text style={[styles.tableHeaderCell, styles.colAmt]}>AMOUNT</Text>
         </View>
 
         {data.lineItems.map((item) => (

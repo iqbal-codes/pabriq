@@ -2,7 +2,7 @@ import { useTranslations } from 'use-intl'
 import { AvatarPhoto } from '#/components/app/avatar-photo'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
-import { Badge } from '#/components/ui/badge'
+import { StatusBadge } from '#/components/status-badge'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { useCustomer } from '#/features/customers/hooks'
 import { Route } from '#/routes/_org/customers/$id'
@@ -12,7 +12,6 @@ export function ViewCustomerPage() {
   const customer = useCustomer(id).data
   const t = useTranslations('customers')
   const ct = useTranslations('common')
-  const st = useTranslations('status')
 
   if (!customer) {
     return (
@@ -40,12 +39,7 @@ export function ViewCustomerPage() {
         />
         <div>
           <h1 className="text-2xl font-semibold">{customer.name}</h1>
-          <Badge
-            variant={customer.active ? 'default' : 'secondary'}
-            className="mt-1"
-          >
-            {customer.active ? st('active') : st('inactive')}
-          </Badge>
+          <StatusBadge status={customer.active ? 'active' : 'inactive'} />
         </div>
       </div>
       <Card>

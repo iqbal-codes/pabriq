@@ -2,7 +2,7 @@ import { useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
-import { Badge } from '#/components/ui/badge'
+import { StatusBadge } from '#/components/status-badge'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { useProduct, useProductBreakpoints } from '#/features/products/hooks'
 import { Route } from '#/routes/_org/products/$id/index'
@@ -19,7 +19,6 @@ export function ViewProductPage() {
   const breakpoints = useProductBreakpoints(id).data ?? []
   const t = useTranslations('products')
   const ct = useTranslations('common')
-  const st = useTranslations('status')
 
   if (!product) {
     return (
@@ -47,12 +46,7 @@ export function ViewProductPage() {
         />
         <div>
           <h1 className="text-2xl font-semibold">{product.name}</h1>
-          <Badge
-            variant={product.active ? 'default' : 'secondary'}
-            className="mt-1"
-          >
-            {product.active ? st('active') : st('inactive')}
-          </Badge>
+          <StatusBadge status={product.active ? 'active' : 'inactive'} />
         </div>
       </div>
       <div className="grid gap-6">
