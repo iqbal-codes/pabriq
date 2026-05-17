@@ -55,6 +55,7 @@ export type ProductionTask = {
   status: string
   taskNumber: string | null
   lineItemId: string | null
+  priority: boolean
   context: Record<string, string | number | boolean | null> | null
   assignedTo: string | null
   createdAt: Date
@@ -721,6 +722,22 @@ export type BoardTask = {
   stage: Stage | null
 }
 
+function sortBoardTasks(tasks: BoardTask[]): BoardTask[] {
+  return tasks.sort((a, b) => {
+    if (a.task.priority !== b.task.priority) {
+      return Number(b.task.priority) - Number(a.task.priority)
+    }
+
+    const createdAtDiff =
+      a.task.createdAt.getTime() - b.task.createdAt.getTime()
+    if (createdAtDiff !== 0) {
+      return createdAtDiff
+    }
+
+    return a.task.id.localeCompare(b.task.id)
+  })
+}
+
 export async function listBoardTasks(
   orgId: string,
   filter?: { board?: string; stageId?: string; search?: string },
@@ -802,6 +819,12 @@ export async function listBoardTasks(
       if (!stages.has(sid)) stages.set(sid, [])
       stages.get(sid)?.push(bt)
     }
+  }
+
+  sortBoardTasks(queued)
+  sortBoardTasks(done)
+  for (const stageTasks of stages.values()) {
+    sortBoardTasks(stageTasks)
   }
 
   return { queued, stages, done }

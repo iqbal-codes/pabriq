@@ -17,7 +17,7 @@ const enMessages = {
     comments: 'Comments',
     commentPlaceholder: 'Type a comment...',
     send: 'Send',
-    startProduction: 'Start Production',
+    startProduction: 'Start Pre-Production',
     advanceTo: 'Advance to {stage}',
     reviewAdvancement: 'Review',
     queue: 'Queue',
@@ -25,6 +25,12 @@ const enMessages = {
     statusInProgress: 'In Progress',
     pendingApproval: 'Pending Approval',
     statusCompleted: 'Completed',
+  },
+  status: {
+    queued: 'Queued',
+    in_progress: 'In Progress',
+    pending_approval: 'Pending Approval',
+    completed: 'Completed',
   },
 }
 
@@ -51,6 +57,7 @@ vi.mock('../hooks', () => {
         status: taskStatusMap[taskId] ?? 'in_progress',
         taskNumber: 'TSK-5',
         lineItemId: 'line-item-1',
+        priority: false,
         context: {
           productName: 'Custom T-Shirt',
           customerName: 'Acme Corp',
@@ -159,9 +166,9 @@ describe('TaskDetailModal', () => {
     expect(screen.getByText('Advance to Production')).toBeInTheDocument()
   })
 
-  it('shows Start Production for queued tasks', () => {
+  it('shows advance action for queued tasks', () => {
     renderModal('task-queued')
-    expect(screen.getByText('Start Production')).toBeInTheDocument()
+    expect(screen.getByText('Advance to Design')).toBeInTheDocument()
   })
 
   it('shows activity tab content', async () => {

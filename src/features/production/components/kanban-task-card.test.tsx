@@ -5,9 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { BoardTask } from '../model'
 import { KanbanTaskCard } from './kanban-task-card'
 
-function createMockTask(
-  _overrides: Partial<BoardTask['task']> = {},
-): BoardTask {
+function createMockTask(overrides: Partial<BoardTask['task']> = {}): BoardTask {
   return {
     task: {
       id: 'task-1',
@@ -18,6 +16,7 @@ function createMockTask(
       status: 'queued',
       taskNumber: 'TSK-5',
       lineItemId: 'line-item-1',
+      priority: false,
       context: {
         productName: 'Custom T-Shirt',
         customerName: 'Acme Corp',
@@ -28,6 +27,7 @@ function createMockTask(
       createdAt: new Date(),
       updatedAt: new Date(),
       archivedAt: null,
+      ...overrides,
     },
     stage: null,
   }
@@ -35,10 +35,13 @@ function createMockTask(
 
 const enMessages = {
   production: {
-    statusQueued: 'Queued',
-    statusInProgress: 'In Progress',
-    pendingApproval: 'Pending Approval',
-    statusCompleted: 'Completed',
+    priorityBadge: 'Priority',
+  },
+  status: {
+    queued: 'Queued',
+    in_progress: 'In Progress',
+    pending_approval: 'Pending Approval',
+    completed: 'Completed',
   },
   common: {
     pcs: 'pcs',
@@ -71,9 +74,9 @@ describe('KanbanTaskCard', () => {
     expect(screen.getByText('Custom T-Shirt')).toBeInTheDocument()
   })
 
-  it('renders customer name', () => {
+  it('does not render customer name on the compact card', () => {
     renderCard(createMockTask())
-    expect(screen.getByText(/Acme Corp/)).toBeInTheDocument()
+    expect(screen.queryByText(/Acme Corp/)).not.toBeInTheDocument()
   })
 
   it('renders quantity', () => {
@@ -84,6 +87,19 @@ describe('KanbanTaskCard', () => {
   it('renders status badge', () => {
     renderCard(createMockTask())
     expect(screen.getByText('Queued')).toBeInTheDocument()
+  })
+
+  it('renders priority badge only for priority tasks', () => {
+    renderCard(createMockTask({ priority: true }))
+    expect(screen.getByText('Priority')).toBeInTheDocument()
+
+    renderCard(createMockTask())
+    expect(screen.getAllByText('Queued')).toHaveLength(2)
+    expect(screen.getAllByText('Custom T-Shirt')).toHaveLength(2)
+    expect(screen.getAllByText('TSK-5')).toHaveLength(2)
+    expect(screen.getAllByText('ORD-001')).toHaveLength(2)
+    expect(screen.getAllByText(/500/)).toHaveLength(2)
+    expect(screen.getAllByText('Priority')).toHaveLength(1)
   })
 
   it('has no action buttons', () => {

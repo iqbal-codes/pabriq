@@ -1,18 +1,8 @@
-import { Lock } from 'lucide-react'
 import { useTranslations } from 'use-intl'
+import { StatusBadge } from '#/components/status-badge'
 import { Badge } from '#/components/ui/badge'
 import { Card, CardContent } from '#/components/ui/card'
 import type { BoardTask } from '../model'
-
-const STATUS_LABELS: Record<
-  string,
-  'statusQueued' | 'statusInProgress' | 'pendingApproval' | 'statusCompleted'
-> = {
-  queued: 'statusQueued',
-  in_progress: 'statusInProgress',
-  pending_approval: 'pendingApproval',
-  completed: 'statusCompleted',
-}
 
 type Props = {
   task: BoardTask
@@ -28,8 +18,8 @@ function getCtx(
 }
 
 export function KanbanTaskCard({ task, onClick }: Props) {
-  const t = useTranslations('production')
   const ct = useTranslations('common')
+  const pt = useTranslations('production')
   const taskData = task.task
   const ctx = taskData.context as Record<
     string,
@@ -50,27 +40,21 @@ export function KanbanTaskCard({ task, onClick }: Props) {
           <span className="font-mono text-xs font-semibold">
             {taskData.taskNumber || '-'}
           </span>
-          <Badge
-            variant={isPendingApproval ? 'outline' : 'secondary'}
-            className={`text-xs leading-3 ${isPendingApproval ? 'border-warning text-warning' : ''}`}
-          >
-            {isPendingApproval && <Lock className="size-3 mr-0.5" />}
-            {t(
-              STATUS_LABELS[taskData.status] ??
-                (taskData.status as
-                  | 'statusQueued'
-                  | 'statusInProgress'
-                  | 'pendingApproval'
-                  | 'statusCompleted'),
-            )}
-          </Badge>
+          <StatusBadge status={taskData.status} />
         </div>
         <div className="text-xs text-muted-foreground font-mono">
           {orderNum}
         </div>
-        <p className="text-sm font-medium leading-tight truncate">
-          {productName}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium leading-tight truncate">
+            {productName}
+          </p>
+          {taskData.priority ? (
+            <Badge variant="warning" className="shrink-0 text-[10px]">
+              {pt('priorityBadge')}
+            </Badge>
+          ) : null}
+        </div>
         <p className="text-xs text-muted-foreground truncate">
           {quantity ? `${quantity} ${ct('pcs')}` : ''}
         </p>

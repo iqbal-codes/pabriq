@@ -37,6 +37,9 @@ function TestWrapper() {
           createProduct: 'Create Product',
           productInfo: 'Product Information',
           productionNotes: 'Production Notes',
+          priority: 'Priority product',
+          priorityDescription:
+            'Tasks spawned from this product will be marked priority.',
           pricingAndOrders: 'Pricing & Orders',
           name: 'Product Name',
           namePlaceholder: 'e.g. Custom T-Shirt',
@@ -47,6 +50,17 @@ function TestWrapper() {
           productionDays: 'Production Days',
           minQuantity: 'Min. Quantity',
           maxQuantity: 'Max. Quantity',
+          photo: 'Primary Photo',
+          pricing: {
+            breakpoints: 'Pricing Breakpoints',
+            addBreakpoint: 'Add Breakpoint',
+            noBreakpoints: 'No pricing breakpoints configured',
+            unitPrice: 'Unit Price',
+            minQuantity: 'Min. Quantity',
+            interpolate: 'Interpolate pricing',
+            interpolateOn: 'Prices use linear interpolation',
+            interpolateOff: 'Prices use step pricing',
+          },
         },
         common: {
           back: 'Back',

@@ -1,10 +1,32 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   taskActivity as activityTable,
+  products as productsTable,
   productionTasks as tasksTable,
 } from '#/db/schema'
 import { getOrder } from '#/features/orders/model'
+
+async function getProductPriorityMap(
+  orgId: string,
+  productIds: string[],
+): Promise<Map<string, boolean>> {
+  if (productIds.length === 0) {
+    return new Map()
+  }
+
+  const rows = await db
+    .select({ id: productsTable.id, priority: productsTable.priority })
+    .from(productsTable)
+    .where(
+      and(
+        eq(productsTable.orgId, orgId),
+        inArray(productsTable.id, productIds),
+      ),
+    )
+
+  return new Map(rows.map((row) => [row.id, row.priority]))
+}
 
 export async function spawnTasksForApprovedOrder(
   orderId: string,
@@ -17,6 +39,10 @@ export async function spawnTasksForApprovedOrder(
   if (order.status !== 'approved' && order.status !== 'production') {
     throw new Error('Order is not approved')
   }
+
+  const productPriorityMap = await getProductPriorityMap(orgId, [
+    ...new Set(lineItems.map((item) => item.productId)),
+  ])
 
   const latestTask = await db
     .select({ taskNumber: tasksTable.taskNumber })
@@ -46,6 +72,7 @@ export async function spawnTasksForApprovedOrder(
       status: 'queued',
       taskNumber,
       lineItemId: item.id,
+      priority: productPriorityMap.get(item.productId) ?? false,
       context: {
         productName: item.name ?? '',
         customerName: customerName ?? '',
@@ -70,10 +97,10 @@ export async function spawnTasksForApprovedOrder(
     })
   }
 
-  await Promise.all([
-    db.insert(tasksTable).values(taskValues),
-    db.insert(activityTable).values(activityValues),
-  ])
+  await db.transaction(async (tx) => {
+    await tx.insert(tasksTable).values(taskValues)
+    await tx.insert(activityTable).values(activityValues)
+  })
 }
 
 export async function spawnProductionTasks(
@@ -87,6 +114,10 @@ export async function spawnProductionTasks(
   if (order.status !== 'in_progress') {
     throw new Error('Order is not in progress')
   }
+
+  const productPriorityMap = await getProductPriorityMap(orgId, [
+    ...new Set(lineItems.map((item) => item.productId)),
+  ])
 
   const latestTask = await db
     .select({ taskNumber: tasksTable.taskNumber })
@@ -116,6 +147,7 @@ export async function spawnProductionTasks(
       status: 'queued',
       taskNumber,
       lineItemId: item.id,
+      priority: productPriorityMap.get(item.productId) ?? false,
       context: {
         productName: item.name ?? '',
         customerName: customerName ?? '',
@@ -140,10 +172,10 @@ export async function spawnProductionTasks(
     })
   }
 
-  await Promise.all([
-    db.insert(tasksTable).values(taskValues),
-    db.insert(activityTable).values(activityValues),
-  ])
+  await db.transaction(async (tx) => {
+    await tx.insert(tasksTable).values(taskValues)
+    await tx.insert(activityTable).values(activityValues)
+  })
 }
 
 export async function archiveBoardTasks(

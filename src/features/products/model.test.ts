@@ -49,6 +49,7 @@ describe('products', () => {
     expect(product.name).toBe('Custom T-Shirt')
     expect(product.orgId).toBe(org1Id)
     expect(product.active).toBe(true)
+    expect(product.priority).toBe(false)
     expect(product.description).toBeNull()
     expect(product.productionNotes).toBeNull()
   })
@@ -93,6 +94,38 @@ describe('products', () => {
     expect(updated.name).toBe('New Name')
     const fetched = await getProduct(updated.id, org1Id)
     expect(fetched?.name).toBe('New Name')
+  })
+
+  it('saves explicit priority on create', async () => {
+    const product = await createProduct({
+      orgId: org1Id,
+      name: 'Priority Product',
+      priority: true,
+    })
+
+    expect(product.priority).toBe(true)
+  })
+
+  it('updates product priority', async () => {
+    const created = await createProduct({
+      orgId: org1Id,
+      name: 'Toggle Priority',
+    })
+    expect(created.priority).toBe(false)
+
+    const prioritized = await updateProduct({
+      id: created.id,
+      orgId: org1Id,
+      priority: true,
+    })
+    expect(prioritized.priority).toBe(true)
+
+    const unprioritized = await updateProduct({
+      id: created.id,
+      orgId: org1Id,
+      priority: false,
+    })
+    expect(unprioritized.priority).toBe(false)
   })
 
   it('toggles product active status', async () => {

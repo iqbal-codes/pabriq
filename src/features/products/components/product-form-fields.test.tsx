@@ -10,6 +10,7 @@ function TestWrapper() {
       name: '',
       description: '',
       productionNotes: '',
+      priority: false,
       primaryImageAssetId: null as string | null,
       basePrice: 0,
       productionDays: 1,
@@ -35,6 +36,9 @@ function TestWrapper() {
           descriptionPlaceholder: 'Describe the product',
           productionNotes: 'Production Notes',
           productionNotesPlaceholder: 'Special instructions',
+          priority: 'Priority product',
+          priorityDescription:
+            'Tasks spawned from this product will be marked priority.',
           basePrice: 'Base Price',
           productionDays: 'Production Days',
           minQuantity: 'Min. Quantity',
@@ -72,6 +76,7 @@ describe('ProductFormFields', () => {
     expect(screen.getByText('Description')).toBeDefined()
     expect(screen.getByText('Base Price')).toBeDefined()
     expect(screen.getByText('Production Days')).toBeDefined()
+    expect(screen.getByText('Priority product')).toBeDefined()
     expect(screen.getByText('Min. Quantity')).toBeDefined()
     expect(screen.getByText('Max. Quantity')).toBeDefined()
   })

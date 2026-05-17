@@ -29,6 +29,7 @@ function createTask(id: string): BoardTask {
       status: 'in_progress',
       taskNumber: `TSK-${id}`,
       lineItemId: 'line-item-1',
+      priority: false,
       context: { productName: `Product ${id}`, customerName: 'Acme Corp' },
       assignedTo: null,
       createdAt: new Date(),
@@ -44,7 +45,18 @@ function renderColumn(
   props: { title: string; count: number },
 ) {
   return render(
-    <IntlProvider locale="en" messages={{ production: {} }}>
+    <IntlProvider
+      locale="en"
+      messages={{
+        production: { noTasks: 'No tasks', priorityBadge: 'Priority' },
+        status: {
+          in_progress: 'In Progress',
+          queued: 'Queued',
+          pending_approval: 'Pending Approval',
+          completed: 'Completed',
+        },
+      }}
+    >
       <KanbanColumn tasks={tasks} title={props.title} count={props.count} />
     </IntlProvider>,
   )

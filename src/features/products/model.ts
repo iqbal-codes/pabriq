@@ -11,6 +11,7 @@ export type Product = {
   name: string
   description: string | null
   active: boolean
+  priority: boolean
   productionNotes: string | null
   primaryImageAssetId: string | null
   basePrice: number
@@ -26,6 +27,7 @@ export type CreateProductInput = {
   orgId: string
   name: string
   description?: string
+  priority?: boolean
   productionNotes?: string
   primaryImageAssetId?: string | null
   basePrice?: number
@@ -41,6 +43,7 @@ export type UpdateProductInput = {
   orgId: string
   name?: string
   description?: string | null
+  priority?: boolean
   productionNotes?: string | null
   primaryImageAssetId?: string | null
   basePrice?: number
@@ -102,6 +105,7 @@ export async function createProduct(
     orgId: input.orgId,
     name: input.name,
     description: input.description ?? null,
+    priority: input.priority ?? false,
     productionNotes: input.productionNotes ?? null,
     primaryImageAssetId: input.primaryImageAssetId ?? null,
     basePrice: input.basePrice ?? 0,
@@ -143,6 +147,7 @@ export async function updateProduct(
   const updates: Record<string, unknown> = { updatedAt: now }
   if (input.name !== undefined) updates.name = input.name
   if (input.description !== undefined) updates.description = input.description
+  if (input.priority !== undefined) updates.priority = input.priority
   if (input.productionNotes !== undefined)
     updates.productionNotes = input.productionNotes
   if (input.primaryImageAssetId !== undefined)

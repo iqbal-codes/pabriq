@@ -9,6 +9,7 @@ export const ProductFormFields = withForm({
     name: '',
     description: '',
     productionNotes: '',
+    priority: false,
     primaryImageAssetId: null as string | null,
     basePrice: 0,
     productionDays: 1,
@@ -42,6 +43,23 @@ export const ProductFormFields = withForm({
             </form.AppField>
             <form.AppField name="productionDays">
               {(field) => <field.NumberField label={t('productionDays')} />}
+            </form.AppField>
+            <form.AppField name="priority">
+              {(field) => (
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <span className="text-sm font-medium">{t('priority')}</span>
+                    <p className="text-xs text-muted-foreground">
+                      {t('priorityDescription')}
+                    </p>
+                  </div>
+                  <Switch
+                    aria-label={t('priority')}
+                    checked={field.state.value}
+                    onCheckedChange={field.handleChange}
+                  />
+                </div>
+              )}
             </form.AppField>
             <form.AppField name="primaryImageAssetId">
               {(field) => (

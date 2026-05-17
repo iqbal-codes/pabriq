@@ -48,6 +48,7 @@ function createTask(
       status,
       taskNumber: `TSK-${id}`,
       lineItemId: 'line-item-1',
+      priority: false,
       context: { productName: `P-${id}`, customerName: 'Acme' },
       assignedTo: null,
       createdAt: new Date(),
@@ -64,6 +65,13 @@ const enMessages = {
     done: 'Done',
     noTasks: 'No tasks',
     kanbanTab: 'Kanban',
+    priorityBadge: 'Priority',
+  },
+  status: {
+    in_progress: 'In Progress',
+    queued: 'Queued',
+    pending_approval: 'Pending Approval',
+    completed: 'Completed',
   },
 }
 

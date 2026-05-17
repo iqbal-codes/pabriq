@@ -151,6 +151,7 @@ export const products = pgTable('products', {
   name: text('name').notNull(),
   description: text('description'),
   active: boolean('active').notNull().default(true),
+  priority: boolean('priority').notNull().default(false),
   productionNotes: text('production_notes'),
   primaryImageAssetId: text('primary_image_asset_id').references(
     () => assets.id,
@@ -403,6 +404,7 @@ export const productionTasks = pgTable('production_tasks', {
   status: text('status').notNull().default('queued'),
   taskNumber: text('task_number'),
   lineItemId: text('line_item_id'),
+  priority: boolean('priority').notNull().default(false),
   context: json('context')
     .$type<{
       productName: string

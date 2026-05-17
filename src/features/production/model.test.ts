@@ -16,6 +16,7 @@ import {
   createStage,
   deleteStage,
   getStage,
+  listBoardTasks,
   listStages,
   listTaskActivities,
   rejectTaskAdvance,
@@ -24,7 +25,7 @@ import {
   toggleStage,
   updateStage,
 } from './model'
-import { spawnTasksForApprovedOrder } from './spawner'
+import { spawnProductionTasks, spawnTasksForApprovedOrder } from './spawner'
 
 const org1Id = '00000000-0000-0000-0000-000000000001'
 const org2Id = '00000000-0000-0000-0000-000000000002'
@@ -175,7 +176,11 @@ describe('production stages', () => {
   })
 })
 
-async function seedOrder(orgId: string, status = 'pending') {
+async function seedOrder(
+  orgId: string,
+  status = 'pending',
+  productPriority = false,
+) {
   const now = new Date()
   const customerId = crypto.randomUUID()
   const productId = crypto.randomUUID()
@@ -193,6 +198,7 @@ async function seedOrder(orgId: string, status = 'pending') {
     id: productId,
     orgId,
     name: 'Test Product',
+    priority: productPriority,
     basePrice: 10000,
     productionDays: 1,
     minQuantity: 1,
@@ -291,6 +297,36 @@ describe('order approval and task spawning', () => {
     expect(tasks[0].orderId).toBe(orderId)
   })
 
+  it('copies product priority onto approved-order tasks', async () => {
+    const { orderId } = await seedOrder(org1Id, 'pending', true)
+    await approveOrder(orderId, org1Id, 'user-1')
+
+    await spawnTasksForApprovedOrder(orderId, org1Id)
+
+    const tasks = await db
+      .select({ priority: tasksTable.priority })
+      .from(tasksTable)
+      .where(eq(tasksTable.orderId, orderId))
+
+    expect(tasks).toHaveLength(1)
+    expect(tasks[0].priority).toBe(true)
+  })
+
+  it('copies product priority onto production-board tasks', async () => {
+    const { orderId } = await seedOrder(org1Id, 'in_progress', true)
+
+    await spawnProductionTasks(orderId, org1Id)
+
+    const tasks = await db
+      .select({ priority: tasksTable.priority, board: tasksTable.board })
+      .from(tasksTable)
+      .where(eq(tasksTable.orderId, orderId))
+
+    expect(tasks).toHaveLength(1)
+    expect(tasks[0].priority).toBe(true)
+    expect(tasks[0].board).toBe('production')
+  })
+
   it('spawns tasks only for approved orders', async () => {
     const { orderId } = await seedOrder(org1Id, 'draft')
 
@@ -321,6 +357,94 @@ describe('order approval and task spawning', () => {
       .where(eq(tasksTable.orderId, o2))
 
     expect(tasks2[0].taskNumber).toBe('TSK-2')
+  })
+})
+
+describe('listBoardTasks', () => {
+  it('sorts queued tasks with priority first', async () => {
+    const now = new Date()
+    const [
+      { orderId: orderId1 },
+      { orderId: orderId2 },
+      { orderId: orderId3 },
+    ] = await Promise.all([
+      seedOrder(org1Id),
+      seedOrder(org1Id),
+      seedOrder(org1Id),
+    ])
+
+    const queuedTasks: Array<typeof tasksTable.$inferInsert> = [
+      {
+        id: 'task-low-old',
+        orgId: org1Id,
+        orderId: orderId1,
+        board: 'pre_production',
+        stageId: null,
+        status: 'queued',
+        taskNumber: 'TSK-1',
+        lineItemId: 'line-item-1',
+        priority: false,
+        context: {
+          productName: 'Standard Product',
+          customerName: 'Customer',
+          requirements: null,
+          orderNumber: 'ORD-001',
+          quantity: 1,
+        },
+        createdAt: new Date(now.getTime()),
+        updatedAt: new Date(now.getTime()),
+      },
+      {
+        id: 'task-high-new',
+        orgId: org1Id,
+        orderId: orderId2,
+        board: 'pre_production',
+        stageId: null,
+        status: 'queued',
+        taskNumber: 'TSK-2',
+        lineItemId: 'line-item-2',
+        priority: true,
+        context: {
+          productName: 'Priority Product',
+          customerName: 'Customer',
+          requirements: null,
+          orderNumber: 'ORD-002',
+          quantity: 1,
+        },
+        createdAt: new Date(now.getTime() + 1000),
+        updatedAt: new Date(now.getTime() + 1000),
+      },
+      {
+        id: 'task-low-new',
+        orgId: org1Id,
+        orderId: orderId3,
+        board: 'pre_production',
+        stageId: null,
+        status: 'queued',
+        taskNumber: 'TSK-3',
+        lineItemId: 'line-item-3',
+        priority: false,
+        context: {
+          productName: 'Another Standard Product',
+          customerName: 'Customer',
+          requirements: null,
+          orderNumber: 'ORD-003',
+          quantity: 1,
+        },
+        createdAt: new Date(now.getTime() + 2000),
+        updatedAt: new Date(now.getTime() + 2000),
+      },
+    ]
+
+    await db.insert(tasksTable).values(queuedTasks)
+
+    const boardTasks = await listBoardTasks(org1Id)
+
+    expect(boardTasks.queued.map((task) => task.task.id)).toEqual([
+      'task-high-new',
+      'task-low-old',
+      'task-low-new',
+    ])
   })
 })
 

@@ -238,7 +238,16 @@ export type Messages = {
     rejectReasonPlaceholder: string;
     orderApproved: string;
     orderRejected: string;
+    orderCompleted: string;
+    completeOrder: string;
     guestCustomer: string;
+    paymentStatus: string;
+    dueDate: string;
+    paymentNoInvoice: string;
+    paymentPaid: string;
+    paymentUnpaid: string;
+    paymentPartiallyPaid: string;
+    paymentVoid: string;
   };
   breadcrumb: {
     dashboard: string;
@@ -286,6 +295,13 @@ export type Messages = {
     overdue: string;
     pendingPayment: string;
     failed: string;
+    confirmed: string;
+    refunded: string;
+    queued: string;
+    pending_approval: string;
+    accepted: string;
+    canceled: string;
+    deleted: string;
   };
   org: {
     title: string;
@@ -362,6 +378,8 @@ export type Messages = {
     descriptionPlaceholder: string;
     productionNotes: string;
     productionNotesPlaceholder: string;
+    priority: string;
+    priorityDescription: string;
     active: string;
     inactive: string;
     searchPlaceholder: string;
@@ -436,6 +454,7 @@ export type Messages = {
     paymentConfirmed: string;
     paymentRecorded: string;
     paymentRejected: string;
+    invoicePaid: string;
     invalidAmount: string;
     bankTransfer: string;
     gateway: string;
@@ -538,6 +557,7 @@ export type Messages = {
     productLabel: string;
     customerLabel: string;
     quantityLabel: string;
+    priorityBadge: string;
     taskCreated: string;
     noActivity: string;
     tabActive: string;
