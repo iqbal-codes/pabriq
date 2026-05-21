@@ -248,6 +248,8 @@ export type Messages = {
     paymentUnpaid: string;
     paymentPartiallyPaid: string;
     paymentVoid: string;
+    deadline: string;
+    createdAt: string;
   };
   breadcrumb: {
     dashboard: string;
@@ -356,8 +358,11 @@ export type Messages = {
     photo: string;
     uploadPhoto: string;
     removePhoto: string;
+    createdAt: string;
   };
   dashboard: {
+    title: string;
+    description: string;
     welcome: string;
     activeOrders: string;
     activeOrdersDesc: string;
@@ -365,6 +370,46 @@ export type Messages = {
     productsDesc: string;
     invoices: string;
     invoicesDesc: string;
+    orderFallback: string;
+    emptyRevenue: string;
+    emptyTaskStages: string;
+    noRecentOrders: string;
+    taskCountSuffix: string;
+    trend: {
+      up: string;
+      down: string;
+      noChange: string;
+      live: string;
+      vsPreviousPeriod: string;
+    };
+    // KPI metrics
+    kpi: {
+      revenue: string;
+      revenueDesc: string;
+      orders: string;
+      ordersDesc: string;
+      overdueInvoices: string;
+      overdueInvoicesDesc: string;
+      pendingApprovals: string;
+      pendingApprovalsDesc: string;
+    };
+    // Period presets
+    period: {
+      '7d': string;
+      '30d': string;
+      thisMonth: string;
+      lastMonth: string;
+    };
+    // Sections
+    sections: {
+      revenue: string;
+      revenueDesc: string;
+      recentOrders: string;
+      recentOrdersDesc: string;
+      taskStages: string;
+      taskStagesDesc: string;
+    };
+    viewAll: string;
   };
   products: {
     title: string;
@@ -401,6 +446,7 @@ export type Messages = {
     photo: string;
     viewProduct: string;
     editProduct: string;
+    createdAt: string;
     pricing: {
       title: string;
       breakpoints: string;
@@ -473,6 +519,7 @@ export type Messages = {
     noInvoicesDesc: string;
     searchPlaceholder: string;
     noResults: string;
+    createdAt: string;
   };
   address: {
     title: string;
