@@ -111,6 +111,7 @@ export const listProductsFn = createServerFn({ method: 'GET' })
           FROM ${breakpointsTable} b
           WHERE b.product_id = products.id
         )`,
+          createdAt: productsTable.createdAt,
         })
         .from(productsTable)
         .where(allConditions)

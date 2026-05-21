@@ -50,6 +50,7 @@ export type CustomerRow = {
   phone: string | null
   active: boolean
   photoAssetId: string | null
+  createdAt: Date
 }
 
 export type ListCustomersResult = {
@@ -187,6 +188,7 @@ export async function listCustomers(
         phone: customersTable.phone,
         active: customersTable.active,
         photoAssetId: customersTable.photoAssetId,
+        createdAt: customersTable.createdAt,
       })
       .from(customersTable)
       .where(allConditions)

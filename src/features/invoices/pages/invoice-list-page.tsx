@@ -95,6 +95,26 @@ export function InvoiceListPage() {
           <StatusBadge status={row.original.status} />
         ),
       },
+      {
+        accessorKey: 'createdAt',
+        header: t('createdAt'),
+        meta: { label: t('createdAt') },
+        cell: ({ row }: { row: { original: InvoiceRow } }) => {
+          const date = row.original.createdAt
+          if (!date) return <span className="text-muted-foreground">—</span>
+          return (
+            <span>
+              {new Date(date).toLocaleString('id-ID', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </span>
+          )
+        },
+      },
     ],
     [t],
   )
