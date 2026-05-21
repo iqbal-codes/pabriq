@@ -104,6 +104,8 @@ beforeEach(async () => {
       quantity: 1,
       unitPrice: 10000,
       total: 10000,
+      productionDays: 1,
+      deadline: new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000),
       createdAt: now,
       updatedAt: now,
     },

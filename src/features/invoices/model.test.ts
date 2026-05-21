@@ -158,6 +158,8 @@ describe('createInvoice', () => {
         unitPrice: 10,
         total: 1000,
         name: 'T-Shirt',
+        productionDays: 2,
+        deadline: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
         createdAt: now,
         updatedAt: now,
       },

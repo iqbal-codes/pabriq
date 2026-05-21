@@ -227,6 +227,8 @@ async function seedOrder(
     total: 10000,
     name: 'Test Product Item',
     notes: 'Red color, size L',
+    productionDays: 1,
+    deadline: new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000),
     createdAt: now,
     updatedAt: now,
   })
