@@ -140,26 +140,24 @@ export const OrderFormFields = withForm({
                 </FormGrid>
               </FormSection>
 
-              <FormSection title={t('lineItems')}>
+              <FormSection
+                title={t('lineItems')}
+                action={
+                  <ProductSelectDialog
+                    products={products}
+                    onSelect={handleAddProduct}
+                    trigger={
+                      <Button type="button" variant="outline" size="sm">
+                        <Plus className="mr-1 size-4" />
+                        {t('addItem')}
+                      </Button>
+                    }
+                  />
+                }
+              >
                 <form.AppField name="lineItems" mode="array">
                   {() => (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-medium">
-                          {t('lineItems')}
-                        </h3>
-                        <ProductSelectDialog
-                          products={products}
-                          onSelect={handleAddProduct}
-                          trigger={
-                            <Button type="button" variant="outline" size="sm">
-                              <Plus className="mr-1 size-4" />
-                              {t('addItem')}
-                            </Button>
-                          }
-                        />
-                      </div>
-
+                    <>
                       {lineItems.map((item, i) => (
                         <LineItemRow
                           key={item.id}
@@ -182,7 +180,7 @@ export const OrderFormFields = withForm({
                           </div>
                         </div>
                       )}
-                    </div>
+                    </>
                   )}
                 </form.AppField>
               </FormSection>

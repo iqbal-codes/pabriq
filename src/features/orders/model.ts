@@ -21,6 +21,7 @@ import {
 import type { ShippingAddress } from '#/features/address/model'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
 import { listBreakpoints } from '#/features/products/model'
+import { addWorkingDays } from '#/lib/date-utils'
 
 export type Order = {
   id: string
@@ -61,6 +62,8 @@ export type OrderLineItem = {
   total: number
   name: string | null
   notes: string | null
+  productionDays: number
+  deadline: Date
   createdAt: Date
   updatedAt: Date
 }
@@ -123,6 +126,7 @@ export type OrderRow = {
   createdAt: Date
   paymentStatus: string
   dueDate: string | null
+  maxDeadline: Date | null
 }
 
 export type ListOrdersParams = {
@@ -273,29 +277,48 @@ export async function listOrders(
     { paymentStatus: string; dueDate: string | null }
   >()
 
+  // Fetch max deadline from line items for displayed orders
+  const deadlineMap = new Map<string, Date>()
+
   if (rows.length > 0) {
     const orderIds = rows.map((r) => r.id)
-    const invoiceAggs = await db
-      .select({
-        orderId: invoicesTable.orderId,
-        paymentStatus: sql<string>`CASE
-          WHEN bool_and(${invoicesTable.status} IN ('paid', 'void')) AND bool_or(${invoicesTable.status} = 'paid') THEN 'paid'
-          WHEN bool_and(${invoicesTable.status} = 'void') THEN 'void'
-          WHEN bool_or(${invoicesTable.status} = 'partially_paid') THEN 'partially_paid'
-          ELSE 'unpaid'
-        END`,
-        dueDate: sql<string | null>`
-          MIN(CASE WHEN ${invoicesTable.status} NOT IN ('paid', 'void') THEN ${invoicesTable.dueDate} END)
-        `,
-      })
-      .from(invoicesTable)
-      .where(
-        and(
-          eq(invoicesTable.orgId, params.orgId),
-          inArray(invoicesTable.orderId, orderIds),
-        ),
-      )
-      .groupBy(invoicesTable.orderId)
+
+    const [invoiceAggs, deadlineAggs] = await Promise.all([
+      db
+        .select({
+          orderId: invoicesTable.orderId,
+          paymentStatus: sql<string>`CASE
+            WHEN bool_and(${invoicesTable.status} IN ('paid', 'void')) AND bool_or(${invoicesTable.status} = 'paid') THEN 'paid'
+            WHEN bool_and(${invoicesTable.status} = 'void') THEN 'void'
+            WHEN bool_or(${invoicesTable.status} = 'partially_paid') THEN 'partially_paid'
+            ELSE 'unpaid'
+          END`,
+          dueDate: sql<string | null>`
+            MIN(CASE WHEN ${invoicesTable.status} NOT IN ('paid', 'void') THEN ${invoicesTable.dueDate} END)
+          `,
+        })
+        .from(invoicesTable)
+        .where(
+          and(
+            eq(invoicesTable.orgId, params.orgId),
+            inArray(invoicesTable.orderId, orderIds),
+          ),
+        )
+        .groupBy(invoicesTable.orderId),
+      db
+        .select({
+          orderId: lineItemsTable.orderId,
+          maxDeadline: sql<Date>`MAX(${lineItemsTable.deadline})`,
+        })
+        .from(lineItemsTable)
+        .where(
+          and(
+            eq(lineItemsTable.orgId, params.orgId),
+            inArray(lineItemsTable.orderId, orderIds),
+          ),
+        )
+        .groupBy(lineItemsTable.orderId),
+    ])
 
     for (const agg of invoiceAggs) {
       if (agg.orderId) {
@@ -305,12 +328,19 @@ export async function listOrders(
         })
       }
     }
+
+    for (const agg of deadlineAggs) {
+      if (agg.orderId && agg.maxDeadline) {
+        deadlineMap.set(agg.orderId, agg.maxDeadline as Date)
+      }
+    }
   }
 
   const enrichedRows = rows.map((row) => ({
     ...row,
     paymentStatus: invoiceMap.get(row.id)?.paymentStatus ?? 'no_invoice',
     dueDate: invoiceMap.get(row.id)?.dueDate ?? null,
+    maxDeadline: deadlineMap.get(row.id) ?? null,
   }))
 
   return {
@@ -415,7 +445,11 @@ export async function createDraftOrder(
 
   for (const li of input.lineItems) {
     const productRows = await db
-      .select({ id: productsTable.id, active: productsTable.active })
+      .select({
+        id: productsTable.id,
+        active: productsTable.active,
+        productionDays: productsTable.productionDays,
+      })
       .from(productsTable)
       .where(
         and(eq(productsTable.id, li.productId), eq(productsTable.orgId, orgId)),
@@ -431,6 +465,7 @@ export async function createDraftOrder(
     )
 
     const itemId = li.id ?? generateId()
+    const deadline = addWorkingDays(now, productRows[0].productionDays)
     items.push({
       id: itemId,
       orgId,
@@ -441,6 +476,8 @@ export async function createDraftOrder(
       total: pricing.total,
       name: li.name ?? null,
       notes: li.notes ?? null,
+      productionDays: productRows[0].productionDays,
+      deadline,
       createdAt: now,
       updatedAt: now,
     })
@@ -522,17 +559,21 @@ export async function updateDraftOrder(
     if (customerRows.length === 0) throw new Error('Customer not found')
   }
 
-  // Validate all products
+  // Validate all products and collect productionDays
+  const productProductionDays = new Map<string, number>()
   for (const li of input.lineItems) {
     const productRows = await db
-      .select({ id: productsTable.id, active: productsTable.active })
+      .select({
+        id: productsTable.id,
+        active: productsTable.active,
+        productionDays: productsTable.productionDays,
+      })
       .from(productsTable)
       .where(
         and(eq(productsTable.id, li.productId), eq(productsTable.orgId, orgId)),
       )
       .limit(1)
     if (productRows.length === 0) throw new Error('Product not found')
-    // For existing drafts, allow already-selected inactive products
     if (!productRows[0].active) {
       const existingItems = await db
         .select({ id: lineItemsTable.id })
@@ -544,11 +585,11 @@ export async function updateDraftOrder(
           ),
         )
         .limit(1)
-      // If this product is new (not in existing items), reject
       if (existingItems.length === 0) {
         throw new Error('Cannot add inactive product')
       }
     }
+    productProductionDays.set(li.productId, productRows[0].productionDays)
   }
 
   const now = new Date()
@@ -564,6 +605,8 @@ export async function updateDraftOrder(
       li.quantity,
       li.unitPrice,
     )
+    const productionDays = productProductionDays.get(li.productId) ?? 1
+    const deadline = addWorkingDays(now, productionDays)
 
     const itemId = li.id ?? generateId()
     items.push({
@@ -576,6 +619,8 @@ export async function updateDraftOrder(
       total: pricing.total,
       name: li.name ?? null,
       notes: li.notes ?? null,
+      productionDays,
+      deadline,
       createdAt: now,
       updatedAt: now,
     })

@@ -230,6 +230,47 @@ export function OrdersListPage() {
         )
       },
     },
+    {
+      accessorKey: 'maxDeadline',
+      header: t('deadline'),
+      meta: { label: t('deadline'), mobileRole: 'meta' },
+      cell: ({ row }) => {
+        const date = row.original.maxDeadline
+        if (!date) return <span className="text-muted-foreground">—</span>
+        const deadline = new Date(date)
+        const now = new Date()
+        const isOverdue = deadline < now
+        return (
+          <span className={isOverdue ? 'text-destructive font-medium' : ''}>
+            {deadline.toLocaleDateString('id-ID', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })}
+          </span>
+        )
+      },
+    },
+    {
+      accessorKey: 'createdAt',
+      header: t('createdAt'),
+      meta: { label: t('createdAt'), mobileRole: 'meta' },
+      cell: ({ row }) => {
+        const date = row.original.createdAt
+        if (!date) return <span className="text-muted-foreground">—</span>
+        return (
+          <span>
+            {new Date(date).toLocaleString('id-ID', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </span>
+        )
+      },
+    },
   ]
 
   const labels: DataTableLabels = {
