@@ -246,6 +246,8 @@ export const orderLineItems = pgTable('order_line_items', {
   assetId: text('asset_id').references(() => assets.id, {
     onDelete: 'set null',
   }),
+  productionDays: integer('production_days').notNull().default(1),
+  deadline: timestamp('deadline').notNull().defaultNow(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
