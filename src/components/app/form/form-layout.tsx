@@ -52,6 +52,7 @@ type FormSectionProps = {
   description?: string
   titleHidden?: boolean
   children: React.ReactNode
+  action?: React.ReactNode
 }
 
 export function FormSection({
@@ -59,18 +60,22 @@ export function FormSection({
   description,
   titleHidden,
   children,
+  action,
 }: FormSectionProps) {
   return (
     <FieldSet>
       {!titleHidden && (
-        <FieldLegend>
-          {title}
-          {description && (
-            <p className="text-sm font-normal text-muted-foreground">
-              {description}
-            </p>
-          )}
-        </FieldLegend>
+        <div className="flex justify-between items-center">
+          <FieldLegend>
+            {title}
+            {description && (
+              <p className="text-sm font-normal text-muted-foreground">
+                {description}
+              </p>
+            )}
+          </FieldLegend>
+          {action}
+        </div>
       )}
       {children}
     </FieldSet>

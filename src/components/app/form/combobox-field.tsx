@@ -148,14 +148,11 @@ function ComboboxFieldSingle({
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <InputGroup>
-              <InputGroupText
-                className={cn(
-                  'w-full cursor-default',
-                  !selectedLabel && 'text-muted-foreground',
-                )}
-              >
+              <InputGroupText className={cn('w-full cursor-default pl-3')}>
                 {selectedLabel ? (
-                  <span className="truncate">{selectedLabel}</span>
+                  <span className="truncate text-foreground">
+                    {selectedLabel}
+                  </span>
                 ) : (
                   <span className="text-muted-foreground">{placeholder}</span>
                 )}
