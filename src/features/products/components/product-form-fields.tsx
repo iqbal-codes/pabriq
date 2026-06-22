@@ -145,12 +145,14 @@ export const ProductFormFields = withForm({
                       {t('pricing.noBreakpoints')}
                     </p>
                   ) : (
-                    breakpointsField.state.value.map((_, i) => (
-                      // biome-ignore lint/suspicious/noArrayIndexKey: index is stable key for TanStack Form array
-                      <div key={i} className="flex items-end gap-3">
+                    breakpointsField.state.value.map((bp) => (
+                      <div
+                        key={breakpointsField.state.value.indexOf(bp)}
+                        className="flex items-end gap-3"
+                      >
                         <div className="flex-1">
                           <form.AppField
-                            name={`pricingBreakpoints[${i}].minQuantity`}
+                            name={`pricingBreakpoints[${breakpointsField.state.value.indexOf(bp)}].minQuantity`}
                           >
                             {(field) => (
                               <field.NumberField
@@ -161,7 +163,7 @@ export const ProductFormFields = withForm({
                         </div>
                         <div className="flex-1">
                           <form.AppField
-                            name={`pricingBreakpoints[${i}].unitPrice`}
+                            name={`pricingBreakpoints[${breakpointsField.state.value.indexOf(bp)}].unitPrice`}
                           >
                             {(field) => (
                               <field.NumberField
@@ -174,7 +176,11 @@ export const ProductFormFields = withForm({
                           type="button"
                           variant="ghost"
                           size="icon"
-                          onClick={() => breakpointsField.removeValue(i)}
+                          onClick={() =>
+                            breakpointsField.removeValue(
+                              breakpointsField.state.value.indexOf(bp),
+                            )
+                          }
                           className="mb-0.5"
                         >
                           <Trash2 className="size-4" />

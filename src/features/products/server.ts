@@ -253,9 +253,11 @@ export const calculateProductPriceFn = createServerFn({ method: 'GET' })
 export const updateProductFn = createServerFn({ method: 'POST' })
   .inputValidator((input: Omit<UpdateProductInput, 'orgId'>) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
-    const orgId = await resolveOrgId()
+    const [{ updateProduct }, orgId] = await Promise.all([
+      import('./model'),
+      resolveOrgId(),
+    ])
     try {
-      const { updateProduct } = await import('./model')
       await updateProduct({ ...data, orgId })
       return { ok: true }
     } catch (e) {

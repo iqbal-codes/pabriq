@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState, useSyncExternalStore } from 'react'
 import { Button } from '#/components/ui/button'
 import {
   Dialog,
@@ -110,17 +110,18 @@ function FilterControl({
       return null
   }
 }
+const _mobileMq =
+  typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)') : null
 
 function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false)
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)')
-    setIsMobile(mq.matches)
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
-  return isMobile
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      _mobileMq?.addEventListener('change', onStoreChange)
+      return () => _mobileMq?.removeEventListener('change', onStoreChange)
+    },
+    () => _mobileMq?.matches ?? false,
+    () => false,
+  )
 }
 
 export function DataTableFilterPanel({

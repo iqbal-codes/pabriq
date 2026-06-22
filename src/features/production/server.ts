@@ -347,16 +347,18 @@ export const listTasksByOrderIdFn = createServerFn({ method: 'GET' })
         import('./model'),
       ])
 
-    const rows = await db
-      .select()
-      .from(productionTasks)
-      .where(
-        and(
-          eq(productionTasks.orgId, orgId),
-          eq(productionTasks.orderId, data.orderId),
+    const [rows, allStages] = await Promise.all([
+      db
+        .select()
+        .from(productionTasks)
+        .where(
+          and(
+            eq(productionTasks.orgId, orgId),
+            eq(productionTasks.orderId, data.orderId),
+          ),
         ),
-      )
-    const allStages = await listStages(orgId, undefined)
+      listStages(orgId, undefined),
+    ])
     const stageMap = new Map(allStages.map((s) => [s.id, s]))
 
     return rows.map((t) => ({

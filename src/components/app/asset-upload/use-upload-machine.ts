@@ -41,9 +41,9 @@ export function useUploadMachine(
   } = options
   const [items, setItems] = useState<UploadItem[]>(initialItems)
   const itemsRef = useRef<UploadItem[]>(initialItems)
-  const uploadingRef = useRef(() => new Set<string>())
+  const uploadingRef = useRef(new Set<string>())
   const undoTimeoutsRef = useRef(
-    () => new Map<string, ReturnType<typeof setTimeout>>(),
+    new Map<string, ReturnType<typeof setTimeout>>(),
   )
 
   const setItemsState = useCallback((next: UploadItem[]) => {

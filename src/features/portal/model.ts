@@ -740,7 +740,17 @@ export async function getOrderTasksTimeline(
     )
     .orderBy(asc(taskActivity.createdAt))
 
-  // Build index: taskId → activities
+  // Build indexes: taskId → created activity, taskId → completed activity
+  const createdByTaskId = new Map<string, (typeof activities)[0]>()
+  const completedByTaskId = new Map<string, (typeof activities)[0]>()
+  for (const activity of activities) {
+    if (activity.type === 'created') {
+      createdByTaskId.set(activity.taskId, activity)
+    } else if (activity.type === 'completed') {
+      completedByTaskId.set(activity.taskId, activity)
+    }
+  }
+  // Build index: taskId → all activities (for stage transitions)
   const activitiesByTaskId = new Map<string, typeof activities>()
   for (const activity of activities) {
     const list = activitiesByTaskId.get(activity.taskId) ?? []
@@ -752,7 +762,7 @@ export async function getOrderTasksTimeline(
   for (const task of tasks) {
     const productName = task.context?.productName ?? ''
     const taskActivities = activitiesByTaskId.get(task.id) ?? []
-    const createdActivity = taskActivities.find((a) => a.type === 'created')
+    const createdActivity = createdByTaskId.get(task.id)
     if (createdActivity) {
       events.push({
         id: createdActivity.id,
@@ -827,7 +837,7 @@ export async function getOrderTasksTimeline(
           : undefined,
       })
     }
-    const completedActivity = taskActivities.find((a) => a.type === 'completed')
+    const completedActivity = completedByTaskId.get(task.id)
     if (completedActivity) {
       events.push({
         id: completedActivity.id,

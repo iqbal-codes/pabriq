@@ -355,23 +355,31 @@ export function CreateInvoicePage() {
               <form.AppField name="lineItems" mode="array">
                 {(itemsField) => (
                   <div className="space-y-2">
-                    {itemsField.state.value.map((_, i) => (
-                      // biome-ignore lint/suspicious/noArrayIndexKey: stable order for form array
-                      <div key={i} className="flex items-end gap-2">
+                    {itemsField.state.value.map((item) => (
+                      <div
+                        key={itemsField.state.value.indexOf(item)}
+                        className="flex items-end gap-2"
+                      >
                         <div className="flex-1">
-                          <form.AppField name={`lineItems[${i}].description`}>
+                          <form.AppField
+                            name={`lineItems[${itemsField.state.value.indexOf(item)}].description`}
+                          >
                             {(field) => (
                               <field.TextField label={t('description')} />
                             )}
                           </form.AppField>
                         </div>
                         <div className="w-20">
-                          <form.AppField name={`lineItems[${i}].quantity`}>
+                          <form.AppField
+                            name={`lineItems[${itemsField.state.value.indexOf(item)}].quantity`}
+                          >
                             {(field) => <field.NumberField label={t('qty')} />}
                           </form.AppField>
                         </div>
                         <div className="w-24">
-                          <form.AppField name={`lineItems[${i}].unitPrice`}>
+                          <form.AppField
+                            name={`lineItems[${itemsField.state.value.indexOf(item)}].unitPrice`}
+                          >
                             {(field) => (
                               <field.NumberField label={t('total')} />
                             )}
@@ -381,7 +389,11 @@ export function CreateInvoicePage() {
                           variant="ghost"
                           size="icon"
                           type="button"
-                          onClick={() => itemsField.removeValue(i)}
+                          onClick={() =>
+                            itemsField.removeValue(
+                              itemsField.state.value.indexOf(item),
+                            )
+                          }
                         >
                           <Minus className="size-4" />
                         </Button>

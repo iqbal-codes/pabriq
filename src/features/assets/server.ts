@@ -110,8 +110,8 @@ export const finalizeUpload = createServerFn({ method: 'POST' })
         sizeBytes: number
       }[]
     }> => {
-      const orgId = await resolveOrgId()
-      const [userId, { db }] = await Promise.all([
+      const [orgId, userId, { db }] = await Promise.all([
+        resolveOrgId(),
         resolveUserId(),
         import('#/db/index'),
       ])

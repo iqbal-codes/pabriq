@@ -96,8 +96,10 @@ async function upsertOrgAddress(
 ): Promise<string | null> {
   if (!address.areaId && !address.streetAddress) return null
 
-  const { db } = await import('#/db/index')
-  const { addresses } = await import('#/db/schema')
+  const [{ db }, { addresses }] = await Promise.all([
+    import('#/db/index'),
+    import('#/db/schema'),
+  ])
 
   if (existingAddressId) {
     await db

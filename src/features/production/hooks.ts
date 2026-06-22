@@ -303,6 +303,7 @@ export function useTaskMutations() {
           query.queryKey[0] === 'production' &&
           query.queryKey[1] === 'activities',
       })
+      invalidate()
     },
   })
 

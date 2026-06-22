@@ -18,7 +18,7 @@ export function useDataTableAccumulation<TData>(
   const [displayData, setDisplayData] = useState<TData[]>(data)
   const accumulatedDataRef = useRef<TData[]>([])
   const lastAccumulatedPageRef = useRef(page)
-  const seenIdsRef = useRef(() => new Set<string>())
+  const seenIdsRef = useRef<Set<string>>(new Set())
   const lastDataRef = useRef<TData[]>([])
   const prevIsMobileRef = useRef(isMobile)
   const onPageChangeRef = useRef(onPageChange)
@@ -38,7 +38,6 @@ export function useDataTableAccumulation<TData>(
   useEffect(() => {
     if (!isMobile) {
       accumulatedDataRef.current = data
-      setDisplayData(data)
       lastAccumulatedPageRef.current = page
       seenIdsRef.current = new Set(data.map(getRowId))
       lastDataRef.current = data
@@ -73,7 +72,7 @@ export function useDataTableAccumulation<TData>(
     }
 
     seenIdsRef.current = new Set(accumulatedDataRef.current.map(getRowId))
-    setDisplayData([...accumulatedDataRef.current])
+    setDisplayData(accumulatedDataRef.current)
   }, [isMobile, page, data, getRowId])
 
   // Intersection observer for infinite scroll on mobile

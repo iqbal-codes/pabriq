@@ -15,7 +15,9 @@ const currencyFormatter = new Intl.NumberFormat('id-ID', {
   minimumFractionDigits: 0,
 })
 
-const _dateTimeFormatters = new Map<string, Intl.DateTimeFormat>()
+const _dateTimeFormatters = new Map<string, Intl.DateTimeFormat>([
+  ['en', new Intl.DateTimeFormat('en', { dateStyle: 'long' })],
+])
 function formatEstimatedDate(date: Date, locale: string): string {
   let fmt = _dateTimeFormatters.get(locale)
   if (!fmt) {
@@ -25,7 +27,7 @@ function formatEstimatedDate(date: Date, locale: string): string {
   return fmt.format(date)
 }
 
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import {
   useOrderTimeline,
   usePortalGetInvoiceUploadUrl,
@@ -43,10 +45,11 @@ function EstimatedCompletion({
   locale: string
 }) {
   const t = useTranslations('portal')
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => false,
+    () => true,
+  )
 
   if (!mounted) {
     return (

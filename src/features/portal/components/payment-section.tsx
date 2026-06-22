@@ -1,5 +1,5 @@
 import { Clock, FileText, Upload } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import { StatusBadge } from '#/components/status-badge'
@@ -18,15 +18,10 @@ type Props = {
   invoices: PortalInvoice[]
   onUpload: (invoiceId: string, file: File) => Promise<void>
 }
-
 export function PaymentSection({ invoices, onUpload }: Props) {
   const t = useTranslations('invoices')
   const [uploadingId, setUploadingId] = useState<string | null>(null)
-  const [now, setNow] = useState<Date | null>(null)
-
-  useEffect(() => {
-    setNow(new Date())
-  }, [])
+  const now = new Date()
 
   const visibleInvoices = invoices.filter((inv) => inv.status !== 'void')
   if (visibleInvoices.length === 0) return null

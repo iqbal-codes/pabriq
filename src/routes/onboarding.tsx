@@ -96,18 +96,21 @@ function OnboardingPage() {
       // resolveOrgId() now works because createOrganization added user as member ✅
       if (logoFile && logoFile.size <= MAX_LOGO_BYTES) {
         try {
-          const { uploadUrl, storageKey, assetId } = await getUploadUrl({
-            data: {
-              fileName: logoFile.name,
-              fileType: logoFile.type || 'image/png',
-              fileSize: logoFile.size,
-              ownerType: 'organization',
-              ownerId: result.orgId,
-              usage: 'logo',
-            },
-          })
+          const [{ uploadUrl, storageKey, assetId }, arrayBuffer] =
+            await Promise.all([
+              getUploadUrl({
+                data: {
+                  fileName: logoFile.name,
+                  fileType: logoFile.type || 'image/png',
+                  fileSize: logoFile.size,
+                  ownerType: 'organization',
+                  ownerId: result.orgId,
+                  usage: 'logo',
+                },
+              }),
+              logoFile.arrayBuffer(),
+            ])
 
-          const arrayBuffer = await logoFile.arrayBuffer()
           await fetch(uploadUrl, {
             method: 'PUT',
             headers: { 'Content-Type': logoFile.type || 'image/png' },
