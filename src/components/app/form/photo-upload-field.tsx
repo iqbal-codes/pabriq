@@ -10,7 +10,7 @@ import {
 import { Button } from '#/components/ui/button'
 import type { OwnerType, Usage } from '#/features/assets/model'
 import type { UploadItem } from '#/features/assets/upload-machine'
-import { useFieldContext } from './form-context'
+import { useFieldContext } from './form-context-base'
 import type { FieldProps } from './form-fields-shared'
 import { firstError } from './form-utils'
 

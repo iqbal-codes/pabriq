@@ -17,7 +17,7 @@ import {
   PopoverTrigger,
 } from '#/components/ui/popover'
 import { useSearchAreas } from '#/features/address/hooks'
-import { useFieldContext } from './form-context'
+import { useFieldContext } from './form-context-base'
 import type { AreaSearchFieldProps } from './form-fields-shared'
 import { firstError } from './form-utils'
 

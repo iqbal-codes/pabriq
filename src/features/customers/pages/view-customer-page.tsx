@@ -1,3 +1,4 @@
+import { useParams } from '@tanstack/react-router'
 import { useTranslations } from 'use-intl'
 import { AvatarPhoto } from '#/components/app/avatar-photo'
 import { PageContent } from '#/components/app/page-shell/page-content'
@@ -5,10 +6,9 @@ import { PageHeader } from '#/components/app/page-shell/page-header'
 import { StatusBadge } from '#/components/status-badge'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { useCustomer } from '#/features/customers/hooks'
-import { Route } from '#/routes/_org/customers/$id'
 
 export function ViewCustomerPage() {
-  const { id } = Route.useParams()
+  const { id } = useParams({ from: '/_org/customers/$id/' })
   const customer = useCustomer(id).data
   const t = useTranslations('customers')
   const ct = useTranslations('common')

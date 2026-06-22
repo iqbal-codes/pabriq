@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useRouteContext } from '@tanstack/react-router'
 import { Eye, Package, Pencil } from 'lucide-react'
 import { parseAsInteger, parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
@@ -22,7 +22,6 @@ import { StatusBadge } from '#/components/status-badge'
 import { Button } from '#/components/ui/button'
 import { useProductsList } from '#/features/products/hooks'
 import type { ProductRow } from '#/features/products/server'
-import { Route } from '#/routes/_org/products/index'
 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
   style: 'currency',
@@ -42,7 +41,9 @@ function formatPrice(
 }
 
 export function ProductsListPage() {
-  const ctx = Route.useRouteContext() as { org: { id: string } }
+  const ctx = useRouteContext({ from: '/_org/products/' }) as {
+    org: { id: string }
+  }
   const t = useTranslations('products')
   const dt = useTranslations('dataTable')
   const st = useTranslations('status')

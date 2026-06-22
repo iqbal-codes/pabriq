@@ -37,9 +37,8 @@ export const OrderFormFields = withForm({
   props: {} as {
     customers: CustomerRow[]
     products: ProductRow[]
-    orgId: string
   },
-  render: function Render({ form, customers, products, orgId: _orgId }) {
+  render: function Render({ form, customers, products }) {
     const t = useTranslations('orders')
 
     function handleAddProduct(product: ProductRow, unitPrice: string) {

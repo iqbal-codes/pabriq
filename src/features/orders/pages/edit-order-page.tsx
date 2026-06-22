@@ -1,5 +1,5 @@
 import { useStore } from '@tanstack/react-form'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useParams, useRouteContext } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import { FormRoot, useAppForm } from '#/components/app/form'
@@ -9,11 +9,12 @@ import { useCustomersList } from '#/features/customers/hooks'
 import { OrderFormFields } from '#/features/orders/components/order-form-fields'
 import { useOrder, useUpdateDraftOrder } from '#/features/orders/hooks'
 import { useProductsList } from '#/features/products/hooks'
-import { Route } from '#/routes/_org/orders/$id/edit'
 
 export function EditOrderPage() {
-  const { id } = Route.useParams()
-  const ctx = Route.useRouteContext() as { org: { id: string } }
+  const { id } = useParams({ from: '/_org/orders/$id/edit' })
+  const ctx = useRouteContext({ from: '/_org/orders/$id/edit' }) as {
+    org: { id: string }
+  }
   const navigate = useNavigate()
   const t = useTranslations('orders')
   const ct = useTranslations('common')
@@ -89,7 +90,6 @@ export function EditOrderPage() {
           form={form}
           customers={customers}
           products={products}
-          orgId={ctx.org.id}
         />
       </FormRoot>
     </PageContent>

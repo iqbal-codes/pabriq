@@ -1,5 +1,5 @@
 import { useStore } from '@tanstack/react-form'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useRouteContext } from '@tanstack/react-router'
 import { Copy, Link2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -25,7 +25,6 @@ import {
 import { useCreateDraftOrder } from '#/features/orders/hooks'
 import { useGenerateOrderToken } from '#/features/portal/hooks'
 import { useProductsList } from '#/features/products/hooks'
-import { Route } from '#/routes/_org/orders/new'
 
 const currencyFormatter = new Intl.NumberFormat('en-ID', {
   style: 'currency',
@@ -35,7 +34,9 @@ const currencyFormatter = new Intl.NumberFormat('en-ID', {
 
 export function CreateOrderPage() {
   const navigate = useNavigate()
-  const ctx = Route.useRouteContext() as { org: { id: string } }
+  const ctx = useRouteContext({ from: '/_org/orders/new' }) as {
+    org: { id: string }
+  }
   const t = useTranslations('orders')
   const pt = useTranslations('portal')
   const ct = useTranslations('common')
@@ -134,7 +135,6 @@ export function CreateOrderPage() {
           form={form}
           customers={customers}
           products={products}
-          orgId={ctx.org.id}
         />
       </FormRoot>
 

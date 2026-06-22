@@ -42,7 +42,7 @@ function getAssetKind(mimeType: string): AssetKind {
   return 'file'
 }
 
-export type FinalizeUploadInput = {
+type FinalizeUploadInput = {
   assetId?: string
   draftId?: string
   ownerType: OwnerType
@@ -59,6 +59,14 @@ export type FinalizeUploadInput = {
   variantOriginalSizeBytes: number
 }
 
+type GetUploadUrlInput = {
+  fileName: string
+  fileType: string
+  fileSize: number
+  ownerType: OwnerType
+  ownerId?: string
+  usage: Usage
+}
 export const finalizeUpload = createServerFn({ method: 'POST' })
   .inputValidator((input: unknown): FinalizeUploadInput => {
     if (!input || typeof input !== 'object') {
@@ -217,15 +225,6 @@ export const finalizeUpload = createServerFn({ method: 'POST' })
       }
     },
   )
-
-export type GetUploadUrlInput = {
-  fileName: string
-  fileType: string
-  fileSize: number
-  ownerType: OwnerType
-  ownerId?: string
-  usage: Usage
-}
 
 export const getUploadUrl = createServerFn({ method: 'POST' })
   .inputValidator((input: unknown): GetUploadUrlInput => {

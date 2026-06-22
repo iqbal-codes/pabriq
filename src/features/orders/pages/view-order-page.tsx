@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
+import { Link, useParams, useRouteContext } from '@tanstack/react-router'
 import {
   CheckCircle2,
   Eye,
@@ -60,11 +60,12 @@ import {
   useTaskByLineItemId,
   useTasksByOrderId,
 } from '#/features/production/hooks'
-import { Route } from '#/routes/_org/orders/$id'
 
 export function ViewOrderPage() {
-  const { id } = Route.useParams()
-  const ctx = Route.useRouteContext() as { org: { id: string } }
+  const { id } = useParams({ from: '/_org/orders/$id/' })
+  const ctx = useRouteContext({ from: '/_org/orders/$id/' }) as {
+    org: { id: string }
+  }
   const { data } = useOrder({ id, orgId: ctx.org.id })
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
   const [completeProductionModalOpen, setCompleteProductionModalOpen] =

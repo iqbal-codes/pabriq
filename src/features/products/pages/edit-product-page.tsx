@@ -1,5 +1,5 @@
 import { useStore } from '@tanstack/react-form'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useParams } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import { FormRoot, useAppForm } from '#/components/app/form'
@@ -12,11 +12,11 @@ import {
   useUpdateProduct,
 } from '#/features/products/hooks'
 import { productFormSchema } from '#/lib/validation-schemas'
-import { Route } from '#/routes/_org/products/$id/edit'
 
 export function EditProductPage() {
   const navigate = useNavigate()
-  const product = useProduct(Route.useParams().id).data
+  const { id } = useParams({ from: '/_org/products/$id/edit' })
+  const product = useProduct(id).data
   const breakpoints = useProductBreakpoints(product?.id ?? '')
   const t = useTranslations('products')
   const ct = useTranslations('common')

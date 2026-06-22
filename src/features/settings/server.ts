@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { eq } from 'drizzle-orm'
 
-export type OrgSettings = {
+type OrgSettings = {
   name: string
   slug: string
   phone: string | null
@@ -10,7 +10,6 @@ export type OrgSettings = {
   address: { areaId: string; areaName: string; streetAddress: string } | null
   logoAssetId: string | null
 }
-
 async function resolveOrgId(): Promise<string> {
   const [{ auth }, { db }, { member }] = await Promise.all([
     import('#/lib/auth'),

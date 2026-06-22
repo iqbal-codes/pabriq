@@ -15,41 +15,6 @@ export type Usage =
   | 'payment_proof'
 export type AssetKind = 'image' | 'video' | 'file'
 export type VariantKey = 'preview' | 'full' | 'original'
-export type AssetStatus = 'pending' | 'active' | 'deleted'
-
-export interface Asset {
-  id: string
-  orgId: string
-  ownerType: OwnerType
-  ownerId: string | null
-  draftId: string | null
-  usage: Usage
-  assetKind: AssetKind
-  originalFilename: string
-  mimeType: string
-  sizeBytes: number
-  uploadedByUserId: string
-  status: AssetStatus
-  checksumSha256: string | null
-  imageWidth: number | null
-  imageHeight: number | null
-  videoDurationSeconds: number | null
-  deletedAt: Date | null
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface AssetVariant {
-  id: string
-  assetId: string
-  variantKey: VariantKey
-  storageKey: string
-  mimeType: string
-  sizeBytes: number
-  width: number | null
-  height: number | null
-  createdAt: Date
-}
 
 export const IMAGE_MIME_TYPES = [
   'image/png',

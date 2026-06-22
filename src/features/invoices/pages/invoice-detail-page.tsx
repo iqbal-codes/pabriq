@@ -1,3 +1,4 @@
+import { useParams } from '@tanstack/react-router'
 import {
   Banknote,
   CheckCircle2,
@@ -60,7 +61,6 @@ import {
   useRejectPayment,
   useVoidInvoice,
 } from '#/features/invoices/hooks'
-import { Route } from '#/routes/_org/invoices/$id/index'
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr)
@@ -437,7 +437,7 @@ function InvoiceStatusTimeline({
 }
 
 export function InvoiceDetailPage() {
-  const { id } = Route.useParams()
+  const { id } = useParams({ from: '/_org/invoices/$id/' })
   const t = useTranslations('invoices')
   const st = useTranslations('status')
 

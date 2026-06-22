@@ -32,11 +32,6 @@ vi.mock('#/features/products/hooks', () => ({
   }),
 }))
 
-vi.mock('#/routes/_org/products/$id/index', () => ({
-  Route: {
-    useParams: () => ({ id: 'product-1' }),
-  },
-}))
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({
@@ -53,6 +48,7 @@ vi.mock('@tanstack/react-router', () => ({
     </a>
   ),
   useNavigate: () => vi.fn(),
+  useParams: () => ({ id: 'product-1' }),
 }))
 
 function TestWrapper() {

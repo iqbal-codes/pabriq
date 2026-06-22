@@ -1,10 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
 
-export type DataTableResult<TData> = {
-  rows: TData[]
-  totalRows: number
-}
-
 export type AppColumnMeta = {
   align?: 'start' | 'center' | 'end'
   cellClassName?: string
@@ -133,16 +128,16 @@ type RadioChipsFilterDef = {
   options: FilterOption[]
 }
 
+type DataTableFilterCustomContext = {
+  value: FilterValue
+  onChange: (value: FilterValue) => void
+}
+
 type CustomFilterDef = {
   id: string
   label: string
   type: 'custom'
   render: (ctx: DataTableFilterCustomContext) => React.ReactNode
-}
-
-export type DataTableFilterCustomContext = {
-  value: FilterValue
-  onChange: (value: FilterValue) => void
 }
 
 export type DataTableFilterValues = Record<string, FilterValue>

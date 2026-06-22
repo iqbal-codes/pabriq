@@ -30,12 +30,7 @@ type DateRangeProps = {
 
 type DataTableFilterDateProps = DateSingleProps | DateRangeProps
 
-function SingleDateFilter({
-  value,
-  onChange,
-  placeholder,
-  mode: _m,
-}: DateSingleProps) {
+function SingleDateFilter({ value, onChange, placeholder }: DateSingleProps) {
   const date = useMemo(
     () => (value ? new Date(`${value}T00:00:00`) : undefined),
     [value],
@@ -77,12 +72,7 @@ function SingleDateFilter({
   )
 }
 
-function RangeDateFilter({
-  value,
-  onChange,
-  placeholder,
-  mode: _m,
-}: DateRangeProps) {
+function RangeDateFilter({ value, onChange, placeholder }: DateRangeProps) {
   const range = useMemo(() => {
     const from = value.from ? new Date(`${value.from}T00:00:00`) : undefined
     const to = value.to ? new Date(`${value.to}T00:00:00`) : undefined

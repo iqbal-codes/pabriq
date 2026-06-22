@@ -3,7 +3,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from '#/components/ui/input-group'
-import { useFieldContext } from './form-context'
+import { useFieldContext } from './form-context-base'
 import type { FieldProps, NumberFieldCallbacks } from './form-fields-shared'
 import { firstError, formatPhone, stripNonDigits } from './form-utils'
 

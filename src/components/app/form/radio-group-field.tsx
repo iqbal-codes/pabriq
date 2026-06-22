@@ -1,7 +1,7 @@
 import { RadioGroup as RadioGroupPrimitive } from 'radix-ui'
 import { RadioGroupItem } from '#/components/ui/radio-group'
 import { cn } from '#/lib/utils'
-import { useFieldContext } from './form-context'
+import { useFieldContext } from './form-context-base'
 import type { FieldProps, SelectOption } from './form-fields-shared'
 import { firstError } from './form-utils'
 

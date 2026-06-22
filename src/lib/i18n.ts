@@ -1,6 +1,5 @@
-import { defaultLocale, type Locale, supportedLocales } from '#/messages'
+import { defaultLocale, supportedLocales } from '#/messages'
 
-export type { Locale }
 export { defaultLocale, supportedLocales }
 
 export const LOCALE_KEY = 'locale'

@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useRouteContext } from '@tanstack/react-router'
 import { Eye, Printer } from 'lucide-react'
 import { parseAsInteger, parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
@@ -16,7 +16,6 @@ import {
 } from '#/components/ui/tooltip'
 import { useInvoicesList } from '#/features/invoices/hooks'
 import type { InvoiceRow } from '#/features/invoices/model'
-import { Route } from '#/routes/_org/invoices/index'
 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
   style: 'currency',
@@ -25,7 +24,9 @@ const currencyFormatter = new Intl.NumberFormat('id-ID', {
 })
 
 export function InvoiceListPage() {
-  const ctx = Route.useRouteContext() as { org: { id: string } }
+  const ctx = useRouteContext({ from: '/_org/invoices/' }) as {
+    org: { id: string }
+  }
   const t = useTranslations('invoices')
   const dt = useTranslations('dataTable')
   const [search] = useQueryState('q', parseAsString.withDefault(''))

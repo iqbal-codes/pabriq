@@ -17,7 +17,7 @@ import type { AssetKind, OwnerType, Usage } from '#/features/assets/model'
 import type { AssetMetadata } from '#/features/assets/server'
 import { getAssetsMetadata } from '#/features/assets/server'
 import type { UploadItem } from '#/features/assets/upload-machine'
-import { useFieldContext } from './form-context'
+import { useFieldContext } from './form-context-base'
 import type { FieldProps } from './form-fields-shared'
 import { firstError } from './form-utils'
 

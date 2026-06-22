@@ -58,18 +58,18 @@ Pabriq gives MTO businesses a single platform to manage **orders from customer i
 - Organization-based multi-tenancy with active-organization selection
 - Invitation flow (accept invitation, signup, login)
 - Tenant onboarding with logo and profile setup
-- Role-based access: Owner, Admin
+- Role-based access: Owner, Admin, Member, Operator
 - Separate operator auth with temporary password on first login
 - Device pairing with PIN session (for shop floor stations or shared terminals)
 
 ### Orders
 
-- Full order lifecycle: draft → pending → approved → production → fulfilled → completed / cancelled / rejected
+- Full order lifecycle: draft → pending → approved → production → in_delivery → completed / cancelled / rejected
 - Admin-created orders or customer-submitted drafts via secure token
 - Draft order: admin creates skeleton, customer completes (adds specs, uploads designs, provides shipping)
 - Order approval with promised date, payment type (partial/full), down payment amount
 - Order rejection with reason logging
-- Order start: mark initial invoice paid, spawn production tasks per line item
+- Order approval: create down payment invoice and spawn production tasks per line item
 - Order fulfillment: add shipping cost, generate final invoice
 - Order completion with receipt number
 - Price preview with quantity-based pricing tiers
@@ -79,10 +79,10 @@ Pabriq gives MTO businesses a single platform to manage **orders from customer i
 ### Public Customer Portal
 
 - Customer-facing order tracking page with status timeline and progress checkpoints
-- Payment card with gateway integration (virtual account, QRIS, payment URL)
+- Payment card with gateway integration (virtual account, QRIS, retail outlet)
 - Bank transfer instruction display
 - Draft completion form: custom specs, design file uploads, shipping address, courier preference
-- Views for: in-progress, pending-review, cancelled, completed
+- Views for: in-progress, pending-review, rejected, completed
 - WhatsApp or similar contact button
 
 ### Customers
@@ -116,7 +116,7 @@ Pabriq gives MTO businesses a single platform to manage **orders from customer i
 
 - Invoice list and detail views
 - Partial (down payment) or full invoice
-- Mark as paid/unpaid with payment proof upload
+- Mark as paid, partially paid, void, or overdue with payment proof upload
 - PDF generation and download
 - Invoice analytics
 - Payment gateway integration (virtual account, QRIS, e-wallet, retail outlet)
@@ -136,11 +136,10 @@ Pabriq gives MTO businesses a single platform to manage **orders from customer i
 - Configurable workflow stages (name, color, order, approval gates, privacy, admin-only)
 - Stage requirement builder (file upload, text, number, dropdown, checkbox, date)
 - Workflow templates: standard production, custom job, simple assembly
-- Task board with drag-and-drop columns
+- Task board with column-based task view and button-based stage transitions
 - Task cards: product, quantity, customer, priority, promised date
 - Stage advancement with approval gates
 - Approve/reject task moves
-- Move to backlog or done
 - Task detail modal with attachments and stage history
 - Auto-archive tasks when order cancelled
 - Order approval spawns tasks per line item in first stage
@@ -243,18 +242,18 @@ Pabriq gives MTO businesses a single platform to manage **orders from customer i
 
 ## Permission Matrix
 
-| Resource          | Owner | Admin | Operator | Customer |
-| ----------------- | :---: | :---: | :------: | :------: |
-| Orders            | CRUD  |  CRU  |    R     | R (own)  |
-| Workflow Config   | CRUD  |  CRU  |    —     |    —     |
-| Tasks             | CRUD  |  CRU  |    RU    |    —     |
-| Customers         | CRUD  |  CRU  |    R     |    —     |
-| Products/Services | CRUD  |  CRU  |    R     |    —     |
-| Invoices/Billing  | CRUD  |  CRU  |    —     | R (own)  |
-| Team Members      | CRUD  |  RU   |    —     |    —     |
-| Tenant Settings   | CRUD  |  RU   |    —     |    —     |
-| Assets            | CRUD  |  CRU  |    R     |    —     |
-| Devices           | CRUD  |  CRU  |    R     |    —     |
+| Resource          | Owner | Admin | Member | Operator | Customer |
+| ----------------- | :---: | :---: | :----: | :------: | :------: |
+| Orders            | CRUD  |  CRU  |  CRU   |    R     | R (own)  |
+| Workflow Config   | CRUD  |  CRU  |   R    |    —     |    —     |
+| Tasks             | CRUD  |  CRU  |  RU    |    RU    |    —     |
+| Customers         | CRUD  |  CRU  |  CR    |    R     |    —     |
+| Products/Services | CRUD  |  CRU  |   R    |    R     |    —     |
+| Invoices/Billing  | CRUD  |  CRU  |   R    |    —     | R (own)  |
+| Team Members      | CRUD  |  RU   |   —    |    —     |    —     |
+| Tenant Settings   | CRUD  |  RU   |   —    |    —     |    —     |
+| Assets            | CRUD  |  CRU  |   R    |    R     |    —     |
+| Devices           | CRUD  |  CRU  |   —    |    R     |    —     |
 
 > Customers access via token-based public portal, no persistent login. Operators use a separate auth flow with temporary passwords.
 

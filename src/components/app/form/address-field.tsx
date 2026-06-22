@@ -25,7 +25,7 @@ import { Textarea } from '#/components/ui/textarea'
 import { useSearchAreas } from '#/features/address/hooks'
 import type { BiteshipArea } from '#/features/address/model'
 import { cn } from '#/lib/utils'
-import { useFieldContext } from './form-context'
+import { useFieldContext } from './form-context-base'
 import type { FieldProps } from './form-fields-shared'
 import { firstError } from './form-utils'
 

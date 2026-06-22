@@ -60,8 +60,3 @@ export interface InvoicePdfData {
     instructions: string | null
   } | null
 }
-
-export interface DocumentAuthResult {
-  orgId: string
-  userId: string
-}

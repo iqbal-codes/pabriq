@@ -1,10 +1,10 @@
+import { useParams } from '@tanstack/react-router'
 import { useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { StatusBadge } from '#/components/status-badge'
 import { useProduct, useProductBreakpoints } from '#/features/products/hooks'
-import { Route } from '#/routes/_org/products/$id/index'
 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
   style: 'currency',
@@ -13,7 +13,7 @@ const currencyFormatter = new Intl.NumberFormat('id-ID', {
 })
 
 export function ViewProductPage() {
-  const { id } = Route.useParams()
+  const { id } = useParams({ from: '/_org/products/$id/' })
   const product = useProduct(id).data
   const breakpoints = useProductBreakpoints(id).data ?? []
   const t = useTranslations('products')

@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useRouteContext } from '@tanstack/react-router'
 import { Eye, Pencil, Users } from 'lucide-react'
 import { parseAsInteger, parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
@@ -22,10 +22,11 @@ import { StatusBadge } from '#/components/status-badge'
 import { Button } from '#/components/ui/button'
 import { useCustomersList } from '#/features/customers/hooks'
 import type { CustomerRow } from '#/features/customers/model'
-import { Route } from '#/routes/_org/customers/index'
 
 export function CustomersListPage() {
-  const ctx = Route.useRouteContext() as { org: { id: string } }
+  const ctx = useRouteContext({ from: '/_org/customers/' }) as {
+    org: { id: string }
+  }
   const t = useTranslations('customers')
   const dt = useTranslations('dataTable')
   const st = useTranslations('status')

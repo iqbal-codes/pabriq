@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useRouteContext } from '@tanstack/react-router'
 import { Eye, Link2, Pencil, ShoppingCart } from 'lucide-react'
 import { parseAsInteger, parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
@@ -24,7 +24,6 @@ import { Button } from '#/components/ui/button'
 import { useOrdersList } from '#/features/orders/hooks'
 import type { OrderRow } from '#/features/orders/model'
 import { generateOrderTokenFn } from '#/features/portal/server'
-import { Route } from '#/routes/_org/orders/index'
 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
   style: 'currency',
@@ -33,7 +32,9 @@ const currencyFormatter = new Intl.NumberFormat('id-ID', {
 })
 
 export function OrdersListPage() {
-  const ctx = Route.useRouteContext() as { org: { id: string } }
+  const ctx = useRouteContext({ from: '/_org/orders/' }) as {
+    org: { id: string }
+  }
   const t = useTranslations('orders')
   const dt = useTranslations('dataTable')
   const st = useTranslations('status')

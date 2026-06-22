@@ -1,5 +1,5 @@
 import { Input } from '#/components/ui/input'
-import { useFieldContext } from './form-context'
+import { useFieldContext } from './form-context-base'
 import type { FieldProps, NumberFieldCallbacks } from './form-fields-shared'
 import { firstError, formatNumber, stripNumberFormatting } from './form-utils'
 

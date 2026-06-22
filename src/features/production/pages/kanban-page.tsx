@@ -1,3 +1,4 @@
+import { useRouteContext } from '@tanstack/react-router'
 import { parseAsString, useQueryState } from 'nuqs'
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'use-intl'
@@ -6,7 +7,6 @@ import { NativeSelect } from '#/components/ui/native-select'
 import { Spinner } from '#/components/ui/spinner'
 import type { Role } from '#/features/permissions/model'
 import { canApproveProductionTask } from '#/features/permissions/model'
-import { Route } from '#/routes/_org/production/index'
 import { KanbanBoard } from '../components/kanban-board'
 import { ReviewModal } from '../components/review-modal'
 import { TaskDetailModal } from '../components/task-detail-modal'
@@ -32,7 +32,7 @@ export function KanbanPage({ orgId }: Props) {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [reviewTaskId, setReviewTaskId] = useState<string | null>(null)
 
-  const ctx = Route.useRouteContext() as {
+  const ctx = useRouteContext({ from: '/_org/production/' }) as {
     org: { id: string; role?: string }
   }
   const role = ctx.org.role as Role

@@ -11,7 +11,7 @@ import type {
   PaymentMethod,
 } from './model'
 
-export type OrderForInvoice = {
+type OrderForInvoice = {
   order: {
     id: string
     orderNumber: string | null
@@ -42,7 +42,6 @@ export type OrderForInvoice = {
   remainingPercentage: number
   remainingAmount: number
 }
-
 type MutationResult = { ok: true } | { ok: false; error: string }
 
 async function resolveOrgId(): Promise<string> {

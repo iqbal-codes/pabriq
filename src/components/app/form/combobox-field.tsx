@@ -27,7 +27,7 @@ import {
 import { Spinner } from '#/components/ui/spinner'
 import { cn } from '#/lib/utils'
 
-import { useFieldContext } from './form-context'
+import { useFieldContext } from './form-context-base'
 import type { ComboboxFieldProps, ComboboxOption } from './form-fields-shared'
 import { firstError } from './form-utils'
 

@@ -5,7 +5,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '#/components/ui/select'
-import { useFieldContext } from './form-context'
+import { useFieldContext } from './form-context-base'
 import type { FieldProps, SelectOption } from './form-fields-shared'
 import { firstError } from './form-utils'
 

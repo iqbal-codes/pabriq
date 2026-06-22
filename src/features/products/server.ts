@@ -22,10 +22,9 @@ import type {
   UpdateProductInput,
 } from './model'
 
-export type { ListProductsResult, ProductRow } from './model'
+export type { ProductRow } from './model'
 
-export type MutationResult = { ok: true } | { ok: false; error: string }
-
+type MutationResult = { ok: true } | { ok: false; error: string }
 async function resolveOrgId(): Promise<string> {
   const [{ auth }, { db }, { member }, { eq: eq2 }] = await Promise.all([
     import('#/lib/auth'),

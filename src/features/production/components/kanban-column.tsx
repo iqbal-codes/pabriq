@@ -4,8 +4,7 @@ import { Card, CardContent, CardHeader } from '#/components/ui/card'
 import type { BoardTask } from '../model'
 import { KanbanTaskCard } from './kanban-task-card'
 
-export type ColumnVariant = 'queue' | 'preProduction' | 'production' | 'done'
-
+type ColumnVariant = 'queue' | 'preProduction' | 'production' | 'done'
 const variantStyles: Record<
   ColumnVariant,
   { headerBorder: string; headerBg: string; badgeBg: string }

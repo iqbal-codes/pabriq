@@ -1,5 +1,5 @@
 import { useStore } from '@tanstack/react-form'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useParams } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import { FormRoot, useAppForm } from '#/components/app/form'
@@ -8,11 +8,11 @@ import { PageHeader } from '#/components/app/page-shell/page-header'
 import { CustomerFormFields } from '#/features/customers/components/customer-form-fields'
 import { useCustomer, useUpdateCustomer } from '#/features/customers/hooks'
 import { customerFormSchema } from '#/lib/validation-schemas'
-import { Route } from '#/routes/_org/customers/$id/edit'
 
 export function EditCustomerPage() {
   const navigate = useNavigate()
-  const customer = useCustomer(Route.useParams().id).data
+  const { id } = useParams({ from: '/_org/customers/$id/edit' })
+  const customer = useCustomer(id).data
   const t = useTranslations('customers')
   const ct = useTranslations('common')
   const updateCustomer = useUpdateCustomer()

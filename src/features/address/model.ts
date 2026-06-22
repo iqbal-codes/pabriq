@@ -8,16 +8,6 @@ export type BiteshipArea = {
   area: string
 }
 
-export type Address = {
-  id: string
-  orgId: string
-  areaId: string | null
-  areaName: string | null
-  streetAddress: string | null
-  isDefault: boolean
-  createdAt: Date
-  updatedAt: Date
-}
 
 export type AddressInput = {
   orgId: string
