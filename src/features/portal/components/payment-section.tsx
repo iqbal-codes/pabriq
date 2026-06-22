@@ -98,6 +98,7 @@ export function PaymentSection({ invoices, onUpload }: Props) {
                   <input
                     type="file"
                     id={`proof-${inv.id}`}
+                    aria-label={t('uploadProof')}
                     className="hidden"
                     accept="image/*,application/pdf"
                     onChange={(e) => {

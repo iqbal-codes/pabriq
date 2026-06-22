@@ -47,9 +47,10 @@ export function PaymentAlertBanner({
     description = `${t('paymentUnpaid', { count: unpaid.length, amount: currencyFormatter.format(totalUnpaid) })} • ${overdueCount} ${t('paymentOverdue').toLowerCase()}`
   } else if (hasDueSoon) {
     const soonDays = Math.min(
-      ...unpaid
-        .filter((inv) => daysFromDue(inv.dueDate) >= 0)
-        .map((inv) => daysFromDue(inv.dueDate)),
+      ...unpaid.flatMap((inv) => {
+        const d = daysFromDue(inv.dueDate)
+        return d >= 0 ? [d] : []
+      }),
     )
     description = `${t('paymentUnpaid', { count: unpaid.length, amount: currencyFormatter.format(totalUnpaid) })} • ${t('paymentDueSoon', { days: soonDays })}`
   } else {

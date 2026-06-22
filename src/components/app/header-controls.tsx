@@ -14,6 +14,12 @@ import {
 } from '#/components/ui/dropdown-menu'
 import { LOCALE_KEY } from '#/lib/i18n'
 
+function switchLocale(targetLocale: string) {
+  localStorage.setItem(LOCALE_KEY, targetLocale)
+  Cookies.set(LOCALE_KEY, targetLocale, { path: '/', expires: 365 })
+  window.location.reload()
+}
+
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
 
@@ -33,12 +39,6 @@ export function LanguageToggle() {
   const t = useTranslations('app')
   const locale = useLocale()
 
-  const switchTo = (targetLocale: string) => {
-    localStorage.setItem(LOCALE_KEY, targetLocale)
-    Cookies.set(LOCALE_KEY, targetLocale, { path: '/', expires: 365 })
-    window.location.reload()
-  }
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -47,7 +47,7 @@ export function LanguageToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => switchTo('en')}>
+        <DropdownMenuItem onClick={() => switchLocale('en')}>
           {locale === 'en' ? (
             <CheckIcon className="size-4" />
           ) : (
@@ -55,7 +55,7 @@ export function LanguageToggle() {
           )}
           {t('english')}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => switchTo('id')}>
+        <DropdownMenuItem onClick={() => switchLocale('id')}>
           {locale === 'id' ? (
             <CheckIcon className="size-4" />
           ) : (

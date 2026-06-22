@@ -6,6 +6,4 @@ export {
   getMaxBytes,
 } from './r2-adapter'
 export { createPortalR2UploaderAdapter } from './r2-portal-adapter'
-export type {
-  UploaderAdapter,
-} from './types'
+export type { UploaderAdapter } from './types'

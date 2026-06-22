@@ -97,16 +97,18 @@ function RequirementResponses({
       )}
       {hasValues && (
         <div className="space-y-1">
-          {responses
-            .flatMap((r) => (r.value ? [r] : []))
-            .map((r) => (
-              <div key={r.requirementName} className="text-xs">
-                <span className="font-medium text-muted-foreground">
-                  {r.requirementName}:
-                </span>{' '}
-                <span className="text-foreground">{r.value}</span>
-              </div>
-            ))}
+          {responses.flatMap((r) =>
+            r.value
+              ? [
+                  <div key={r.requirementName} className="text-xs">
+                    <span className="font-medium text-muted-foreground">
+                      {r.requirementName}:
+                    </span>{' '}
+                    <span className="text-foreground">{r.value}</span>
+                  </div>,
+                ]
+              : [],
+          )}
         </div>
       )}
     </div>

@@ -90,7 +90,7 @@ function AssetFileRow({
   const isVideo = metadata.assetKind === 'video'
   const isPreviewable = isImage || isVideo
   const ext = getExtension(metadata.originalFilename)
-  const signedUrlQuery = useQuery({
+  const { data: signedUrlData } = useQuery({
     queryKey: ['asset-signed-url', metadata.id, 'original'],
     queryFn: () =>
       getAssetSignedUrl({
@@ -138,10 +138,10 @@ function AssetFileRow({
           )}
         </div>
       </div>
-      {!isPreviewable && signedUrlQuery.data?.url && (
+      {!isPreviewable && signedUrlData?.url && (
         <Button variant="ghost" size="icon-sm" asChild className="shrink-0">
           <a
-            href={signedUrlQuery.data.url}
+            href={signedUrlData.url}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Download"
@@ -166,7 +166,7 @@ function AssetFileGridCard({
   const isPreviewable = isImage || isVideo
   const ext = getExtension(metadata.originalFilename)
 
-  const signedUrlQuery = useQuery({
+  const { data: signedUrlData } = useQuery({
     queryKey: ['asset-signed-url', metadata.id, 'original'],
     queryFn: () =>
       getAssetSignedUrl({
@@ -204,7 +204,7 @@ function AssetFileGridCard({
           </p>
         )}
       </div>
-      {!isPreviewable && signedUrlQuery.data?.url && (
+      {!isPreviewable && signedUrlData?.url && (
         <Button
           variant="ghost"
           size="icon-sm"
@@ -212,7 +212,7 @@ function AssetFileGridCard({
           className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur"
         >
           <a
-            href={signedUrlQuery.data.url}
+            href={signedUrlData.url}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={metadata.originalFilename}
@@ -240,7 +240,7 @@ function AssetFileInternal({
   layout = 'list',
   className,
 }: AssetFileProps & { layout?: 'list' | 'grid' }) {
-  const metaQuery = useQuery({
+  const { data: metaData } = useQuery({
     queryKey: ['asset-file-meta', assetId],
     queryFn: () => getAssetsMetadata({ data: { assetIds: [assetId] } }),
     enabled: !metadata,
@@ -248,7 +248,7 @@ function AssetFileInternal({
     staleTime: 60 * 1000,
   })
 
-  const meta = metadata ?? metaQuery.data
+  const meta = metadata ?? metaData
 
   if (!meta) return null
 

@@ -1,5 +1,5 @@
 import { useDebouncedCallback } from '@tanstack/react-pacer'
-import { useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
 import { Input } from '#/components/ui/input'
 
 type DataTableSearchProps = {
@@ -15,7 +15,6 @@ export function DataTableSearch({
   onChange,
   debounceMs = 300,
 }: DataTableSearchProps) {
-  const [draft, setDraft] = useState(value)
   const prevValue = useRef(value)
 
   const debouncedOnChange = useDebouncedCallback(
@@ -25,26 +24,25 @@ export function DataTableSearch({
     { wait: debounceMs },
   )
 
-  useEffect(() => {
-    if (value !== prevValue.current) {
-      prevValue.current = value
-      setDraft(value)
-    }
-  }, [value])
-
   return (
     <Input
+      key={value}
       placeholder={placeholder}
-      value={draft}
+      defaultValue={value}
       onChange={(e) => {
-        setDraft(e.target.value)
         debouncedOnChange(e.target.value)
       }}
-      onBlur={() => {
-        if (draft !== value) onChange(draft)
+      onBlur={(e) => {
+        if (e.target.value !== prevValue.current) {
+          prevValue.current = e.target.value
+          onChange(e.target.value)
+        }
       }}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' && draft !== value) onChange(draft)
+        if (e.key === 'Enter') {
+          prevValue.current = e.currentTarget.value
+          onChange(e.currentTarget.value)
+        }
       }}
     />
   )

@@ -263,8 +263,10 @@ export const getUploadUrl = createServerFn({ method: 'POST' })
     async ({
       data,
     }): Promise<{ uploadUrl: string; storageKey: string; assetId: string }> => {
-      const orgId = await resolveOrgId()
-      const { buildUploadUrl } = await import('./model')
+      const [orgId, { buildUploadUrl }] = await Promise.all([
+        resolveOrgId(),
+        import('./model'),
+      ])
       return buildUploadUrl(
         orgId,
         data.ownerType,
@@ -335,8 +337,10 @@ export type AssetMetadata = {
 export const getAssetsMetadata = createServerFn({ method: 'GET' })
   .inputValidator((input: { assetIds: string[] }) => input)
   .handler(async ({ data }): Promise<AssetMetadata[]> => {
-    const orgId = await resolveOrgId()
-    const { db } = await import('#/db/index')
+    const [orgId, { db }] = await Promise.all([
+      resolveOrgId(),
+      import('#/db/index'),
+    ])
 
     const rows = await db
       .select({
@@ -362,8 +366,10 @@ export const deleteAsset = createServerFn({ method: 'POST' })
   .inputValidator((input: { assetId: string }) => input)
   .handler(
     async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
-      const orgId = await resolveOrgId()
-      const { db } = await import('#/db/index')
+      const [orgId, { db }] = await Promise.all([
+        resolveOrgId(),
+        import('#/db/index'),
+      ])
 
       const updated = await db
         .update(assets)

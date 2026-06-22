@@ -32,7 +32,6 @@ vi.mock('#/features/products/hooks', () => ({
   }),
 }))
 
-
 vi.mock('@tanstack/react-router', () => ({
   Link: ({
     to,

@@ -97,6 +97,7 @@ function Button({
       className={cn(buttonVariants({ variant, size, className }))}
       disabled={isDisabled}
       aria-busy={isLoading || undefined}
+      type="button"
       {...props}
     >
       {isLoading && loadingPosition === "left" && <Spinner />}

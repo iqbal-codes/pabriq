@@ -152,8 +152,10 @@ export type InsertAssetResult = {
 export async function insertAsset(
   input: InsertAssetInput,
 ): Promise<InsertAssetResult> {
-  const { db } = await import('#/db/index')
-  const { assets, assetVariants } = await import('#/db/schema')
+  const [{ db }, { assets, assetVariants }] = await Promise.all([
+    import('#/db/index'),
+    import('#/db/schema'),
+  ])
 
   const assetKind = getAssetKind(input.mimeType)
   const now = new Date()

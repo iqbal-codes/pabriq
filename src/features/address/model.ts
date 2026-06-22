@@ -8,7 +8,6 @@ export type BiteshipArea = {
   area: string
 }
 
-
 export type AddressInput = {
   orgId: string
   areaId?: string

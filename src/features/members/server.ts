@@ -48,8 +48,10 @@ async function resolveOrgId(): Promise<string> {
 
 export const listMembersFn = createServerFn({ method: 'GET' }).handler(
   async (): Promise<MemberItem[]> => {
-    const orgId = await resolveOrgId()
-    const { auth } = await import('#/lib/auth')
+    const [orgId, { auth }] = await Promise.all([
+      resolveOrgId(),
+      import('#/lib/auth'),
+    ])
     const headers = getRequestHeaders()
 
     const data = await auth.api.listMembers({
@@ -78,8 +80,10 @@ export const updateMemberRoleFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { memberId: string; role: string }) => input)
   .handler(
     async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
-      const orgId = await resolveOrgId()
-      const { auth } = await import('#/lib/auth')
+      const [orgId, { auth }] = await Promise.all([
+        resolveOrgId(),
+        import('#/lib/auth'),
+      ])
       const headers = getRequestHeaders()
 
       try {
@@ -103,8 +107,10 @@ export const removeMemberFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { memberIdOrEmail: string }) => input)
   .handler(
     async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
-      const orgId = await resolveOrgId()
-      const { auth } = await import('#/lib/auth')
+      const [orgId, { auth }] = await Promise.all([
+        resolveOrgId(),
+        import('#/lib/auth'),
+      ])
       const headers = getRequestHeaders()
 
       try {
@@ -131,10 +137,11 @@ export const inviteMemberFn = createServerFn({ method: 'POST' })
     }): Promise<
       { ok: true; invitationId: string } | { ok: false; error: string }
     > => {
-      const orgId = await resolveOrgId()
-      const { auth } = await import('#/lib/auth')
+      const [orgId, { auth }] = await Promise.all([
+        resolveOrgId(),
+        import('#/lib/auth'),
+      ])
       const headers = getRequestHeaders()
-
       try {
         const invitation = await auth.api.createInvitation({
           headers,
@@ -154,8 +161,10 @@ export const inviteMemberFn = createServerFn({ method: 'POST' })
 
 export const listInvitationsFn = createServerFn({ method: 'GET' }).handler(
   async (): Promise<InvitationItem[]> => {
-    const orgId = await resolveOrgId()
-    const { auth } = await import('#/lib/auth')
+    const [orgId, { auth }] = await Promise.all([
+      resolveOrgId(),
+      import('#/lib/auth'),
+    ])
     const headers = getRequestHeaders()
 
     const data = await auth.api.listInvitations({

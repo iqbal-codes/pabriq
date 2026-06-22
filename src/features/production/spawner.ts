@@ -98,8 +98,10 @@ export async function spawnTasksForApprovedOrder(
   }
 
   await db.transaction(async (tx) => {
-    await tx.insert(tasksTable).values(taskValues)
-    await tx.insert(activityTable).values(activityValues)
+    await Promise.all([
+      tx.insert(tasksTable).values(taskValues),
+      tx.insert(activityTable).values(activityValues),
+    ])
   })
 }
 
@@ -173,8 +175,10 @@ export async function spawnProductionTasks(
   }
 
   await db.transaction(async (tx) => {
-    await tx.insert(tasksTable).values(taskValues)
-    await tx.insert(activityTable).values(activityValues)
+    await Promise.all([
+      tx.insert(tasksTable).values(taskValues),
+      tx.insert(activityTable).values(activityValues),
+    ])
   })
 }
 

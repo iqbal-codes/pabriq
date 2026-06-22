@@ -25,6 +25,24 @@ import {
 } from '../hooks'
 import { RequirementForm } from './requirement-form'
 
+const systemActivityIconMap: Record<string, React.ReactNode> = {
+  stage_transition: (
+    <ArrowRight className="size-3.5 text-brand-accent shrink-0 mt-0.5" />
+  ),
+  advancement_requested: (
+    <Clock className="size-3.5 text-warning shrink-0 mt-0.5" />
+  ),
+  approved: <CheckCircle2 className="size-3.5 text-success shrink-0 mt-0.5" />,
+  rejected: <XCircle className="size-3.5 text-error shrink-0 mt-0.5" />,
+}
+
+const userActivityIconMap: Record<string, React.ReactNode> = {
+  advancement_requested: (
+    <Clock className="size-3.5 text-warning shrink-0 mt-0.5" />
+  ),
+  approved: <CheckCircle2 className="size-3.5 text-success shrink-0 mt-0.5" />,
+  rejected: <XCircle className="size-3.5 text-error shrink-0 mt-0.5" />,
+}
 function getInitials(name: string) {
   return name
     .split(' ')
@@ -359,23 +377,10 @@ function ActivityRow({
     activity.type === 'stage_transition' || activity.actorId === 'system'
 
   if (isSystem) {
-    const iconMap: Record<string, React.ReactNode> = {
-      stage_transition: (
-        <ArrowRight className="size-3.5 text-brand-accent shrink-0 mt-0.5" />
-      ),
-      advancement_requested: (
-        <Clock className="size-3.5 text-warning shrink-0 mt-0.5" />
-      ),
-      approved: (
-        <CheckCircle2 className="size-3.5 text-success shrink-0 mt-0.5" />
-      ),
-      rejected: <XCircle className="size-3.5 text-error shrink-0 mt-0.5" />,
-    }
-
     return (
       <div className="flex gap-2.5 border-b pb-2.5 last:border-0">
         <div className="size-6 flex items-start justify-center shrink-0 mt-0.5">
-          {iconMap[activity.type] ?? <div className="size-3.5" />}
+          {systemActivityIconMap[activity.type] ?? <div className="size-3.5" />}
         </div>
         <div className="min-w-0 text-sm">
           <p className="text-xs text-foreground">{getDescription()}</p>
@@ -386,17 +391,6 @@ function ActivityRow({
       </div>
     )
   }
-
-  const iconMap: Record<string, React.ReactNode> = {
-    advancement_requested: (
-      <Clock className="size-3.5 text-warning shrink-0 mt-0.5" />
-    ),
-    approved: (
-      <CheckCircle2 className="size-3.5 text-success shrink-0 mt-0.5" />
-    ),
-    rejected: <XCircle className="size-3.5 text-error shrink-0 mt-0.5" />,
-  }
-
   return (
     <div className="flex gap-2.5 border-b pb-2.5 last:border-0">
       <Avatar className="size-6 shrink-0 mt-0.5">
@@ -407,23 +401,23 @@ function ActivityRow({
       </Avatar>
       <div className="min-w-0 text-sm">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium">
+          <span className="font-medium">
             {user?.name ?? activity.actorId.slice(0, 8)}
           </span>
           <span className="text-xs text-muted-foreground">
             {dateStr} {timeStr}
           </span>
         </div>
-        <p className="text-xs text-foreground mt-0.5 flex items-center gap-1">
-          <span className="shrink-0">{iconMap[activity.type]}</span>
-          <span>{getDescription()}</span>
+        <div className="flex items-center gap-1.5 mt-0.5">
+          {userActivityIconMap[activity.type] ?? <div className="size-3.5" />}
+          <p className="text-xs text-foreground">{getDescription()}</p>
           {(activity.type === 'approved' || activity.type === 'rejected') &&
             data.reviewNotes && (
               <span className="text-muted-foreground truncate">
                 · {String(data.reviewNotes)}
               </span>
             )}
-        </p>
+        </div>
       </div>
     </div>
   )

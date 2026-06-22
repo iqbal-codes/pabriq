@@ -84,24 +84,28 @@ export const createInvoiceFn = createServerFn({ method: 'POST' })
 export const getInvoiceFn = createServerFn({ method: 'GET' })
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data }): Promise<GetInvoiceResult | null> => {
-    const orgId = await resolveOrgId()
-    const { getInvoice } = await import('./model')
+    const [orgId, { getInvoice }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     return getInvoice(data.id, orgId)
   })
 
 export const listInvoicesFn = createServerFn({ method: 'GET' })
   .inputValidator((data: ListInvoicesParams) => data)
   .handler(async ({ data }): Promise<ListInvoicesResult> => {
-    const orgId = await resolveOrgId()
-    const { listInvoices } = await import('./model')
+    const [orgId, { listInvoices }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     return listInvoices({ ...data, orgId })
   })
 
 export const markInvoicePaidFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
-    const orgId = await resolveOrgId()
-    const [{ auth }, { markInvoicePaid }] = await Promise.all([
+    const [orgId, { auth }, { markInvoicePaid }] = await Promise.all([
+      resolveOrgId(),
       import('#/lib/auth'),
       import('./model'),
     ])
@@ -122,9 +126,11 @@ export const markInvoicePaidFn = createServerFn({ method: 'POST' })
 export const voidInvoiceFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
-    const orgId = await resolveOrgId()
+    const [orgId, { voidInvoice }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     try {
-      const { voidInvoice } = await import('./model')
       await voidInvoice(data.id, orgId)
       return { ok: true }
     } catch (e) {
@@ -138,8 +144,10 @@ export const voidInvoiceFn = createServerFn({ method: 'POST' })
 export const listPaymentMethodsFn = createServerFn({ method: 'GET' })
   .inputValidator((input: Record<string, never>) => input)
   .handler(async (): Promise<PaymentMethod[]> => {
-    const orgId = await resolveOrgId()
-    const { listPaymentMethods } = await import('./model')
+    const [orgId, { listPaymentMethods }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     return listPaymentMethods(orgId)
   })
 
@@ -149,9 +157,11 @@ export const createPaymentMethodFn = createServerFn({ method: 'POST' })
       input,
   )
   .handler(async ({ data }): Promise<MutationResult> => {
-    const orgId = await resolveOrgId()
     try {
-      const { createPaymentMethod } = await import('./model')
+      const [orgId, { createPaymentMethod }] = await Promise.all([
+        resolveOrgId(),
+        import('./model'),
+      ])
       await createPaymentMethod({ ...data, orgId })
       return { ok: true }
     } catch (e) {
@@ -308,24 +318,30 @@ export const rejectPaymentFn = createServerFn({ method: 'POST' })
 export const getInvoicePaymentsForInvoicesFn = createServerFn({ method: 'GET' })
   .inputValidator((input: { invoiceIds: string[] }) => input)
   .handler(async ({ data }): Promise<Record<string, Payment[]>> => {
-    const orgId = await resolveOrgId()
-    const { getPaymentsForInvoices } = await import('./model')
+    const [orgId, { getPaymentsForInvoices }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     return getPaymentsForInvoices(orgId, data.invoiceIds)
   })
 
 export const getInvoicePaymentsFn = createServerFn({ method: 'GET' })
   .inputValidator((input: unknown) => getInvoicePaymentsSchema.parse(input))
   .handler(async ({ data }): Promise<Payment[]> => {
-    const orgId = await resolveOrgId()
-    const { getPaymentsForInvoice } = await import('./model')
+    const [orgId, { getPaymentsForInvoice }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     return getPaymentsForInvoice(orgId, data.invoiceId)
   })
 
 export const getInvoiceBalanceFn = createServerFn({ method: 'GET' })
   .inputValidator((input: unknown) => getInvoicePaymentsSchema.parse(input))
   .handler(async ({ data }): Promise<InvoiceBalance> => {
-    const orgId = await resolveOrgId()
-    const { getInvoiceBalance } = await import('./model')
+    const [orgId, { getInvoiceBalance }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     return getInvoiceBalance(data.invoiceId, orgId)
   })
 
@@ -348,9 +364,8 @@ export const updateInvoiceFn = createServerFn({ method: 'POST' })
 export const getOrderForInvoiceFn = createServerFn({ method: 'GET' })
   .inputValidator((input: { orderId: string }) => input)
   .handler(async ({ data }): Promise<OrderForInvoice> => {
-    const orgId = await resolveOrgId()
-
     const [
+      orgId,
       { db },
       {
         orders: ordersTable,
@@ -360,6 +375,7 @@ export const getOrderForInvoiceFn = createServerFn({ method: 'GET' })
       },
       { eq, and },
     ] = await Promise.all([
+      resolveOrgId(),
       import('#/db/index'),
       import('#/db/schema'),
       import('drizzle-orm'),

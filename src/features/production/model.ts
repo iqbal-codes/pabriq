@@ -173,12 +173,14 @@ export async function reorderStages(
   orgId: string,
   stageIds: string[],
 ): Promise<void> {
-  for (let i = 0; i < stageIds.length; i++) {
-    await db
-      .update(stagesTable)
-      .set({ orderIndex: i, updatedAt: new Date() })
-      .where(and(eq(stagesTable.id, stageIds[i]), eq(stagesTable.orgId, orgId)))
-  }
+  await Promise.all(
+    stageIds.map((stageId, i) =>
+      db
+        .update(stagesTable)
+        .set({ orderIndex: i, updatedAt: new Date() })
+        .where(and(eq(stagesTable.id, stageId), eq(stagesTable.orgId, orgId))),
+    ),
+  )
 }
 
 export async function toggleStage(

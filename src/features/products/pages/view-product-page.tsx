@@ -27,8 +27,6 @@ export function ViewProductPage() {
     )
   }
 
-  const fmt = (n: number) => currencyFormatter.format(n)
-
   return (
     <PageContent>
       <PageHeader
@@ -90,7 +88,9 @@ export function ViewProductPage() {
             <p className="text-[13px] font-medium text-muted-foreground">
               {t('basePrice')}
             </p>
-            <p className="font-semibold text-lg">{fmt(product.basePrice)}</p>
+            <p className="font-semibold text-lg">
+              {currencyFormatter.format(product.basePrice)}
+            </p>
           </div>
           <div>
             <p className="text-[13px] font-medium text-muted-foreground">
@@ -149,7 +149,7 @@ export function ViewProductPage() {
                         {bp.minQuantity}
                       </td>
                       <td className="py-2 px-3 font-semibold tabular-nums">
-                        {fmt(bp.unitPrice)}
+                        {currencyFormatter.format(bp.unitPrice)}
                       </td>
                     </tr>
                   ))}

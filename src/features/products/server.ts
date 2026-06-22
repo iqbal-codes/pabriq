@@ -132,17 +132,21 @@ export const listProductsFn = createServerFn({ method: 'GET' })
 export const getProductFn = createServerFn({ method: 'GET' })
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data }): Promise<Product | null> => {
-    const orgId = await resolveOrgId()
-    const { getProduct } = await import('./model')
+    const [orgId, { getProduct }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     return getProduct(data.id, orgId)
   })
 
 export const createProductFn = createServerFn({ method: 'POST' })
   .inputValidator((input: Omit<CreateProductInput, 'orgId'>) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
-    const orgId = await resolveOrgId()
+    const [orgId, { createProduct }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     try {
-      const { createProduct } = await import('./model')
       await createProduct({ ...data, orgId })
       return { ok: true }
     } catch (e) {
@@ -159,9 +163,11 @@ export const listBreakpointsFn = createServerFn({ method: 'GET' })
     async ({
       data,
     }): Promise<Array<{ minQuantity: number; unitPrice: number }>> => {
-      const { db } = await import('#/db/index')
-      const { pricingBreakpoints } = await import('#/db/schema')
-      const { eq, asc } = await import('drizzle-orm')
+      const [{ db }, { pricingBreakpoints }, { eq, asc }] = await Promise.all([
+        import('#/db/index'),
+        import('#/db/schema'),
+        import('drizzle-orm'),
+      ])
       const rows = await db
         .select({
           minQuantity: pricingBreakpoints.minQuantity,

@@ -9,11 +9,21 @@ import { PaymentSection } from '../components/payment-section'
 import { PortalHeader } from '../components/portal-header'
 import { ShippingAddressCard } from '../components/shipping-address-card'
 
-const currencyFormatter = new Intl.NumberFormat('en-ID', {
+const currencyFormatter = new Intl.NumberFormat('id-ID', {
   style: 'currency',
   currency: 'IDR',
   minimumFractionDigits: 0,
 })
+
+const _dateTimeFormatters = new Map<string, Intl.DateTimeFormat>()
+function formatEstimatedDate(date: Date, locale: string): string {
+  let fmt = _dateTimeFormatters.get(locale)
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat(locale, { dateStyle: 'long' })
+    _dateTimeFormatters.set(locale, fmt)
+  }
+  return fmt.format(date)
+}
 
 import { useEffect, useState } from 'react'
 import {
@@ -48,9 +58,7 @@ function EstimatedCompletion({
 
   const estimatedDate = new Date(createdAt)
   estimatedDate.setDate(estimatedDate.getDate() + maxDays)
-  const formattedDate = new Intl.DateTimeFormat(locale, {
-    dateStyle: 'long',
-  }).format(estimatedDate)
+  const formattedDate = formatEstimatedDate(estimatedDate, locale)
 
   return (
     <span className="text-sm text-muted-foreground">

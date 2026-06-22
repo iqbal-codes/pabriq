@@ -119,8 +119,6 @@ export function CreateInvoicePage() {
     },
   })
 
-  const fmt = (n: number) => currencyFormatter.format(n)
-
   return (
     <PageContent>
       <PageHeader title={t('createInvoice')} />
@@ -158,7 +156,7 @@ export function CreateInvoicePage() {
                 <div>
                   <p className="text-sm text-muted-foreground">{t('total')}</p>
                   <p className="text-2xl font-bold">
-                    {fmt(orderData.order.total)}
+                    {currencyFormatter.format(orderData.order.total)}
                   </p>
                 </div>
               </div>
@@ -168,13 +166,13 @@ export function CreateInvoicePage() {
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">
                     Already invoiced: {orderData.invoicedPercentage}% (
-                    {fmt(orderData.invoicedAmount)})
+                    {currencyFormatter.format(orderData.invoicedAmount)})
                   </p>
                   <div className="flex gap-4 text-sm">
                     {orderData.existingInvoices.map((inv) => (
                       <Badge key={inv.id} variant="secondary">
-                        {inv.invoiceNumber}: {inv.percentage}% ({fmt(inv.total)}
-                        )
+                        {inv.invoiceNumber}: {inv.percentage}% (
+                        {currencyFormatter.format(inv.total)})
                       </Badge>
                     ))}
                   </div>
@@ -242,10 +240,11 @@ export function CreateInvoicePage() {
                   )}
                 </div>
                 <p className="mt-2 font-semibold">
-                  Invoice total: {fmt(invoicesTotal)}
+                  Invoice total: {currencyFormatter.format(invoicesTotal)}
                   {selectedPercentage === 'remaining' && (
                     <span className="text-sm text-muted-foreground font-normal ml-2">
-                      (remaining from {fmt(orderData.order.total)})
+                      (remaining from{' '}
+                      {currencyFormatter.format(orderData.order.total)})
                     </span>
                   )}
                 </p>
@@ -276,10 +275,10 @@ export function CreateInvoicePage() {
                         {item.quantity}
                       </TableCell>
                       <TableCell className="text-right">
-                        {fmt(item.unitPrice)}
+                        {currencyFormatter.format(item.unitPrice)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {fmt(item.total)}
+                        {currencyFormatter.format(item.total)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -414,7 +413,7 @@ export function CreateInvoicePage() {
           <form.AppForm>
             <form.SubmitButton>
               {orderData
-                ? `${t('createInvoice')} — ${fmt(invoicesTotal)}`
+                ? `${t('createInvoice')} — ${currencyFormatter.format(invoicesTotal)}`
                 : t('createInvoice')}
             </form.SubmitButton>
           </form.AppForm>

@@ -1,6 +1,5 @@
 import { useStore } from '@tanstack/react-form'
 import { Trash } from 'lucide-react'
-import { useEffect } from 'react'
 import { useTranslations } from 'use-intl'
 import { FormGrid, FormRoot, useAppForm } from '#/components/app/form'
 import { Button } from '#/components/ui/button'
@@ -27,7 +26,6 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
   const t = useTranslations('production')
   const ct = useTranslations('common')
   const { createStage, updateStage } = useStageMutations()
-
   const form = useAppForm({
     defaultValues: {
       name: stage?.name ?? '',
@@ -63,12 +61,6 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
   const nameValue = useStore(form.store, (state) => state.values.name)
   const canSubmit = !isSubmitting && nameValue.trim().length > 0
 
-  useEffect(() => {
-    if (open) {
-      form.reset()
-    }
-  }, [open, form])
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
@@ -79,7 +71,7 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <FormRoot form={form}>
+        <FormRoot form={form} key={String(open)}>
           <FormGrid columns={1} className="py-4">
             <form.AppField name="name">
               {(field) => <field.TextField label={t('stageName')} />}
@@ -153,7 +145,6 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
                     <Button
                       variant="outline"
                       size="sm"
-                      type="button"
                       onClick={() =>
                         requirementsField.pushValue({
                           id: crypto.randomUUID(),

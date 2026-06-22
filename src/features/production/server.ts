@@ -49,17 +49,21 @@ async function resolveOrgAndRole(): Promise<{ orgId: string; role: string }> {
 export const listStagesFn = createServerFn({ method: 'GET' })
   .inputValidator((input: { board?: string }) => input)
   .handler(async ({ data }): Promise<Stage[]> => {
-    const orgId = await resolveOrgId()
-    const { listStages } = await import('./model')
+    const [orgId, { listStages }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     return listStages(orgId, data.board)
   })
 
 export const createStageFn = createServerFn({ method: 'POST' })
   .inputValidator((input: Omit<CreateStageInput, 'orgId'>) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
-    const orgId = await resolveOrgId()
+    const [orgId, { createStage }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     try {
-      const { createStage } = await import('./model')
       await createStage({ ...data, orgId })
       return { ok: true }
     } catch (e) {
@@ -75,9 +79,11 @@ export const updateStageFn = createServerFn({ method: 'POST' })
     (input: Omit<UpdateStageInput, 'orgId'> & { id: string }) => input,
   )
   .handler(async ({ data }): Promise<MutationResult> => {
-    const orgId = await resolveOrgId()
+    const [orgId, { updateStage }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     try {
-      const { updateStage } = await import('./model')
       await updateStage({ ...data, orgId })
       return { ok: true }
     } catch (e) {
@@ -91,9 +97,11 @@ export const updateStageFn = createServerFn({ method: 'POST' })
 export const reorderStagesFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { stageIds: string[] }) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
-    const orgId = await resolveOrgId()
+    const [orgId, { reorderStages }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     try {
-      const { reorderStages } = await import('./model')
       await reorderStages(orgId, data.stageIds)
       return { ok: true }
     } catch (e) {
@@ -107,9 +115,11 @@ export const reorderStagesFn = createServerFn({ method: 'POST' })
 export const toggleStageFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { id: string; active: boolean }) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
-    const orgId = await resolveOrgId()
+    const [orgId, { toggleStage }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     try {
-      const { toggleStage } = await import('./model')
       await toggleStage(data.id, orgId, data.active)
       return { ok: true }
     } catch (e) {
@@ -123,9 +133,11 @@ export const toggleStageFn = createServerFn({ method: 'POST' })
 export const deleteStageFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
-    const orgId = await resolveOrgId()
+    const [orgId, { deleteStage }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     try {
-      const { deleteStage } = await import('./model')
       await deleteStage(data.id, orgId)
       return { ok: true }
     } catch (e) {
@@ -226,8 +238,8 @@ export const rejectTaskAdvanceFn = createServerFn({ method: 'POST' })
 export const saveTaskCommentFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { taskId: string; text: string }) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
-    const orgId = await resolveOrgId()
-    const [{ auth }, { saveTaskComment }] = await Promise.all([
+    const [orgId, { auth }, { saveTaskComment }] = await Promise.all([
+      resolveOrgId(),
       import('#/lib/auth'),
       import('./model'),
     ])
@@ -259,8 +271,10 @@ export const listBoardTasksFn = createServerFn({ method: 'GET' })
     }) => input,
   )
   .handler(async ({ data }) => {
-    const orgId = await resolveOrgId()
-    const { listBoardTasks } = await import('./model')
+    const [orgId, { listBoardTasks }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     return listBoardTasks(
       orgId,
       {
@@ -275,8 +289,10 @@ export const listBoardTasksFn = createServerFn({ method: 'GET' })
 export const getTaskDetailFn = createServerFn({ method: 'GET' })
   .inputValidator((input: { taskId: string }) => input)
   .handler(async ({ data }) => {
-    const orgId = await resolveOrgId()
-    const { getTaskDetail } = await import('./model')
+    const [orgId, { getTaskDetail }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     return getTaskDetail(data.taskId, orgId)
   })
 
@@ -297,8 +313,10 @@ export const listArchivedTasksFn = createServerFn({ method: 'GET' })
     }) => input,
   )
   .handler(async ({ data }) => {
-    const orgId = await resolveOrgId()
-    const { listArchivedTasks } = await import('./model')
+    const [orgId, { listArchivedTasks }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     return listArchivedTasks(orgId, {
       board: data.board,
       search: data.search,
@@ -310,17 +328,19 @@ export const listArchivedTasksFn = createServerFn({ method: 'GET' })
 export const getTaskCountsFn = createServerFn({ method: 'GET' })
   .inputValidator((input: { board?: string }) => input)
   .handler(async ({ data }) => {
-    const orgId = await resolveOrgId()
-    const { getTaskCounts } = await import('./model')
+    const [orgId, { getTaskCounts }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
     return getTaskCounts(orgId, data.board)
   })
 
 export const listTasksByOrderIdFn = createServerFn({ method: 'GET' })
   .inputValidator((input: { orderId: string }) => input)
   .handler(async ({ data }) => {
-    const orgId = await resolveOrgId()
-    const [{ db }, { productionTasks }, { eq, and }, { listStages }] =
+    const [orgId, { db }, { productionTasks }, { eq, and }, { listStages }] =
       await Promise.all([
+        resolveOrgId(),
         import('#/db/index'),
         import('#/db/schema'),
         import('drizzle-orm'),

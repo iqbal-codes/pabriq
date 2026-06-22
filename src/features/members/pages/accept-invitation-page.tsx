@@ -51,6 +51,7 @@ export function AcceptInvitationPage({
     onSuccess: (result) => {
       if (result.ok) {
         toast.success(t('rejected'))
+        queryClient.invalidateQueries({ queryKey: ['members'] })
         navigate({ to: '/' })
       } else {
         toast.error(result.error)

@@ -32,12 +32,12 @@ async function resolveOrgId(): Promise<string> {
 
 export const getOrgSettingsFn = createServerFn({ method: 'GET' }).handler(
   async (): Promise<OrgSettings> => {
-    const orgId = await resolveOrgId()
-
-    const { db } = await import('#/db/index')
-    const { organization, organizationProfiles, addresses } = await import(
-      '#/db/schema'
-    )
+    const [orgId, { db }, { organization, organizationProfiles, addresses }] =
+      await Promise.all([
+        resolveOrgId(),
+        import('#/db/index'),
+        import('#/db/schema'),
+      ])
 
     const [org] = await db
       .select({
@@ -127,9 +127,10 @@ export const updateOrgSettingsFn = createServerFn({ method: 'POST' })
   .inputValidator((input: UpdateOrgSettingsInput) => input)
   .handler(
     async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
-      const orgId = await resolveOrgId()
-
-      const { auth } = await import('#/lib/auth')
+      const [orgId, { auth }] = await Promise.all([
+        resolveOrgId(),
+        import('#/lib/auth'),
+      ])
       const headers = getRequestHeaders()
 
       try {

@@ -69,21 +69,22 @@ export function DraftView({
       }
 
       const origItemMap = new Map(order.lineItems.map((o) => [o.id, o]))
-      const lineItemUpdates = value.lineItems
-        .filter((li) => {
-          const orig = origItemMap.get(li.id)
-          if (!orig) return false
-          return (
-            li.name !== (orig.name ?? '') || li.notes !== (orig.notes ?? '')
+      const lineItemUpdates = value.lineItems.reduce<
+        ReturnType<typeof updateLineItem.mutateAsync>[]
+      >((acc, li) => {
+        const orig = origItemMap.get(li.id)
+        if (!orig) return acc
+        if (li.name !== (orig.name ?? '') || li.notes !== (orig.notes ?? '')) {
+          acc.push(
+            updateLineItem.mutateAsync({
+              itemId: li.id,
+              name: li.name || undefined,
+              notes: li.notes || undefined,
+            }),
           )
-        })
-        .map((li) =>
-          updateLineItem.mutateAsync({
-            itemId: li.id,
-            name: li.name || undefined,
-            notes: li.notes || undefined,
-          }),
-        )
+        }
+        return acc
+      }, [])
       await Promise.all(lineItemUpdates)
 
       const result = await confirmOrder.mutateAsync({

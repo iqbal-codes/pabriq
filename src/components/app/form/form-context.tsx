@@ -1,4 +1,5 @@
 import { createFormHook } from '@tanstack/react-form'
+import { fieldContext, formContext } from './form-context-base'
 import { FormError } from './form-error'
 import {
   AddressField,
@@ -18,8 +19,6 @@ import {
   TextField,
 } from './form-fields'
 import { SubmitButton } from './form-submit'
-
-import { fieldContext, formContext } from './form-context-base'
 
 export const { useAppForm, withForm } = createFormHook({
   fieldComponents: {
@@ -46,4 +45,3 @@ export const { useAppForm, withForm } = createFormHook({
   fieldContext,
   formContext,
 })
-

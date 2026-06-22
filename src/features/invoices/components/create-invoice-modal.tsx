@@ -96,8 +96,6 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
     },
   })
 
-  const fmt = (n: number) => currencyFormatter.format(n)
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -110,7 +108,9 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
           {/* Order total */}
           <div className="rounded-lg bg-muted p-3">
             <p className="text-sm text-muted-foreground">{t('total')}</p>
-            <p className="text-xl font-bold">{fmt(order.total)}</p>
+            <p className="text-xl font-bold">
+              {currencyFormatter.format(order.total)}
+            </p>
           </div>
 
           {/* Invoice amount selector */}
@@ -176,11 +176,13 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                   </div>
                 )}
 
-                <p className="mt-2 text-lg font-bold">{fmt(invoiceTotal)}</p>
+                <p className="mt-2 text-lg font-bold">
+                  {currencyFormatter.format(invoiceTotal)}
+                </p>
                 {hasPaidInvoices && (
                   <p className="text-xs text-muted-foreground">
                     Previously invoiced: {order.invoicedPercentage}% (
-                    {fmt(order.invoicedAmount)})
+                    {currencyFormatter.format(order.invoicedAmount)})
                   </p>
                 )}
               </div>
@@ -206,7 +208,7 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
               <form.SubmitButton
                 disabled={createInvoice.isPending || invoiceTotal <= 0}
               >
-                {`${t('createInvoice')} — ${fmt(invoiceTotal)}`}
+                {`${t('createInvoice')} — ${currencyFormatter.format(invoiceTotal)}`}
               </form.SubmitButton>
             </form.AppForm>
           </FormActions>

@@ -504,8 +504,6 @@ export function InvoiceDetailPage() {
     }
   }
 
-  const fmt = (n: number) => currencyFormatter.format(n)
-
   // Build events for timeline
   const timelinePayments = payments ?? []
 
@@ -552,7 +550,9 @@ export function InvoiceDetailPage() {
           <p className="text-[13px] font-medium text-muted-foreground">
             {t('total')}
           </p>
-          <p className="text-lg font-semibold">{fmt(invoice.total)}</p>
+          <p className="text-lg font-semibold">
+            {currencyFormatter.format(invoice.total)}
+          </p>
         </div>
       </div>
 
@@ -587,17 +587,21 @@ export function InvoiceDetailPage() {
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">{item.description}</p>
                 <p className="text-sm text-muted-foreground">
-                  {item.quantity}x @ {fmt(item.unitPrice)}
+                  {item.quantity}x @ {currencyFormatter.format(item.unitPrice)}
                 </p>
               </div>
-              <p className="font-semibold tabular-nums">{fmt(item.total)}</p>
+              <p className="font-semibold tabular-nums">
+                {currencyFormatter.format(item.total)}
+              </p>
             </div>
           ))}
         </div>
         <div className="mt-4 flex justify-end border-t pt-4">
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Total</p>
-            <p className="text-lg font-semibold">{fmt(invoice.total)}</p>
+            <p className="text-lg font-semibold">
+              {currencyFormatter.format(invoice.total)}
+            </p>
           </div>
         </div>
       </div>
@@ -652,16 +656,18 @@ export function InvoiceDetailPage() {
               {t('pendingConfirmation')}
             </p>
             <div className="space-y-4">
-              {payments
-                .filter((pm) => pm.status === 'pending')
-                .map((pm) => (
+              {payments.reduce<React.ReactNode[]>((acc, pm) => {
+                if (pm.status !== 'pending') return acc
+                acc.push(
                   <div
                     key={pm.id}
                     className="flex items-center justify-between rounded-lg border bg-card p-4"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="font-semibold">{fmt(pm.amount)}</p>
+                        <p className="font-semibold">
+                          {currencyFormatter.format(pm.amount)}
+                        </p>
                         <Badge variant="secondary">
                           {pm.method ?? 'Transfer'}
                         </Badge>
@@ -708,8 +714,10 @@ export function InvoiceDetailPage() {
                         {t('rejectSimple')}
                       </Button>
                     </div>
-                  </div>
-                ))}
+                  </div>,
+                )
+                return acc
+              }, [])}
             </div>
           </div>
         )}

@@ -18,7 +18,7 @@ export function useDataTableAccumulation<TData>(
   const [displayData, setDisplayData] = useState<TData[]>(data)
   const accumulatedDataRef = useRef<TData[]>([])
   const lastAccumulatedPageRef = useRef(page)
-  const seenIdsRef = useRef<Set<string>>(new Set())
+  const seenIdsRef = useRef(() => new Set<string>())
   const lastDataRef = useRef<TData[]>([])
   const prevIsMobileRef = useRef(isMobile)
   const onPageChangeRef = useRef(onPageChange)

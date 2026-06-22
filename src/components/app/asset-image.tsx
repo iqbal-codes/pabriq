@@ -26,7 +26,11 @@ export function AssetImage({ assetId, assetKind, className }: AssetImageProps) {
   const [open, setOpen] = useState(false)
   const isPreviewable = assetKind ? previewableKinds.includes(assetKind) : false
 
-  const previewQuery = useQuery({
+  const {
+    data: previewData,
+    isError: previewIsError,
+    isLoading: previewIsLoading,
+  } = useQuery({
     queryKey: ['asset-signed-url', assetId, 'preview'],
     queryFn: () => {
       if (!assetId) throw new Error('assetId is required')
@@ -36,7 +40,7 @@ export function AssetImage({ assetId, assetKind, className }: AssetImageProps) {
     staleTime: 15 * 60 * 1000,
   })
 
-  const originalQuery = useQuery({
+  const { data: originalData } = useQuery({
     queryKey: ['asset-signed-url', assetId, 'original'],
     queryFn: () => {
       if (!assetId) throw new Error('assetId is required')
@@ -46,7 +50,7 @@ export function AssetImage({ assetId, assetKind, className }: AssetImageProps) {
     staleTime: 15 * 60 * 1000,
   })
 
-  if (!assetId || !isPreviewable || previewQuery.isError) {
+  if (!assetId || !isPreviewable || previewIsError) {
     return (
       <div
         className={cn(
@@ -59,7 +63,7 @@ export function AssetImage({ assetId, assetKind, className }: AssetImageProps) {
     )
   }
 
-  if (previewQuery.isLoading || !previewQuery.data?.url) {
+  if (previewIsLoading || !previewData?.url) {
     return (
       <div
         className={cn(
@@ -72,8 +76,8 @@ export function AssetImage({ assetId, assetKind, className }: AssetImageProps) {
 
   const previewLabel = common('preview')
   const closeLabel = common('close')
-  const thumbnailUrl = previewQuery.data.url
-  const dialogUrl = originalQuery.data?.url ?? thumbnailUrl
+  const thumbnailUrl = previewData.url
+  const dialogUrl = originalData?.url ?? thumbnailUrl
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -94,6 +98,7 @@ export function AssetImage({ assetId, assetKind, className }: AssetImageProps) {
               playsInline
               preload="metadata"
               tabIndex={-1}
+              aria-label={previewLabel}
               className={cn(
                 'pointer-events-none h-full w-full object-cover',
                 className,
@@ -133,6 +138,7 @@ export function AssetImage({ assetId, assetKind, className }: AssetImageProps) {
               src={dialogUrl}
               controls
               preload="metadata"
+              aria-label={previewLabel}
               className="max-h-[85vh] w-full max-w-6xl object-contain"
             >
               <track

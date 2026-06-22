@@ -77,12 +77,6 @@ function ComboboxFieldSingle({
   const [isFetching, setIsFetching] = useState(false)
 
   useEffect(() => {
-    if (staticOptions) {
-      setKnownOptions(staticOptions)
-    }
-  }, [staticOptions])
-
-  useEffect(() => {
     if (!query || !search) {
       debouncedQueryRef.current = ''
       return
@@ -250,12 +244,6 @@ function ComboboxFieldMulti({
   const debouncedQueryRef = useRef('')
   const [knownOptions, setKnownOptions] = useState<ComboboxOption[]>([])
   const [isFetching, setIsFetching] = useState(false)
-
-  useEffect(() => {
-    if (staticOptions) {
-      setKnownOptions(staticOptions)
-    }
-  }, [staticOptions])
 
   useEffect(() => {
     if (!query || !search) {

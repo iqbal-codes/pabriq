@@ -5,7 +5,7 @@ import {
 } from '@tanstack/react-table'
 import type { LucideIcon } from 'lucide-react'
 import { X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { EmptyStateAction } from '#/components/app/page-shell/empty-state'
 import { Button } from '#/components/ui/button'
 import { Checkbox } from '#/components/ui/checkbox'
@@ -315,14 +315,18 @@ export function DataTable<TData>({
     [table, selectedRowIds, totalRows, isMobile, displayData, data],
   )
 
+  // Reset row selection when filter/pagination/sort state changes
+  const prevFilterPageRef = useRef({ hasActiveFilters, page, perPage, sort })
   useEffect(() => {
+    const prev = prevFilterPageRef.current
     if (
-      hasActiveFilters !== undefined ||
-      page !== undefined ||
-      perPage !== undefined ||
-      sort !== undefined
+      hasActiveFilters !== prev.hasActiveFilters ||
+      page !== prev.page ||
+      perPage !== prev.perPage ||
+      sort !== prev.sort
     ) {
       table.resetRowSelection()
+      prevFilterPageRef.current = { hasActiveFilters, page, perPage, sort }
     }
   }, [hasActiveFilters, page, perPage, sort, table])
 
