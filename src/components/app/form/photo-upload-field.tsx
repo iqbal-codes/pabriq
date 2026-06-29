@@ -1,4 +1,5 @@
 import { X } from 'lucide-react'
+import type React from 'react'
 import { useMemo, useState } from 'react'
 import { AssetImage } from '#/components/app/asset-image'
 import {
@@ -13,6 +14,35 @@ import type { UploadItem } from '#/features/assets/upload-machine'
 import { useFieldContext } from './form-context-base'
 import type { FieldProps } from './form-fields-shared'
 import { firstError } from './form-utils'
+
+function PhotoPreviewTile({
+  assetId,
+  disabled,
+  onRemove,
+}: {
+  assetId: string
+  disabled?: boolean
+  onRemove: () => void
+}): React.ReactElement {
+  return (
+    <div className="relative inline-block group">
+      <AssetImage
+        assetId={assetId}
+        assetKind="image"
+        className="size-24 rounded-lg object-cover"
+      />
+      <Button
+        variant="secondary"
+        size="icon"
+        className="absolute -top-2 -right-2 z-10 flex size-6 items-center justify-center rounded-full opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+        onClick={onRemove}
+        disabled={disabled}
+      >
+        <X className="size-3" />
+      </Button>
+    </div>
+  )
+}
 
 export type PhotoUploadFieldProps = FieldProps & {
   ownerType?: OwnerType
@@ -58,22 +88,11 @@ function PhotoUploadFieldSingle({
       {label && <span className="text-sm font-medium">{label}</span>}
       <div className="mt-1">
         {field.state.value ? (
-          <div className="relative inline-block group">
-            <AssetImage
-              assetId={field.state.value}
-              assetKind="image"
-              className="size-24 rounded-lg object-cover"
-            />
-            <Button
-              variant="secondary"
-              size="icon"
-              className="absolute -top-2 -right-2 z-10 flex size-6 items-center justify-center rounded-full opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
-              onClick={handleRemovePhoto}
-              disabled={disabled}
-            >
-              <X className="size-3" />
-            </Button>
-          </div>
+          <PhotoPreviewTile
+            assetId={field.state.value}
+            disabled={disabled}
+            onRemove={handleRemovePhoto}
+          />
         ) : (
           <PhotoGridUpload
             items={uploadItems}
@@ -131,22 +150,12 @@ function PhotoUploadFieldMultiple({
         {assetIds.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {assetIds.map((assetId, i) => (
-              <div key={assetId} className="relative inline-block group">
-                <AssetImage
-                  assetId={assetId}
-                  assetKind="image"
-                  className="size-24 rounded-lg object-cover"
-                />
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="absolute -top-2 -right-2 z-10 flex size-6 items-center justify-center rounded-full opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
-                  onClick={() => handleRemovePhoto(i)}
-                  disabled={disabled}
-                >
-                  <X className="size-3" />
-                </Button>
-              </div>
+              <PhotoPreviewTile
+                key={assetId}
+                assetId={assetId}
+                disabled={disabled}
+                onRemove={() => handleRemovePhoto(i)}
+              />
             ))}
           </div>
         )}
