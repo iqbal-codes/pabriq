@@ -1,16 +1,12 @@
-import { CheckCircle2, MessageCircle } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 import { useTranslations } from 'use-intl'
-import { Button } from '#/components/ui/button'
 import { PortalHeader } from '#/features/portal/components/portal-header'
+import { PortalContactButton } from '../components/portal-contact-button'
+import { PortalOrderSummary } from '../components/portal-order-summary'
 import type { PortalOrder } from '../model'
 
 export function PendingView({ order }: { order: PortalOrder }) {
   const t = useTranslations('portal')
-
-  const waPhone = order.orgPhone?.replace(/\D/g, '').replace(/^0/, '62')
-  const waUrl = waPhone
-    ? `https://wa.me/${waPhone}?text=${encodeURIComponent(`Hi, regarding order ${order.orderNumber || order.id}`)}`
-    : null
 
   return (
     <div className="min-h-screen bg-muted">
@@ -19,26 +15,27 @@ export function PendingView({ order }: { order: PortalOrder }) {
         title={t('waitApproval')}
       />
       <div className="flex items-center justify-center py-12">
-        <div className="mx-4 max-w-md rounded-lg border border-border bg-card p-8 text-center shadow-sm">
+        <div className="mx-4 max-w-md rounded-lg border border-border bg-card p-8 text-center">
           <div className="mb-4 flex justify-center">
             <CheckCircle2 className="size-12 text-primary" />
           </div>
           <h1 className="text-xl font-semibold text-card-foreground">
             {t('waitApproval')}
           </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t('pendingHelp')}
+          </p>
           {order.orderNumber && (
             <p className="mt-2 text-sm text-muted-foreground">
               {t('orderNumber')}: {order.orderNumber}
             </p>
           )}
-          {waUrl && (
-            <Button asChild variant="outline" className="mt-6 w-full">
-              <a href={waUrl} target="_blank" rel="noopener noreferrer">
-                <MessageCircle className="mr-2 size-4" />
-                {t('chatOnWhatsApp')}
-              </a>
-            </Button>
-          )}
+          <PortalOrderSummary order={order} />
+          <PortalContactButton
+            order={order}
+            label="chatOnWhatsApp"
+            className="mt-6 w-full"
+          />
         </div>
       </div>
     </div>
