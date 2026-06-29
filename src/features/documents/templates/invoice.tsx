@@ -7,6 +7,12 @@ import {
   Text,
   View,
 } from '@react-pdf/renderer'
+import {
+  formatPdfCurrency,
+  formatPdfDate,
+  formatPdfPercent,
+} from '../pdf-format'
+import { PDF_LOCALE } from '../pdf-locale'
 import type { InvoicePdfData } from '../types'
 
 Font.register({
@@ -212,38 +218,6 @@ const styles = StyleSheet.create({
   },
 })
 
-const currencyFormatter = new Intl.NumberFormat('id-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-})
-
-function formatCurrency(amount: number): string {
-  return currencyFormatter.format(amount)
-}
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-  })
-}
-
-function formatPercent(pct: number): string {
-  return `${pct.toFixed(2)}%`
-}
-
-const LINE_TYPE_LABELS: Record<string, string> = {
-  product: '',
-  shipping: '[Shipping] ',
-  fee: '[Fee] ',
-  discount: '[Discount] ',
-  tax: '[Tax] ',
-}
-
 interface InvoiceDocumentProps {
   data: InvoicePdfData
 }
@@ -259,10 +233,12 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
             )}
           </View>
           <View style={styles.metaWrap}>
-            <Text style={styles.title}>Invoice</Text>
+            <Text style={styles.title}>{PDF_LOCALE.invoice}</Text>
             <View style={styles.metaRow}>
               <View style={styles.metaLabel}>
-                <Text style={styles.metaLabelText}>Invoice no.:</Text>
+                <Text style={styles.metaLabelText}>
+                  {PDF_LOCALE.invoiceNo}:
+                </Text>
               </View>
               <View style={styles.metaValue}>
                 <Text style={styles.metaValueText}>{data.invoiceNumber}</Text>
@@ -270,21 +246,23 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
             </View>
             <View style={styles.metaRow}>
               <View style={styles.metaLabel}>
-                <Text style={styles.metaLabelText}>Invoice date:</Text>
+                <Text style={styles.metaLabelText}>
+                  {PDF_LOCALE.invoiceDate}:
+                </Text>
               </View>
               <View style={styles.metaValue}>
                 <Text style={styles.metaValueText}>
-                  {formatDate(data.issuedDate)}
+                  {formatPdfDate(data.issuedDate)}
                 </Text>
               </View>
             </View>
             <View style={styles.metaRow}>
               <View style={styles.metaLabel}>
-                <Text style={styles.metaLabelText}>Due:</Text>
+                <Text style={styles.metaLabelText}>{PDF_LOCALE.due}:</Text>
               </View>
               <View style={styles.metaValue}>
                 <Text style={styles.metaValueText}>
-                  {formatDate(data.dueDate)}
+                  {formatPdfDate(data.dueDate)}
                 </Text>
               </View>
             </View>
@@ -293,7 +271,7 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
 
         <View style={styles.addressRow}>
           <View style={styles.addressCol}>
-            <Text style={styles.addressTitle}>Bill From</Text>
+            <Text style={styles.addressTitle}>{PDF_LOCALE.billFrom}</Text>
             <Text style={styles.addressBold}>{data.org.name}</Text>
             {data.org.email && (
               <Text style={styles.addressLine}>{data.org.email}</Text>
@@ -307,7 +285,7 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
           </View>
           <View style={styles.addressCol}>
             <Text style={[styles.addressTitle, styles.addressRight]}>
-              Bill To
+              {PDF_LOCALE.billTo}
             </Text>
             <Text style={[styles.addressBold, styles.addressRight]}>
               {data.customer.name}
@@ -342,13 +320,21 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
 
         <View style={styles.tableHeader}>
           <Text style={[styles.tableHeaderCell, styles.colDesc]}>
-            DESCRIPTION
+            {PDF_LOCALE.description}
           </Text>
-          <Text style={[styles.tableHeaderCell, styles.colRate]}>RATE</Text>
-          <Text style={[styles.tableHeaderCell, styles.colQty]}>QTY</Text>
+          <Text style={[styles.tableHeaderCell, styles.colRate]}>
+            {PDF_LOCALE.rate}
+          </Text>
+          <Text style={[styles.tableHeaderCell, styles.colQty]}>
+            {PDF_LOCALE.qty}
+          </Text>
 
-          <Text style={[styles.tableHeaderCell, styles.colTax]}>TAX</Text>
-          <Text style={[styles.tableHeaderCell, styles.colAmt]}>AMOUNT</Text>
+          <Text style={[styles.tableHeaderCell, styles.colTax]}>
+            {PDF_LOCALE.tax}
+          </Text>
+          <Text style={[styles.tableHeaderCell, styles.colAmt]}>
+            {PDF_LOCALE.amount}
+          </Text>
         </View>
 
         {data.lineItems.map((item) => (
@@ -357,20 +343,20 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
             style={styles.tableRow}
           >
             <Text style={[styles.tableCell, styles.colDesc]}>
-              {item.lineType && LINE_TYPE_LABELS[item.lineType]}
+              {item.lineType && PDF_LOCALE.lineTypes[item.lineType]}
               {item.description}
             </Text>
             <Text style={[styles.tableCellRight, styles.colRate]}>
-              {formatCurrency(item.unitPrice)}
+              {formatPdfCurrency(item.unitPrice)}
             </Text>
             <Text style={[styles.tableCellRight, styles.colQty]}>
               {item.quantity}
             </Text>
             <Text style={[styles.tableCellRight, styles.colTax]}>
-              {formatPercent(item.taxPercent)}
+              {formatPdfPercent(item.taxPercent)}
             </Text>
             <Text style={[styles.tableCellRight, styles.colAmt]}>
-              {formatCurrency(item.total)}
+              {formatPdfCurrency(item.total)}
             </Text>
           </View>
         ))}
@@ -380,16 +366,16 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
             {(data.notes || data.paymentMethod) && (
               <View>
                 <Text style={styles.notesTitle}>
-                  Payment Instructions or other notes
+                  {PDF_LOCALE.paymentInstructions}
                 </Text>
                 {data.paymentMethod && (
                   <Text style={styles.notesText}>
                     {data.paymentMethod.bankName ||
                     data.paymentMethod.accountNumber
-                      ? `\nBank : ${data.paymentMethod.bankName ?? ''}`
+                      ? `\n${PDF_LOCALE.bank} : ${data.paymentMethod.bankName ?? ''}`
                       : ''}
                     {data.paymentMethod.accountNumber
-                      ? `\nNo. Rekening : ${data.paymentMethod.accountNumber}`
+                      ? `\n${PDF_LOCALE.accountNo} : ${data.paymentMethod.accountNumber}`
                       : ''}
                   </Text>
                 )}
@@ -402,43 +388,47 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
           <View style={styles.pricingSection}>
             <View style={styles.pricingLine}>
               <View style={styles.pricingLabel}>
-                <Text style={styles.pricingLabelText}>Subtotal</Text>
+                <Text style={styles.pricingLabelText}>
+                  {PDF_LOCALE.subtotal}
+                </Text>
               </View>
               <View style={styles.pricingValue}>
                 <Text style={styles.pricingValueText}>
-                  {formatCurrency(data.subtotal)}
+                  {formatPdfCurrency(data.subtotal)}
                 </Text>
               </View>
             </View>
             <View style={styles.pricingLine}>
               <View style={styles.pricingLabel}>
-                <Text style={styles.pricingLabelText}>Taxes</Text>
+                <Text style={styles.pricingLabelText}>{PDF_LOCALE.taxes}</Text>
               </View>
               <View style={styles.pricingValue}>
                 <Text style={styles.pricingValueText}>
-                  {formatCurrency(data.taxes)}
+                  {formatPdfCurrency(data.taxes)}
                 </Text>
               </View>
             </View>
             {data.alreadyPaid > 0 && (
               <View style={styles.alreadyPaidLine}>
                 <View style={styles.pricingLabel}>
-                  <Text style={styles.alreadyPaidLabelText}>Sudah Dibayar</Text>
+                  <Text style={styles.alreadyPaidLabelText}>
+                    {PDF_LOCALE.alreadyPaid}
+                  </Text>
                 </View>
                 <View style={styles.pricingValue}>
                   <Text style={styles.alreadyPaidValueText}>
-                    {formatCurrency(data.alreadyPaid)}
+                    {formatPdfCurrency(data.alreadyPaid)}
                   </Text>
                 </View>
               </View>
             )}
             <View style={styles.totalRow}>
               <View style={styles.totalLabel}>
-                <Text style={styles.totalLabelText}>Total</Text>
+                <Text style={styles.totalLabelText}>{PDF_LOCALE.total}</Text>
               </View>
               <View style={styles.totalValue}>
                 <Text style={styles.totalValueText}>
-                  {formatCurrency(data.total)}
+                  {formatPdfCurrency(data.total)}
                 </Text>
               </View>
             </View>

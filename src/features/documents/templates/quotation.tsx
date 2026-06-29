@@ -7,6 +7,12 @@ import {
   Text,
   View,
 } from '@react-pdf/renderer'
+import {
+  formatPdfCurrency,
+  formatPdfDate,
+  formatPdfPercent,
+} from '../pdf-format'
+import { PDF_LOCALE } from '../pdf-locale'
 import type { QuotationPdfData } from '../types'
 
 Font.register({
@@ -192,29 +198,6 @@ const styles = StyleSheet.create({
   },
 })
 
-const currencyFormatter = new Intl.NumberFormat('id-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-})
-
-function formatCurrency(amount: number): string {
-  return currencyFormatter.format(amount)
-}
-
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-  })
-}
-
-function formatPercent(pct: number): string {
-  return `${pct.toFixed(2)}%`
-}
-
 interface QuotationDocumentProps {
   data: QuotationPdfData
 }
@@ -230,10 +213,10 @@ export function QuotationDocument({ data }: QuotationDocumentProps) {
             )}
           </View>
           <View style={styles.metaWrap}>
-            <Text style={styles.title}>Quotation</Text>
+            <Text style={styles.title}>{PDF_LOCALE.quotation}</Text>
             <View style={styles.metaRow}>
               <View style={styles.metaLabel}>
-                <Text style={styles.metaLabelText}>Quote no.:</Text>
+                <Text style={styles.metaLabelText}>{PDF_LOCALE.quoteNo}:</Text>
               </View>
               <View style={styles.metaValue}>
                 <Text style={styles.metaValueText}>{data.quoteNumber}</Text>
@@ -241,22 +224,24 @@ export function QuotationDocument({ data }: QuotationDocumentProps) {
             </View>
             <View style={styles.metaRow}>
               <View style={styles.metaLabel}>
-                <Text style={styles.metaLabelText}>Date:</Text>
+                <Text style={styles.metaLabelText}>{PDF_LOCALE.date}:</Text>
               </View>
               <View style={styles.metaValue}>
                 <Text style={styles.metaValueText}>
-                  {formatDate(data.createdAt)}
+                  {formatPdfDate(data.createdAt)}
                 </Text>
               </View>
             </View>
             {data.validUntil && (
               <View style={styles.metaRow}>
                 <View style={styles.metaLabel}>
-                  <Text style={styles.metaLabelText}>Valid until:</Text>
+                  <Text style={styles.metaLabelText}>
+                    {PDF_LOCALE.validUntil}:
+                  </Text>
                 </View>
                 <View style={styles.metaValue}>
                   <Text style={styles.metaValueText}>
-                    {formatDate(data.validUntil)}
+                    {formatPdfDate(data.validUntil)}
                   </Text>
                 </View>
               </View>
@@ -266,7 +251,7 @@ export function QuotationDocument({ data }: QuotationDocumentProps) {
 
         <View style={styles.addressRow}>
           <View style={styles.addressCol}>
-            <Text style={styles.addressTitle}>Bill From</Text>
+            <Text style={styles.addressTitle}>{PDF_LOCALE.billFrom}</Text>
             <Text style={styles.addressBold}>{data.org.name}</Text>
             {data.org.email && (
               <Text style={styles.addressLine}>{data.org.email}</Text>
@@ -280,7 +265,7 @@ export function QuotationDocument({ data }: QuotationDocumentProps) {
           </View>
           <View style={styles.addressCol}>
             <Text style={[styles.addressTitle, styles.addressRight]}>
-              Bill To
+              {PDF_LOCALE.billTo}
             </Text>
             <Text style={[styles.addressBold, styles.addressRight]}>
               {data.customer.name}
@@ -305,12 +290,20 @@ export function QuotationDocument({ data }: QuotationDocumentProps) {
 
         <View style={styles.tableHeader}>
           <Text style={[styles.tableHeaderCell, styles.colDesc]}>
-            DESCRIPTION
+            {PDF_LOCALE.description}
           </Text>
-          <Text style={[styles.tableHeaderCell, styles.colRate]}>RATE</Text>
-          <Text style={[styles.tableHeaderCell, styles.colQty]}>QTY/HRS</Text>
-          <Text style={[styles.tableHeaderCell, styles.colTax]}>TAX</Text>
-          <Text style={[styles.tableHeaderCell, styles.colAmt]}>AMOUNT</Text>
+          <Text style={[styles.tableHeaderCell, styles.colRate]}>
+            {PDF_LOCALE.rate}
+          </Text>
+          <Text style={[styles.tableHeaderCell, styles.colQty]}>
+            {PDF_LOCALE.qtyHrs}
+          </Text>
+          <Text style={[styles.tableHeaderCell, styles.colTax]}>
+            {PDF_LOCALE.tax}
+          </Text>
+          <Text style={[styles.tableHeaderCell, styles.colAmt]}>
+            {PDF_LOCALE.amount}
+          </Text>
         </View>
 
         {data.lineItems.map((item) => (
@@ -322,16 +315,16 @@ export function QuotationDocument({ data }: QuotationDocumentProps) {
               {item.description}
             </Text>
             <Text style={[styles.tableCellRight, styles.colRate]}>
-              {formatCurrency(item.unitPrice)}
+              {formatPdfCurrency(item.unitPrice)}
             </Text>
             <Text style={[styles.tableCellRight, styles.colQty]}>
               {item.quantity}
             </Text>
             <Text style={[styles.tableCellRight, styles.colTax]}>
-              {formatPercent(item.taxPercent)}
+              {formatPdfPercent(item.taxPercent)}
             </Text>
             <Text style={[styles.tableCellRight, styles.colAmt]}>
-              {formatCurrency(item.total)}
+              {formatPdfCurrency(item.total)}
             </Text>
           </View>
         ))}
@@ -340,7 +333,7 @@ export function QuotationDocument({ data }: QuotationDocumentProps) {
           <View style={styles.notesSection}>
             {data.notes && (
               <View>
-                <Text style={styles.notesTitle}>Notes</Text>
+                <Text style={styles.notesTitle}>{PDF_LOCALE.notes}</Text>
                 <Text style={styles.notesText}>{data.notes}</Text>
               </View>
             )}
@@ -348,31 +341,35 @@ export function QuotationDocument({ data }: QuotationDocumentProps) {
           <View style={styles.pricingSection}>
             <View style={styles.pricingLine}>
               <View style={styles.pricingLabel}>
-                <Text style={styles.pricingLabelText}>Subtotal</Text>
+                <Text style={styles.pricingLabelText}>
+                  {PDF_LOCALE.subtotal}
+                </Text>
               </View>
               <View style={styles.pricingValue}>
                 <Text style={styles.pricingValueText}>
-                  {formatCurrency(data.subtotal)}
+                  {formatPdfCurrency(data.subtotal)}
                 </Text>
               </View>
             </View>
             <View style={styles.pricingLine}>
               <View style={styles.pricingLabel}>
-                <Text style={styles.pricingLabelText}>Taxes</Text>
+                <Text style={styles.pricingLabelText}>{PDF_LOCALE.taxes}</Text>
               </View>
               <View style={styles.pricingValue}>
                 <Text style={styles.pricingValueText}>
-                  {formatCurrency(data.taxes)}
+                  {formatPdfCurrency(data.taxes)}
                 </Text>
               </View>
             </View>
             <View style={styles.totalRow}>
               <View style={styles.totalLabel}>
-                <Text style={styles.totalLabelText}>Grand Total</Text>
+                <Text style={styles.totalLabelText}>
+                  {PDF_LOCALE.grandTotal}
+                </Text>
               </View>
               <View style={styles.totalValue}>
                 <Text style={styles.totalValueText}>
-                  {formatCurrency(data.grandTotal)}
+                  {formatPdfCurrency(data.grandTotal)}
                 </Text>
               </View>
             </View>
