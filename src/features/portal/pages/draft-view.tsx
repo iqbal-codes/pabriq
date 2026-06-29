@@ -1,20 +1,20 @@
 import { toast } from 'sonner'
-import { useTranslations } from 'use-intl'
-import { FormGrid, FormRoot, useAppForm } from '#/components/app/form'
+import { useLocale, useTranslations } from 'use-intl'
+import {
+  FormActions,
+  FormGrid,
+  FormRoot,
+  FormSection,
+  useAppForm,
+} from '#/components/app/form'
 import { CustomerInfoCard } from '#/features/portal/components/customer-info-card'
 import { PortalHeader } from '#/features/portal/components/portal-header'
+import { formatCurrency } from '#/lib/formatters'
 import {
   useConfirmPortalOrder,
   useSavePortalAddress,
   useUpdatePortalLineItem,
 } from '../hooks'
-
-const currencyFormatter = new Intl.NumberFormat('en-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  minimumFractionDigits: 0,
-})
-
 import type { PortalOrder } from '../model'
 
 export function DraftView({
@@ -25,6 +25,7 @@ export function DraftView({
   token: string
 }) {
   const t = useTranslations('portal')
+  const locale = useLocale()
   const confirmOrder = useConfirmPortalOrder()
   const saveAddress = useSavePortalAddress()
   const updateLineItem = useUpdatePortalLineItem()
@@ -118,10 +119,7 @@ export function DraftView({
                 photoAssetId={order.customerPhotoAssetId}
               />
             ) : (
-              <div className="rounded-lg border border-border bg-card p-4">
-                <h2 className="mb-4 text-sm font-medium text-card-foreground">
-                  {t('customerInfo')}
-                </h2>
+              <FormSection title={t('customerInfo')}>
                 <FormGrid columns={1}>
                   <form.AppField
                     name="guestName"
@@ -152,24 +150,18 @@ export function DraftView({
                     )}
                   </form.AppField>
                 </FormGrid>
-              </div>
+              </FormSection>
             )}
 
-            <div className="rounded-lg border border-border bg-card p-4">
-              <h2 className="mb-4 text-sm font-medium text-card-foreground">
-                {t('shippingAddress')}
-              </h2>
+            <FormSection title={t('shippingAddress')}>
               <form.AppField name="address">
                 {(field) => (
                   <field.AddressField showAreaSearch={showAreaSearch} />
                 )}
               </form.AppField>
-            </div>
+            </FormSection>
 
-            <div className="rounded-lg border border-border bg-card p-4">
-              <h2 className="mb-4 text-sm font-medium text-card-foreground">
-                {t('lineItems')}
-              </h2>
+            <FormSection title={t('lineItems')}>
               <div className="space-y-4">
                 {order.lineItems.map((item, i) => (
                   <div
@@ -183,11 +175,11 @@ export function DraftView({
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {t('quantity')}: {item.quantity} ×{' '}
-                          {currencyFormatter.format(item.unitPrice)}
+                          {formatCurrency(item.unitPrice, locale)}
                         </p>
                       </div>
                       <p className="text-sm font-medium text-card-foreground">
-                        {currencyFormatter.format(item.total)}
+                        {formatCurrency(item.total, locale)}
                       </p>
                     </div>
                     <form.AppField name={`lineItems[${i}].name`}>
@@ -224,16 +216,16 @@ export function DraftView({
                     {t('orderTotal')}
                   </p>
                   <p className="text-lg font-semibold text-card-foreground">
-                    {currencyFormatter.format(order.total)}
+                    {formatCurrency(order.total, locale)}
                   </p>
                 </div>
               </div>
-            </div>
-            <form.AppForm>
+            </FormSection>
+            <FormActions align="stretch">
               <form.SubmitButton className="w-full">
                 {isSubmitting ? t('submitting') : t('submit')}
               </form.SubmitButton>
-            </form.AppForm>
+            </FormActions>
           </div>
         </div>
       </div>

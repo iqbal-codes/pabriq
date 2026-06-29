@@ -1,33 +1,15 @@
 import { CalendarClock, CheckCircle2 } from 'lucide-react'
+import { useSyncExternalStore } from 'react'
 import { useLocale, useTranslations } from 'use-intl'
 import { StatusBadge } from '#/components/status-badge'
 import { Card } from '#/components/ui/card'
+import { formatCurrency, formatLongDate } from '#/lib/formatters'
 import { CustomerInfoCard } from '../components/customer-info-card'
 import { LineItemTaskCard } from '../components/line-item-task-card'
 import { PaymentAlertBanner } from '../components/payment-alert-banner'
 import { PaymentSection } from '../components/payment-section'
 import { PortalHeader } from '../components/portal-header'
 import { ShippingAddressCard } from '../components/shipping-address-card'
-
-const currencyFormatter = new Intl.NumberFormat('id-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  minimumFractionDigits: 0,
-})
-
-const _dateTimeFormatters = new Map<string, Intl.DateTimeFormat>([
-  ['en', new Intl.DateTimeFormat('en', { dateStyle: 'long' })],
-])
-function formatEstimatedDate(date: Date, locale: string): string {
-  let fmt = _dateTimeFormatters.get(locale)
-  if (!fmt) {
-    fmt = new Intl.DateTimeFormat(locale, { dateStyle: 'long' })
-    _dateTimeFormatters.set(locale, fmt)
-  }
-  return fmt.format(date)
-}
-
-import { useSyncExternalStore } from 'react'
 import {
   useOrderTimeline,
   usePortalGetInvoiceUploadUrl,
@@ -52,16 +34,12 @@ function EstimatedCompletion({
   )
 
   if (!mounted) {
-    return (
-      <span className="text-sm text-muted-foreground">
-        {t('estimatedCompletion', { date: '' })}
-      </span>
-    )
+    return null
   }
 
   const estimatedDate = new Date(createdAt)
   estimatedDate.setDate(estimatedDate.getDate() + maxDays)
-  const formattedDate = formatEstimatedDate(estimatedDate, locale)
+  const formattedDate = formatLongDate(String(estimatedDate), locale)
 
   return (
     <span className="text-sm text-muted-foreground">
@@ -172,13 +150,11 @@ export function ProgressView({
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-3">
                 <CalendarClock className="size-4 shrink-0 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  <EstimatedCompletion
-                    createdAt={order.createdAt}
-                    maxDays={maxDays}
-                    locale={locale}
-                  />
-                </p>
+                <EstimatedCompletion
+                  createdAt={order.createdAt}
+                  maxDays={maxDays}
+                  locale={locale}
+                />
               </div>
             </div>
           )}
@@ -199,7 +175,7 @@ export function ProgressView({
             <div>
               <p className="text-sm text-muted-foreground">{t('orderTotal')}</p>
               <p className="text-lg font-semibold text-card-foreground">
-                {currencyFormatter.format(order.total)}
+                {formatCurrency(order.total, locale)}
               </p>
             </div>
           </div>
