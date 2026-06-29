@@ -1,45 +1,24 @@
 import { useRouter } from '@tanstack/react-router'
-import { Minus, Plus } from 'lucide-react'
 import { parseAsString, useQueryState } from 'nuqs'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { useTranslations } from 'use-intl'
-import {
-  FormActions,
-  FormGrid,
-  FormRoot,
-  FormSection,
-  useAppForm,
-} from '#/components/app/form'
+import { useLocale, useTranslations } from 'use-intl'
+import { FormActions, FormRoot, useAppForm } from '#/components/app/form'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
-import { StatusBadge } from '#/components/status-badge'
-import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '#/components/ui/table'
-
-const currencyFormatter = new Intl.NumberFormat('id-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  minimumFractionDigits: 0,
-})
-
+import { CreateInvoiceFormFields } from '#/features/invoices/components/create-invoice-form-fields'
+import { defaultCreateInvoiceValues } from '#/features/invoices/components/create-invoice-form-types'
+import { OrderForInvoiceSummaryCard } from '#/features/invoices/components/order-for-invoice-summary-card'
 import {
   useCreateInvoice,
   useOrderForInvoice,
   usePaymentMethods,
 } from '#/features/invoices/hooks'
+import { formatCurrency } from '#/lib/formatters'
 
 export function CreateInvoicePage() {
   const t = useTranslations('invoices')
+  const locale = useLocale()
   const router = useRouter()
   const createInvoice = useCreateInvoice()
 
@@ -76,23 +55,8 @@ export function CreateInvoicePage() {
       100
     : 0
 
-  const defaultLineItems = orderData
-    ? orderData.lineItems.map((item) => ({
-        description: item.name ?? 'Order item',
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-      }))
-    : [{ description: '', quantity: 1, unitPrice: 0 }]
-
   const form = useAppForm({
-    defaultValues: {
-      customerId: orderData?.order.customerId ?? '',
-      customerName: orderData?.order.customerName ?? '',
-      dueDate: '',
-      paymentMethodId: '',
-      notes: '',
-      lineItems: defaultLineItems,
-    },
+    defaultValues: defaultCreateInvoiceValues(orderData),
     onSubmit: async ({ value }) => {
       const result = await createInvoice.mutateAsync({
         orderId: orderId ?? undefined,
@@ -114,7 +78,7 @@ export function CreateInvoicePage() {
         toast.success(t('title'))
         router.navigate({ to: '/invoices' })
       } else {
-        toast.error(result.error ?? 'Failed')
+        toast.error(result.error ?? t('failed'))
       }
     },
   })
@@ -124,308 +88,28 @@ export function CreateInvoicePage() {
       <PageHeader title={t('createInvoice')} />
 
       {orderData && (
-        <>
-          {/* Order Summary Card */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Order #{orderData.order.orderNumber ?? '—'}
-                <StatusBadge status={orderData.order.status} />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    {t('customer')}
-                  </p>
-                  <p className="font-medium">
-                    {orderData.order.customerName ?? '—'}
-                  </p>
-                  {orderData.order.customerPhone && (
-                    <p className="text-sm text-muted-foreground">
-                      {orderData.order.customerPhone}
-                    </p>
-                  )}
-                  {orderData.order.customerEmail && (
-                    <p className="text-sm text-muted-foreground">
-                      {orderData.order.customerEmail}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{t('total')}</p>
-                  <p className="text-2xl font-bold">
-                    {currencyFormatter.format(orderData.order.total)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Already Invoiced Progress */}
-              {orderData.existingInvoices.length > 0 && (
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Already invoiced: {orderData.invoicedPercentage}% (
-                    {currencyFormatter.format(orderData.invoicedAmount)})
-                  </p>
-                  <div className="flex gap-4 text-sm">
-                    {orderData.existingInvoices.map((inv) => (
-                      <Badge key={inv.id} variant="secondary">
-                        {inv.invoiceNumber}: {inv.percentage}% (
-                        {currencyFormatter.format(inv.total)})
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Percentage Selector */}
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Invoice amount
-                </p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    variant={
-                      selectedPercentage === 'full' ? 'default' : 'outline'
-                    }
-                    size="sm"
-                    onClick={() => setSelectedPercentage('full')}
-                  >
-                    Full (100%)
-                  </Button>
-                  <Button
-                    variant={
-                      selectedPercentage === 'remaining' ? 'default' : 'outline'
-                    }
-                    size="sm"
-                    onClick={() => setSelectedPercentage('remaining')}
-                    disabled={orderData.remainingPercentage <= 0}
-                  >
-                    Remaining ({orderData.remainingPercentage}%)
-                  </Button>
-                  <Button
-                    variant={
-                      selectedPercentage === 'custom' ? 'default' : 'outline'
-                    }
-                    size="sm"
-                    onClick={() => setSelectedPercentage('custom')}
-                  >
-                    Custom
-                  </Button>
-                  {selectedPercentage === 'custom' && (
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() =>
-                          setCustomPercentage((p) => Math.max(1, p - 10))
-                        }
-                      >
-                        <Minus className="size-3" />
-                      </Button>
-                      <span className="w-16 text-center font-medium">
-                        {customPercentage}%
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() =>
-                          setCustomPercentage((p) => Math.min(100, p + 10))
-                        }
-                      >
-                        <Plus className="size-3" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                <p className="mt-2 font-semibold">
-                  Invoice total: {currencyFormatter.format(invoicesTotal)}
-                  {selectedPercentage === 'remaining' && (
-                    <span className="text-sm text-muted-foreground font-normal ml-2">
-                      (remaining from{' '}
-                      {currencyFormatter.format(orderData.order.total)})
-                    </span>
-                  )}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Order Line Items (read-only) */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>{t('lineItems')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('description')}</TableHead>
-                    <TableHead className="text-right">{t('qty')}</TableHead>
-                    <TableHead className="text-right">{t('rate')}</TableHead>
-                    <TableHead className="text-right">{t('total')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orderData.lineItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{item.name ?? '—'}</TableCell>
-                      <TableCell className="text-right">
-                        {item.quantity}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {currencyFormatter.format(item.unitPrice)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {currencyFormatter.format(item.total)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </>
+        <OrderForInvoiceSummaryCard
+          orderData={orderData}
+          selectedPercentage={selectedPercentage}
+          customPercentage={customPercentage}
+          invoiceTotal={invoicesTotal}
+          onSelectedPercentageChange={setSelectedPercentage}
+          onCustomPercentageChange={setCustomPercentage}
+        />
       )}
 
       <FormRoot form={form}>
-        {orderData ? (
-          <FormSection title="">
-            <FormGrid columns={2}>
-              <form.AppField name="dueDate">
-                {(field) => (
-                  <field.TextField
-                    label={t('dueDate')}
-                    placeholder="YYYY-MM-DD"
-                  />
-                )}
-              </form.AppField>
-              <form.AppField name="paymentMethodId">
-                {(field) => (
-                  <field.SelectField
-                    label={t('paymentMethod')}
-                    options={paymentMethodOptions}
-                    placeholder={t('paymentMethod')}
-                  />
-                )}
-              </form.AppField>
-              <form.AppField name="notes">
-                {(field) => <field.TextareaField label={t('notes')} />}
-              </form.AppField>
-            </FormGrid>
-          </FormSection>
-        ) : (
-          <>
-            {/* Standalone mode: full form */}
-            <FormSection title={t('customer')}>
-              <FormGrid columns={2}>
-                <form.AppField name="customerId">
-                  {(field) => <field.TextField label={t('customer')} />}
-                </form.AppField>
-                <form.AppField name="customerName">
-                  {(field) => (
-                    <field.TextField label={`${t('customer')} Name`} />
-                  )}
-                </form.AppField>
-                <form.AppField name="dueDate">
-                  {(field) => (
-                    <field.TextField
-                      label={t('dueDate')}
-                      placeholder="YYYY-MM-DD"
-                    />
-                  )}
-                </form.AppField>
-                <form.AppField name="paymentMethodId">
-                  {(field) => (
-                    <field.SelectField
-                      label={t('paymentMethod')}
-                      options={paymentMethodOptions}
-                      placeholder={t('paymentMethod')}
-                    />
-                  )}
-                </form.AppField>
-                <form.AppField name="notes">
-                  {(field) => <field.TextareaField label={t('notes')} />}
-                </form.AppField>
-              </FormGrid>
-            </FormSection>
-
-            <FormSection title={t('lineItems')}>
-              <form.AppField name="lineItems" mode="array">
-                {(itemsField) => (
-                  <div className="space-y-2">
-                    {itemsField.state.value.map((item) => (
-                      <div
-                        key={itemsField.state.value.indexOf(item)}
-                        className="flex items-end gap-2"
-                      >
-                        <div className="flex-1">
-                          <form.AppField
-                            name={`lineItems[${itemsField.state.value.indexOf(item)}].description`}
-                          >
-                            {(field) => (
-                              <field.TextField label={t('description')} />
-                            )}
-                          </form.AppField>
-                        </div>
-                        <div className="w-20">
-                          <form.AppField
-                            name={`lineItems[${itemsField.state.value.indexOf(item)}].quantity`}
-                          >
-                            {(field) => <field.NumberField label={t('qty')} />}
-                          </form.AppField>
-                        </div>
-                        <div className="w-24">
-                          <form.AppField
-                            name={`lineItems[${itemsField.state.value.indexOf(item)}].unitPrice`}
-                          >
-                            {(field) => (
-                              <field.NumberField label={t('total')} />
-                            )}
-                          </form.AppField>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          type="button"
-                          onClick={() =>
-                            itemsField.removeValue(
-                              itemsField.state.value.indexOf(item),
-                            )
-                          }
-                        >
-                          <Minus className="size-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      type="button"
-                      onClick={() =>
-                        itemsField.pushValue({
-                          description: '',
-                          quantity: 1,
-                          unitPrice: 0,
-                        })
-                      }
-                    >
-                      <Plus className="mr-2 size-4" />
-                      {t('addItem')}
-                    </Button>
-                  </div>
-                )}
-              </form.AppField>
-            </FormSection>
-          </>
-        )}
+        <CreateInvoiceFormFields
+          form={form}
+          orderData={orderData}
+          paymentMethodOptions={paymentMethodOptions}
+        />
 
         <FormActions>
           <form.AppForm>
             <form.SubmitButton>
               {orderData
-                ? `${t('createInvoice')} — ${currencyFormatter.format(invoicesTotal)}`
+                ? `${t('createInvoice')} — ${formatCurrency(invoicesTotal, locale)}`
                 : t('createInvoice')}
             </form.SubmitButton>
           </form.AppForm>

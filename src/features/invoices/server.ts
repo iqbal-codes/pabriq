@@ -7,41 +7,11 @@ import type {
   InvoiceBalance,
   ListInvoicesParams,
   ListInvoicesResult,
+  OrderForInvoice,
   Payment,
   PaymentMethod,
 } from './model'
 
-type OrderForInvoice = {
-  order: {
-    id: string
-    orderNumber: string | null
-    customerId: string | null
-    customerName: string | null
-    customerPhone: string | null
-    customerEmail: string | null
-    total: number
-    status: string
-    notes: string | null
-  }
-  lineItems: Array<{
-    id: string
-    name: string | null
-    quantity: number
-    unitPrice: number
-    total: number
-  }>
-  existingInvoices: Array<{
-    id: string
-    invoiceNumber: string
-    percentage: number | null
-    total: number
-    status: string
-  }>
-  invoicedPercentage: number
-  invoicedAmount: number
-  remainingPercentage: number
-  remainingAmount: number
-}
 type MutationResult = { ok: true } | { ok: false; error: string }
 
 async function resolveOrgId(): Promise<string> {

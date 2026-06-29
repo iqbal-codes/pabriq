@@ -232,6 +232,7 @@ export type Messages = {
     copyPortalLink: string;
     linkCopied: string;
     generateLink: string;
+    generateLinkFailed: string;
     approve: string;
     reject: string;
     rejectReason: string;
@@ -522,6 +523,16 @@ export type Messages = {
     noResults: string;
     createdAt: string;
     uploadFailed: string;
+    failed: string;
+    orderLabel: string;
+    alreadyInvoiced: string;
+    invoiceAmount: string;
+    fullAmount: string;
+    customAmount: string;
+    invoiceTotal: string;
+    remainingFrom: string;
+    customerName: string;
+    transferFallback: string;
   };
   address: {
     title: string;
