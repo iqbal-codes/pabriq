@@ -1,14 +1,9 @@
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from '@tanstack/react-table'
+import { getCoreRowModel, useReactTable } from '@tanstack/react-table'
 import type { LucideIcon } from 'lucide-react'
 import { X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { EmptyStateAction } from '#/components/app/page-shell/empty-state'
 import { Button } from '#/components/ui/button'
-import { Checkbox } from '#/components/ui/checkbox'
 import { useIsMobile } from '#/hooks/use-mobile'
 import { DataTableProvider } from './data-table-context'
 import { DataTableDesktopView } from './data-table-desktop-view'
@@ -30,7 +25,6 @@ import {
 import { DataTableToolbar } from './data-table-toolbar'
 import type {
   AppColumnDef,
-  AppColumnMeta,
   DataTableFiltersConfig,
   DataTableLabels,
   DataTableSlotContext,
@@ -41,8 +35,8 @@ import {
   getStoredVisibility,
   setStoredVisibility,
 } from './data-table-utils'
-import { DataTableViewOptions } from './data-table-view-options'
 import { useDataTableAccumulation } from './use-data-table-accumulation'
+import { useDataTableColumns } from './use-data-table-columns'
 
 type DataTableProps<TData> = {
   columns: AppColumnDef<TData>[]
@@ -154,103 +148,12 @@ export function DataTable<TData>({
     [filters],
   )
 
-  const allColumns = useMemo(() => {
-    const cols: AppColumnDef<TData>[] = []
-    if (enableRowSelection) {
-      cols.push({
-        id: 'select',
-        enableSorting: false,
-        enableHiding: false,
-        meta: { label: '', mobileRole: 'hidden' } as AppColumnMeta,
-        header: ({ table }) => (
-          <Checkbox
-            checked={table.getIsAllRowsSelected()}
-            onCheckedChange={(v) => table.toggleAllRowsSelected(!!v)}
-            aria-label="Select all"
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(v) => row.toggleSelected(!!v)}
-            aria-label="Select row"
-          />
-        ),
-      } as AppColumnDef<TData>)
-    }
-    cols.push(...columns)
-    if (rowActions && !cols.find((c) => 'id' in c && c.id === 'actions')) {
-      cols.push({
-        id: 'actions',
-        enableHiding: false,
-        meta: { label: '', mobileRole: 'actions' } as unknown as AppColumnMeta,
-        header: ({ table }) => (
-          <div className="flex items-center justify-between">
-            {'Action'}
-            <DataTableViewOptions
-              columns={table.getAllLeafColumns().map((col) => ({
-                id: col.id,
-                label:
-                  (col.columnDef.meta as AppColumnMeta | undefined)?.label ||
-                  col.id,
-                getIsVisible: () => col.getIsVisible(),
-                getCanHide: () => col.getCanHide(),
-                toggleVisibility: () => col.toggleVisibility(),
-              }))}
-              labels={labels}
-            />
-          </div>
-        ),
-        cell: ({ row }) => rowActions?.(row.original),
-      } as AppColumnDef<TData>)
-    } else if (cols.length > 0) {
-      const lastIndex = cols.length - 1
-      const lastCol = cols[lastIndex]
-      cols[lastIndex] = {
-        ...lastCol,
-        header: (ctx) => (
-          <div className="flex items-center justify-between gap-2">
-            <span className="truncate">{flexRender(lastCol.header, ctx)}</span>
-            <DataTableViewOptions
-              columns={ctx.table.getAllLeafColumns().map((col) => ({
-                id: col.id,
-                label:
-                  (col.columnDef.meta as AppColumnMeta | undefined)?.label ||
-                  col.id,
-                getIsVisible: () => col.getIsVisible(),
-                getCanHide: () => col.getCanHide(),
-                toggleVisibility: () => col.toggleVisibility(),
-              }))}
-              labels={labels}
-            />
-          </div>
-        ),
-      } as AppColumnDef<TData>
-    } else {
-      cols.push({
-        id: 'column-visibility',
-        enableHiding: false,
-        meta: { label: '', mobileRole: 'hidden' } as AppColumnMeta,
-        header: ({ table }) => (
-          <div className="flex justify-end">
-            <DataTableViewOptions
-              columns={table.getAllLeafColumns().map((col) => ({
-                id: col.id,
-                label:
-                  (col.columnDef.meta as AppColumnMeta | undefined)?.label ||
-                  col.id,
-                getIsVisible: () => col.getIsVisible(),
-                getCanHide: () => col.getCanHide(),
-                toggleVisibility: () => col.toggleVisibility(),
-              }))}
-              labels={labels}
-            />
-          </div>
-        ),
-      } as AppColumnDef<TData>)
-    }
-    return cols
-  }, [columns, rowActions, enableRowSelection, labels])
+  const allColumns = useDataTableColumns({
+    columns,
+    rowActions,
+    enableRowSelection,
+    labels,
+  })
 
   const visibilityKey = `${tableId}`
 

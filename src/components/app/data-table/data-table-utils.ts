@@ -44,7 +44,7 @@ export type SortState = {
   direction: 'asc' | 'desc'
 }
 
-export const STORAGE_PREFIX = 'pabriq-datatable-columns'
+const STORAGE_PREFIX = 'pabriq-datatable-columns'
 
 export function getStoredVisibility(tableId: string): Record<string, boolean> {
   try {
@@ -178,22 +178,16 @@ export function getActiveFilterCount(
   return definitions.filter((def) => isFilterActive(def, values[def.id])).length
 }
 
-export function getFilterSummary(
-  _def: FilterDefinition,
-  value: FilterValue,
-  options?: FilterOption[],
-): string {
-  if (!isFilterActive(_def, value)) return ''
-  if (typeof value === 'string') {
-    const opt = options?.find((o) => o.value === value)
-    return opt?.label ?? value
-  }
-  if (Array.isArray(value)) return `${value.length} selected`
-  if (typeof value === 'object' && !Array.isArray(value)) {
-    const r = value as DateRangeValue
-    if (r.from && r.to) return `${r.from} — ${r.to}`
-    if (r.from) return `From ${r.from}`
-    if (r.to) return `Until ${r.to}`
-  }
-  return ''
+export function getVisibleColumns<TData>(
+  allColumns: AppColumnDef<TData>[],
+  columnVisibility: Record<string, boolean>,
+): AppColumnDef<TData>[] {
+  return allColumns.filter((col) => {
+    if ('accessorKey' in col || 'id' in col) {
+      const id = 'accessorKey' in col ? col.accessorKey : col.id
+      if (id === 'select') return false
+      return columnVisibility[id as string] !== false
+    }
+    return false
+  })
 }

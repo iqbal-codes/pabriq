@@ -108,7 +108,7 @@ function ComboboxFieldSingle({
   const clientSide = !!staticOptions
   const filtered = useFiltered(activeOptions, query, clientSide)
   const selectedLabel = value
-    ? (knownOptions.find((o) => o.value === value)?.label ?? value)
+    ? (activeOptions.find((o) => o.value === value)?.label ?? value)
     : null
 
   function handleSelect(selectedValue: string) {
@@ -293,7 +293,7 @@ function ComboboxFieldMulti({
   }
 
   function getLabel(val: string): string {
-    return knownOptions.find((o) => o.value === val)?.label ?? val
+    return activeOptions.find((o) => o.value === val)?.label ?? val
   }
 
   const visible = values.slice(0, 3)

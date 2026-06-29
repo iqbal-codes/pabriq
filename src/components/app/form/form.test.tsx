@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderToString } from 'react-dom/server'
+import { IntlProvider } from 'use-intl'
 import { describe, expect, it } from 'vitest'
 import { useAppForm } from './form-context'
 import { FormActions, FormGrid, FormRoot, FormSection } from './form-layout'
@@ -44,6 +45,49 @@ describe('Form components', () => {
 
     render(<TestForm />)
     expect(screen.getByText('Notes')).toBeDefined()
+  })
+
+  it('renders a ComboboxField and displays selected option label instead of ID', () => {
+    const comboboxMessages = {
+      combobox: {
+        searchPlaceholder: 'Search...',
+        loading: 'Loading...',
+        noResults: 'No results.',
+      },
+    }
+
+    function TestForm() {
+      const form = useAppForm({
+        defaultValues: { customerId: 'cust-1' },
+      })
+
+      return (
+        <form.AppField name="customerId">
+          {(field) => (
+            <field.ComboboxField
+              label="Customer"
+              options={[
+                { value: 'cust-1', label: 'John Doe' },
+                { value: 'cust-2', label: 'Jane Doe' },
+              ]}
+            />
+          )}
+        </form.AppField>
+      )
+    }
+
+    render(
+      <IntlProvider locale="en" messages={comboboxMessages}>
+        <TestForm />
+      </IntlProvider>,
+    )
+
+    // The field label should be visible
+    expect(screen.getByText('Customer')).toBeInTheDocument()
+
+    // The selected option's label should be visible, NOT the value 'cust-1'
+    expect(screen.getByText('John Doe')).toBeInTheDocument()
+    expect(screen.queryByText('cust-1')).toBeNull()
   })
 
   it('renders a SelectField with options', () => {

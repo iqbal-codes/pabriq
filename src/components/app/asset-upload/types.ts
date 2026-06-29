@@ -55,9 +55,3 @@ export type AssetUploadDropzonePropsUncontrolled =
   AssetUploadDropzonePropsBase & {
     items: UploadItem[]
   }
-
-export function isControlled(
-  props: AssetUploadDropzoneProps,
-): props is AssetUploadDropzonePropsControlled {
-  return 'onItemsChange' in props && props.onItemsChange !== undefined
-}

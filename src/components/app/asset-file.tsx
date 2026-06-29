@@ -70,13 +70,6 @@ function FileIconDisplay({
   return <Icon className={cn('shrink-0', className)} />
 }
 
-type AssetFileProps = {
-  assetId: string
-  metadata?: AssetMetadata
-  showSize?: boolean
-  className?: string
-}
-
 function AssetFileRow({
   metadata,
   showSize = true,
@@ -231,42 +224,6 @@ function AssetFileGridCard({
       )}
     </div>
   )
-}
-
-function AssetFileInternal({
-  assetId,
-  metadata,
-  showSize = true,
-  layout = 'list',
-  className,
-}: AssetFileProps & { layout?: 'list' | 'grid' }) {
-  const { data: metaData } = useQuery({
-    queryKey: ['asset-file-meta', assetId],
-    queryFn: () => getAssetsMetadata({ data: { assetIds: [assetId] } }),
-    enabled: !metadata,
-    select: (data) => data[0],
-    staleTime: 60 * 1000,
-  })
-
-  const meta = metadata ?? metaData
-
-  if (!meta) return null
-
-  if (layout === 'grid') {
-    return <AssetFileGridCard metadata={meta} showSize={showSize} />
-  }
-
-  return (
-    <AssetFileRow metadata={meta} showSize={showSize} className={className} />
-  )
-}
-
-export function AssetFile(props: AssetFileProps) {
-  return <AssetFileInternal {...props} layout="list" />
-}
-
-export function AssetFileGrid(props: AssetFileProps) {
-  return <AssetFileInternal {...props} layout="grid" />
 }
 
 type AssetFileListProps = {

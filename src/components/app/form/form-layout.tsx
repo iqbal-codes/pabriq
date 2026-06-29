@@ -1,4 +1,4 @@
-import { createContext, use, useRef } from 'react'
+import { createContext, useRef } from 'react'
 import { FieldGroup, FieldLegend, FieldSet } from '#/components/ui/field'
 import { cn } from '#/lib/utils'
 
@@ -7,12 +7,6 @@ type FormRootContextValue = {
 }
 
 const FormRootContext = createContext<FormRootContextValue | null>(null)
-
-export function useFormRootContext() {
-  const ctx = use(FormRootContext)
-  if (!ctx) throw new Error('useFormRootContext must be used within FormRoot')
-  return ctx
-}
 
 type FormRootProps = {
   form: { handleSubmit: () => void }
