@@ -1,14 +1,13 @@
 import { useRouteContext } from '@tanstack/react-router'
 import { ShoppingCart } from 'lucide-react'
-import { parseAsInteger, parseAsString, useQueryState } from 'nuqs'
+import { parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { useTranslations } from 'use-intl'
-import type { SortState } from '#/components/app/data-table'
 import {
+  createDataTableLabels,
   DataTable,
   DataTableSearch,
-  decodeSort,
-  encodeSort,
+  useListPageState,
 } from '#/components/app/data-table'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
@@ -16,7 +15,6 @@ import { OrderRowActions } from '#/features/orders/components/order-table-action
 import {
   getOrderColumns,
   getOrderFiltersConfig,
-  getOrderLabels,
   getOrderStatusOptions,
   type TranslationFn,
 } from '#/features/orders/components/order-table-columns'
@@ -30,24 +28,20 @@ export function OrdersListPage() {
   const dt = useTranslations('dataTable')
   const st = useTranslations('status')
 
-  const [search, setSearch] = useQueryState('q', parseAsString.withDefault(''))
-  const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
-  const [perPage, setPerPage] = useQueryState(
-    'perPage',
-    parseAsInteger.withDefault(25),
-  )
-  const [sortEncoded, setSortEncoded] = useQueryState(
-    'sort',
-    parseAsString.withDefault(''),
-  )
+  const {
+    search,
+    setSearch,
+    page,
+    setPage,
+    perPage,
+    sort,
+    handleSortChange,
+    handlePerPageChange,
+    resetPage,
+  } = useListPageState()
   const [statusFilter, setStatusFilter] = useQueryState(
     'status',
     parseAsString.withDefault(''),
-  )
-
-  const sort = useMemo<SortState | null>(
-    () => (sortEncoded ? decodeSort(sortEncoded) : null),
-    [sortEncoded],
   )
 
   const queryFilters = useMemo(
@@ -66,42 +60,24 @@ export function OrdersListPage() {
   const rows = data?.rows ?? []
   const totalRows = data?.totalRows ?? 0
 
-  const handleSortChange = useCallback(
-    (newSort: SortState | null) => {
-      setSortEncoded(
-        newSort ? encodeSort(newSort.field, newSort.direction) : null,
-      )
-      setPage(1)
-    },
-    [setSortEncoded, setPage],
-  )
-
-  const handlePerPageChange = useCallback(
-    (pp: number) => {
-      setPerPage(pp)
-      setPage(1)
-    },
-    [setPerPage, setPage],
-  )
-
   const handleApplyFilters = useCallback(
     (values: Record<string, unknown>) => {
       setStatusFilter((values.status as string) || null)
-      setPage(1)
+      resetPage()
     },
-    [setStatusFilter, setPage],
+    [setStatusFilter, resetPage],
   )
 
   const handleClearStructuredFilters = useCallback(() => {
     setStatusFilter(null)
-    setPage(1)
-  }, [setStatusFilter, setPage])
+    resetPage()
+  }, [setStatusFilter, resetPage])
 
   const handleClearAllFilters = useCallback(() => {
     setSearch(null)
     setStatusFilter(null)
-    setPage(1)
-  }, [setSearch, setStatusFilter, setPage])
+    resetPage()
+  }, [setSearch, setStatusFilter, resetPage])
 
   const statusOptions = useMemo(
     () => getOrderStatusOptions(st as TranslationFn),
@@ -127,7 +103,7 @@ export function OrdersListPage() {
   )
 
   const columns = useMemo(() => getOrderColumns(t as TranslationFn), [t])
-  const labels = useMemo(() => getOrderLabels(dt as TranslationFn), [dt])
+  const labels = useMemo(() => createDataTableLabels(dt as TranslationFn), [dt])
 
   const hasActiveFilters = !!(search || statusFilter)
 

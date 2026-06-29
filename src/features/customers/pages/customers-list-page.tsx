@@ -1,20 +1,18 @@
 import { Link, useRouteContext } from '@tanstack/react-router'
 import { Eye, Pencil, Users } from 'lucide-react'
-import { parseAsInteger, parseAsString, useQueryState } from 'nuqs'
+import { parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { useTranslations } from 'use-intl'
 import { AvatarPhoto } from '#/components/app/avatar-photo'
 import type {
   AppColumnDef,
   DataTableFiltersConfig,
-  DataTableLabels,
-  SortState,
 } from '#/components/app/data-table'
 import {
+  createDataTableLabels,
   DataTable,
   DataTableSearch,
-  decodeSort,
-  encodeSort,
+  useListPageState,
 } from '#/components/app/data-table'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
@@ -31,24 +29,20 @@ export function CustomersListPage() {
   const dt = useTranslations('dataTable')
   const st = useTranslations('status')
 
-  const [search, setSearch] = useQueryState('q', parseAsString.withDefault(''))
-  const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
-  const [perPage, setPerPage] = useQueryState(
-    'perPage',
-    parseAsInteger.withDefault(25),
-  )
-  const [sortEncoded, setSortEncoded] = useQueryState(
-    'sort',
-    parseAsString.withDefault(''),
-  )
+  const {
+    search,
+    setSearch,
+    page,
+    setPage,
+    perPage,
+    sort,
+    handleSortChange,
+    handlePerPageChange,
+    resetPage,
+  } = useListPageState()
   const [statusFilter, setStatusFilter] = useQueryState(
     'status',
     parseAsString.withDefault(''),
-  )
-
-  const sort = useMemo<SortState | null>(
-    () => (sortEncoded ? decodeSort(sortEncoded) : null),
-    [sortEncoded],
   )
 
   const queryFilters = useMemo(
@@ -67,42 +61,24 @@ export function CustomersListPage() {
   const rows = data?.rows ?? []
   const totalRows = data?.totalRows ?? 0
 
-  const handleSortChange = useCallback(
-    (newSort: SortState | null) => {
-      setSortEncoded(
-        newSort ? encodeSort(newSort.field, newSort.direction) : null,
-      )
-      setPage(1)
-    },
-    [setSortEncoded, setPage],
-  )
-
-  const handlePerPageChange = useCallback(
-    (pp: number) => {
-      setPerPage(pp)
-      setPage(1)
-    },
-    [setPerPage, setPage],
-  )
-
   const handleApplyFilters = useCallback(
     (values: Record<string, unknown>) => {
       setStatusFilter((values.status as string) || null)
-      setPage(1)
+      resetPage()
     },
-    [setStatusFilter, setPage],
+    [setStatusFilter, resetPage],
   )
 
   const handleClearStructuredFilters = useCallback(() => {
     setStatusFilter(null)
-    setPage(1)
-  }, [setStatusFilter, setPage])
+    resetPage()
+  }, [setStatusFilter, resetPage])
 
   const handleClearAllFilters = useCallback(() => {
     setSearch(null)
     setStatusFilter(null)
-    setPage(1)
-  }, [setSearch, setStatusFilter, setPage])
+    resetPage()
+  }, [setSearch, setStatusFilter, resetPage])
 
   const filtersConfig = useMemo<DataTableFiltersConfig>(
     () => ({
@@ -182,29 +158,13 @@ export function CustomersListPage() {
     },
   ]
 
-  const labels: DataTableLabels = {
-    clearFilters: dt('clearFilters'),
-    columnVisibility: dt('columnVisibility'),
-    errorRetry: dt('errorRetry'),
-    errorTitle: dt('errorTitle'),
-    firstPage: dt('firstPage'),
-    lastPage: dt('lastPage'),
-    loading: dt('loading'),
-    nextPage: dt('nextPage'),
-    of: dt('of'),
-    page: dt('page'),
-    perPage: dt('perPage'),
-    previousPage: dt('previousPage'),
-    resetColumns: dt('resetColumns'),
-    rowsSelected: (selected: number, total: number) =>
-      dt('rowsSelected', { selected, total }),
-    visibleRows: (from: number, to: number, total: number) =>
-      dt('visibleRows', { from, to, total }),
-    filters: dt('filters'),
-    applyFilters: dt('applyFilters'),
-    cancelFilters: dt('cancelFilters'),
-    activeFilters: dt('activeFilters'),
-  }
+  const labels = useMemo(
+    () =>
+      createDataTableLabels(
+        dt as (key: string, values?: Record<string, number>) => string,
+      ),
+    [dt],
+  )
 
   const hasActiveFilters = !!(search || statusFilter)
 
