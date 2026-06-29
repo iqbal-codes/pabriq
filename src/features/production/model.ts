@@ -249,6 +249,127 @@ type RequirementResponse = Record<
   string,
   { value?: string; assetIds?: string[] }
 >
+function validateStageRequirements(
+  requirements: Requirement[],
+  requirementResponses?: RequirementResponse,
+): string | null {
+  const requiredReqs = requirements.filter((r) => r.required)
+  const missing = requiredReqs.filter(
+    (r) =>
+      !requirementResponses?.[r.id]?.value &&
+      !requirementResponses?.[r.id]?.assetIds?.length,
+  )
+  if (missing.length > 0) {
+    const names = missing.map((r) => r.label).join(', ')
+    return `Required requirements not fulfilled: ${names}`
+  }
+  return null
+}
+
+async function transitionToStage(params: {
+  taskId: string
+  orgId: string
+  actorId: string
+  fromStageId: string | null
+  toStageId: string
+  completedRequirementIds: string[]
+  status: 'in_progress' | 'pending_approval'
+}): Promise<void> {
+  await db
+    .update(tasksTable)
+    .set({
+      status: params.status,
+      stageId: params.toStageId,
+      updatedAt: new Date(),
+    })
+    .where(eq(tasksTable.id, params.taskId))
+
+  await logActivity({
+    orgId: params.orgId,
+    taskId: params.taskId,
+    type: 'stage_transition',
+    fromStageId: params.fromStageId,
+    toStageId: params.toStageId,
+    data: { completedRequirements: params.completedRequirementIds },
+    actorId: params.actorId,
+  })
+}
+
+async function completeTaskTransition(params: {
+  taskId: string
+  orgId: string
+  actorId: string
+  fromStageId: string | null
+  completedRequirementIds: string[]
+}): Promise<void> {
+  await db
+    .update(tasksTable)
+    .set({
+      status: 'completed',
+      stageId: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(tasksTable.id, params.taskId))
+
+  await logActivity({
+    orgId: params.orgId,
+    taskId: params.taskId,
+    type: 'stage_transition',
+    fromStageId: params.fromStageId,
+    toStageId: null,
+    data: { completedRequirements: params.completedRequirementIds },
+    actorId: params.actorId,
+  })
+}
+
+async function handleBoardTransition(params: {
+  task: ProductionTask
+  orgId: string
+  actorId: string
+  completedRequirementIds: string[]
+}): Promise<{ transitioned: boolean; result?: AdvanceTaskResult }> {
+  if (params.task.board !== 'pre_production') {
+    return { transitioned: false }
+  }
+
+  const prodStages = await db
+    .select()
+    .from(stagesTable)
+    .where(
+      and(
+        eq(stagesTable.orgId, params.orgId),
+        eq(stagesTable.active, true),
+        eq(stagesTable.board, 'production'),
+      ),
+    )
+    .orderBy(asc(stagesTable.orderIndex))
+
+  if (prodStages.length === 0) {
+    return { transitioned: false }
+  }
+
+  await db
+    .update(tasksTable)
+    .set({
+      board: 'production',
+      stageId: prodStages[0].id,
+      status: 'in_progress',
+      updatedAt: new Date(),
+    })
+    .where(eq(tasksTable.id, params.task.id))
+
+  await logActivity({
+    orgId: params.orgId,
+    taskId: params.task.id,
+    type: 'board_transition',
+    fromStageId: params.task.stageId,
+    toStageId: prodStages[0].id,
+    data: { fromBoard: 'pre_production', toBoard: 'production' },
+    actorId: params.actorId,
+  })
+
+  return { transitioned: true, result: { ok: true, pendingApproval: false } }
+}
 
 export async function advanceTask(
   taskId: string,
@@ -297,20 +418,12 @@ export async function advanceTask(
 
   if (!isQueued) {
     const currentStage = allStages[currentStageIdx] as Stage
-    const requiredReqs = currentStage.requirements.filter(
-      (r: { required: boolean }) => r.required,
+    const reqError = validateStageRequirements(
+      currentStage.requirements,
+      requirementResponses,
     )
-    const missing = requiredReqs.filter(
-      (r: { id: string }) =>
-        !requirementResponses?.[r.id]?.value &&
-        !requirementResponses?.[r.id]?.assetIds?.length,
-    )
-    if (missing.length > 0) {
-      const names = missing.map((r: { label: string }) => r.label).join(', ')
-      return {
-        ok: false,
-        error: `Required requirements not fulfilled: ${names}`,
-      }
+    if (reqError !== null) {
+      return { ok: false, error: reqError }
     }
   }
 
@@ -338,70 +451,24 @@ export async function advanceTask(
   const nextStageIdx = currentStageIdx + 1
 
   // Handle board transition: when pre_production completes all stages, move to production board
-  if (nextStageIdx >= allStages.length && task.board === 'pre_production') {
-    // Fetch production stages
-    const prodStages = await db
-      .select()
-      .from(stagesTable)
-      .where(
-        and(
-          eq(stagesTable.orgId, orgId),
-          eq(stagesTable.active, true),
-          eq(stagesTable.board, 'production'),
-        ),
-      )
-      .orderBy(asc(stagesTable.orderIndex))
-
-    if (prodStages.length > 0) {
-      // Transition to production board - move to first production stage
-      const now = new Date()
-      await db
-        .update(tasksTable)
-        .set({
-          board: 'production',
-          stageId: prodStages[0].id,
-          status: 'in_progress',
-          updatedAt: now,
-        })
-        .where(eq(tasksTable.id, taskId))
-
-      await logActivity({
-        orgId,
-        taskId,
-        type: 'board_transition',
-        fromStageId: task.stageId,
-        toStageId: prodStages[0].id,
-        data: { fromBoard: 'pre_production', toBoard: 'production' },
-        actorId,
-      })
-
-      return { ok: true, pendingApproval: false }
-    }
-    // If no production stages, complete as normal
+  const boardResult = await handleBoardTransition({
+    task,
+    orgId,
+    actorId,
+    completedRequirementIds: completedReqIds,
+  })
+  if (boardResult.transitioned) {
+    return boardResult.result!
   }
 
   if (nextStageIdx >= allStages.length) {
-    const now = new Date()
-    await db
-      .update(tasksTable)
-      .set({
-        status: 'completed',
-        stageId: null,
-        // Don't set archivedAt here — completed tasks should stay visible in Done column
-        updatedAt: now,
-      })
-      .where(eq(tasksTable.id, taskId))
-
-    await logActivity({
-      orgId,
+    await completeTaskTransition({
       taskId,
-      type: 'stage_transition',
-      fromStageId: task.stageId,
-      toStageId: null,
-      data: { completedRequirements: completedReqIds },
+      orgId,
       actorId,
+      fromStageId: task.stageId,
+      completedRequirementIds: completedReqIds,
     })
-
     return { ok: true, pendingApproval: false }
   }
 
@@ -410,46 +477,27 @@ export async function advanceTask(
   // When advancing from queue (isQueued), always enter the first stage first
   // Approval/requirement is checked when trying to ADVANCE from that stage
   if (isQueued) {
-    const now = new Date()
-    await db
-      .update(tasksTable)
-      .set({
-        status: 'in_progress',
-        stageId: nextStage.id,
-        updatedAt: now,
-      })
-      .where(eq(tasksTable.id, taskId))
-
-    await logActivity({
-      orgId,
+    await transitionToStage({
       taskId,
-      type: 'stage_transition',
+      orgId,
+      actorId,
       fromStageId: task.stageId,
       toStageId: nextStage.id,
-      data: { completedRequirements: [] },
-      actorId,
+      completedRequirementIds: [],
+      status: 'in_progress',
     })
-
     return { ok: true, pendingApproval: false }
   }
 
   // For non-queued tasks, check requirements and approval when trying to exit current stage
   if (!isQueued) {
     const currentStage = allStages[currentStageIdx] as Stage
-    const requiredReqs = currentStage.requirements.filter(
-      (r: { required: boolean }) => r.required,
+    const reqError = validateStageRequirements(
+      currentStage.requirements,
+      requirementResponses,
     )
-    const missing = requiredReqs.filter(
-      (r: { id: string }) =>
-        !requirementResponses?.[r.id]?.value &&
-        !requirementResponses?.[r.id]?.assetIds?.length,
-    )
-    if (missing.length > 0) {
-      const names = missing.map((r: { label: string }) => r.label).join(', ')
-      return {
-        ok: false,
-        error: `Required requirements not fulfilled: ${names}`,
-      }
+    if (reqError !== null) {
+      return { ok: false, error: reqError }
     }
   }
 
@@ -477,20 +525,14 @@ export async function advanceTask(
     return { ok: true, pendingApproval: true }
   }
 
-  const now = new Date()
-  await db
-    .update(tasksTable)
-    .set({ status: 'in_progress', stageId: nextStage.id, updatedAt: now })
-    .where(eq(tasksTable.id, taskId))
-
-  await logActivity({
-    orgId,
+  await transitionToStage({
     taskId,
-    type: 'stage_transition',
+    orgId,
+    actorId,
     fromStageId: task.stageId,
     toStageId: nextStage.id,
-    data: { completedRequirements: [] },
-    actorId,
+    completedRequirementIds: [],
+    status: 'in_progress',
   })
 
   return { ok: true, pendingApproval: false }
@@ -544,88 +586,36 @@ export async function approveTaskAdvance(
   })
 
   // Handle board transition: when pre_production completes all stages, move to production board
-  if (nextStageIdx >= allStages.length && task.board === 'pre_production') {
-    // Fetch production stages
-    const prodStages = await db
-      .select()
-      .from(stagesTable)
-      .where(
-        and(
-          eq(stagesTable.orgId, orgId),
-          eq(stagesTable.active, true),
-          eq(stagesTable.board, 'production'),
-        ),
-      )
-      .orderBy(asc(stagesTable.orderIndex))
-
-    if (prodStages.length > 0) {
-      // Transition to production board - move to first production stage
-      const now = new Date()
-      await db
-        .update(tasksTable)
-        .set({
-          board: 'production',
-          stageId: prodStages[0].id,
-          status: 'in_progress',
-          updatedAt: now,
-        })
-        .where(eq(tasksTable.id, taskId))
-
-      await logActivity({
-        orgId,
-        taskId,
-        type: 'board_transition',
-        fromStageId: task.stageId,
-        toStageId: prodStages[0].id,
-        data: { fromBoard: 'pre_production', toBoard: 'production' },
-        actorId,
-      })
-
-      return { ok: true, pendingApproval: false }
-    }
-    // If no production stages, complete as normal
+  const boardResult = await handleBoardTransition({
+    task,
+    orgId,
+    actorId,
+    completedRequirementIds: [],
+  })
+  if (boardResult.transitioned) {
+    return boardResult.result!
   }
 
   if (nextStageIdx >= allStages.length) {
-    const now = new Date()
-    await db
-      .update(tasksTable)
-      .set({
-        status: 'completed',
-        stageId: null,
-        // Don't set archivedAt here — completed tasks should stay visible in Done column
-        updatedAt: now,
-      })
-      .where(eq(tasksTable.id, taskId))
-
-    await logActivity({
-      orgId,
+    await completeTaskTransition({
       taskId,
-      type: 'stage_transition',
-      fromStageId: task.stageId,
-      toStageId: null,
-      data: { completedRequirements: [] },
+      orgId,
       actorId,
+      fromStageId: task.stageId,
+      completedRequirementIds: [],
     })
-
     return { ok: true, pendingApproval: false }
   }
 
   const nextStage = allStages[nextStageIdx] as Stage
-  const now = new Date()
-  await db
-    .update(tasksTable)
-    .set({ status: 'in_progress', stageId: nextStage.id, updatedAt: now })
-    .where(eq(tasksTable.id, taskId))
-
-  await logActivity({
-    orgId,
+  await transitionToStage({
     taskId,
-    type: 'stage_transition',
+    orgId,
+    actorId,
     fromStageId: task.stageId,
     toStageId: nextStage.id,
-    data: { completedRequirements: [] },
-    actorId,
+    completedRequirementIds: [],
+    status: 'in_progress',
   })
 
   return { ok: true, pendingApproval: false }
