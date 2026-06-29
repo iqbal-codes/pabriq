@@ -583,6 +583,12 @@ export type Messages = {
     rejectOrder: string;
     cancelOrder: string;
     reviewNotes: string;
+    reviewTaskLabel: string;
+    reviewStageLabel: string;
+    fulfilledRequirements: string;
+    attachmentCount: string;
+    openTask: string;
+    columnTaskCount: string;
     canceled: string;
     stageManagement: string;
     addStage: string;

@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from 'react'
 import { useTranslations } from 'use-intl'
 import { StatusBadge } from '#/components/status-badge'
 import { Badge } from '#/components/ui/badge'
@@ -29,11 +30,28 @@ export function KanbanTaskCard({ task, onClick }: Props) {
   const orderNum = getCtx(ctx, 'orderNumber')
   const quantity = getCtx(ctx, 'quantity')
   const isPendingApproval = taskData.status === 'pending_approval'
+  const isInteractive = typeof onClick === 'function'
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (!isInteractive) return
+    if (event.key !== 'Enter' && event.key !== ' ' && event.key !== 'Space')
+      return
+    event.preventDefault()
+    onClick(taskData.id)
+  }
+
+  const taskLabel = taskData.taskNumber || productName
 
   return (
     <Card
-      className={`cursor-pointer hover:shadow-md transition-shadow gap-0! py-0! ${isPendingApproval ? 'opacity-80' : ''}`}
-      onClick={() => onClick?.(taskData.id)}
+      className={`gap-0! py-0! ${isInteractive ? 'cursor-pointer hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50' : ''} ${isPendingApproval ? 'opacity-80' : ''}`}
+      onClick={isInteractive ? () => onClick(taskData.id) : undefined}
+      role={isInteractive ? 'button' : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
+      aria-label={
+        isInteractive ? pt('openTask', { task: taskLabel }) : undefined
+      }
+      onKeyDown={isInteractive ? handleKeyDown : undefined}
     >
       <CardContent className="p-3 space-y-1">
         <div className="flex items-center justify-between gap-2">

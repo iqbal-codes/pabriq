@@ -10,6 +10,10 @@ const enMessages = {
     approve: 'Approve & Advance',
     reject: 'Reject',
     reviewNotes: 'Review Notes',
+    reviewTaskLabel: 'Task',
+    reviewStageLabel: 'Stage',
+    fulfilledRequirements: 'Fulfilled Requirements',
+    attachmentCount: '{count, plural, one {# file} other {# files}}',
   },
 }
 
@@ -71,5 +75,77 @@ describe('ReviewModal', () => {
     )
     await userEvent.click(screen.getByText('Reject'))
     expect(onReject).toHaveBeenCalledWith('task-1', undefined)
+  })
+
+  it('renders human-readable requirement labels', () => {
+    render(
+      <IntlProvider locale="en" messages={enMessages}>
+        <ReviewModal
+          taskId="task-1"
+          taskNumber="TSK-5"
+          stageName="Production"
+          requirements={[
+            {
+              id: 'req-proof',
+              label: 'Proof approved',
+              type: 'text',
+              required: true,
+            },
+          ]}
+          requirementResponses={{ 'req-proof': { value: 'Yes' } }}
+          open={true}
+          onOpenChange={vi.fn()}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />
+      </IntlProvider>,
+    )
+    expect(screen.getByText('Proof approved')).toBeInTheDocument()
+    expect(screen.getByText(': Yes')).toBeInTheDocument()
+    expect(screen.queryByText('req-proof')).not.toBeInTheDocument()
+  })
+
+  it('falls back to raw ID for stale/corrupted requirement data', () => {
+    render(
+      <IntlProvider locale="en" messages={enMessages}>
+        <ReviewModal
+          taskId="task-1"
+          taskNumber="TSK-5"
+          stageName="Production"
+          requirements={[]}
+          requirementResponses={{ 'missing-req': { value: 'Still visible' } }}
+          open={true}
+          onOpenChange={vi.fn()}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />
+      </IntlProvider>,
+    )
+    expect(screen.getByText('missing-req')).toBeInTheDocument()
+    expect(screen.getByText(': Still visible')).toBeInTheDocument()
+  })
+
+  it('approve and reject buttons have aria-describedby', () => {
+    render(
+      <IntlProvider locale="en" messages={enMessages}>
+        <ReviewModal
+          taskId="task-1"
+          taskNumber="TSK-5"
+          stageName="Production"
+          open={true}
+          onOpenChange={vi.fn()}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />
+      </IntlProvider>,
+    )
+    expect(screen.getByText('Approve & Advance')).toHaveAttribute(
+      'aria-describedby',
+      'review-action-description',
+    )
+    expect(screen.getByText('Reject')).toHaveAttribute(
+      'aria-describedby',
+      'review-action-description',
+    )
   })
 })

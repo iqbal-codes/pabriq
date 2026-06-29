@@ -2,8 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import { queryKeys } from '#/lib/query-keys'
-import type { CreateStageInput, UpdateStageInput } from './model'
 import type { MutationResult } from '#/lib/server-results'
+import type { CreateStageInput, UpdateStageInput } from './model'
 import {
   advanceTaskFn,
   approveTaskAdvanceFn,
@@ -205,6 +205,10 @@ export function useTaskMutations() {
   const queryClient = useQueryClient()
   const t = useTranslations('production')
 
+  const handleMutationError = (error: Error) => {
+    toast.error(error.message)
+  }
+
   const invalidate = () => {
     queryClient.invalidateQueries({
       queryKey: [queryKeys.production.all[0], 'board'],
@@ -223,6 +227,7 @@ export function useTaskMutations() {
     }
   >({
     mutationFn: (input) => advanceTaskFn({ data: input }),
+    onError: handleMutationError,
     onSuccess: (result, vars) => {
       if ('error' in result) {
         toast.error(result.error)
@@ -249,6 +254,7 @@ export function useTaskMutations() {
     { taskId: string; reviewNotes?: string }
   >({
     mutationFn: (input) => approveTaskAdvanceFn({ data: input }),
+    onError: handleMutationError,
     onSuccess: (result, vars) => {
       if ('error' in result) {
         toast.error(result.error)
@@ -271,6 +277,7 @@ export function useTaskMutations() {
     { taskId: string; reviewNotes?: string }
   >({
     mutationFn: (input) => rejectTaskAdvanceFn({ data: input }),
+    onError: handleMutationError,
     onSuccess: (result, vars) => {
       if ('error' in result) {
         toast.error(result.error)
@@ -293,6 +300,7 @@ export function useTaskMutations() {
     { taskId: string; text: string }
   >({
     mutationFn: (input) => saveTaskCommentFn({ data: input }),
+    onError: handleMutationError,
     onSuccess: (result) => {
       if ('error' in result) {
         toast.error(result.error)

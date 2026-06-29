@@ -5,6 +5,11 @@ import { IntlProvider } from 'use-intl'
 import { describe, expect, it, vi } from 'vitest'
 import { TaskDetailModal } from './task-detail-modal'
 
+const mutationMocks = vi.hoisted(() => ({
+  advanceTaskMutate: vi.fn(),
+  saveCommentMutate: vi.fn(),
+}))
+
 const enMessages = {
   production: {
     taskDetail: 'Task Detail',
@@ -19,12 +24,18 @@ const enMessages = {
     send: 'Send',
     startProduction: 'Start Pre-Production',
     advanceTo: 'Advance to {stage}',
+    done: 'Done',
     reviewAdvancement: 'Review',
     queue: 'Queue',
     statusQueued: 'Queued',
     statusInProgress: 'In Progress',
     pendingApproval: 'Pending Approval',
     statusCompleted: 'Completed',
+    attachments: 'Attachments',
+    noActivity: 'No activity yet',
+    openTask: 'Open task {task}',
+    columnTaskCount:
+      '{column}: {count, plural, one {# task} other {# tasks}}',
   },
   status: {
     queued: 'Queued',
@@ -39,13 +50,20 @@ const taskStatusMap: Record<string, string> = {
   'task-queued': 'queued',
   'task-pending': 'pending_approval',
   'task-done': 'completed',
+  'task-final-stage': 'in_progress',
+}
+
+const taskStageMap: Record<string, string | null> = {
+  'task-queued': null,
+  'task-1': 'stage-1',
+  'task-final-stage': 'stage-2',
+  'task-pending': 'stage-1',
+  'task-done': 'stage-2',
 }
 
 vi.mock('../hooks', () => {
-  const advanceTask = { mutate: vi.fn() }
   const approveAdvance = { mutate: vi.fn() }
   const rejectAdvance = { mutate: vi.fn() }
-  const saveComment = { mutate: vi.fn() }
   return {
     useTaskDetail: (taskId: string) => ({
       data: {
@@ -53,7 +71,7 @@ vi.mock('../hooks', () => {
         orgId: 'org-1',
         orderId: 'order-1',
         board: 'pre_production',
-        stageId: taskStatusMap[taskId] === 'queued' ? null : 'stage-1',
+        stageId: taskStageMap[taskId] ?? null,
         status: taskStatusMap[taskId] ?? 'in_progress',
         taskNumber: 'TSK-5',
         lineItemId: 'line-item-1',
@@ -117,10 +135,10 @@ vi.mock('../hooks', () => {
       isLoading: false,
     }),
     useTaskMutations: () => ({
-      advanceTask,
+      advanceTask: { mutate: mutationMocks.advanceTaskMutate },
       approveAdvance,
       rejectAdvance,
-      saveComment,
+      saveComment: { mutate: mutationMocks.saveCommentMutate },
     }),
   }
 })
@@ -130,7 +148,7 @@ function renderModal(taskId = 'task-1') {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
-  return render(
+  const result = render(
     <QueryClientProvider client={queryClient}>
       <IntlProvider locale="en" messages={enMessages}>
         <TaskDetailModal
@@ -142,6 +160,7 @@ function renderModal(taskId = 'task-1') {
       </IntlProvider>
     </QueryClientProvider>,
   )
+  return { ...result, onOpenChange }
 }
 
 describe('TaskDetailModal', () => {
@@ -155,9 +174,9 @@ describe('TaskDetailModal', () => {
 
   it('renders Details and Activity tabs', () => {
     renderModal()
-    expect(screen.getAllByText('Specification').length).toBeGreaterThanOrEqual(
-      1,
-    )
+    expect(
+      screen.getAllByText('Specification').length,
+    ).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Activity')).toBeInTheDocument()
   })
 
@@ -175,5 +194,61 @@ describe('TaskDetailModal', () => {
     renderModal()
     await userEvent.click(screen.getByText('Activity'))
     expect(screen.getByText('Started Design')).toBeInTheDocument()
+  })
+
+  it('shows Done for final active stage without hardcoded Selesai', () => {
+    renderModal('task-final-stage')
+    expect(screen.getByText('Done')).toBeInTheDocument()
+    expect(screen.queryByText('Selesai')).not.toBeInTheDocument()
+  })
+
+  it('does not close when advance returns a server error', async () => {
+    mutationMocks.advanceTaskMutate.mockImplementation(
+      (_vars: unknown, options?: { onSuccess?: (result: unknown) => void }) => {
+        options?.onSuccess?.({ ok: false, error: 'Failed to advance' })
+      },
+    )
+    const { onOpenChange } = renderModal()
+    await userEvent.click(screen.getByText('Advance to Production'))
+    expect(onOpenChange).not.toHaveBeenCalled()
+  })
+
+  it('closes when advance succeeds', async () => {
+    mutationMocks.advanceTaskMutate.mockImplementation(
+      (_vars: unknown, options?: { onSuccess?: (result: unknown) => void }) => {
+        options?.onSuccess?.({ ok: true, pendingApproval: false })
+      },
+    )
+    const { onOpenChange } = renderModal()
+    await userEvent.click(screen.getByText('Advance to Production'))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it('does not clear comment when save comment returns a server error', async () => {
+    mutationMocks.saveCommentMutate.mockImplementation(
+      (_vars: unknown, options?: { onSuccess?: (result: unknown) => void }) => {
+        options?.onSuccess?.({ ok: false, error: 'Failed to comment' })
+      },
+    )
+    renderModal()
+    await userEvent.click(screen.getByText('Activity'))
+    const input = screen.getByPlaceholderText('Type a comment...')
+    await userEvent.type(input, 'Hello world')
+    await userEvent.click(screen.getByText('Send'))
+    expect(input).toHaveValue('Hello world')
+  })
+
+  it('clears comment when save comment succeeds', async () => {
+    mutationMocks.saveCommentMutate.mockImplementation(
+      (_vars: unknown, options?: { onSuccess?: (result: unknown) => void }) => {
+        options?.onSuccess?.({ ok: true })
+      },
+    )
+    renderModal()
+    await userEvent.click(screen.getByText('Activity'))
+    const input = screen.getByPlaceholderText('Type a comment...')
+    await userEvent.type(input, 'Hello world')
+    await userEvent.click(screen.getByText('Send'))
+    expect(input).toHaveValue('')
   })
 })

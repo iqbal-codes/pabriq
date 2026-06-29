@@ -82,6 +82,12 @@ export function KanbanPage({ orgId }: Props) {
       | undefined
   }, [reviewTask])
 
+  const reviewRequirements = useMemo(() => {
+    if (!reviewTask || !activeStages.length) return []
+    const stage = activeStages.find((st) => st.id === reviewTask.stageId)
+    return stage?.requirements ?? []
+  }, [reviewTask, activeStages])
+
   return (
     <div className="flex flex-col overflow-hidden gap-4 h-full">
       <div className="flex items-center gap-3 px-4">
@@ -145,17 +151,32 @@ export function KanbanPage({ orgId }: Props) {
           stageName={reviewStageName}
           nextStageName={reviewNextStageName || undefined}
           requirementResponses={reviewRequirementResponses}
+          requirements={reviewRequirements}
           open={!!reviewTaskId}
           onOpenChange={(open) => {
             if (!open) setReviewTaskId(null)
           }}
           onApprove={(id, notes) => {
-            approveAdvance.mutate({ taskId: id, reviewNotes: notes })
-            setReviewTaskId(null)
+            approveAdvance.mutate(
+              { taskId: id, reviewNotes: notes },
+              {
+                onSuccess: (result) => {
+                  if ('error' in result) return
+                  setReviewTaskId(null)
+                },
+              },
+            )
           }}
           onReject={(id, notes) => {
-            rejectAdvance.mutate({ taskId: id, reviewNotes: notes })
-            setReviewTaskId(null)
+            rejectAdvance.mutate(
+              { taskId: id, reviewNotes: notes },
+              {
+                onSuccess: (result) => {
+                  if ('error' in result) return
+                  setReviewTaskId(null)
+                },
+              },
+            )
           }}
         />
       )}

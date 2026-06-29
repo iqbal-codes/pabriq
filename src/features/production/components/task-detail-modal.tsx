@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query'
-import { ActivityRow } from './activity-row'
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
@@ -21,6 +20,7 @@ import {
   useTaskDetail,
   useTaskMutations,
 } from '../hooks'
+import { ActivityRow } from './activity-row'
 import { RequirementForm } from './requirement-form'
 
 type Props = {
@@ -113,14 +113,27 @@ export function TaskDetailModal({
   function handleAdvance(
     responses: Record<string, { value?: string; assetIds?: string[] }>,
   ) {
-    advanceTask.mutate({ taskId, requirementResponses: responses })
-    onOpenChange(false)
+    advanceTask.mutate(
+      { taskId, requirementResponses: responses },
+      {
+        onSuccess: (result) => {
+          if ('error' in result) return
+          onOpenChange(false)
+        },
+      },
+    )
   }
-
   function handleSendComment() {
     if (!commentText.trim()) return
-    saveComment.mutate({ taskId, text: commentText.trim() })
-    setCommentText('')
+    saveComment.mutate(
+      { taskId, text: commentText.trim() },
+      {
+        onSuccess: (result) => {
+          if ('error' in result) return
+          setCommentText('')
+        },
+      },
+    )
   }
 
   return (
@@ -251,13 +264,9 @@ export function TaskDetailModal({
             task.status === 'in_progress' &&
             (nextStage || currentStageIndex === activeStages.length - 1) && (
               <Button onClick={handleAdvanceClick}>
-                {nextStage?.name === 'Selesai' ||
-                currentStageIndex === activeStages.length - 1
-                  ? 'Selesai'
-                  : task.board === 'pre_production' &&
-                      currentStageIndex === activeStages.length - 1
-                    ? t('continueToProduction')
-                    : t('advanceTo', { stage: nextStage?.name })}
+                {currentStageIndex === activeStages.length - 1
+                  ? t('done')
+                  : t('advanceTo', { stage: nextStage?.name })}
               </Button>
             )}
           {!showRequirementForm &&

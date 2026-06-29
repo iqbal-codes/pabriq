@@ -66,12 +66,18 @@ const enMessages = {
     noTasks: 'No tasks',
     kanbanTab: 'Kanban',
     priorityBadge: 'Priority',
+    productionTasks: 'Production Tasks',
+    openTask: 'Open task {task}',
+    columnTaskCount: '{column}: {count, plural, one {# task} other {# tasks}}',
   },
   status: {
     in_progress: 'In Progress',
     queued: 'Queued',
     pending_approval: 'Pending Approval',
     completed: 'Completed',
+  },
+  common: {
+    pcs: 'pcs',
   },
 }
 
@@ -123,5 +129,16 @@ describe('KanbanBoard', () => {
     })
     expect(screen.getByText('Done')).toBeInTheDocument()
     expect(screen.getByText('P-t1')).toBeInTheDocument()
+  })
+
+  it('board container has region role with accessible name', () => {
+    renderBoard({
+      queued: [],
+      stages: new Map(),
+      done: [],
+    })
+    expect(
+      screen.getByRole('region', { name: 'Production Tasks' }),
+    ).toBeInTheDocument()
   })
 })

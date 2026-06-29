@@ -36,10 +36,11 @@ function createMockTask(overrides: Partial<BoardTask['task']> = {}): BoardTask {
 const enMessages = {
   production: {
     priorityBadge: 'Priority',
+    openTask: 'Open task {task}',
   },
   status: {
-    queued: 'Queued',
     in_progress: 'In Progress',
+    queued: 'Queued',
     pending_approval: 'Pending Approval',
     completed: 'Completed',
   },
@@ -48,8 +49,7 @@ const enMessages = {
   },
 }
 
-function renderCard(task: BoardTask) {
-  const onClick = vi.fn()
+function renderCard(task: BoardTask, onClick = vi.fn()) {
   const result = render(
     <IntlProvider locale="en" messages={enMessages}>
       <KanbanTaskCard task={task} onClick={onClick} />
@@ -66,7 +66,7 @@ describe('KanbanTaskCard', () => {
 
   it('renders order number', () => {
     renderCard(createMockTask())
-    expect(screen.getByText(/ORD-001/)).toBeInTheDocument()
+    expect(screen.getByText('ORD-001')).toBeInTheDocument()
   })
 
   it('renders product name', () => {
@@ -76,7 +76,7 @@ describe('KanbanTaskCard', () => {
 
   it('does not render customer name on the compact card', () => {
     renderCard(createMockTask())
-    expect(screen.queryByText(/Acme Corp/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Acme Corp')).not.toBeInTheDocument()
   })
 
   it('renders quantity', () => {
@@ -90,31 +90,56 @@ describe('KanbanTaskCard', () => {
   })
 
   it('renders priority badge only for priority tasks', () => {
-    renderCard(createMockTask({ priority: true }))
-    expect(screen.getByText('Priority')).toBeInTheDocument()
+    const { rerender } = render(
+      <IntlProvider locale="en" messages={enMessages}>
+        <KanbanTaskCard
+          task={createMockTask({ priority: false })}
+          onClick={vi.fn()}
+        />
+      </IntlProvider>,
+    )
+    expect(screen.queryByText('Priority')).not.toBeInTheDocument()
 
-    renderCard(createMockTask())
-    expect(screen.getAllByText('Queued')).toHaveLength(2)
-    expect(screen.getAllByText('Custom T-Shirt')).toHaveLength(2)
-    expect(screen.getAllByText('TSK-5')).toHaveLength(2)
-    expect(screen.getAllByText('ORD-001')).toHaveLength(2)
-    expect(screen.getAllByText(/500/)).toHaveLength(2)
-    expect(screen.getAllByText('Priority')).toHaveLength(1)
+    rerender(
+      <IntlProvider locale="en" messages={enMessages}>
+        <KanbanTaskCard
+          task={createMockTask({ priority: true })}
+          onClick={vi.fn()}
+        />
+      </IntlProvider>,
+    )
+    expect(screen.getByText('Priority')).toBeInTheDocument()
   })
 
-  it('has no action buttons', () => {
-    renderCard(createMockTask({ status: 'queued', stageId: null }))
+  it('renders as a keyboard-focusable button when onClick is provided', () => {
+    renderCard(createMockTask())
+    const button = screen.getByRole('button', { name: 'Open task TSK-5' })
+    expect(button).toBeInTheDocument()
+    expect(button).toHaveAttribute('tabindex', '0')
+  })
+
+  it('does not expose button semantics without onClick', () => {
+    render(
+      <IntlProvider locale="en" messages={enMessages}>
+        <KanbanTaskCard task={createMockTask()} />
+      </IntlProvider>,
+    )
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('calls onClick when card is clicked', async () => {
+  it('calls onClick when Enter is pressed', async () => {
     const { onClick } = renderCard(createMockTask())
-    const text = screen.getByText('TSK-5')
-    const card = text.closest('div[class*="cursor-pointer"]')
-    expect(card).toBeTruthy()
-    if (card) {
-      await userEvent.click(card)
-      expect(onClick).toHaveBeenCalledWith('task-1')
-    }
+    const button = screen.getByRole('button', { name: 'Open task TSK-5' })
+    button.focus()
+    await userEvent.keyboard('{Enter}')
+    expect(onClick).toHaveBeenCalledWith('task-1')
+  })
+
+  it('calls onClick when Space is pressed', async () => {
+    const { onClick } = renderCard(createMockTask())
+    const button = screen.getByRole('button', { name: 'Open task TSK-5' })
+    button.focus()
+    await userEvent.keyboard('{Space}')
+    expect(onClick).toHaveBeenCalledWith('task-1')
   })
 })

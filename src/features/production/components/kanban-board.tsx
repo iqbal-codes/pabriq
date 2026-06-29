@@ -34,7 +34,10 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
   )
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4 px-4 h-full">
+    <section
+      className="flex gap-4 overflow-x-auto pb-4 px-4 h-full"
+      aria-label={t('productionTasks')}
+    >
       <KanbanColumn
         title={t('queue')}
         count={boardData.queued.length}
@@ -80,6 +83,6 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
         onClickCard={onClickCard}
         variant="done"
       />
-    </div>
+    </section>
   )
 }

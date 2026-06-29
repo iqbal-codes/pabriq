@@ -40,23 +40,30 @@ function createTask(id: string): BoardTask {
   }
 }
 
+const enMessages = {
+  production: {
+    noTasks: 'No tasks',
+    priorityBadge: 'Priority',
+    openTask: 'Open task {task}',
+    columnTaskCount: '{column}: {count, plural, one {# task} other {# tasks}}',
+  },
+  status: {
+    in_progress: 'In Progress',
+    queued: 'Queued',
+    pending_approval: 'Pending Approval',
+    completed: 'Completed',
+  },
+  common: {
+    pcs: 'pcs',
+  },
+}
+
 function renderColumn(
   tasks: BoardTask[],
   props: { title: string; count: number },
 ) {
   return render(
-    <IntlProvider
-      locale="en"
-      messages={{
-        production: { noTasks: 'No tasks', priorityBadge: 'Priority' },
-        status: {
-          in_progress: 'In Progress',
-          queued: 'Queued',
-          pending_approval: 'Pending Approval',
-          completed: 'Completed',
-        },
-      }}
-    >
+    <IntlProvider locale="en" messages={enMessages}>
       <KanbanColumn tasks={tasks} title={props.title} count={props.count} />
     </IntlProvider>,
   )
@@ -79,5 +86,18 @@ describe('KanbanColumn', () => {
   it('shows empty state when no tasks', () => {
     renderColumn([], { title: 'Queue', count: 0 })
     expect(screen.getByText('No tasks')).toBeInTheDocument()
+  })
+
+  it('count badge has accessible name', () => {
+    renderColumn([createTask('1')], { title: 'Queue', count: 1 })
+    expect(screen.getByLabelText('Queue: 1 task')).toBeInTheDocument()
+  })
+
+  it('does not render side-stripe border', () => {
+    const { container } = renderColumn([createTask('1')], {
+      title: 'Queue',
+      count: 1,
+    })
+    expect(container.querySelector('[class*="border-l-4"]')).toBeNull()
   })
 })
