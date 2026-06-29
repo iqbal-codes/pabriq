@@ -1,18 +1,13 @@
 import { Clock, FileText, Upload } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { useTranslations } from 'use-intl'
+import { useLocale, useTranslations } from 'use-intl'
 import { StatusBadge } from '#/components/status-badge'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import { formatCurrency, formatLongDate } from '#/lib/formatters'
 import type { PortalInvoice } from '../model'
-
-const currencyFormatter = new Intl.NumberFormat('id-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  minimumFractionDigits: 0,
-})
 
 type Props = {
   invoices: PortalInvoice[]
@@ -20,6 +15,7 @@ type Props = {
 }
 export function PaymentSection({ invoices, onUpload }: Props) {
   const t = useTranslations('invoices')
+  const locale = useLocale()
   const [uploadingId, setUploadingId] = useState<string | null>(null)
   const now = new Date()
 
@@ -63,11 +59,11 @@ export function PaymentSection({ invoices, onUpload }: Props) {
 
               <div className="mb-2">
                 <p className="text-lg font-bold">
-                  {currencyFormatter.format(inv.total)}
+                  {formatCurrency(inv.total, locale)}
                 </p>
                 {isUnpaid && (
                   <p className="text-sm text-muted-foreground">
-                    {t('dueDate')}: {inv.dueDate}
+                    {t('dueDate')}: {formatLongDate(inv.dueDate, locale)}
                   </p>
                 )}
               </div>
@@ -105,7 +101,7 @@ export function PaymentSection({ invoices, onUpload }: Props) {
                             toast.success(t('pendingConfirmation'))
                           })
                           .catch(() => {
-                            toast.error('Upload failed')
+                            toast.error(t('uploadFailed'))
                           })
                           .finally(() => {
                             setUploadingId(null)

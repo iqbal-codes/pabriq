@@ -1,13 +1,8 @@
 import { AlertCircle, Clock } from 'lucide-react'
-import { useTranslations } from 'use-intl'
+import { useLocale, useTranslations } from 'use-intl'
 import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert'
+import { formatCurrency } from '#/lib/formatters'
 import type { PortalInvoice } from '../model'
-
-const currencyFormatter = new Intl.NumberFormat('en-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  minimumFractionDigits: 0,
-})
 
 function daysFromDue(dueDate: string): number {
   const due = new Date(dueDate)
@@ -22,6 +17,7 @@ export function PaymentAlertBanner({
   invoices: PortalInvoice[]
 }) {
   const t = useTranslations('portal')
+  const locale = useLocale()
 
   if (invoices.length === 0) return null
 
@@ -44,7 +40,7 @@ export function PaymentAlertBanner({
     const overdueCount = unpaid.filter(
       (inv) => daysFromDue(inv.dueDate) < 0,
     ).length
-    description = `${t('paymentUnpaid', { count: unpaid.length, amount: currencyFormatter.format(totalUnpaid) })} • ${overdueCount} ${t('paymentOverdue').toLowerCase()}`
+    description = `${t('paymentUnpaid', { count: unpaid.length, amount: formatCurrency(totalUnpaid, locale) })} • ${overdueCount} ${t('paymentOverdue').toLowerCase()}`
   } else if (hasDueSoon) {
     const soonDays = Math.min(
       ...unpaid.flatMap((inv) => {
@@ -52,11 +48,11 @@ export function PaymentAlertBanner({
         return d >= 0 ? [d] : []
       }),
     )
-    description = `${t('paymentUnpaid', { count: unpaid.length, amount: currencyFormatter.format(totalUnpaid) })} • ${t('paymentDueSoon', { days: soonDays })}`
+    description = `${t('paymentUnpaid', { count: unpaid.length, amount: formatCurrency(totalUnpaid, locale) })} • ${t('paymentDueSoon', { days: soonDays })}`
   } else {
     description = t('paymentUnpaid', {
       count: unpaid.length,
-      amount: currencyFormatter.format(totalUnpaid),
+      amount: formatCurrency(totalUnpaid, locale),
     })
   }
 

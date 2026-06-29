@@ -1,43 +1,11 @@
 import { ArrowRight, CheckCircle2, Clock, Upload } from 'lucide-react'
+import { useLocale, useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
+import { formatShortDate } from '#/lib/formatters'
 import type { OrderTaskEvent } from '../model'
 
 type Props = {
   events: OrderTaskEvent[]
-}
-
-function getDescription(event: OrderTaskEvent): string {
-  const fromName = event.fromStageName
-  const toName = event.toStageName
-
-  // Handle moved_to_stage (the actual DB action type)
-  if (event.type === 'moved_to_stage' || event.type === 'stage_transition') {
-    if (!fromName && toName) {
-      // Entering first stage from queue
-      return `Mulai ${toName}`
-    }
-    if (fromName && !toName) {
-      // Last stage completed (task done)
-      return `${fromName} Selesai.`
-    }
-    // Between stages
-    if (fromName && toName) {
-      return `${fromName} Selesai, Mulai ${toName}`
-    }
-  }
-
-  switch (event.type) {
-    case 'created':
-      return 'Masuk dalam antrian'
-    case 'completed':
-      return `${fromName ?? 'Stage'} Selesai.`
-    case 'approved_and_moved':
-      return toName
-        ? `${fromName ?? 'Stage'} Selesai, Mulai ${toName}`
-        : `${fromName ?? 'Stage'} Selesai.`
-    default:
-      return event.type
-  }
 }
 
 function getIcon(event: OrderTaskEvent): React.ReactNode {
@@ -68,6 +36,7 @@ function RequirementResponses({
     assetIds?: string[]
   }>
 }) {
+  const t = useTranslations('portal')
   const hasFiles = responses.some((r) => r.assetIds && r.assetIds.length > 0)
   const hasValues = responses.some((r) => r.value)
 
@@ -77,7 +46,7 @@ function RequirementResponses({
     <div className="mt-2 space-y-2 rounded-lg bg-muted/50 p-3">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Upload className="size-3" />
-        <span>Requirements submitted</span>
+        <span>{t('requirementsSubmitted')}</span>
       </div>
       {hasFiles && (
         <div className="grid grid-cols-4 gap-2">
@@ -116,6 +85,46 @@ function RequirementResponses({
 }
 
 export function OrderTimeline({ events }: Props) {
+  const t = useTranslations('portal')
+  const locale = useLocale()
+
+  function getDescription(event: OrderTaskEvent): string {
+    const fromName = event.fromStageName
+    const toName = event.toStageName
+
+    if (event.type === 'moved_to_stage' || event.type === 'stage_transition') {
+      if (!fromName && toName) {
+        return t('timelineStarted', { stage: toName })
+      }
+      if (fromName && !toName) {
+        return t('timelineCompleted', { stage: fromName })
+      }
+      if (fromName && toName) {
+        return t('timelineTransition', { from: fromName, to: toName })
+      }
+    }
+
+    switch (event.type) {
+      case 'created':
+        return t('timelineQueued')
+      case 'completed':
+        return t('timelineCompleted', {
+          stage: fromName ?? t('timelineStageFallback'),
+        })
+      case 'approved_and_moved':
+        return toName
+          ? t('timelineTransition', {
+              from: fromName ?? t('timelineStageFallback'),
+              to: toName,
+            })
+          : t('timelineCompleted', {
+              stage: fromName ?? t('timelineStageFallback'),
+            })
+      default:
+        return event.type
+    }
+  }
+
   return (
     <div className="space-y-3">
       {events.map((event, i) => (
@@ -128,8 +137,8 @@ export function OrderTimeline({ events }: Props) {
           </div>
           <div className="pb-3 min-w-0 flex-1">
             <p className="text-xs text-muted-foreground">
-              {new Date(event.createdAt).toLocaleDateString('id-ID')}{' '}
-              {new Date(event.createdAt).toLocaleTimeString('id-ID', {
+              {formatShortDate(String(event.createdAt), locale)}{' '}
+              {new Date(event.createdAt).toLocaleTimeString(locale, {
                 hour: '2-digit',
                 minute: '2-digit',
               })}

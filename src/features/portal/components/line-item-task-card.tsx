@@ -1,5 +1,5 @@
 import { FileIcon } from 'lucide-react'
-import { useTranslations } from 'use-intl'
+import { useLocale, useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
 import { Badge } from '#/components/ui/badge'
 import { Card } from '#/components/ui/card'
@@ -10,13 +10,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '#/components/ui/dialog'
+import { formatCurrency } from '#/lib/formatters'
 import type { OrderTaskEvent, PortalLineItem } from '../model'
 import { OrderTimeline } from './order-timeline'
-
-const currencyFormatter = new Intl.NumberFormat('en-ID', {
-  style: 'currency',
-  currency: 'IDR',
-})
 
 export function LineItemTaskCard({
   item,
@@ -26,6 +22,7 @@ export function LineItemTaskCard({
   events: OrderTaskEvent[]
 }) {
   const t = useTranslations('portal')
+  const locale = useLocale()
 
   const itemEvents = events.filter((e) => e.taskId === item.taskId)
 
@@ -38,7 +35,7 @@ export function LineItemTaskCard({
               {item.name || item.productName}
             </p>
             <p className="text-xs text-muted-foreground">
-              {item.quantity} × {currencyFormatter.format(item.unitPrice)}
+              {item.quantity} × {formatCurrency(item.unitPrice, locale)}
             </p>
             {item.notes && (
               <p className="mt-1 text-xs text-muted-foreground truncate">
@@ -51,7 +48,7 @@ export function LineItemTaskCard({
               <Badge variant="secondary">{item.currentStageName}</Badge>
             )}
             <p className="text-sm font-medium">
-              {currencyFormatter.format(item.total)}
+              {formatCurrency(item.total, locale)}
             </p>
             {item.assetIds.length > 0 && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -72,10 +69,10 @@ export function LineItemTaskCard({
           <div className="space-y-1">
             <div className="flex flex-row items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                {item.quantity} × {currencyFormatter.format(item.unitPrice)}
+                {item.quantity} × {formatCurrency(item.unitPrice, locale)}
               </p>
               <p className="text-base font-semibold text-card-foreground">
-                {currencyFormatter.format(item.total)}
+                {formatCurrency(item.total, locale)}
               </p>
             </div>
             {item.notes && (
@@ -100,7 +97,7 @@ export function LineItemTaskCard({
                 <OrderTimeline events={itemEvents} />
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  No stage transitions yet
+                  {t('noStageTransitions')}
                 </p>
               )}
             </div>
