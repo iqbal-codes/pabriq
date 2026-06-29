@@ -17,3 +17,6 @@ docs/specs/later
 
 .pi-lens
 .antigravitycli/
+/playwright-report/
+/test-results/
+/.playwright-cli/
