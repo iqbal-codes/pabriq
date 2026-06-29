@@ -520,6 +520,7 @@ export type Messages = {
     searchPlaceholder: string;
     noResults: string;
     createdAt: string;
+    uploadFailed: string;
   };
   address: {
     title: string;
@@ -700,5 +701,20 @@ export type Messages = {
     estimatedCompletion: string;
     notes: string;
     rejectedTitle: string;
+    loadingOrder: string;
+    loadFailed: string;
+    loadFailedDesc: string;
+    notFoundHelp: string;
+    retry: string;
+    whatsappOrderMessage: string;
+    pendingHelp: string;
+    rejectedHelp: string;
+    requirementsSubmitted: string;
+    noStageTransitions: string;
+    timelineQueued: string;
+    timelineStarted: string;
+    timelineCompleted: string;
+    timelineTransition: string;
+    timelineStageFallback: string;
   };
 };

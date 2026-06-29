@@ -10,6 +10,7 @@
   --popover: #ffffff;
   --popover-foreground: #28261b;
   --primary: #c96442;
+  --brand-accent: var(--primary);
   --primary-foreground: #ffffff;
   --secondary: #e9e6dc;
   --secondary-foreground: #535146;
@@ -73,6 +74,7 @@
   --popover: #30302e;
   --popover-foreground: #e5e5e2;
   --primary: #d97757;
+  --brand-accent: var(--primary);
   --primary-foreground: #141413;
   --secondary: #faf9f5;
   --secondary-foreground: #30302e;
@@ -134,6 +136,7 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-brand-accent: var(--brand-accent);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
