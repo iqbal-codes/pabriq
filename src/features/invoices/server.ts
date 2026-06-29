@@ -1,6 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { z } from 'zod'
+import { resolveOrgId } from '#/lib/auth-session'
+import type { MutationResult } from '#/lib/server-results'
 import type {
   CreateInvoiceInput,
   GetInvoiceResult,
@@ -11,29 +13,6 @@ import type {
   Payment,
   PaymentMethod,
 } from './model'
-
-type MutationResult = { ok: true } | { ok: false; error: string }
-
-async function resolveOrgId(): Promise<string> {
-  const [{ auth }, { db }, { member }, { eq }] = await Promise.all([
-    import('#/lib/auth'),
-    import('#/db/index'),
-    import('#/db/schema'),
-    import('drizzle-orm'),
-  ])
-  const headers = getRequestHeaders()
-  const session = await auth.api.getSession({ headers })
-  if (!session) throw new Error('Not authenticated')
-
-  const memberships = await db
-    .select({ orgId: member.organizationId })
-    .from(member)
-    .where(eq(member.userId, session.user.id))
-    .limit(1)
-
-  if (memberships.length === 0) throw new Error('No organization')
-  return memberships[0].orgId
-}
 
 export const createInvoiceFn = createServerFn({ method: 'POST' })
   .inputValidator((input: CreateInvoiceInput) => input)
@@ -305,7 +284,7 @@ export const getInvoicePaymentsFn = createServerFn({ method: 'GET' })
     return getPaymentsForInvoice(orgId, data.invoiceId)
   })
 
-export const getInvoiceBalanceFn = createServerFn({ method: 'GET' })
+const getInvoiceBalanceFn = createServerFn({ method: 'GET' })
   .inputValidator((input: unknown) => getInvoicePaymentsSchema.parse(input))
   .handler(async ({ data }): Promise<InvoiceBalance> => {
     const [orgId, { getInvoiceBalance }] = await Promise.all([
@@ -315,7 +294,7 @@ export const getInvoiceBalanceFn = createServerFn({ method: 'GET' })
     return getInvoiceBalance(data.invoiceId, orgId)
   })
 
-export const updateInvoiceFn = createServerFn({ method: 'POST' })
+const updateInvoiceFn = createServerFn({ method: 'POST' })
   .inputValidator((input: unknown) => updateInvoiceSchema.parse(input))
   .handler(async ({ data }): Promise<MutationResult> => {
     const orgId = await resolveOrgId()

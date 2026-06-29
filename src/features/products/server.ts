@@ -1,5 +1,4 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequestHeaders } from '@tanstack/react-start/server'
 import {
   type AnyColumn,
   and,
@@ -14,6 +13,8 @@ import {
   pricingBreakpoints as breakpointsTable,
   products as productsTable,
 } from '#/db/schema'
+import { resolveOrgId } from '#/lib/auth-session'
+import type { MutationResult } from '#/lib/server-results'
 import type {
   CreateProductInput,
   ListProductsParams,
@@ -23,28 +24,6 @@ import type {
 } from './model'
 
 export type { ProductRow } from './model'
-
-type MutationResult = { ok: true } | { ok: false; error: string }
-async function resolveOrgId(): Promise<string> {
-  const [{ auth }, { db }, { member }, { eq: eq2 }] = await Promise.all([
-    import('#/lib/auth'),
-    import('#/db/index'),
-    import('#/db/schema'),
-    import('drizzle-orm'),
-  ])
-  const headers = getRequestHeaders()
-  const session = await auth.api.getSession({ headers })
-  if (!session) throw new Error('Not authenticated')
-
-  const memberships = await db
-    .select({ orgId: member.organizationId })
-    .from(member)
-    .where(eq2(member.userId, session.user.id))
-    .limit(1)
-
-  if (memberships.length === 0) throw new Error('No organization')
-  return memberships[0].orgId
-}
 
 const ALLOWED_SORT_FIELDS = new Set([
   'name',

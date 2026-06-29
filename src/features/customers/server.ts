@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequestHeaders } from '@tanstack/react-start/server'
+import { resolveOrgId } from '#/lib/auth-session'
 import type {
   Customer,
   CustomerInput,
@@ -12,27 +12,6 @@ import {
   listCustomers,
   updateCustomer,
 } from './model'
-
-async function resolveOrgId(): Promise<string> {
-  const [{ auth }, { db }, { member }, { eq }] = await Promise.all([
-    import('#/lib/auth'),
-    import('#/db/index'),
-    import('#/db/schema'),
-    import('drizzle-orm'),
-  ])
-  const headers = getRequestHeaders()
-  const session = await auth.api.getSession({ headers })
-  if (!session) throw new Error('Not authenticated')
-
-  const memberships = await db
-    .select({ orgId: member.organizationId })
-    .from(member)
-    .where(eq(member.userId, session.user.id))
-    .limit(1)
-
-  if (memberships.length === 0) throw new Error('No organization')
-  return memberships[0].orgId
-}
 
 export const listCustomersFn = createServerFn({ method: 'GET' })
   .inputValidator((data: ListCustomersParams) => data)

@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import { eq } from 'drizzle-orm'
+import { resolveOrgId } from '#/lib/auth-session'
 
 type MemberUser = {
   id: string
@@ -24,26 +24,6 @@ export type InvitationItem = {
   createdAt: string
   inviterId: string
   organizationName?: string
-}
-
-async function resolveOrgId(): Promise<string> {
-  const [{ auth }, { db }, { member }] = await Promise.all([
-    import('#/lib/auth'),
-    import('#/db/index'),
-    import('#/db/schema'),
-  ])
-  const headers = getRequestHeaders()
-  const session = await auth.api.getSession({ headers })
-  if (!session) throw new Error('Not authenticated')
-
-  const memberships = await db
-    .select({ orgId: member.organizationId })
-    .from(member)
-    .where(eq(member.userId, session.user.id))
-    .limit(1)
-
-  if (memberships.length === 0) throw new Error('No organization')
-  return memberships[0].orgId
 }
 
 export const listMembersFn = createServerFn({ method: 'GET' }).handler(

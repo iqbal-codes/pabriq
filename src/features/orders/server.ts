@@ -1,5 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
+import { resolveOrgId } from '#/lib/auth-session'
+import type { MutationResult } from '#/lib/server-results'
 import type {
   CreateDraftOrderInput,
   GetOrderResult,
@@ -7,29 +9,6 @@ import type {
   ListOrdersResult,
   UpdateDraftOrderInput,
 } from './model'
-
-type MutationResult = { ok: true } | { ok: false; error: string }
-
-async function resolveOrgId(): Promise<string> {
-  const [{ auth }, { db }, { member }, { eq }] = await Promise.all([
-    import('#/lib/auth'),
-    import('#/db/index'),
-    import('#/db/schema'),
-    import('drizzle-orm'),
-  ])
-  const headers = getRequestHeaders()
-  const session = await auth.api.getSession({ headers })
-  if (!session) throw new Error('Not authenticated')
-
-  const memberships = await db
-    .select({ orgId: member.organizationId })
-    .from(member)
-    .where(eq(member.userId, session.user.id))
-    .limit(1)
-
-  if (memberships.length === 0) throw new Error('No organization')
-  return memberships[0].orgId
-}
 
 export const listOrdersFn = createServerFn({ method: 'GET' })
   .inputValidator((data: ListOrdersParams) => data)
@@ -163,7 +142,7 @@ export const advanceOrderStatusFn = createServerFn({ method: 'POST' })
     }
   })
 
-export const setDeliveryInfoFn = createServerFn({ method: 'POST' })
+const setDeliveryInfoFn = createServerFn({ method: 'POST' })
   .inputValidator(
     (input: { id: string; courier?: string; trackingNumber?: string }) => input,
   )
@@ -186,7 +165,7 @@ export const setDeliveryInfoFn = createServerFn({ method: 'POST' })
     }
   })
 
-export const markShippedFn = createServerFn({ method: 'POST' })
+const markShippedFn = createServerFn({ method: 'POST' })
   .inputValidator(
     (input: { id: string; courier?: string; trackingNumber?: string }) => input,
   )

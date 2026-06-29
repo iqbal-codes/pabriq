@@ -3,28 +3,9 @@ import { getRequestHeaders } from '@tanstack/react-start/server'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { assets, assetVariants } from '#/db/schema'
 import { generateSignedDownloadUrl } from '#/lib/r2'
+import { resolveOrgId } from '#/lib/auth-session'
 import type { AssetKind, OwnerType, Usage, VariantKey } from './model'
 import { IMAGE_MIME_TYPES, USAGE_LIMITS, VIDEO_MIME_TYPES } from './model'
-
-async function resolveOrgId(): Promise<string> {
-  const [{ auth }, { db }, { member }] = await Promise.all([
-    import('#/lib/auth'),
-    import('#/db/index'),
-    import('#/db/schema'),
-  ])
-  const headers = getRequestHeaders()
-  const session = await auth.api.getSession({ headers })
-  if (!session) throw new Error('Not authenticated')
-
-  const memberships = await db
-    .select({ orgId: member.organizationId })
-    .from(member)
-    .where(eq(member.userId, session.user.id))
-    .limit(1)
-
-  if (memberships.length === 0) throw new Error('No organization')
-  return memberships[0].orgId
-}
 
 async function resolveUserId(): Promise<string> {
   const { auth } = await import('#/lib/auth')

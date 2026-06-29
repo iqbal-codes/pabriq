@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import { queryKeys } from '#/lib/query-keys'
 import type { CreateStageInput, UpdateStageInput } from './model'
-import type { MutationResult } from './server'
+import type { MutationResult } from '#/lib/server-results'
 import {
   advanceTaskFn,
   approveTaskAdvanceFn,

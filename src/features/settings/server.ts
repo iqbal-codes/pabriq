@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { eq } from 'drizzle-orm'
+import { resolveOrgId } from '#/lib/auth-session'
 
 type OrgSettings = {
   name: string
@@ -9,25 +10,6 @@ type OrgSettings = {
   email: string | null
   address: { areaId: string; areaName: string; streetAddress: string } | null
   logoAssetId: string | null
-}
-async function resolveOrgId(): Promise<string> {
-  const [{ auth }, { db }, { member }] = await Promise.all([
-    import('#/lib/auth'),
-    import('#/db/index'),
-    import('#/db/schema'),
-  ])
-  const headers = getRequestHeaders()
-  const session = await auth.api.getSession({ headers })
-  if (!session) throw new Error('Not authenticated')
-
-  const memberships = await db
-    .select({ orgId: member.organizationId })
-    .from(member)
-    .where(eq(member.userId, session.user.id))
-    .limit(1)
-
-  if (memberships.length === 0) throw new Error('No organization')
-  return memberships[0].orgId
 }
 
 export const getOrgSettingsFn = createServerFn({ method: 'GET' }).handler(
