@@ -1,65 +1,10 @@
-const _currencyFormatters = new Map<string, Intl.NumberFormat>()
-function formatCurrency(amount: number, locale: string): string {
-  let fmt = _currencyFormatters.get(locale)
-  if (!fmt) {
-    fmt = new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    })
-    _currencyFormatters.set(locale, fmt)
-  }
-  return fmt.format(amount)
-}
-
-const _numberFormatters = new Map<string, Intl.NumberFormat>()
-function formatNumber(value: number, locale: string): string {
-  let fmt = _numberFormatters.get(locale)
-  if (!fmt) {
-    fmt = new Intl.NumberFormat(locale)
-    _numberFormatters.set(locale, fmt)
-  }
-  return fmt.format(value)
-}
-
-const _shortDateFormatters = new Map<string, Intl.DateTimeFormat>()
-function formatShortDate(value: string, locale: string): string {
-  let fmt = _shortDateFormatters.get(locale)
-  if (!fmt) {
-    fmt = new Intl.DateTimeFormat(locale, {
-      month: 'short',
-      day: 'numeric',
-    })
-    _shortDateFormatters.set(locale, fmt)
-  }
-  return fmt.format(new Date(value))
-}
-
-const _longDateFormatters = new Map<string, Intl.DateTimeFormat>()
-function formatLongDate(value: string, locale: string): string {
-  let fmt = _longDateFormatters.get(locale)
-  if (!fmt) {
-    fmt = new Intl.DateTimeFormat(locale, {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    })
-    _longDateFormatters.set(locale, fmt)
-  }
-  return fmt.format(new Date(value))
-}
-
 import { createFileRoute, Link } from '@tanstack/react-router'
 import {
   ArrowUpRight,
   CircleDollarSign,
   ClipboardList,
   Hourglass,
-  Minus,
   ReceiptText,
-  TrendingDown,
-  TrendingUp,
 } from 'lucide-react'
 import { useState } from 'react'
 import {
@@ -88,8 +33,18 @@ import {
   type DashboardPeriod,
   useDashboardData,
 } from '#/features/dashboard/hooks'
-import type { TaskStageCount } from '#/features/dashboard/model'
-import { cn } from '#/lib/utils'
+import {
+  formatCurrency,
+  formatLongDate,
+  formatNumber,
+  formatShortDate,
+} from '#/lib/formatters'
+import { EmptyCardState } from './-dashboard/empty-card-state'
+import { KpiCard } from './-dashboard/kpi-card'
+import { KpiCardSkeleton } from './-dashboard/kpi-card-skeleton'
+import { RevenueTooltip } from './-dashboard/revenue-tooltip'
+import { TaskStageList } from './-dashboard/task-stage-list'
+import { TrendBadge } from './-dashboard/trend-badge'
 
 export const Route = createFileRoute('/_org/')({
   beforeLoad: () => ({
@@ -370,215 +325,5 @@ function OrgDashboard() {
         </Card>
       </section>
     </PageContent>
-  )
-}
-
-function KpiCard({
-  title,
-  description,
-  value,
-  icon: Icon,
-  trend,
-  badgeLabel,
-  comparisonLabel,
-}: {
-  title: string
-  description: string
-  value: string
-  icon: typeof CircleDollarSign
-  trend?: { current: number; previous: number; changePercent: number | null }
-  badgeLabel?: string
-  comparisonLabel?: string
-}) {
-  const t = useTranslations('dashboard')
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-        <div className="space-y-1">
-          <CardDescription>{title}</CardDescription>
-          <CardTitle className="text-2xl tracking-tight">{value}</CardTitle>
-        </div>
-        <div className="rounded-lg border bg-muted/40 p-2 text-muted-foreground">
-          <Icon className="size-4" />
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {trend ? (
-          <div className="flex items-center gap-2">
-            <TrendBadge
-              trend={trend}
-              positiveLabel={t('trend.up')}
-              negativeLabel={t('trend.down')}
-              neutralLabel={t('trend.noChange')}
-              compact
-            />
-            {comparisonLabel ? (
-              <span className="text-xs text-muted-foreground">
-                {comparisonLabel}
-              </span>
-            ) : null}
-          </div>
-        ) : badgeLabel ? (
-          <Badge variant="secondary" className="w-fit">
-            {badgeLabel}
-          </Badge>
-        ) : null}
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
-  )
-}
-
-function TrendBadge({
-  trend,
-  positiveLabel,
-  negativeLabel,
-  neutralLabel,
-  compact = false,
-}: {
-  trend: { current: number; previous: number; changePercent: number | null }
-  positiveLabel: string
-  negativeLabel: string
-  neutralLabel: string
-  compact?: boolean
-}) {
-  const value = trend.changePercent
-
-  if (value === null) {
-    return (
-      <Badge variant="secondary" className="gap-1">
-        <TrendingUp className="size-3.5" />
-        {positiveLabel}
-      </Badge>
-    )
-  }
-
-  const rounded = Math.abs(value).toFixed(1)
-
-  if (value > 0) {
-    return (
-      <Badge variant="success" className="gap-1">
-        <TrendingUp className="size-3.5" />
-        {compact ? `+${rounded}%` : `${positiveLabel} ${rounded}%`}
-      </Badge>
-    )
-  }
-
-  if (value < 0) {
-    return (
-      <Badge variant="destructive" className="gap-1">
-        <TrendingDown className="size-3.5" />
-        {compact ? `-${rounded}%` : `${negativeLabel} ${rounded}%`}
-      </Badge>
-    )
-  }
-
-  return (
-    <Badge variant="secondary" className="gap-1">
-      <Minus className="size-3.5" />
-      {compact ? '0%' : neutralLabel}
-    </Badge>
-  )
-}
-
-function RevenueTooltip({
-  active,
-  payload,
-  label,
-  locale,
-  seriesLabel,
-}: {
-  active?: boolean
-  payload?: Array<{ value?: number }>
-  label?: string
-  locale: string
-  seriesLabel: string
-}) {
-  if (!active || !payload?.length || !label) {
-    return null
-  }
-
-  return (
-    <div className="min-w-44 rounded-xl border bg-card px-3 py-2 shadow-sm">
-      <p className="text-xs text-muted-foreground">
-        {formatLongDate(label, locale)}
-      </p>
-      <div className="mt-2 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="size-2 rounded-full bg-(--color-chart-1)" />
-          <span>{seriesLabel}</span>
-        </div>
-        <span className="text-sm font-semibold">
-          {formatCurrency(Number(payload[0]?.value ?? 0), locale)}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function KpiCardSkeleton() {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="mt-2 h-8 w-32" />
-      </CardHeader>
-      <CardContent>
-        <Skeleton className="h-4 w-40" />
-      </CardContent>
-    </Card>
-  )
-}
-
-function TaskStageList({
-  items,
-  queueLabel,
-  locale,
-}: {
-  items: TaskStageCount[]
-  queueLabel: string
-  locale: string
-}) {
-  const maxCount = Math.max(...items.map((item) => item.count), 1)
-
-  return (
-    <div className="space-y-4">
-      {items.map((item) => {
-        const label = item.id === 'queue' ? queueLabel : item.name
-        const width = `${Math.max((item.count / maxCount) * 100, item.count > 0 ? 8 : 0)}%`
-        const barColor =
-          item.id === 'queue'
-            ? 'bg-slate-500'
-            : item.board === 'pre_production'
-              ? 'bg-sky-600'
-              : 'bg-amber-600'
-
-        return (
-          <div key={item.id} className="space-y-2">
-            <div className="flex items-center justify-between gap-3 text-sm">
-              <p className="truncate font-medium">{label}</p>
-              <Badge variant="secondary">
-                {formatNumber(item.count, locale)}
-              </Badge>
-            </div>
-            <div className="h-2 rounded-full bg-muted">
-              <div
-                className={cn('h-2 rounded-full transition-all', barColor)}
-                style={{ width }}
-              />
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-function EmptyCardState({ label }: { label: string }) {
-  return (
-    <div className="flex min-h-40 items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
-      {label}
-    </div>
   )
 }

@@ -1,5 +1,6 @@
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { type QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
 import {
   ClientOnly,
   createRootRouteWithContext,
@@ -17,7 +18,6 @@ import { defaultLocale } from '#/lib/i18n'
 import { getCurrentLocale } from '#/lib/i18n.utils'
 import { getQueryClient } from '#/lib/query-client'
 import { type Locale, messages } from '#/messages'
-import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 import appCss from '../styles.css?url'
 
 interface MyRouterContext {
@@ -120,7 +120,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 name: 'Tanstack Router',
                 render: <TanStackRouterDevtoolsPanel />,
               },
-              TanStackQueryDevtools,
+              {
+                name: 'Tanstack Query',
+                render: <ReactQueryDevtoolsPanel />,
+              },
             ]}
           />
         </ClientOnly>
