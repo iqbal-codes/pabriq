@@ -1,7 +1,6 @@
 import type {
   AppColumnDef,
   DataTableFiltersConfig,
-  DataTableLabels,
 } from '#/components/app/data-table'
 import { StatusBadge } from '#/components/status-badge'
 import { Badge } from '#/components/ui/badge'
@@ -142,32 +141,6 @@ export function getOrderColumns(t: TranslationFn): AppColumnDef<OrderRow>[] {
       },
     },
   ]
-}
-
-export function getOrderLabels(dt: TranslationFn): DataTableLabels {
-  return {
-    clearFilters: dt('clearFilters'),
-    columnVisibility: dt('columnVisibility'),
-    errorRetry: dt('errorRetry'),
-    errorTitle: dt('errorTitle'),
-    firstPage: dt('firstPage'),
-    lastPage: dt('lastPage'),
-    loading: dt('loading'),
-    nextPage: dt('nextPage'),
-    of: dt('of'),
-    page: dt('page'),
-    perPage: dt('perPage'),
-    previousPage: dt('previousPage'),
-    resetColumns: dt('resetColumns'),
-    rowsSelected: (selected: number, total: number) =>
-      dt('rowsSelected', { selected, total }),
-    visibleRows: (from: number, to: number, total: number) =>
-      dt('visibleRows', { from, to, total }),
-    filters: dt('filters'),
-    applyFilters: dt('applyFilters'),
-    cancelFilters: dt('cancelFilters'),
-    activeFilters: dt('activeFilters'),
-  }
 }
 
 export function getOrderStatusOptions(st: TranslationFn) {

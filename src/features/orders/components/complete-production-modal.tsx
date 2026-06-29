@@ -15,17 +15,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
-import { Input } from '#/components/ui/input'
-import { Label } from '#/components/ui/label'
 import type { ShippingAddress } from '#/features/address/model'
 import { usePaymentMethods } from '#/features/invoices/hooks'
 import { useCompleteProduction } from '#/features/orders/hooks'
-
-const currencyFormatter = new Intl.NumberFormat('id-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  minimumFractionDigits: 0,
-})
+import {
+  type CompleteProductionForm,
+  FinalInvoicePreview,
+  ShipmentDetailsSection,
+} from './complete-production-form-sections'
 
 type OrderSummary = {
   id: string
@@ -74,7 +71,7 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
     },
     onSubmit: async ({ value }) => {
       if (!value.paymentMethodId) {
-        toast.error('Please select a payment method')
+        toast.error(t('paymentMethodRequired'))
         return
       }
 
@@ -82,7 +79,7 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
       const invoiceTotal = order.remainingAmount + shippingAmount
 
       if (invoiceTotal <= 0) {
-        toast.error('Invoice amount must be greater than 0')
+        toast.error(t('invoiceAmountRequired'))
         return
       }
 
@@ -103,7 +100,7 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
         toast.success(t('markAsShipped'))
         onOpenChange(false)
       } else {
-        toast.error(result.error ?? 'Failed')
+        toast.error(result.error ?? t('completeProductionFailed'))
       }
     },
   })
@@ -119,7 +116,8 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
             <Truck className="size-5" />
             {t('completeProduction')}
           </DialogTitle>
-          Order #{order.orderNumber ?? '—'}
+          {t('orderNumberLabel')}
+          {order.orderNumber ?? '—'}
         </DialogHeader>
 
         {/* Task Completion Status */}
@@ -131,77 +129,31 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
         </div>
 
         <FormRoot form={form}>
-          {/* Shipment Details */}
-          <FormSection title={t('shipmentDetails')}>
-            <FormGrid columns={1}>
-              {/* Shipping Address Display */}
-              {order.shippingAddress && (
-                <div className="rounded-lg border p-3 text-sm">
-                  <p className="font-medium mb-1">{t('shipmentAddress')}</p>
-                  <p className="text-muted-foreground">
-                    {order.shippingAddress.streetAddress}
-                    {order.shippingAddress.areaName && (
-                      <>, {order.shippingAddress.areaName}</>
-                    )}
-                  </p>
-                </div>
-              )}
-
-              <form.AppField name="courier">
-                {(field) => (
-                  <field.TextField
-                    label={t('courier')}
-                    placeholder={t('courierPlaceholder')}
-                  />
-                )}
-              </form.AppField>
-
-              <form.AppField name="trackingNumber">
-                {(field) => (
-                  <field.TextField
-                    label={t('trackingNumber')}
-                    placeholder={t('trackingNumberPlaceholder')}
-                  />
-                )}
-              </form.AppField>
-
-              <div>
-                <Label htmlFor="shippingFee" className="text-sm font-medium">
-                  {t('shipmentFee')}{' '}
-                  <span className="text-muted-foreground font-normal">
-                    (optional)
-                  </span>
-                </Label>
-                <Input
-                  id="shippingFee"
-                  type="number"
-                  value={shippingFeeRaw}
-                  onChange={(e) => {
-                    setShippingFeeRaw(e.target.value)
-                    form.setFieldValue('shippingFee', e.target.value)
-                    setShowShippingDesc(Number.parseFloat(e.target.value) > 0)
-                  }}
-                  placeholder="0"
-                  min={0}
-                  className="mt-1"
-                />
-              </div>
-
-              {showShippingDesc && (
-                <form.AppField name="shippingFeeDescription">
-                  {(field) => (
-                    <field.TextField
-                      label="Description"
-                      placeholder="e.g., Shipping Fee"
-                    />
-                  )}
-                </form.AppField>
-              )}
-            </FormGrid>
-          </FormSection>
+          <ShipmentDetailsSection
+            form={form as unknown as CompleteProductionForm}
+            order={order}
+            labels={{
+              title: t('shipmentDetails'),
+              address: t('shipmentAddress'),
+              courier: t('courier'),
+              courierPlaceholder: t('courierPlaceholder'),
+              trackingNumber: t('trackingNumber'),
+              trackingNumberPlaceholder: t('trackingNumberPlaceholder'),
+              shippingFee: t('shipmentFee'),
+              optional: t('optional'),
+              shippingFeeDescription: t('shippingFeeDescription'),
+              shippingFeeDescriptionPlaceholder: t(
+                'shippingFeeDescriptionPlaceholder',
+              ),
+            }}
+            shippingFeeRaw={shippingFeeRaw}
+            setShippingFeeRaw={setShippingFeeRaw}
+            showShippingDescription={showShippingDesc}
+            setShowShippingDescription={setShowShippingDesc}
+          />
 
           {/* Payment Details */}
-          <FormSection title="Payment">
+          <FormSection title={t('payment')}>
             <FormGrid columns={1}>
               <form.AppField name="paymentMethodId">
                 {(field) => (
@@ -223,49 +175,19 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
             </FormGrid>
           </FormSection>
 
-          {/* Final Invoice Preview */}
-          <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 space-y-3">
-            <p className="text-sm font-medium text-orange-800 flex items-center gap-2">
-              <Truck className="size-4" />
-              Final Invoice
-            </p>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Order Total</span>
-                <span className="font-medium">
-                  {currencyFormatter.format(order.total)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Already Paid</span>
-                <span className="font-medium text-green-600">
-                  {currencyFormatter.format(order.invoicedAmount)}
-                </span>
-              </div>
-              <div className="flex justify-between border-t pt-2">
-                <span className="text-muted-foreground">
-                  {t('remainingPayment')}
-                </span>
-                <span className="font-medium text-orange-600">
-                  {currencyFormatter.format(order.remainingAmount)}
-                </span>
-              </div>
-              {shippingAmount > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Shipping Fee</span>
-                  <span className="font-medium">
-                    +{currencyFormatter.format(shippingAmount)}
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between border-t pt-2 mt-2">
-                <span className="font-semibold">Total</span>
-                <span className="font-bold text-orange-600 text-lg">
-                  {currencyFormatter.format(invoiceTotal)}
-                </span>
-              </div>
-            </div>
-          </div>
+          <FinalInvoicePreview
+            order={order}
+            shippingAmount={shippingAmount}
+            invoiceTotal={invoiceTotal}
+            labels={{
+              title: t('finalInvoice'),
+              orderTotal: t('orderTotal'),
+              alreadyPaid: t('alreadyPaid'),
+              remainingPayment: t('remainingPayment'),
+              shippingFee: t('shipmentFee'),
+              total: t('total'),
+            }}
+          />
 
           <FormActions>
             <form.AppForm>

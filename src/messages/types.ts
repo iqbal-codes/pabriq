@@ -657,6 +657,17 @@ export type Messages = {
     remainingPayment: string;
     createInvoiceAndShip: string;
     courier: string;
+    payment: string;
+    finalInvoice: string;
+    orderTotal: string;
+    alreadyPaid: string;
+    shippingFeeDescription: string;
+    shippingFeeDescriptionPlaceholder: string;
+    total: string;
+    paymentMethodRequired: string;
+    invoiceAmountRequired: string;
+    completeProductionFailed: string;
+    orderNumberLabel: string;
   };
   portal: {
     title: string;
