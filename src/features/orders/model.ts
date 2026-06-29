@@ -47,7 +47,7 @@ export type Order = {
   updatedAt: Date
 }
 
-type DeliveryInfo = {
+export type DeliveryInfo = {
   courier?: string
   trackingNumber?: string
 }

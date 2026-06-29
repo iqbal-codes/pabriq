@@ -22,7 +22,7 @@ export const IMAGE_MIME_TYPES = [
   'image/webp',
 ] as const
 export const VIDEO_MIME_TYPES = ['video/mp4', 'video/webm'] as const
-const FILE_MIME_TYPES = [
+export const FILE_MIME_TYPES = [
   'application/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -51,7 +51,7 @@ export const USAGE_LIMITS: Record<
   },
 }
 
-const SIGNED_URL_TTL_SECONDS: Record<VariantKey, number> = {
+export const SIGNED_URL_TTL_SECONDS: Record<VariantKey, number> = {
   preview: 15 * 60,
   full: 15 * 60,
   original: 5 * 60,
@@ -65,7 +65,7 @@ function getAssetKind(mimeType: string): AssetKind {
   return 'file'
 }
 
-type BuildUploadUrlResult = {
+export type BuildUploadUrlResult = {
   uploadUrl: string
   storageKey: string
   assetId: string
@@ -120,7 +120,7 @@ export async function buildUploadUrl(
   }
 }
 
-type InsertAssetInput = {
+export type InsertAssetInput = {
   assetId: string
   orgId: string
   ownerType: OwnerType
@@ -139,7 +139,7 @@ type InsertAssetInput = {
   uploadedByUserId?: string
 }
 
-type InsertAssetResult = {
+export type InsertAssetResult = {
   assetId: string
   variants: {
     variantKey: VariantKey
