@@ -1,6 +1,11 @@
-import { CheckCircle2, Link2, Truck } from 'lucide-react'
+import { CheckCircle2, Link2, Printer, Truck } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { Button } from '#/components/ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '#/components/ui/tooltip'
 
 export function OrderActionBar({
   order,
@@ -43,6 +48,24 @@ export function OrderActionBar({
         <Link2 className="size-4" />
         {order.orderToken ? t('copyPortalLink') : t('generateLink')}
       </Button>
+      {order.status !== 'draft' && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button type="button" variant="outline" size="icon" asChild>
+              <a
+                href={`/api/documents/orders/${order.id}/quotation`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Printer className="size-4" />
+              </a>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{t('downloadQuotation')}</p>
+          </TooltipContent>
+        </Tooltip>
+      )}
 
       {order.status === 'pending' && (
         <>

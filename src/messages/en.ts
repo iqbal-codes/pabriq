@@ -167,6 +167,7 @@ const en: Messages = {
     paymentPartiallyPaid: "Partially Paid",
     paymentVoid: "Void",
     deadline: "Deadline",
+    downloadQuotation: "Download Quotation",
   },
   breadcrumb: {
     dashboard: "Dashboard",

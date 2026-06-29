@@ -167,6 +167,7 @@ const id: Messages = {
     paymentPartiallyPaid: "Dibayar Sebagian",
     paymentVoid: "Batal",
     deadline: "Tenggat",
+    downloadQuotation: "Unduh Penawaran",
   },
   breadcrumb: {
     dashboard: "Dasbor",

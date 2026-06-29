@@ -250,6 +250,7 @@ export type Messages = {
     paymentVoid: string;
     deadline: string;
     createdAt: string;
+    downloadQuotation: string;
   };
   breadcrumb: {
     dashboard: string;
