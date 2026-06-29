@@ -1,28 +1,26 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, useRouteContext } from '@tanstack/react-router'
 import { useState } from 'react'
-import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { StatusBadge } from '#/components/status-badge'
-import { Button } from '#/components/ui/button'
 import { CreateInvoiceModal } from '#/features/invoices/components/create-invoice-modal'
 import {
   useInvoicePaymentProofs,
   useInvoicesList,
-  useMarkInvoicePaid,
 } from '#/features/invoices/hooks'
 import { CompleteProductionModal } from '#/features/orders/components/complete-production-modal'
 import { OrderActionBar } from '#/features/orders/components/order-action-bar'
-import { OrderInvoicesCard } from '#/features/orders/components/order-invoices-card'
+import { OrderInvoicesSection } from '#/features/orders/components/order-invoices-section'
 import { OrderLineItemsCard } from '#/features/orders/components/order-line-items-card'
 import { OrderSummaryCard } from '#/features/orders/components/order-summary-card'
 import { RejectReasonDialog } from '#/features/orders/components/reject-reason-dialog'
+import { RejectedReasonBanner } from '#/features/orders/components/rejected-reason-banner'
+import { useOrderDerivedState } from '#/features/orders/components/use-order-derived-state'
+import { useOrderMutations } from '#/features/orders/components/use-order-mutations'
 import { dateFormatter } from '#/features/orders/components/view-order-utils'
-import { useAdvanceOrderStatus, useOrder } from '#/features/orders/hooks'
-import { generateOrderTokenFn } from '#/features/portal/server'
+import { useOrder } from '#/features/orders/hooks'
 import { useTasksByOrderId } from '#/features/production/hooks'
 
 export function ViewOrderPage() {
@@ -34,15 +32,11 @@ export function ViewOrderPage() {
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
   const [completeProductionModalOpen, setCompleteProductionModalOpen] =
     useState(false)
-  const isApprovedOrLater = data
-    ? [
-        'approved',
-        'in_progress',
-        'production',
-        'in_delivery',
-        'completed',
-      ].includes(data.order.status)
-    : false
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
+  const t = useTranslations('orders')
+  const ct = useTranslations('common')
+
   const { data: invoicesData } = useInvoicesList({
     orgId: ctx.org.id,
     orderId: id,
@@ -51,122 +45,24 @@ export function ViewOrderPage() {
   })
   const { data: tasksData } = useTasksByOrderId(id)
   const orderInvoices = invoicesData?.rows ?? []
-  const t = useTranslations('orders')
-  const ct = useTranslations('common')
-  const it = useTranslations('invoices')
 
-  const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
-  const [rejectReason, setRejectReason] = useState('')
-
-  const queryClient = useQueryClient()
-
-  const approveOrder = useMutation({
-    mutationFn: async (input: { id: string }) => {
-      const { approveOrderFn } = await import('#/features/orders/server')
-      return approveOrderFn({ data: input })
-    },
-    onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['orders', 'lists'] })
-      queryClient.invalidateQueries({
-        queryKey: ['orders', 'detail', variables.id],
-      })
-    },
+  const derived = useOrderDerivedState({
+    data,
+    orderInvoices,
+    tasksData,
   })
 
-  const rejectOrder = useMutation({
-    mutationFn: async (input: { id: string; reason: string }) => {
-      const { rejectOrderFn } = await import('#/features/orders/server')
-      return rejectOrderFn({ data: input })
-    },
-    onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['orders', 'lists'] })
-      queryClient.invalidateQueries({
-        queryKey: ['orders', 'detail', variables.id],
-      })
+  const mutations = useOrderMutations({
+    data,
+    rejectReason,
+    onRejectSuccess: () => {
       setRejectDialogOpen(false)
       setRejectReason('')
     },
   })
 
-  const generateToken = useMutation({
-    mutationFn: async (orderId: string) => {
-      return generateOrderTokenFn({ data: { orderId } })
-    },
-    onSuccess: (_result, orderId) => {
-      queryClient.invalidateQueries({
-        queryKey: ['orders', 'detail', orderId],
-      })
-    },
-  })
-
-  const handleCopyPortalLink = async () => {
-    if (!data) return
-    const { order } = data
-
-    let token = order.orderToken
-    if (!token) {
-      const result = await generateToken.mutateAsync(order.id)
-      if (!('token' in result)) {
-        toast.error('Failed to generate link')
-        return
-      }
-      token = result.token
-    }
-
-    const url = `${window.location.origin}/order/${token}`
-    await navigator.clipboard.writeText(url)
-    toast.success(t('linkCopied'))
-  }
-
-  const handleApprove = async () => {
-    if (!data) return
-    const result = await approveOrder.mutateAsync({ id: data.order.id })
-    if (!result.ok) {
-      toast.error(result.error)
-    } else {
-      toast.success(t('orderApproved'))
-    }
-  }
-
-  const handleReject = async () => {
-    if (!data) return
-    if (!rejectReason.trim()) return
-    const result = await rejectOrder.mutateAsync({
-      id: data.order.id,
-      reason: rejectReason.trim(),
-    })
-    if (!result.ok) {
-      toast.error(result.error)
-    } else {
-      toast.success(t('orderRejected'))
-    }
-  }
-
   const invoiceIds = orderInvoices.map((inv) => inv.id)
   const { data: invoicePayments } = useInvoicePaymentProofs(invoiceIds)
-
-  const markInvoicePaid = useMarkInvoicePaid()
-
-  const handleMarkInvoicePaid = async (invoiceId: string) => {
-    const result = await markInvoicePaid.mutateAsync(invoiceId)
-    if (result.ok) {
-      toast.success(it('invoicePaid'))
-    } else {
-      toast.error(result.error ?? ct('cancel'))
-    }
-  }
-
-  const advanceOrderStatus = useAdvanceOrderStatus()
-
-  const handleCompleteOrder = async () => {
-    if (!data) return
-    const result = await advanceOrderStatus.mutateAsync({ id: data.order.id })
-    if (result.ok) {
-      toast.success(t('orderCompleted'))
-    } else {
-      toast.error(result.error)
-    }
-  }
 
   if (!data) {
     return (
@@ -185,38 +81,6 @@ export function ViewOrderPage() {
     customerEmail,
     shippingAddress,
   } = data
-
-  const paidInvoices = orderInvoices.filter((inv) => inv.status === 'paid')
-  const invoicedPct = paidInvoices.reduce(
-    (sum, inv) => sum + (inv.percentage ?? 0),
-    0,
-  )
-  const invoicedAmt = paidInvoices.reduce((sum, inv) => sum + inv.total, 0)
-  const remainingPct = Math.max(0, 100 - invoicedPct)
-  const remainingAmt = Math.max(0, order.total - invoicedAmt)
-
-  // Check if a final invoice (100%) has already been generated
-  const totalInvoicedPct = orderInvoices
-    .filter((inv) => inv.status !== 'void')
-    .reduce((sum, inv) => sum + (inv.percentage ?? 0), 0)
-  const hasFinalInvoice = totalInvoicedPct >= 100
-
-  // Check if all production tasks are completed
-  const allTasksCompleted =
-    tasksData?.every((t) => t.task.status === 'completed') ?? true
-  const canCompleteProduction =
-    order.status === 'in_progress' && allTasksCompleted && !hasFinalInvoice
-
-  // Check if all non-void invoices are paid
-  const activeInvoices = orderInvoices.filter((inv) => inv.status !== 'void')
-  const allInvoicesPaid =
-    activeInvoices.length > 0 &&
-    activeInvoices.every((inv) => inv.status === 'paid')
-  const canCompleteOrder =
-    allInvoicesPaid &&
-    order.status !== 'completed' &&
-    order.status !== 'cancelled' &&
-    order.status !== 'rejected'
 
   return (
     <PageContent>
@@ -246,32 +110,20 @@ export function ViewOrderPage() {
 
       <OrderActionBar
         order={order}
-        onCopyPortalLink={handleCopyPortalLink}
-        isGeneratingLink={generateToken.isPending}
-        onApprove={handleApprove}
-        isApproving={approveOrder.isPending}
+        onCopyPortalLink={mutations.handleCopyPortalLink}
+        isGeneratingLink={mutations.isGeneratingLink}
+        onApprove={mutations.handleApprove}
+        isApproving={mutations.isApproving}
         onReject={() => setRejectDialogOpen(true)}
-        isRejecting={rejectOrder.isPending}
+        isRejecting={mutations.isRejecting}
         onCompleteProduction={() => setCompleteProductionModalOpen(true)}
-        onCompleteOrder={handleCompleteOrder}
-        isCompletingOrder={advanceOrderStatus.isPending}
-        canCompleteProduction={canCompleteProduction}
-        canCompleteOrder={canCompleteOrder}
+        onCompleteOrder={mutations.handleCompleteOrder}
+        isCompletingOrder={mutations.isCompletingOrder}
+        canCompleteProduction={derived.canCompleteProduction}
+        canCompleteOrder={derived.canCompleteOrder}
       />
 
-      {order.status === 'rejected' && order.rejectReason && (
-        <div className="mb-6 rounded-lg border border-destructive/50 bg-destructive/5 p-4">
-          <div className="flex items-start gap-3">
-            <div className="size-5 text-destructive mt-0.5">✕</div>
-            <div>
-              <p className="font-medium">{t('rejectReason')}</p>
-              <p className="text-sm text-muted-foreground">
-                {order.rejectReason}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      <RejectedReasonBanner reason={order.rejectReason ?? null} />
 
       <div className="grid gap-6">
         <OrderSummaryCard
@@ -289,26 +141,14 @@ export function ViewOrderPage() {
           orderId={order.id}
         />
 
-        {isApprovedOrLater && (
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-lg font-semibold">{it('title')}</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setInvoiceModalOpen(true)}
-              >
-                <span className="mr-1">+</span>
-                {it('createInvoice')}
-              </Button>
-            </div>
-            <OrderInvoicesCard
-              orderInvoices={orderInvoices}
-              invoicePayments={invoicePayments ?? {}}
-              onMarkInvoicePaid={handleMarkInvoicePaid}
-              isMarkingPaid={markInvoicePaid.isPending}
-            />
-          </div>
+        {derived.isApprovedOrLater && (
+          <OrderInvoicesSection
+            orderInvoices={orderInvoices}
+            invoicePayments={invoicePayments ?? {}}
+            onCreateInvoice={() => setInvoiceModalOpen(true)}
+            onMarkInvoicePaid={mutations.handleMarkInvoicePaid}
+            isMarkingPaid={mutations.isMarkingPaid}
+          />
         )}
       </div>
 
@@ -317,8 +157,8 @@ export function ViewOrderPage() {
         onOpenChange={setRejectDialogOpen}
         rejectReason={rejectReason}
         onRejectReasonChange={setRejectReason}
-        onReject={handleReject}
-        isRejecting={rejectOrder.isPending}
+        onReject={mutations.handleReject}
+        isRejecting={mutations.isRejecting}
       />
 
       <CreateInvoiceModal
@@ -328,10 +168,10 @@ export function ViewOrderPage() {
           id: order.id,
           orderNumber: order.orderNumber,
           total: order.total,
-          invoicedPercentage: invoicedPct,
-          invoicedAmount: invoicedAmt,
-          remainingPercentage: remainingPct,
-          remainingAmount: remainingAmt,
+          invoicedPercentage: derived.invoicedPct,
+          invoicedAmount: derived.invoicedAmt,
+          remainingPercentage: derived.remainingPct,
+          remainingAmount: derived.remainingAmt,
           customerId: order.customerId,
           customerName,
         }}
@@ -344,10 +184,10 @@ export function ViewOrderPage() {
           id: order.id,
           orderNumber: order.orderNumber,
           total: order.total,
-          invoicedPercentage: invoicedPct,
-          invoicedAmount: invoicedAmt,
-          remainingPercentage: remainingPct,
-          remainingAmount: remainingAmt,
+          invoicedPercentage: derived.invoicedPct,
+          invoicedAmount: derived.invoicedAmt,
+          remainingPercentage: derived.remainingPct,
+          remainingAmount: derived.remainingAmt,
           customerId: order.customerId,
           customerName,
           shippingAddress,

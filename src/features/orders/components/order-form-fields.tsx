@@ -1,17 +1,14 @@
 import { Plus, UserPlus } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
 import { FormGrid, FormSection, withForm } from '#/components/app/form'
 import { formatNumber } from '#/components/app/form/form-utils'
 import { Button } from '#/components/ui/button'
-import { Skeleton } from '#/components/ui/skeleton'
 import type { CustomerRow } from '#/features/customers/model'
-import { useProductPrice } from '#/features/products/hooks'
 import type { ProductRow } from '#/features/products/model'
 import { CreateCustomerDialog } from './create-customer-dialog'
-import type { OrderFormValues } from './order-form-types'
 import { defaultOrderValues } from './order-form-types'
+import { OrderLineItemRow } from './order-line-item-row'
 import { ProductSelectDialog } from './product-select-dialog'
 
 export const OrderFormFields = withForm({
@@ -142,7 +139,7 @@ export const OrderFormFields = withForm({
                   {() => (
                     <>
                       {lineItems.map((item, i) => (
-                        <LineItemRow
+                        <OrderLineItemRow
                           key={item.id}
                           form={form}
                           index={i}
@@ -174,108 +171,3 @@ export const OrderFormFields = withForm({
     )
   },
 })
-
-type FormType = Parameters<typeof OrderFormFields>[0]['form']
-
-function LineItemRow({
-  form,
-  index,
-  item,
-  products,
-}: {
-  form: FormType
-  index: number
-  item: OrderFormValues['lineItems'][number]
-  products: ProductRow[]
-}) {
-  const t = useTranslations('orders')
-
-  const product = useMemo(
-    () => products.find((p) => p.id === item.productId),
-    [products, item.productId],
-  )
-
-  const [committedQty, setCommittedQty] = useState(
-    () => parseInt(item.quantity, 10) || 0,
-  )
-
-  const { isFetching, data: priceResult } = useProductPrice(
-    item.productId,
-    committedQty,
-    product?.pricingMode,
-  )
-
-  useEffect(() => {
-    if (!priceResult?.ok) return
-    const newPrice = String(priceResult.unitPrice)
-    if (newPrice !== item.unitPrice) {
-      form.setFieldValue(`lineItems[${index}].unitPrice`, newPrice)
-    }
-  }, [priceResult, form, index, item.unitPrice])
-
-  const displayPrice = item.unitPrice
-    ? `Rp ${formatNumber(item.unitPrice)}`
-    : 'Rp 0'
-  const qtyNum = parseInt(item.quantity, 10) || 0
-  const priceNum = parseFloat(item.unitPrice) || 0
-  const subtotal = qtyNum * priceNum
-
-  return (
-    <div className="space-y-3 rounded-lg border p-4">
-      <div className="flex gap-3">
-        <FormGrid columns={3}>
-          <form.AppField name={`lineItems[${index}].name`}>
-            {(field) => (
-              <field.TextField
-                label={t('lineItemName')}
-                placeholder={product?.name ?? ''}
-              />
-            )}
-          </form.AppField>
-          <form.AppField
-            name={`lineItems[${index}].quantity`}
-            validators={{
-              onChange: ({ value }) => {
-                const p = products.find((pr) => pr.id === item.productId)
-                if (p?.maxQuantity != null && Number(value) > p.maxQuantity) {
-                  return t('maxQtyError', { max: p.maxQuantity })
-                }
-                return undefined
-              },
-            }}
-          >
-            {(field) => (
-              <field.NumberField
-                label={t('quantity')}
-                onBlurValue={({ rawValue }) => {
-                  const qty = rawValue ? Number(rawValue) : 0
-                  setCommittedQty(qty)
-                }}
-              />
-            )}
-          </form.AppField>
-          <div className="flex flex-col flex-1 mt-1">
-            <span className="text-sm font-medium">{t('unitPrice')}</span>
-            {isFetching ? (
-              <Skeleton className="mt-1 h-9 w-full" />
-            ) : (
-              <p className="mt-1 rounded-md border bg-muted px-3 py-2 text-sm h-9">
-                {displayPrice}
-              </p>
-            )}
-          </div>
-        </FormGrid>
-      </div>
-      <form.AppField name={`lineItems[${index}].notes`}>
-        {(field) => <field.TextareaField label={t('specification')} />}
-      </form.AppField>
-      <form.AppField name={`lineItems[${index}].attachments`}>
-        {(field) => <field.FileUploadField label={t('attachments')} />}
-      </form.AppField>
-
-      <div className="text-right text-sm text-muted-foreground">
-        {t('lineSubtotal')}: Rp {formatNumber(subtotal)}
-      </div>
-    </div>
-  )
-}

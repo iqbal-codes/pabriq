@@ -71,6 +71,16 @@ export function useProductPrice(
     enabled: quantity > 0 && !!productId,
   })
 }
+export function useCalculateProductPrice() {
+  return useMutation({
+    mutationFn: (input: {
+      productId: string
+      quantity: number
+      pricingMode?: 'interpolated' | 'step'
+    }) =>
+      calculateProductPriceFn({ data: input }) as Promise<ProductPriceResult>,
+  })
+}
 
 export function useUpdateProduct() {
   const queryClient = useQueryClient()
