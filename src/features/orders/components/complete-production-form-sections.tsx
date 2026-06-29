@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
 import { Truck } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { FormGrid, FormSection } from '#/components/app/form'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
@@ -149,8 +149,8 @@ export function FinalInvoicePreview({
   labels,
 }: FinalInvoicePreviewProps) {
   return (
-    <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 space-y-3">
-      <p className="text-sm font-medium text-orange-800 flex items-center gap-2">
+    <div className="rounded-lg border border-warning/30 bg-warning/10 p-4 space-y-3">
+      <p className="text-sm font-medium text-warning flex items-center gap-2">
         <Truck className="size-4" />
         {labels.title}
       </p>
@@ -163,7 +163,7 @@ export function FinalInvoicePreview({
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">{labels.alreadyPaid}</span>
-          <span className="font-medium text-green-600">
+          <span className="font-medium text-success">
             {currencyFormatter.format(order.invoicedAmount)}
           </span>
         </div>
@@ -171,7 +171,7 @@ export function FinalInvoicePreview({
           <span className="text-muted-foreground">
             {labels.remainingPayment}
           </span>
-          <span className="font-medium text-orange-600">
+          <span className="font-medium text-warning">
             {currencyFormatter.format(order.remainingAmount)}
           </span>
         </div>
@@ -185,7 +185,7 @@ export function FinalInvoicePreview({
         )}
         <div className="flex justify-between border-t pt-2 mt-2">
           <span className="font-semibold">{labels.total}</span>
-          <span className="font-bold text-orange-600 text-lg">
+          <span className="font-bold text-warning text-lg">
             {currencyFormatter.format(invoiceTotal)}
           </span>
         </div>

@@ -13,6 +13,7 @@ import { Button } from '#/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
@@ -91,7 +92,7 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
         toast.success(t('title'))
         onOpenChange(false)
       } else {
-        toast.error(result.error ?? 'Failed')
+        toast.error(result.error ?? t('failed'))
       }
     },
   })
@@ -101,7 +102,9 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t('createInvoice')}</DialogTitle>
-          Order #{order.orderNumber ?? '—'}
+          <DialogDescription>
+            {t('orderLabel', { orderNumber: order.orderNumber ?? '—' })}
+          </DialogDescription>
         </DialogHeader>
 
         <FormRoot form={form}>
@@ -117,7 +120,7 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
           <FormSection title="">
             <FormGrid columns={1}>
               <div>
-                <p className="text-sm font-medium mb-1">Invoice amount</p>
+                <p className="text-sm font-medium mb-1">{t('invoiceAmount')}</p>
                 <div className="flex flex-wrap gap-2">
                   {!hasPaidInvoices && (
                     <Button
@@ -126,7 +129,7 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                       size="sm"
                       onClick={() => setMode('full')}
                     >
-                      Full (100%)
+                      {t('fullAmount')}
                     </Button>
                   )}
                   {hasPaidInvoices && order.remainingPercentage > 0 && (
@@ -136,7 +139,9 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                       size="sm"
                       onClick={() => setMode('remaining')}
                     >
-                      Remaining ({order.remainingPercentage}%)
+                      {t('remainingAmount', {
+                        percentage: order.remainingPercentage,
+                      })}
                     </Button>
                   )}
                   <Button
@@ -145,7 +150,7 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                     size="sm"
                     onClick={() => setMode('custom')}
                   >
-                    Custom
+                    {t('customAmount')}
                   </Button>
                 </div>
 
@@ -155,6 +160,7 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                       type="button"
                       variant="outline"
                       size="icon-sm"
+                      aria-label={t('decreasePercentage')}
                       onClick={() => setCustomPct((p) => Math.max(5, p - 5))}
                     >
                       <Minus className="size-3" />
@@ -166,12 +172,13 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                       type="button"
                       variant="outline"
                       size="icon-sm"
+                      aria-label={t('increasePercentage')}
                       onClick={() => setCustomPct((p) => Math.min(100, p + 5))}
                     >
                       <Plus className="size-3" />
                     </Button>
                     <span className="text-sm text-muted-foreground">
-                      (5% steps)
+                      {t('stepHint', { percentage: 5 })}
                     </span>
                   </div>
                 )}
@@ -181,8 +188,10 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                 </p>
                 {hasPaidInvoices && (
                   <p className="text-xs text-muted-foreground">
-                    Previously invoiced: {order.invoicedPercentage}% (
-                    {currencyFormatter.format(order.invoicedAmount)})
+                    {t('alreadyInvoiced', {
+                      percentage: order.invoicedPercentage,
+                      amount: currencyFormatter.format(order.invoicedAmount),
+                    })}
                   </p>
                 )}
               </div>

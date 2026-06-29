@@ -1,0 +1,18 @@
+{
+  "ignoreDependencies": ["pino-pretty", "@react-pdf/types"],
+  "dynamicallyLoaded": [
+    "src/features/assets/model.ts",
+    "src/features/invoices/model.ts",
+    "src/features/orders/model.ts",
+    "src/features/production/model.ts"
+  ],
+  "overrides": [
+    {
+      "files": ["src/components/ui/**"],
+      "rules": { "unused-exports": "off" }
+    }
+  ],
+  "health": {
+    "ignore": ["src/routeTree.gen.ts"]
+  }
+}

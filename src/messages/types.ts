@@ -529,6 +529,10 @@ export type Messages = {
     invoiceAmount: string;
     fullAmount: string;
     customAmount: string;
+    remainingAmount: string;
+    stepHint: string;
+    decreasePercentage: string;
+    increasePercentage: string;
     invoiceTotal: string;
     remainingFrom: string;
     customerName: string;
@@ -745,5 +749,21 @@ export type Messages = {
     timelineCompleted: string;
     timelineTransition: string;
     timelineStageFallback: string;
+  };
+  assistant: {
+    trigger: string;
+    title: string;
+    description: string;
+    emptyTitle: string;
+    emptyDescription: string;
+    loadingHistory: string;
+    messageLabel: string;
+    messagePlaceholder: string;
+    send: string;
+    sending: string;
+    you: string;
+    assistant: string;
+    notConfigured: string;
+    genericError: string;
   };
 };

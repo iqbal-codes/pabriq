@@ -121,9 +121,9 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
         </DialogHeader>
 
         {/* Task Completion Status */}
-        <div className="rounded-lg bg-green-50 border border-green-200 p-3">
-          <p className="text-sm font-medium text-green-800 flex items-center gap-2">
-            <span className="size-2 rounded-full bg-green-500" />
+        <div className="rounded-lg border border-success/30 bg-success/10 p-3">
+          <p className="text-sm font-medium text-success flex items-center gap-2">
+            <span className="size-2 rounded-full bg-success" />
             {t('allTasksCompleted')}
           </p>
         </div>

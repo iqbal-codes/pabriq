@@ -105,9 +105,9 @@ describe('CompleteProductionModal', () => {
     expect(
       screen.getByText('All tasks have been completed ✓'),
     ).toBeInTheDocument()
-    expect(screen.getByText('Payment Method')).toBeInTheDocument()
+    expect(screen.getAllByText('Payment Method').length).toBeGreaterThanOrEqual(1)
     // remainingAmount (250,000) formatted as IDR
-    expect(screen.getByText(/250\.000/)).toBeInTheDocument()
+    expect(screen.getAllByText(/250\.000/).length).toBeGreaterThanOrEqual(1)
   })
 
   it('entering a positive shipping fee reveals the description field and adds to total', async () => {

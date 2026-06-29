@@ -32,8 +32,6 @@ function LineItemRow({
   const t = useTranslations('production')
   const task = useTaskByLineItemId(item.id, orderId)
 
-  console.log({ task })
-
   return (
     <div className="rounded-lg border p-4 space-y-2">
       <div className="flex items-start justify-between">

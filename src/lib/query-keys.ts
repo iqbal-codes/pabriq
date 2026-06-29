@@ -102,4 +102,9 @@ export const queryKeys = {
     tasksByOrder: (orderId: string) =>
       [...queryKeys.production.all, 'tasks-by-order', orderId] as const,
   },
+  assistant: {
+    all: ['assistant'] as const,
+    chat: (scope: { orgId: string; userId: string }) =>
+      [...queryKeys.assistant.all, 'chat', scope] as const,
+  },
 }

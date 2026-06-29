@@ -82,6 +82,11 @@ export function ViewOrderPage() {
     shippingAddress,
   } = data
 
+  const validUntilDescription =
+    order.validUntil && order.status === 'draft'
+      ? `${t('validUntil')}: ${dateFormatter.format(order.validUntil)}`
+      : undefined
+
   return (
     <PageContent>
       <PageHeader
@@ -91,6 +96,7 @@ export function ViewOrderPage() {
             <StatusBadge status={order.status} />
           </span>
         }
+        description={validUntilDescription}
         backAction={{ label: ct('back'), href: '/orders' }}
         primaryAction={
           order.status === 'draft'
@@ -101,12 +107,6 @@ export function ViewOrderPage() {
             : undefined
         }
       />
-
-      {order.validUntil && order.status === 'draft' && (
-        <span className="text-sm text-muted-foreground">
-          {t('validUntil')}: {dateFormatter.format(order.validUntil)}
-        </span>
-      )}
 
       <OrderActionBar
         order={order}

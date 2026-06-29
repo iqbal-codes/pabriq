@@ -19,6 +19,7 @@ import {
 import { listUserOrgs } from '#/features/auth/org'
 import type { Role } from '#/features/permissions/model'
 import { getCurrentSession } from '#/lib/auth-session'
+import { FloatingAssistant } from '#/features/assistant/components/floating-assistant'
 
 export const Route = createFileRoute('/_org')({
   beforeLoad: async ({ location }) => {
@@ -142,6 +143,7 @@ function OrgLayout() {
         </header>
         <div className="overflow-x-auto flex-1 min-w-0">
           <Outlet />
+          <FloatingAssistant orgId={org.id} userId={session.user.id} />
         </div>
       </SidebarInset>
     </SidebarProvider>

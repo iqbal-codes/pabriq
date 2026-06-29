@@ -1,4 +1,4 @@
-import { CheckCircle2, Link2, Printer, Truck } from 'lucide-react'
+import { CheckCircle2, Link2, Printer, Truck, XCircle } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { Button } from '#/components/ui/button'
 import {
@@ -42,6 +42,7 @@ export function OrderActionBar({
       <Button
         type="button"
         variant="outline"
+        size="sm"
         onClick={onCopyPortalLink}
         disabled={isGeneratingLink}
       >
@@ -51,11 +52,12 @@ export function OrderActionBar({
       {order.status !== 'draft' && (
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button type="button" variant="outline" size="icon" asChild>
+            <Button type="button" variant="outline" size="icon-sm" asChild>
               <a
                 href={`/api/documents/orders/${order.id}/quotation`}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label={t('downloadQuotation')}
               >
                 <Printer className="size-4" />
               </a>
@@ -80,12 +82,12 @@ export function OrderActionBar({
           </Button>
           <Button
             type="button"
-            variant="outline"
+            variant="destructive"
             size="sm"
             onClick={onReject}
             disabled={isRejecting}
           >
-            <CheckCircle2 className="size-4" />
+            <XCircle className="size-4" />
             {t('reject')}
           </Button>
         </>
