@@ -14,9 +14,7 @@ import {
   generateOrderTokenFn,
   getOrderTasksTimelineFn,
   getPortalOrderFn,
-  portalFinalizeUploadFn,
   portalGetInvoiceUploadUrlFn,
-  portalGetUploadUrlFn,
   savePortalAddressFn,
   submitPaymentProofFn,
   updatePortalLineItemFn,
@@ -85,22 +83,6 @@ export function useSavePortalAddress() {
   })
 }
 
-export function usePortalGetUploadUrl() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (input: {
-      token: string
-      fileName: string
-      fileType: string
-      fileSize: number
-      lineItemId: string
-    }) => portalGetUploadUrlFn({ data: input }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.portal.all })
-    },
-  })
-}
-
 export function usePortalGetInvoiceUploadUrl() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -129,25 +111,6 @@ export function useSubmitPaymentProof() {
       sizeBytes: number
       storageKey: string
     }) => submitPaymentProofFn({ data: input }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.portal.all })
-    },
-  })
-}
-
-export function usePortalFinalizeUpload() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (input: {
-      token: string
-      lineItemId: string
-      assetId: string
-      originalFilename: string
-      mimeType: string
-      sizeBytes: number
-      checksumSha256?: string
-      storageKey: string
-    }) => portalFinalizeUploadFn({ data: input }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.portal.all })
     },

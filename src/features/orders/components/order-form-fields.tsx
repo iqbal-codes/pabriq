@@ -10,27 +10,9 @@ import type { CustomerRow } from '#/features/customers/model'
 import { useProductPrice } from '#/features/products/hooks'
 import type { ProductRow } from '#/features/products/model'
 import { CreateCustomerDialog } from './create-customer-dialog'
+import type { OrderFormValues } from './order-form-types'
+import { defaultOrderValues } from './order-form-types'
 import { ProductSelectDialog } from './product-select-dialog'
-
-export type OrderFormValues = {
-  customerId: string
-  notes: string
-  lineItems: Array<{
-    id: string
-    productId: string
-    quantity: string
-    unitPrice: string
-    name: string
-    notes: string
-    attachments: string[]
-  }>
-}
-
-export const defaultOrderValues = (): OrderFormValues => ({
-  customerId: '',
-  notes: '',
-  lineItems: [],
-})
 
 export const OrderFormFields = withForm({
   defaultValues: defaultOrderValues(),
@@ -73,7 +55,9 @@ export const OrderFormFields = withForm({
             if (customer.active || customer.id === selectedCustomerId) {
               customerOptions.push({
                 value: customer.id,
-                label: customer.name,
+                label: customer.phone
+                  ? `${customer.name} (${customer.phone})`
+                  : customer.name,
                 ...customer,
               })
             }

@@ -13,7 +13,7 @@ import type {
   QuotationPdfData,
 } from './types'
 
-export class DocumentAuthError extends Error {
+class DocumentAuthError extends Error {
   constructor(
     message: string,
     public statusCode: 401 | 403 | 404,

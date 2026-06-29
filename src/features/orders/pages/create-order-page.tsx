@@ -18,10 +18,8 @@ import {
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { useCustomersList } from '#/features/customers/hooks'
-import {
-  defaultOrderValues,
-  OrderFormFields,
-} from '#/features/orders/components/order-form-fields'
+import { OrderFormFields } from '#/features/orders/components/order-form-fields'
+import { defaultOrderValues } from '#/features/orders/components/order-form-types'
 import { useCreateDraftOrder } from '#/features/orders/hooks'
 import { useGenerateOrderToken } from '#/features/portal/hooks'
 import { useProductsList } from '#/features/products/hooks'

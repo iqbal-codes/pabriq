@@ -16,7 +16,6 @@ import {
   createPaymentFn,
   createPaymentMethodFn,
   deletePaymentMethodFn,
-  getInvoiceBalanceFn,
   getInvoiceFn,
   getInvoicePaymentsFn,
   getInvoicePaymentsForInvoicesFn,
@@ -25,7 +24,6 @@ import {
   listPaymentMethodsFn,
   markInvoicePaidFn,
   rejectPaymentFn,
-  updateInvoiceFn,
   updatePaymentMethodFn,
   voidInvoiceFn,
 } from './server'
@@ -121,13 +119,6 @@ export function useInvoicePaymentProofs(invoiceIds: string[]) {
   })
 }
 
-export function useInvoiceBalance(invoiceId: string) {
-  return useSuspenseQuery({
-    queryKey: queryKeys.invoices.balance(invoiceId),
-    queryFn: () => getInvoiceBalanceFn({ data: { invoiceId } }),
-  })
-}
-
 export function useCreatePayment() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -174,24 +165,6 @@ export function useVoidInvoice() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => voidInvoiceFn({ data: { id } }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all })
-    },
-  })
-}
-
-export function useUpdateInvoice() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (
-      input: {
-        id: string
-      } & Partial<{
-        notes: string
-        dueDate: string
-        paymentMethodId: string
-      }>,
-    ) => updateInvoiceFn({ data: input }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all })
     },

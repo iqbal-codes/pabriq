@@ -1,7 +1,3 @@
-import { createCollection, localOnlyCollectionOptions } from '@tanstack/db'
-import { createServerFn } from '@tanstack/react-start'
-import { Store } from '@tanstack/store'
-
 export type AdminMetric = {
   label: string
   value: string
@@ -91,28 +87,3 @@ export const adminSummary: AdminSummary = {
     },
   ],
 }
-
-export const getAdminSummary = createServerFn({ method: 'GET' }).handler(
-  async () => adminSummary,
-)
-
-export const adminActionCollection = createCollection(
-  localOnlyCollectionOptions<AdminAction, string>({
-    id: 'admin-actions',
-    getKey: (item) => item.id,
-    initialData: adminSummary.actions,
-  }),
-)
-
-export const adminUiStore = new Store(
-  {
-    density: 'comfortable' as 'comfortable' | 'compact',
-    banner: 'Admin shell ready',
-  },
-  (store) => ({
-    setDensity: (density: 'comfortable' | 'compact') =>
-      store.setState((state) => ({ ...state, density })),
-    setBanner: (banner: string) =>
-      store.setState((state) => ({ ...state, banner })),
-  }),
-)
