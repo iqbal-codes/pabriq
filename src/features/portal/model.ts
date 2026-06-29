@@ -674,75 +674,32 @@ export type OrderTaskEvent = {
     }>
   }>
 }
+type ActivityRow = {
+  id: string
+  taskId: string
+  type: string
+  fromStageId: string | null
+  toStageId: string | null
+  data: unknown
+  createdAt: Date
+}
 
-export async function getOrderTasksTimeline(
-  token: string,
-): Promise<OrderTaskEvent[]> {
-  const orderResult = await getPortalOrder(token)
-  if (!orderResult.ok) throw new Error('Invalid token')
+type ActivityIndexes = {
+  createdByTaskId: Map<string, ActivityRow>
+  completedByTaskId: Map<string, ActivityRow>
+}
 
-  // Get all production stages for this org
-  const allStages = await db
-    .select({
-      id: productionStages.id,
-      name: productionStages.name,
-      requirements: productionStages.requirements,
-    })
-    .from(productionStages)
-    .where(eq(productionStages.orgId, orderResult.order.orgId))
-  const stageNameMap = new Map(allStages.map((s) => [s.id, s.name]))
-  const stageReqMap = new Map<string, Array<{ name: string; type: string }>>()
-  for (const stage of allStages) {
-    const requirements = stage.requirements as unknown as Array<{
-      name: string
-      type: string
-    }> | null
-    if (requirements && requirements.length > 0) {
-      stageReqMap.set(stage.id, requirements)
-    }
-  }
+type TimelineTaskRow = {
+  id: string
+  taskNumber: string | null
+  lineItemId: string | null
+  context: { productName?: string } | null
+  stageId: string | null
+}
 
-  // Query production_tasks for this order
-  const tasks = await db
-    .select({
-      id: productionTasks.id,
-      taskNumber: productionTasks.taskNumber,
-      lineItemId: productionTasks.lineItemId,
-      context: productionTasks.context,
-      stageId: productionTasks.stageId,
-    })
-    .from(productionTasks)
-    .where(eq(productionTasks.orderId, orderResult.order.id))
-  if (tasks.length === 0) return []
-  const taskIds = tasks.map((t) => t.id)
-
-  // Query task_activity for stage transitions
-  const activities = await db
-    .select({
-      id: taskActivity.id,
-      taskId: taskActivity.taskId,
-      type: taskActivity.type,
-      fromStageId: taskActivity.fromStageId,
-      toStageId: taskActivity.toStageId,
-      data: taskActivity.data,
-      createdAt: taskActivity.createdAt,
-    })
-    .from(taskActivity)
-    .where(
-      and(
-        inArray(taskActivity.taskId, taskIds),
-        or(
-          eq(taskActivity.type, 'stage_transition'),
-          eq(taskActivity.type, 'created'),
-          eq(taskActivity.type, 'completed'),
-        ),
-      ),
-    )
-    .orderBy(asc(taskActivity.createdAt))
-
-  // Build indexes: taskId → created activity, taskId → completed activity
-  const createdByTaskId = new Map<string, (typeof activities)[0]>()
-  const completedByTaskId = new Map<string, (typeof activities)[0]>()
+function extractActivityIndexes(activities: ActivityRow[]): ActivityIndexes {
+  const createdByTaskId = new Map<string, ActivityRow>()
+  const completedByTaskId = new Map<string, ActivityRow>()
   for (const activity of activities) {
     if (activity.type === 'created') {
       createdByTaskId.set(activity.taskId, activity)
@@ -750,13 +707,24 @@ export async function getOrderTasksTimeline(
       completedByTaskId.set(activity.taskId, activity)
     }
   }
-  // Build index: taskId → all activities (for stage transitions)
-  const activitiesByTaskId = new Map<string, typeof activities>()
-  for (const activity of activities) {
-    const list = activitiesByTaskId.get(activity.taskId) ?? []
-    list.push(activity)
-    activitiesByTaskId.set(activity.taskId, list)
-  }
+  return { createdByTaskId, completedByTaskId }
+}
+
+function buildTimelineEvents(params: {
+  tasks: TimelineTaskRow[]
+  stageNameMap: Map<string, string>
+  stageReqMap: Map<string, Array<{ name: string; type: string }>>
+  activityIndexes: ActivityIndexes
+  activitiesByTaskId: Map<string, ActivityRow[]>
+}): OrderTaskEvent[] {
+  const {
+    tasks,
+    stageNameMap,
+    stageReqMap,
+    activityIndexes,
+    activitiesByTaskId,
+  } = params
+  const { createdByTaskId, completedByTaskId } = activityIndexes
 
   const events: OrderTaskEvent[] = []
   for (const task of tasks) {
@@ -852,6 +820,92 @@ export async function getOrderTasksTimeline(
       })
     }
   }
+
+  return events
+}
+
+export async function getOrderTasksTimeline(
+  token: string,
+): Promise<OrderTaskEvent[]> {
+  const orderResult = await getPortalOrder(token)
+  if (!orderResult.ok) throw new Error('Invalid token')
+
+  // Get all production stages for this org
+  const allStages = await db
+    .select({
+      id: productionStages.id,
+      name: productionStages.name,
+      requirements: productionStages.requirements,
+    })
+    .from(productionStages)
+    .where(eq(productionStages.orgId, orderResult.order.orgId))
+  const stageNameMap = new Map(allStages.map((s) => [s.id, s.name]))
+  const stageReqMap = new Map<string, Array<{ name: string; type: string }>>()
+  for (const stage of allStages) {
+    const requirements = stage.requirements as unknown as Array<{
+      name: string
+      type: string
+    }> | null
+    if (requirements && requirements.length > 0) {
+      stageReqMap.set(stage.id, requirements)
+    }
+  }
+
+  // Query production_tasks for this order
+  const tasks = await db
+    .select({
+      id: productionTasks.id,
+      taskNumber: productionTasks.taskNumber,
+      lineItemId: productionTasks.lineItemId,
+      context: productionTasks.context,
+      stageId: productionTasks.stageId,
+    })
+    .from(productionTasks)
+    .where(eq(productionTasks.orderId, orderResult.order.id))
+  if (tasks.length === 0) return []
+  const taskIds = tasks.map((t) => t.id)
+
+  // Query task_activity for stage transitions
+  const activities = await db
+    .select({
+      id: taskActivity.id,
+      taskId: taskActivity.taskId,
+      type: taskActivity.type,
+      fromStageId: taskActivity.fromStageId,
+      toStageId: taskActivity.toStageId,
+      data: taskActivity.data,
+      createdAt: taskActivity.createdAt,
+    })
+    .from(taskActivity)
+    .where(
+      and(
+        inArray(taskActivity.taskId, taskIds),
+        or(
+          eq(taskActivity.type, 'stage_transition'),
+          eq(taskActivity.type, 'created'),
+          eq(taskActivity.type, 'completed'),
+        ),
+      ),
+    )
+    .orderBy(asc(taskActivity.createdAt))
+
+  const activityIndexes = extractActivityIndexes(activities)
+
+  // Build index: taskId → all activities (for stage transitions)
+  const activitiesByTaskId = new Map<string, typeof activities>()
+  for (const activity of activities) {
+    const list = activitiesByTaskId.get(activity.taskId) ?? []
+    list.push(activity)
+    activitiesByTaskId.set(activity.taskId, list)
+  }
+
+  const events = buildTimelineEvents({
+    tasks,
+    stageNameMap,
+    stageReqMap,
+    activityIndexes,
+    activitiesByTaskId,
+  })
 
   return events.sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),

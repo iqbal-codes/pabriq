@@ -10,11 +10,15 @@ import {
   orderLineItems,
   orders,
   organization,
+  productionStages,
+  productionTasks,
   products,
+  taskActivity,
 } from '#/db/schema'
 import {
   confirmPortalOrder,
   generateOrderToken,
+  getOrderTasksTimeline,
   getPortalOrder,
   removePortalAsset,
   savePortalAddress,
@@ -494,6 +498,374 @@ describe('getPortalCustomerAddress', () => {
     if (result) {
       expect(result.areaId).toBe('area-1')
       expect(result.streetAddress).toBe('Jl. Sudirman No. 456')
+    }
+  })
+})
+describe('getOrderTasksTimeline', () => {
+  const stage1Id = '00000000-0000-0000-0000-000000000030'
+  const stage2Id = '00000000-0000-0000-0000-000000000031'
+  const task1Id = '00000000-0000-0000-0000-000000000040'
+  const task2Id = '00000000-0000-0000-0000-000000000041'
+
+  it('returns empty array when order has no tasks', async () => {
+    const token = await generateOrderToken(order1Id)
+    const result = await getOrderTasksTimeline(token)
+    expect(result).toEqual([])
+  })
+
+  it('returns created/transition/completed events in chronological order for a single task', async () => {
+    await db.insert(productionStages).values({
+      id: stage1Id,
+      orgId: org1Id,
+      name: 'Cutting',
+      board: 'pre_production',
+      orderIndex: 0,
+      active: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    await db.insert(productionTasks).values({
+      id: task1Id,
+      orgId: org1Id,
+      orderId: order1Id,
+      board: 'pre_production',
+      stageId: stage1Id,
+      status: 'completed',
+      taskNumber: 'T-001',
+      lineItemId: lineItem1Id,
+      context: {
+        productName: 'Product 1',
+        customerName: 'Customer 1',
+        requirements: null,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const baseTime = new Date('2026-01-15T08:00:00Z')
+    await db.insert(taskActivity).values([
+      {
+        id: 'act-created-1',
+        orgId: org1Id,
+        taskId: task1Id,
+        type: 'created',
+        fromStageId: null,
+        toStageId: stage1Id,
+        data: {},
+        actorId: 'system',
+        createdAt: baseTime,
+      },
+      {
+        id: 'act-transition-1',
+        orgId: org1Id,
+        taskId: task1Id,
+        type: 'stage_transition',
+        fromStageId: null,
+        toStageId: stage1Id,
+        data: {},
+        actorId: 'system',
+        createdAt: new Date(baseTime.getTime() + 60_000),
+      },
+      {
+        id: 'act-completed-1',
+        orgId: org1Id,
+        taskId: task1Id,
+        type: 'completed',
+        fromStageId: stage1Id,
+        toStageId: null,
+        data: {},
+        actorId: 'system',
+        createdAt: new Date(baseTime.getTime() + 120_000),
+      },
+    ])
+
+    const token = await generateOrderToken(order1Id)
+    const events = await getOrderTasksTimeline(token)
+
+    expect(events).toHaveLength(3)
+    expect(events[0].type).toBe('created')
+    expect(events[0].id).toBe('act-created-1')
+    expect(events[1].type).toBe('stage_transition')
+    expect(events[1].fromStageName).toBeNull()
+    expect(events[1].toStageName).toBe('Cutting')
+    expect(events[2].type).toBe('completed')
+    expect(events[2].fromStageName).toBe('Cutting')
+    expect(events[2].toStageName).toBeNull()
+
+    // Verify chronological order
+    for (let i = 1; i < events.length; i++) {
+      expect(events[i].createdAt.getTime()).toBeGreaterThanOrEqual(
+        events[i - 1].createdAt.getTime(),
+      )
+    }
+  })
+
+  it('attaches requirement responses to the matching stage transition', async () => {
+    await db.insert(productionStages).values({
+      id: stage1Id,
+      orgId: org1Id,
+      name: 'Printing',
+      board: 'pre_production',
+      orderIndex: 0,
+      active: true,
+      requirements: [
+        { name: 'Design File', type: 'file' },
+        { name: 'Color Code', type: 'text' },
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    await db.insert(productionTasks).values({
+      id: task1Id,
+      orgId: org1Id,
+      orderId: order1Id,
+      board: 'pre_production',
+      stageId: stage1Id,
+      status: 'in_progress',
+      taskNumber: 'T-002',
+      lineItemId: lineItem1Id,
+      context: {
+        productName: 'Product 1',
+        customerName: 'Customer 1',
+        requirements: null,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    await db.insert(taskActivity).values([
+      {
+        id: 'act-created-2',
+        orgId: org1Id,
+        taskId: task1Id,
+        type: 'created',
+        fromStageId: null,
+        toStageId: stage1Id,
+        data: {},
+        actorId: 'system',
+        createdAt: new Date('2026-01-15T08:00:00Z'),
+      },
+      {
+        id: 'act-transition-2',
+        orgId: org1Id,
+        taskId: task1Id,
+        type: 'stage_transition',
+        fromStageId: null,
+        toStageId: stage1Id,
+        data: {
+          responses: [
+            { requirementIndex: 0, assetIds: ['asset-abc'] },
+            { requirementIndex: 1, value: '#FF0000' },
+          ],
+        },
+        actorId: 'system',
+        createdAt: new Date('2026-01-15T08:01:00Z'),
+      },
+    ])
+
+    const token = await generateOrderToken(order1Id)
+    const events = await getOrderTasksTimeline(token)
+
+    const transitionEvent = events.find((e) => e.type === 'stage_transition')
+    expect(transitionEvent).toBeDefined()
+    expect(transitionEvent!.requirementResponses).toHaveLength(1)
+    expect(transitionEvent!.requirementResponses![0].stageName).toBe('Printing')
+    expect(transitionEvent!.requirementResponses![0].responses).toHaveLength(2)
+    expect(
+      transitionEvent!.requirementResponses![0].responses[0].requirementName,
+    ).toBe('Design File')
+    expect(
+      transitionEvent!.requirementResponses![0].responses[0].assetIds,
+    ).toEqual(['asset-abc'])
+    expect(
+      transitionEvent!.requirementResponses![0].responses[1].requirementName,
+    ).toBe('Color Code')
+    expect(transitionEvent!.requirementResponses![0].responses[1].value).toBe(
+      '#FF0000',
+    )
+  })
+
+  it('includes board transition events when activity rows exist', async () => {
+    await db.insert(productionStages).values([
+      {
+        id: stage1Id,
+        orgId: org1Id,
+        name: 'Pre-Production',
+        board: 'pre_production',
+        orderIndex: 0,
+        active: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: stage2Id,
+        orgId: org1Id,
+        name: 'Production',
+        board: 'production',
+        orderIndex: 1,
+        active: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ])
+
+    await db.insert(productionTasks).values({
+      id: task1Id,
+      orgId: org1Id,
+      orderId: order1Id,
+      board: 'pre_production',
+      stageId: stage2Id,
+      status: 'in_progress',
+      taskNumber: 'T-003',
+      lineItemId: lineItem1Id,
+      context: {
+        productName: 'Widget',
+        customerName: 'Customer 1',
+        requirements: null,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    await db.insert(taskActivity).values([
+      {
+        id: 'act-created-3',
+        orgId: org1Id,
+        taskId: task1Id,
+        type: 'created',
+        fromStageId: null,
+        toStageId: stage1Id,
+        data: {},
+        actorId: 'system',
+        createdAt: new Date('2026-01-15T09:00:00Z'),
+      },
+      {
+        id: 'act-transition-board',
+        orgId: org1Id,
+        taskId: task1Id,
+        type: 'stage_transition',
+        fromStageId: stage1Id,
+        toStageId: stage2Id,
+        data: {},
+        actorId: 'system',
+        createdAt: new Date('2026-01-15T09:30:00Z'),
+      },
+    ])
+
+    const token = await generateOrderToken(order1Id)
+    const events = await getOrderTasksTimeline(token)
+
+    const transitionEvent = events.find((e) => e.type === 'stage_transition')
+    expect(transitionEvent).toBeDefined()
+    expect(transitionEvent!.fromStageName).toBe('Pre-Production')
+    expect(transitionEvent!.toStageName).toBe('Production')
+    expect(transitionEvent!.id).toBe('act-transition-board')
+  })
+
+  it('sorts multi-task timelines by event date', async () => {
+    await db.insert(productionStages).values({
+      id: stage1Id,
+      orgId: org1Id,
+      name: 'Cutting',
+      board: 'pre_production',
+      orderIndex: 0,
+      active: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    await db.insert(productionTasks).values([
+      {
+        id: task1Id,
+        orgId: org1Id,
+        orderId: order1Id,
+        board: 'pre_production',
+        stageId: stage1Id,
+        status: 'completed',
+        taskNumber: 'T-010',
+        lineItemId: lineItem1Id,
+        context: {
+          productName: 'Product A',
+          customerName: 'Customer 1',
+          requirements: null,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: task2Id,
+        orgId: org1Id,
+        orderId: order1Id,
+        board: 'pre_production',
+        stageId: stage1Id,
+        status: 'in_progress',
+        taskNumber: 'T-011',
+        lineItemId: lineItem1Id,
+        context: {
+          productName: 'Product B',
+          customerName: 'Customer 1',
+          requirements: null,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ])
+
+    // Task 2 created earlier than Task 1 completed — test cross-task sorting
+    await db.insert(taskActivity).values([
+      {
+        id: 'act-t2-created',
+        orgId: org1Id,
+        taskId: task2Id,
+        type: 'created',
+        fromStageId: null,
+        toStageId: stage1Id,
+        data: {},
+        actorId: 'system',
+        createdAt: new Date('2026-01-15T10:00:00Z'),
+      },
+      {
+        id: 'act-t1-created',
+        orgId: org1Id,
+        taskId: task1Id,
+        type: 'created',
+        fromStageId: null,
+        toStageId: stage1Id,
+        data: {},
+        actorId: 'system',
+        createdAt: new Date('2026-01-15T10:30:00Z'),
+      },
+      {
+        id: 'act-t1-completed',
+        orgId: org1Id,
+        taskId: task1Id,
+        type: 'completed',
+        fromStageId: stage1Id,
+        toStageId: null,
+        data: {},
+        actorId: 'system',
+        createdAt: new Date('2026-01-15T11:00:00Z'),
+      },
+    ])
+
+    const token = await generateOrderToken(order1Id)
+    const events = await getOrderTasksTimeline(token)
+
+    expect(events).toHaveLength(3)
+    // Events should be sorted by createdAt across tasks
+    expect(events[0].id).toBe('act-t2-created')
+    expect(events[0].taskId).toBe(task2Id)
+    expect(events[1].id).toBe('act-t1-created')
+    expect(events[1].taskId).toBe(task1Id)
+    expect(events[2].id).toBe('act-t1-completed')
+    expect(events[2].taskId).toBe(task1Id)
+
+    for (let i = 1; i < events.length; i++) {
+      expect(events[i].createdAt.getTime()).toBeGreaterThanOrEqual(
+        events[i - 1].createdAt.getTime(),
+      )
     }
   })
 })
