@@ -694,3 +694,59 @@ describe('DataTable - breakpoint reset', () => {
     expect(onPageChange).toHaveBeenCalledWith(1)
   })
 })
+
+describe('DataTable - scoped selection reset', () => {
+  it('clears selection when page changes', async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(
+      <TooltipProvider>
+        <DataTable
+          columns={columns}
+          data={data}
+          getRowId={(row) => row.id}
+          labels={labels}
+          onPageChange={vi.fn()}
+          onPerPageChange={vi.fn()}
+          page={1}
+          perPage={25}
+          tableId="test-table"
+          totalRows={data.length}
+          enableRowSelection
+          selectionToolbar={(ctx) => (
+            <div>{ctx.selectedRowIds.length} selected</div>
+          )}
+        />
+      </TooltipProvider>,
+    )
+
+    // Select first row
+    const checkboxes = screen.getAllByRole('checkbox')
+    await user.click(checkboxes[1]) // index 0 is select-all
+
+    expect(screen.getAllByText('1 selected').length).toBeGreaterThan(0)
+
+    // Rerender with page=2
+    rerender(
+      <TooltipProvider>
+        <DataTable
+          columns={columns}
+          data={data}
+          getRowId={(row) => row.id}
+          labels={labels}
+          onPageChange={vi.fn()}
+          onPerPageChange={vi.fn()}
+          page={2}
+          perPage={25}
+          tableId="test-table"
+          totalRows={data.length}
+          enableRowSelection
+          selectionToolbar={(ctx) => (
+            <div>{ctx.selectedRowIds.length} selected</div>
+          )}
+        />
+      </TooltipProvider>,
+    )
+
+    expect(screen.queryByText('1 selected')).toBeNull()
+  })
+})

@@ -8,7 +8,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
-import { useDataTableContext } from './data-table-context'
 import type { DataTableLabels } from './data-table-utils'
 import { removeStoredVisibility } from './data-table-utils'
 
@@ -23,13 +22,14 @@ type ColumnVisibilityEntry = {
 type DataTableViewOptionsProps = {
   columns: ColumnVisibilityEntry[]
   labels: DataTableLabels
+  tableId: string
 }
 
 export function DataTableViewOptions({
   columns,
   labels,
+  tableId,
 }: DataTableViewOptionsProps) {
-  const { tableId } = useDataTableContext()
   const hideable = columns.filter((c) => c.getCanHide())
 
   if (hideable.length === 0) return null

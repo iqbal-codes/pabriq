@@ -18,6 +18,7 @@ type UseDataTableColumnsParams<TData> = {
   rowActions?: (row: TData) => ReactNode
   enableRowSelection?: boolean
   labels: DataTableLabels
+  tableId: string
 }
 
 export function useDataTableColumns<TData>({
@@ -25,6 +26,7 @@ export function useDataTableColumns<TData>({
   rowActions,
   enableRowSelection,
   labels,
+  tableId,
 }: UseDataTableColumnsParams<TData>) {
   return useMemo(() => {
     const cols: AppColumnDef<TData>[] = []
@@ -73,6 +75,7 @@ export function useDataTableColumns<TData>({
                 toggleVisibility: () => col.toggleVisibility(),
               }))}
               labels={labels}
+              tableId={tableId}
             />
           </div>
         ),
@@ -97,6 +100,7 @@ export function useDataTableColumns<TData>({
                 toggleVisibility: () => col.toggleVisibility(),
               }))}
               labels={labels}
+              tableId={tableId}
             />
           </div>
         ),
@@ -119,6 +123,7 @@ export function useDataTableColumns<TData>({
                 toggleVisibility: () => col.toggleVisibility(),
               }))}
               labels={labels}
+              tableId={tableId}
             />
           </div>
         ),
@@ -126,5 +131,5 @@ export function useDataTableColumns<TData>({
     }
 
     return cols
-  }, [columns, rowActions, enableRowSelection, labels])
+  }, [columns, rowActions, enableRowSelection, labels, tableId])
 }

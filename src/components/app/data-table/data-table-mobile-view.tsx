@@ -7,7 +7,7 @@ type DataTableMobileViewProps<TData> = {
   customMobileCard?: (row: TData) => React.ReactNode
   isRefetching?: boolean
   isMobile: boolean
-  sentinelRef: React.RefObject<HTMLDivElement | null>
+  sentinelRef: React.RefCallback<HTMLDivElement>
 }
 
 export function DataTableMobileView<TData>({

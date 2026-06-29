@@ -1,11 +1,11 @@
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table'
 import type { LucideIcon } from 'lucide-react'
 import { X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import type React from 'react'
+import { useMemo, useState } from 'react'
 import type { EmptyStateAction } from '#/components/app/page-shell/empty-state'
 import { Button } from '#/components/ui/button'
 import { useIsMobile } from '#/hooks/use-mobile'
-import { DataTableProvider } from './data-table-context'
 import { DataTableDesktopView } from './data-table-desktop-view'
 import { DataTableFilterPanel } from './data-table-filter-panel'
 import {
@@ -13,6 +13,7 @@ import {
   DataTableFilterTrigger,
 } from './data-table-filter-trigger'
 import { DataTableMobileView } from './data-table-mobile-view'
+import { DataTableShell } from './data-table-shell'
 import {
   DataTableDesktopSkeleton,
   DataTableMobileSkeleton,
@@ -153,6 +154,7 @@ export function DataTable<TData>({
     rowActions,
     enableRowSelection,
     labels,
+    tableId,
   })
 
   const visibilityKey = `${tableId}`
@@ -174,7 +176,13 @@ export function DataTable<TData>({
     return vis
   })
 
-  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
+  const selectionScope = `${hasActiveFilters}:${page}:${perPage}:${sort?.field ?? ''}:${sort?.direction ?? ''}`
+  const [rowSelectionState, setRowSelectionState] = useState<{
+    scope: string
+    value: Record<string, boolean>
+  }>(() => ({ scope: selectionScope, value: {} }))
+  const rowSelection =
+    rowSelectionState.scope === selectionScope ? rowSelectionState.value : {}
 
   const tableData = isMobile ? displayData : data
 
@@ -197,41 +205,50 @@ export function DataTable<TData>({
     ...(enableRowSelection
       ? {
           enableRowSelection: true,
-          onRowSelectionChange: setRowSelection,
+          onRowSelectionChange: (updater) => {
+            setRowSelectionState((prev) => {
+              const next =
+                typeof updater === 'function' ? updater(prev.value) : updater
+              return { scope: selectionScope, value: next }
+            })
+          },
         }
       : {}),
   })
 
   const selectedRowIds = useMemo(
-    () => table.getSelectedRowModel().rows.map((r) => r.id),
-    [table],
+    () => Object.keys(rowSelection).filter((k) => rowSelection[k]),
+    [rowSelection],
   )
+
+  const selectedRows = useMemo(() => {
+    const idSet = new Set(selectedRowIds)
+    return table
+      .getSelectedRowModel()
+      .rows.reduce<TData[]>((acc, r) => {
+        if (idSet.has(r.id)) acc.push(r.original)
+        return acc
+      }, [])
+  }, [table, selectedRowIds])
 
   const slotContext = useMemo<DataTableSlotContext<TData>>(
     () => ({
       clearSelection: () => table.resetRowSelection(),
       selectedRowIds,
-      selectedRows: table.getSelectedRowModel().rows.map((r) => r.original),
+      selectedRows,
       totalRows,
       visibleRows: isMobile ? displayData : data,
     }),
-    [table, selectedRowIds, totalRows, isMobile, displayData, data],
+    [
+      table,
+      selectedRowIds,
+      selectedRows,
+      totalRows,
+      isMobile,
+      displayData,
+      data,
+    ],
   )
-
-  // Reset row selection when filter/pagination/sort state changes
-  const prevFilterPageRef = useRef({ hasActiveFilters, page, perPage, sort })
-  useEffect(() => {
-    const prev = prevFilterPageRef.current
-    if (
-      hasActiveFilters !== prev.hasActiveFilters ||
-      page !== prev.page ||
-      perPage !== prev.perPage ||
-      sort !== prev.sort
-    ) {
-      table.resetRowSelection()
-      prevFilterPageRef.current = { hasActiveFilters, page, perPage, sort }
-    }
-  }, [hasActiveFilters, page, perPage, sort, table])
 
   const hasStructuredFilters = filterActiveCount > 0
   const filterTrigger = filters ? (
@@ -294,147 +311,82 @@ export function DataTable<TData>({
     onClearFilters,
   }
 
-  // Error state
-  if (error) {
-    return (
-      <DataTableProvider
-        tableId={tableId}
-        totalRows={totalRows}
-        visibleRows={displayData}
-      >
-        <div className="space-y-4">
-          <DataTableToolbar
-            toolbarStart={toolbarStart}
-            toolbarEnd={toolbarEnd}
-            slotContext={slotContext}
-            {...toolbarFilterProps}
-          />
-          <DataTableErrorRender {...stateRenderProps} />
-        </div>
-      </DataTableProvider>
-    )
-  }
+  const isNormalRender = !error && !isLoading && !(data.length === 0)
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <DataTableProvider
-        tableId={tableId}
-        totalRows={totalRows}
-        visibleRows={displayData}
-      >
-        <div className="space-y-4">
-          <DataTableToolbar
-            toolbarStart={toolbarStart}
-            toolbarEnd={toolbarEnd}
-            slotContext={slotContext}
-            {...toolbarFilterProps}
-          />
-          <div className="hidden md:block">
-            <DataTableDesktopSkeleton
-              allColumns={allColumns}
-              columnVisibility={columnVisibility}
-            />
-          </div>
-          <DataTableMobileSkeleton />
-        </div>
-      </DataTableProvider>
-    )
-  }
+  const toolbar = (
+    <DataTableToolbar
+      toolbarStart={toolbarStart}
+      toolbarEnd={toolbarEnd}
+      selectionToolbar={isNormalRender ? selectionToolbar : undefined}
+      slotContext={slotContext}
+      {...toolbarFilterProps}
+    />
+  )
 
-  // Empty state (no data, no filters)
-  if (data.length === 0 && !hasActiveFilters) {
-    return (
-      <DataTableProvider
-        tableId={tableId}
-        totalRows={totalRows}
-        visibleRows={displayData}
-      >
-        <div className="space-y-4">
-          <DataTableToolbar
-            toolbarStart={toolbarStart}
-            toolbarEnd={toolbarEnd}
-            slotContext={slotContext}
-            {...toolbarFilterProps}
-          />
-          <DataTableEmptyRender {...stateRenderProps} />
-        </div>
-      </DataTableProvider>
-    )
-  }
+  const stateContent: React.ReactNode | null = error ? (
+    <DataTableErrorRender {...stateRenderProps} />
+  ) : isLoading ? (
+    <>
+      <div className="hidden md:block">
+        <DataTableDesktopSkeleton
+          allColumns={allColumns}
+          columnVisibility={columnVisibility}
+        />
+      </div>
+      <DataTableMobileSkeleton />
+    </>
+  ) : data.length === 0 && !hasActiveFilters ? (
+    <DataTableEmptyRender {...stateRenderProps} />
+  ) : data.length === 0 && hasActiveFilters ? (
+    <DataTableNoResultsRender {...stateRenderProps} />
+  ) : null
 
-  // No results state (data filtered, but no matches)
-  if (data.length === 0 && hasActiveFilters) {
-    return (
-      <DataTableProvider
-        tableId={tableId}
-        totalRows={totalRows}
-        visibleRows={displayData}
-      >
-        <div className="space-y-4">
-          <DataTableToolbar
-            toolbarStart={toolbarStart}
-            toolbarEnd={toolbarEnd}
-            slotContext={slotContext}
-            {...toolbarFilterProps}
-          />
-          <DataTableNoResultsRender {...stateRenderProps} />
-        </div>
-      </DataTableProvider>
-    )
-  }
+  const filterPanel = filters ? (
+    <DataTableFilterPanel
+      open={isFilterPanelOpen}
+      onOpenChange={setIsFilterPanelOpen}
+      definitions={filters.definitions}
+      committedValues={filters.values}
+      onApply={filters.onApply}
+      onClear={filters.onClear}
+      labels={filterLabels}
+      customContent={filters.customContent}
+    />
+  ) : undefined
 
-  // Normal render
   return (
-    <DataTableProvider
+    <DataTableShell
       tableId={tableId}
       totalRows={totalRows}
       visibleRows={displayData}
+      toolbar={toolbar}
+      filterPanel={filterPanel}
     >
-      <div className="space-y-4">
-        <DataTableToolbar
-          toolbarStart={toolbarStart}
-          toolbarEnd={toolbarEnd}
-          selectionToolbar={selectionToolbar}
-          slotContext={slotContext}
-          {...toolbarFilterProps}
-        />
+      {stateContent ?? (
+        <>
+          <DataTableDesktopView
+            table={table}
+            sort={sort}
+            onSortChange={onSortChange}
+            onRowClick={onRowClick}
+            isRefetching={isRefetching}
+            labels={labels}
+            page={page}
+            perPage={perPage}
+            totalRows={totalRows}
+            onPageChange={onPageChange}
+            onPerPageChange={onPerPageChange}
+          />
 
-        <DataTableDesktopView
-          table={table}
-          sort={sort}
-          onSortChange={onSortChange}
-          onRowClick={onRowClick}
-          isRefetching={isRefetching}
-          labels={labels}
-          page={page}
-          perPage={perPage}
-          totalRows={totalRows}
-          onPageChange={onPageChange}
-          onPerPageChange={onPerPageChange}
-        />
-
-        <DataTableMobileView
-          table={table}
-          customMobileCard={customMobileCard}
-          isRefetching={isRefetching}
-          isMobile={isMobile}
-          sentinelRef={sentinelRef}
-        />
-      </div>
-
-      {filters && (
-        <DataTableFilterPanel
-          open={isFilterPanelOpen}
-          onOpenChange={setIsFilterPanelOpen}
-          definitions={filters.definitions}
-          committedValues={filters.values}
-          onApply={filters.onApply}
-          onClear={filters.onClear}
-          labels={filterLabels}
-          customContent={filters.customContent}
-        />
+          <DataTableMobileView
+            table={table}
+            customMobileCard={customMobileCard}
+            isRefetching={isRefetching}
+            isMobile={isMobile}
+            sentinelRef={sentinelRef}
+          />
+        </>
       )}
-    </DataTableProvider>
+    </DataTableShell>
   )
 }

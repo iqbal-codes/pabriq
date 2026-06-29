@@ -1,4 +1,4 @@
-import { useCallback, useState, useSyncExternalStore } from 'react'
+import { useCallback, useState } from 'react'
 import { Button } from '#/components/ui/button'
 import {
   Dialog,
@@ -14,6 +14,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer'
+import { useIsMobile } from '#/hooks/use-mobile'
 import { DataTableFilterChips } from './data-table-filter-chips'
 import { DataTableFilterCombobox } from './data-table-filter-combobox'
 import { DataTableFilterDate } from './data-table-filter-date'
@@ -109,19 +110,6 @@ function FilterControl({
     default:
       return null
   }
-}
-const _mobileMq =
-  typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)') : null
-
-function useIsMobile() {
-  return useSyncExternalStore(
-    (onStoreChange) => {
-      _mobileMq?.addEventListener('change', onStoreChange)
-      return () => _mobileMq?.removeEventListener('change', onStoreChange)
-    },
-    () => _mobileMq?.matches ?? false,
-    () => false,
-  )
 }
 
 export function DataTableFilterPanel({

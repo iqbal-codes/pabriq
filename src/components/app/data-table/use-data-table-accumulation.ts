@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
  * Hook that accumulates data across pages for mobile infinite-scroll.
@@ -75,38 +75,45 @@ export function useDataTableAccumulation<TData>(
     setDisplayData(accumulatedDataRef.current)
   }, [isMobile, page, data, getRowId])
 
-  // Intersection observer for infinite scroll on mobile
-  const sentinelRef = useRef<HTMLDivElement>(null)
+  // Intersection observer for infinite scroll on mobile via callback ref
   const loadingMoreRef = useRef(false)
+  const observerRef = useRef<IntersectionObserver | null>(null)
 
-  useEffect(() => {
-    if (!isMobile) {
+  const sentinelRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      // Clean up previous observer
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+        observerRef.current = null
+      }
+
+      if (!node) return
+      if (!isMobile) {
+        loadingMoreRef.current = false
+        return
+      }
+      if (page * perPage >= totalRows) return
+      if (isRefetching || isLoading) {
+        loadingMoreRef.current = true
+        return
+      }
       loadingMoreRef.current = false
-      return
-    }
-    if (page * perPage >= totalRows) return
-    if (isRefetching || isLoading) {
-      loadingMoreRef.current = true
-      return
-    }
-    loadingMoreRef.current = false
 
-    const el = sentinelRef.current
-    if (!el) return
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry?.isIntersecting && !loadingMoreRef.current) {
+            loadingMoreRef.current = true
+            onPageChangeRef.current(page + 1)
+          }
+        },
+        { rootMargin: '400px' },
+      )
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting && !loadingMoreRef.current) {
-          loadingMoreRef.current = true
-          onPageChangeRef.current(page + 1)
-        }
-      },
-      { rootMargin: '400px' },
-    )
-
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [isMobile, page, perPage, totalRows, isRefetching, isLoading])
+      observer.observe(node)
+      observerRef.current = observer
+    },
+    [isMobile, page, perPage, totalRows, isRefetching, isLoading],
+  )
 
   return { displayData: isMobile ? displayData : data, sentinelRef }
 }
