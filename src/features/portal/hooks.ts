@@ -1,9 +1,4 @@
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  useSuspenseQuery,
-} from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '#/lib/query-keys'
 import type {
   ConfirmPortalOrderInput,
@@ -21,7 +16,7 @@ import {
 } from './server'
 
 export function usePortalOrder(token: string) {
-  return useSuspenseQuery({
+  return useQuery({
     queryKey: queryKeys.portal.order(token),
     queryFn: () => getPortalOrderFn({ data: { token } }),
   })
