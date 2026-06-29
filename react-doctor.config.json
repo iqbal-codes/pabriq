@@ -1,0 +1,13 @@
+{
+  "$schema": "https://react.doctor/schema/config.json",
+  "verbose": true,
+  "ignore": {
+    "files": [
+      "src/components/ui/**",
+      ".sandcastle/Dockerfile",
+      "drizzle/0003_slow_matthew_murdock.sql",
+      "drizzle/0019_invoices_redo.sql",
+      "src/lib/formatters.ts"
+    ]
+  }
+}
