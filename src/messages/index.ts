@@ -5,5 +5,5 @@ import type { Messages } from './types'
 export type { Messages }
 export const messages: Record<string, Messages> = { en, id }
 export const defaultLocale = 'id'
-export const supportedLocales = ['en', 'id'] as const
+const supportedLocales = ['en', 'id'] as const
 export type Locale = (typeof supportedLocales)[number]
