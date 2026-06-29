@@ -42,20 +42,3 @@ export function addWorkingDays(startDate: Date, workingDays: number): Date {
  * @param endDate - Ending date (inclusive)
  * @returns Number of working days between the dates
  */
-export function getWorkingDaysBetween(startDate: Date, endDate: Date): number {
-  if (endDate <= startDate) return 0
-
-  let count = 0
-  const current = new Date(startDate)
-
-  while (current < endDate) {
-    current.setDate(current.getDate() + 1)
-    const dayOfWeek = current.getDay()
-    // Sunday = 0, skip it. Monday-Saturday = 1-6, count as working day
-    if (dayOfWeek !== 0) {
-      count++
-    }
-  }
-
-  return count
-}
