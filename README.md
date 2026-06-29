@@ -40,7 +40,7 @@ bun run dev             # starts dev server using local env
 | i18n | use-intl (en/id) |
 | Monitoring | Sentry |
 | Lint/format | Biome |
-| Tests | Vitest + happy-dom + testing-library |
+| Tests | Vitest + happy-dom + testing-library; Playwright for E2E |
 
 ## Commands
 
@@ -53,6 +53,9 @@ bun run build              # production build
 bun run check              # lint + format (Biome)
 bun run typecheck          # TypeScript check
 bun run test               # run tests (Vitest)
+bun run test:e2e           # run Playwright E2E tests
+bun run test:e2e:headed    # run Playwright E2E tests in a visible browser
+bun run test:e2e:debug     # run Playwright with CLI debug attach support
 
 # Database
 bun run db:generate        # generate drizzle migrations
