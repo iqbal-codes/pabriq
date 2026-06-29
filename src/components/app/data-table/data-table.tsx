@@ -31,13 +31,11 @@ import type {
   DataTableSlotContext,
   SortState,
 } from './data-table-utils'
-import {
-  getActiveFilterCount,
-  getStoredVisibility,
-  setStoredVisibility,
-} from './data-table-utils'
+import { getActiveFilterCount } from './data-table-utils'
 import { useDataTableAccumulation } from './use-data-table-accumulation'
 import { useDataTableColumns } from './use-data-table-columns'
+import { useDataTableColumnVisibility } from './use-data-table-column-visibility'
+import { useDataTableSelectionState } from './use-data-table-selection-state'
 
 type DataTableProps<TData> = {
   columns: AppColumnDef<TData>[]
@@ -157,24 +155,10 @@ export function DataTable<TData>({
     tableId,
   })
 
-  const visibilityKey = `${tableId}`
-
-  const [columnVisibility, setColumnVisibility] = useState<
-    Record<string, boolean>
-  >(() => {
-    const stored = getStoredVisibility(visibilityKey)
-    const vis: Record<string, boolean> = {}
-    for (const col of allColumns) {
-      if ('accessorKey' in col || 'id' in col) {
-        const id = 'accessorKey' in col ? col.accessorKey : col.id
-        if (id && typeof id === 'string') {
-          const def = col.enableHiding === false ? true : undefined
-          vis[id] = stored[id] ?? def ?? true
-        }
-      }
-    }
-    return vis
-  })
+  const [columnVisibility, setColumnVisibility] = useDataTableColumnVisibility(
+    tableId,
+    allColumns,
+  )
 
   const selectionScope = `${hasActiveFilters}:${page}:${perPage}:${sort?.field ?? ''}:${sort?.direction ?? ''}`
   const [rowSelectionState, setRowSelectionState] = useState<{
@@ -195,13 +179,7 @@ export function DataTable<TData>({
       columnVisibility,
       ...(enableRowSelection ? { rowSelection } : {}),
     },
-    onColumnVisibilityChange: (updater) => {
-      setColumnVisibility((prev) => {
-        const next = typeof updater === 'function' ? updater(prev) : updater
-        setStoredVisibility(visibilityKey, next)
-        return next
-      })
-    },
+    onColumnVisibilityChange: setColumnVisibility,
     ...(enableRowSelection
       ? {
           enableRowSelection: true,
@@ -216,39 +194,12 @@ export function DataTable<TData>({
       : {}),
   })
 
-  const selectedRowIds = useMemo(
-    () => Object.keys(rowSelection).filter((k) => rowSelection[k]),
-    [rowSelection],
-  )
-
-  const selectedRows = useMemo(() => {
-    const idSet = new Set(selectedRowIds)
-    return table
-      .getSelectedRowModel()
-      .rows.reduce<TData[]>((acc, r) => {
-        if (idSet.has(r.id)) acc.push(r.original)
-        return acc
-      }, [])
-  }, [table, selectedRowIds])
-
-  const slotContext = useMemo<DataTableSlotContext<TData>>(
-    () => ({
-      clearSelection: () => table.resetRowSelection(),
-      selectedRowIds,
-      selectedRows,
-      totalRows,
-      visibleRows: isMobile ? displayData : data,
-    }),
-    [
-      table,
-      selectedRowIds,
-      selectedRows,
-      totalRows,
-      isMobile,
-      displayData,
-      data,
-    ],
-  )
+  const slotContext = useDataTableSelectionState({
+    table,
+    rowSelection,
+    totalRows,
+    visibleRows: isMobile ? displayData : data,
+  })
 
   const hasStructuredFilters = filterActiveCount > 0
   const filterTrigger = filters ? (
