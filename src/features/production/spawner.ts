@@ -183,7 +183,7 @@ export async function spawnProductionTasks(
   })
 }
 
-export async function archiveBoardTasks(
+async function archiveBoardTasks(
   orderId: string,
   board: string,
 ): Promise<void> {

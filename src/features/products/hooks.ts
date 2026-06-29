@@ -57,7 +57,7 @@ type ProductPriceResult =
   | { ok: true; unitPrice: number; total: number }
   | { ok: false; error: string }
 
-export function useProductPrice(
+function useProductPrice(
   productId: string,
   quantity: number,
   pricingMode?: 'interpolated' | 'step',

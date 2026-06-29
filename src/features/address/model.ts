@@ -23,7 +23,7 @@ export type ShippingAddress = {
   streetAddress: string
 }
 
-export function validateAddressInput(input: AddressInput): string | null {
+function validateAddressInput(input: AddressInput): string | null {
   if (!input.orgId) {
     return 'orgIdRequired'
   }
@@ -226,7 +226,7 @@ export async function getCustomerAddress(
   }
 }
 
-export const prefillOrderAddress = createServerFn({ method: 'GET' })
+const prefillOrderAddress = createServerFn({ method: 'GET' })
   .inputValidator((data: { customerId: string; orgId: string }) => data)
   .handler(async ({ data }): Promise<ShippingAddress | null> => {
     const addr = await getCustomerAddress(data.customerId, data.orgId)
@@ -238,7 +238,7 @@ export const prefillOrderAddress = createServerFn({ method: 'GET' })
     }
   })
 
-export const updateCustomerAddress = createServerFn({ method: 'POST' })
+const updateCustomerAddress = createServerFn({ method: 'POST' })
   .inputValidator(
     (input: {
       customerId: string
