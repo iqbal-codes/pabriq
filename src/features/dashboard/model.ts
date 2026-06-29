@@ -46,7 +46,7 @@ export type TaskStageCount = {
 
 export type Period = '7d' | '30d' | 'thisMonth' | 'lastMonth'
 
-export function getPeriodDates(period: Period): { start: Date; end: Date } {
+function getPeriodDates(period: Period): { start: Date; end: Date } {
   const now = new Date()
   const end = new Date(
     now.getFullYear(),
