@@ -7,7 +7,10 @@ import { FormActions, FormRoot, useAppForm } from '#/components/app/form'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { CreateInvoiceFormFields } from '#/features/invoices/components/create-invoice-form-fields'
-import { defaultCreateInvoiceValues } from '#/features/invoices/components/create-invoice-form-types'
+import {
+  defaultCreateInvoiceValues,
+  type InvoicePercentageMode,
+} from '#/features/invoices/components/create-invoice-form-types'
 import { OrderForInvoiceSummaryCard } from '#/features/invoices/components/order-for-invoice-summary-card'
 import {
   useCreateInvoice,
@@ -39,20 +42,25 @@ export function CreateInvoicePage() {
   )
 
   const [customPercentage, setCustomPercentage] = useState<number>(100)
-  const [selectedPercentage, setSelectedPercentage] = useState<
-    'full' | 'remaining' | 'custom'
-  >('full')
+  const [selectedPercentage, setSelectedPercentage] =
+    useState<InvoicePercentageMode | null>(null)
+  const selectedMode =
+    selectedPercentage ??
+    ((orderData?.invoicedPercentage ?? 0) > 0 ? 'remaining' : 'full')
 
   const effectivePercentage =
-    selectedPercentage === 'remaining'
+    selectedMode === 'remaining'
       ? (orderData?.remainingPercentage ?? 100)
-      : selectedPercentage === 'custom'
+      : selectedMode === 'custom'
         ? customPercentage
         : 100
 
   const invoicesTotal = orderData
-    ? Math.round(((orderData.order.total * effectivePercentage) / 100) * 100) /
-      100
+    ? selectedMode === 'remaining'
+      ? orderData.remainingAmount
+      : Math.round(
+          ((orderData.order.total * effectivePercentage) / 100) * 100,
+        ) / 100
     : 0
 
   const form = useAppForm({
@@ -90,7 +98,7 @@ export function CreateInvoicePage() {
       {orderData && (
         <OrderForInvoiceSummaryCard
           orderData={orderData}
-          selectedPercentage={selectedPercentage}
+          selectedPercentage={selectedMode}
           customPercentage={customPercentage}
           invoiceTotal={invoicesTotal}
           onSelectedPercentageChange={setSelectedPercentage}

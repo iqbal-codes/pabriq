@@ -63,7 +63,9 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
         : 100
 
   const invoiceTotal =
-    Math.round(((order.total * effectivePct) / 100) * 100) / 100
+    mode === 'remaining'
+      ? order.remainingAmount
+      : Math.round(((order.total * effectivePct) / 100) * 100) / 100
 
   const paymentMethodOptions = (paymentMethods ?? []).map((pm) => ({
     value: pm.id,

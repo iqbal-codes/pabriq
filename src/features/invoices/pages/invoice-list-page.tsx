@@ -124,6 +124,7 @@ export function InvoiceListPage() {
     <PageContent>
       <PageHeader
         title={t('title')}
+        description={t('listDescription')}
         primaryAction={{
           label: t('createInvoice'),
           href: '/invoices/new',

@@ -102,15 +102,12 @@ export function InvoiceStatusTimeline({
     }
   })
 
-  // Invoice paid event (if fully paid)
-  if (invoiceStatus === 'paid') {
-    const confirmedPayment = payments.find((p) => p.status === 'confirmed')
+  // Invoice paid event (if fully paid with no confirmed payment creating a duplicate)
+  if (invoiceStatus === 'paid' && !payments.some((p) => p.status === 'confirmed')) {
     events.push({
       id: 'paid',
       type: 'paid',
-      createdAt: confirmedPayment?.updatedAt
-        ? new Date(confirmedPayment.updatedAt).toISOString()
-        : new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       description: t('invoicePaid'),
     })
   }
