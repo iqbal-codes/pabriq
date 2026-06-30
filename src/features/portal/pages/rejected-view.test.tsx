@@ -46,6 +46,7 @@ const order = {
       assets: [],
       createdAt: new Date('2026-01-01'),
       productionDays: 0,
+      deadline: new Date('2026-01-05'),
     },
   ],
   invoices: [],
