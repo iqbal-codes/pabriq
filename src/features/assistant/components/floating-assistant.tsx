@@ -145,16 +145,17 @@ export function FloatingAssistant({ orgId, userId }: FloatingAssistantProps) {
                 e.preventDefault()
                 form.handleSubmit()
               }}
-              className="flex gap-2"
+              className="flex gap-2 items-start"
             >
-              <form.AppField name="message">
-                {(field) => (
-                  <field.TextareaField
-                    placeholder={t('messagePlaceholder')}
-                    label={t('messageLabel')}
-                  />
-                )}
-              </form.AppField>
+              <div className="flex-1">
+                <form.AppField name="message">
+                  {(field) => (
+                    <field.TextareaField
+                      placeholder={t('messagePlaceholder')}
+                    />
+                  )}
+                </form.AppField>
+              </div>
               <Button
                 type="submit"
                 size="icon"

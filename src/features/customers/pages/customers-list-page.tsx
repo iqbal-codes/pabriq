@@ -172,6 +172,7 @@ export function CustomersListPage() {
     <PageContent>
       <PageHeader
         title={t('title')}
+        description={t('listDescription')}
         primaryAction={{
           label: t('createCustomer'),
           href: '/customers/new',
@@ -183,7 +184,6 @@ export function CustomersListPage() {
         getRowId={(row) => row.id}
         isRefetching={isFetching}
         isLoading={rows.length === 0 && isFetching}
-        enableRowSelection
         labels={labels}
         onPageChange={setPage}
         onPerPageChange={handlePerPageChange}
