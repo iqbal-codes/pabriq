@@ -16,7 +16,9 @@ test('redirects unauthenticated workspace visitors to sign in', async ({
   await page.goto('/')
 
   await expect(page).toHaveURL(/\/sign-in\?redirect=%2F$/)
-  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  await expect(
+    page.locator('[data-slot="card-title"]').filter({ hasText: 'Sign in' }),
+  ).toBeVisible()
   await expect(page.getByLabel('Email')).toBeVisible()
   await expect(page.getByLabel('Password')).toBeVisible()
   await expect(page.getByRole('link', { name: 'Create one' })).toHaveAttribute(
