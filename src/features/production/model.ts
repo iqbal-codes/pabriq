@@ -273,6 +273,7 @@ async function transitionToStage(params: {
   fromStageId: string | null
   toStageId: string
   completedRequirementIds: string[]
+  requirementResponses?: RequirementResponse
   status: 'in_progress' | 'pending_approval'
 }): Promise<void> {
   await db
@@ -290,7 +291,10 @@ async function transitionToStage(params: {
     type: 'stage_transition',
     fromStageId: params.fromStageId,
     toStageId: params.toStageId,
-    data: { completedRequirements: params.completedRequirementIds },
+    data: {
+      completedRequirements: params.completedRequirementIds,
+      responses: params.requirementResponses ?? null,
+    },
     actorId: params.actorId,
   })
 }
@@ -464,14 +468,14 @@ export async function advanceTask(
   if (isQueued) {
     const nextStage = allStages[nextStageIdx] as Stage
     await transitionToStage({
-      taskId,
-      orgId,
-      actorId,
-      fromStageId: task.stageId,
-      toStageId: nextStage.id,
-      completedRequirementIds: [],
-      status: 'in_progress',
-    })
+          taskId,
+          orgId,
+          actorId,
+          fromStageId: task.stageId,
+          toStageId: nextStage.id,
+          completedRequirementIds: [],
+          status: 'in_progress',
+        })
     return { ok: true, pendingApproval: false }
   }
 
@@ -538,14 +542,15 @@ export async function advanceTask(
 
   const nextStage = allStages[nextStageIdx] as Stage
   await transitionToStage({
-    taskId,
-    orgId,
-    actorId,
-    fromStageId: task.stageId,
-    toStageId: nextStage.id,
-    completedRequirementIds: [],
-    status: 'in_progress',
-  })
+        taskId,
+        orgId,
+        actorId,
+        fromStageId: task.stageId,
+        toStageId: nextStage.id,
+        requirementResponses,
+        completedRequirementIds: [],
+        status: 'in_progress',
+      })
 
   return { ok: true, pendingApproval: false }
 }
@@ -623,14 +628,14 @@ export async function approveTaskAdvance(
 
   const nextStage = allStages[nextStageIdx] as Stage
   await transitionToStage({
-    taskId,
-    orgId,
-    actorId,
-    fromStageId: task.stageId,
-    toStageId: nextStage.id,
-    completedRequirementIds: [],
-    status: 'in_progress',
-  })
+        taskId,
+        orgId,
+        actorId,
+        fromStageId: task.stageId,
+        toStageId: nextStage.id,
+        completedRequirementIds: [],
+        status: 'in_progress',
+      })
 
   return { ok: true, pendingApproval: false }
 }
