@@ -490,6 +490,7 @@ export async function createDraftOrder(
   const orderTotal = items.reduce((sum, i) => sum + i.total, 0)
   const orderNumber = await generateOrderNumber(orgId)
   const validUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+  const orderToken = crypto.randomUUID().replace(/-/g, '').slice(0, 32)
 
   await db.insert(ordersTable).values({
     id: orderId,
@@ -499,6 +500,7 @@ export async function createDraftOrder(
     notes: input.notes ?? null,
     total: orderTotal,
     orderNumber,
+    orderToken,
     validUntil,
     createdAt: now,
     updatedAt: now,
@@ -517,7 +519,7 @@ export async function createDraftOrder(
       notes: input.notes ?? null,
       total: orderTotal,
       orderNumber,
-      orderToken: null,
+      orderToken,
       validUntil,
       approvedAt: null,
       approvedBy: null,
