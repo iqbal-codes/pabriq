@@ -187,6 +187,7 @@ export type Messages = {
   };
   orders: {
     title: string;
+    listDescription: string;
     createOrder: string;
     editOrder: string;
     viewOrder: string;
@@ -252,6 +253,14 @@ export type Messages = {
     deadline: string;
     createdAt: string;
     downloadQuotation: string;
+    loadOrdersFailed: string;
+    loadOrdersFailedDesc: string;
+    copyLinkFailed: string;
+    openPortalLink: string;
+    customerDueDate: string;
+    internalDeadline: string;
+    overdueDeadline: string;
+    completedAt: string;
   };
   breadcrumb: {
     dashboard: string;
@@ -336,6 +345,7 @@ export type Messages = {
   };
   customers: {
     title: string;
+    listDescription: string;
     createCustomer: string;
     editCustomer: string;
     viewCustomer: string;
@@ -415,6 +425,7 @@ export type Messages = {
   };
   products: {
     title: string;
+    listDescription: string;
     createTitle: string;
     editTitle: string;
     productInfo: string;
@@ -464,6 +475,7 @@ export type Messages = {
   };
   invoices: {
     title: string;
+    listDescription: string;
     createInvoice: string;
     viewInvoice: string;
     invoiceNumber: string;

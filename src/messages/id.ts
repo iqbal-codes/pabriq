@@ -104,6 +104,7 @@ const id: Messages = {
   },
   orders: {
     title: "Pesanan",
+    listDescription: "Kelola dan lacak semua pesanan pelanggan",
     createOrder: "Buat Pesanan",
     editOrder: "Edit Pesanan",
     viewOrder: "Lihat Pesanan",
@@ -169,6 +170,14 @@ const id: Messages = {
     paymentVoid: "Batal",
     deadline: "Tenggat",
     downloadQuotation: "Unduh Penawaran",
+    loadOrdersFailed: "Tidak dapat memuat pesanan",
+    loadOrdersFailedDesc: "Periksa koneksi Anda lalu coba lagi.",
+    copyLinkFailed: "Tidak dapat menyalin tautan portal",
+    openPortalLink: "Buka Tautan Portal",
+    customerDueDate: "Jatuh Tempo Pelanggan",
+    internalDeadline: "Tenggat Produksi",
+    overdueDeadline: "Terlambat",
+    completedAt: "Selesai Pada",
   },
   breadcrumb: {
     dashboard: "Dasbor",
@@ -335,6 +344,7 @@ const id: Messages = {
   },
   customers: {
     title: "Pelanggan",
+    listDescription: "Pantau pelanggan dan detail mereka",
     createCustomer: "Buat Pelanggan",
     editCustomer: "Edit Pelanggan",
     viewCustomer: "Lihat Pelanggan",
@@ -412,6 +422,7 @@ const id: Messages = {
   },
   products: {
     title: "Produk",
+    listDescription: "Kelola katalog produk dan harga Anda",
     createTitle: "Produk Baru",
     editTitle: "Edit Produk",
     productInfo: "Informasi Produk",
@@ -464,6 +475,7 @@ const id: Messages = {
   },
   invoices: {
     title: "Invoice",
+    listDescription: "Lihat dan kelola semua invoice dan pembayaran",
     createInvoice: "Buat Invoice",
     viewInvoice: "Lihat Invoice",
     invoiceNumber: "No. Invoice",

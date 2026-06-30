@@ -104,6 +104,7 @@ const en: Messages = {
   },
   orders: {
     title: "Orders",
+    listDescription: "Manage and track all customer orders",
     createOrder: "Create Order",
     editOrder: "Edit Order",
     viewOrder: "View Order",
@@ -169,6 +170,14 @@ const en: Messages = {
     paymentVoid: "Void",
     deadline: "Deadline",
     downloadQuotation: "Download Quotation",
+    loadOrdersFailed: "Could not load orders",
+    loadOrdersFailedDesc: "Check your connection and try again.",
+    copyLinkFailed: "Could not copy the portal link",
+    openPortalLink: "Open Portal Link",
+    customerDueDate: "Customer Due",
+    internalDeadline: "Production Deadline",
+    overdueDeadline: "Overdue",
+    completedAt: "Completed On",
   },
   breadcrumb: {
     dashboard: "Dashboard",
@@ -335,6 +344,7 @@ const en: Messages = {
   },
   customers: {
     title: "Customers",
+    listDescription: "Keep track of your customers and their details",
     createCustomer: "Create Customer",
     editCustomer: "Edit Customer",
     viewCustomer: "View Customer",
@@ -411,6 +421,7 @@ const en: Messages = {
   },
   products: {
     title: "Products",
+    listDescription: "Manage your product catalog and pricing",
     createTitle: "New Product",
     editTitle: "Edit Product",
     productInfo: "Product Information",
@@ -461,6 +472,7 @@ const en: Messages = {
   },
   invoices: {
     title: "Invoices",
+    listDescription: "View and manage all invoices and payments",
     createInvoice: "Create Invoice",
     viewInvoice: "View Invoice",
     invoiceNumber: "Invoice #",
