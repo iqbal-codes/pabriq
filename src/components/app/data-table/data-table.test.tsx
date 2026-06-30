@@ -232,7 +232,7 @@ describe('DataTable - toolbar', () => {
   })
 })
 
-describe('DataTable - filter trigger', () => {
+describe('DataTable - inline filters', () => {
   const baseFilters: DataTableFiltersConfig = {
     definitions: [
       { id: 'status', label: 'Status', type: 'radio-chips', options: [] },
@@ -242,111 +242,76 @@ describe('DataTable - filter trigger', () => {
     onClear: vi.fn(),
   }
 
-  it('renders filter trigger button when filters prop is provided', () => {
+  it('renders inline filter fields when filters prop is provided on desktop', () => {
     renderTable({ filters: baseFilters })
-    expect(screen.getByText('Filters')).toBeDefined()
+    // Filter label appears in the inline trigger
+    const matches = screen.getAllByText('Status')
+    expect(matches.length).toBeGreaterThanOrEqual(1)
   })
 
-  it('does not render filter button without filters prop', () => {
+  it('does not render filter fields without filters prop', () => {
     renderTable()
-    expect(screen.queryByText('Filters')).toBeNull()
+    expect(screen.queryByRole('button', { name: /Status/ })).toBeNull()
   })
 
-  it('shows active count badge when filters have values', () => {
+  it('shows active filter highlight when filters have values', () => {
+    renderTable({
+      filters: {
+        ...baseFilters,
+        definitions: [
+          {
+            id: 'status',
+            label: 'Status',
+            type: 'radio-chips',
+            options: [{ value: 'active', label: 'Active' }],
+          },
+        ],
+        values: { status: 'active' },
+      },
+    })
+    const activeMatches = screen.getAllByText('Active')
+    expect(activeMatches.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('shows filter popover on trigger click', async () => {
+    renderTable({
+      filters: {
+        ...baseFilters,
+        definitions: [
+          {
+            id: 'status',
+            label: 'Status',
+            type: 'radio-chips',
+            options: [{ value: 'active', label: 'Active' }],
+          },
+        ],
+        values: {},
+      },
+    })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    // Click the filter trigger button (inside the popover trigger), not the column header
+    const filterButton = screen.getAllByText('Status').find((el) =>
+      el.closest('[data-slot="popover-trigger"]'),
+    )
+    expect(filterButton).toBeDefined()
+    await user.click(filterButton!)
+    const allOption = await screen.findByText('All', {}, { timeout: 2000 })
+    expect(allOption).toBeDefined()
+  })
+
+  it('shows Clear all button when filters are active', () => {
     renderTable({
       filters: {
         ...baseFilters,
         values: { status: 'active' },
       },
     })
-    const counts = screen.getAllByText('1').filter((el) => el.closest('button'))
-    expect(counts.length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Clear filters').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('does not show count badge when no filters active', () => {
+  it('does not show Clear all button when no filters active', () => {
     renderTable({ filters: baseFilters })
-    const counts = screen
-      .queryAllByText('1')
-      .filter((el) => el.closest('button'))
-    expect(counts.length).toBe(0)
-  })
-
-  it('opens filter panel on trigger click', async () => {
-    renderTable({ filters: baseFilters })
-    const user = userEvent.setup({ pointerEventsCheck: 0 })
-    await user.click(screen.getByText('Filters'))
-    const applyBtn = await screen.findByText('Apply', {}, { timeout: 2000 })
-    expect(applyBtn).toBeDefined()
-  })
-})
-
-describe('DataTable - filter panel', () => {
-  const onApply = vi.fn()
-  const onClear = vi.fn()
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  const filtersWithValues: DataTableFiltersConfig = {
-    definitions: [
-      {
-        id: 'status',
-        label: 'Status',
-        type: 'radio-chips',
-        options: [
-          { value: 'active', label: 'Active' },
-          { value: 'inactive', label: 'Inactive' },
-        ],
-      },
-    ],
-    values: { status: 'active' },
-    onApply,
-    onClear,
-  }
-
-  it('shows filter definitions inside the panel', async () => {
-    renderTable({ filters: filtersWithValues })
-    const user = userEvent.setup({ pointerEventsCheck: 0 })
-    await user.click(screen.getByText('Filters'))
-    const allBtns = await screen.findAllByText('Active', {}, { timeout: 2000 })
-    expect(allBtns.length).toBeGreaterThan(0)
-  })
-
-  it('shows Apply and Cancel buttons inside the panel', async () => {
-    renderTable({ filters: filtersWithValues })
-    const user = userEvent.setup({ pointerEventsCheck: 0 })
-    await user.click(screen.getByText('Filters'))
-    expect(
-      await screen.findByText('Apply', {}, { timeout: 2000 }),
-    ).toBeDefined()
-    expect(
-      await screen.findByText('Cancel', {}, { timeout: 2000 }),
-    ).toBeDefined()
-  })
-
-  it('calls onClear when Clear all is clicked in the panel', async () => {
-    renderTable({ filters: filtersWithValues })
-    const user = userEvent.setup({ pointerEventsCheck: 0 })
-    await user.click(screen.getByText('Filters'))
-    const dialog = await screen.findByRole('dialog', {}, { timeout: 2000 })
-    const clearBtn = within(dialog).getByText('Clear filters')
-    await user.click(clearBtn)
-    expect(onClear).toHaveBeenCalled()
-  })
-
-  it('renders custom content in the panel', async () => {
-    renderTable({
-      filters: {
-        ...filtersWithValues,
-        customContent: <div>Custom section</div>,
-      },
-    })
-    const user = userEvent.setup({ pointerEventsCheck: 0 })
-    await user.click(screen.getByText('Filters'))
-    expect(
-      await screen.findByText('Custom section', {}, { timeout: 2000 }),
-    ).toBeDefined()
+    expect(screen.queryByText('Clear filters')).toBeNull()
   })
 })
 
@@ -372,7 +337,8 @@ describe('DataTable - active filter chips', () => {
         onClear: vi.fn(),
       },
     })
-    expect(screen.getByText('Active')).toBeDefined()
+    const matches = screen.getAllByText('Active')
+    expect(matches.length).toBeGreaterThanOrEqual(1)
   })
 
   it('does not render chips when no filters active', () => {

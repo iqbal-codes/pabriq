@@ -10,6 +10,7 @@ type DataTableToolbarProps<TData> = {
   clearButton?: ReactNode
   activeFilterChips?: ReactNode
   hasStructuredFilters?: boolean
+  inlineFilters?: ReactNode
 }
 
 export function DataTableToolbar<TData>({
@@ -21,9 +22,15 @@ export function DataTableToolbar<TData>({
   clearButton,
   activeFilterChips,
   hasStructuredFilters,
+  inlineFilters,
 }: DataTableToolbarProps<TData>) {
   const hasSelection = slotContext.selectedRowIds.length > 0
-  const hasToolbarContent = !!(toolbarStart || toolbarEnd || filterTrigger)
+  const hasToolbarContent = !!(
+    toolbarStart ||
+    toolbarEnd ||
+    filterTrigger ||
+    inlineFilters
+  )
 
   return (
     <div className="flex flex-col gap-4">
@@ -42,9 +49,13 @@ export function DataTableToolbar<TData>({
 
       {!hasSelection && hasToolbarContent ? (
         <>
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-2">{toolbarStart}</div>
-            <div className="flex items-center gap-2">
+            {inlineFilters && (
+              <div className="hidden h-5 w-px bg-border md:block" />
+            )}
+            {inlineFilters}
+            <div className="flex items-center gap-2 ml-auto">
               {toolbarEnd}
               {hasStructuredFilters && clearButton}
               {filterTrigger}

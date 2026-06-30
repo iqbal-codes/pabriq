@@ -57,7 +57,7 @@ export function DataTableDesktopView<TData>({
     <div className="relative">
       <div className="hidden md:block">
         <div className="rounded-xl border bg-muted/50 p-1.5">
-          <div className="rounded-lg border bg-background">
+          <div className="rounded-lg border bg-background overflow-hidden">
             <UITable>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -72,6 +72,8 @@ export function DataTableDesktopView<TData>({
                           className={cn(
                             meta?.align === 'end' && 'text-right',
                             meta?.align === 'center' && 'text-center',
+                            meta?.sticky &&
+                              'sticky right-0 bg-background z-10 rounded-tr-lg',
                             meta?.headerClassName,
                           )}
                         >
@@ -121,6 +123,13 @@ export function DataTableDesktopView<TData>({
                           className={cn(
                             meta?.align === 'end' && 'text-right',
                             meta?.align === 'center' && 'text-center',
+                            meta?.sticky &&
+                              cn(
+                                'sticky right-0 bg-background z-10',
+                                row.index ===
+                                  table.getRowModel().rows.length - 1 &&
+                                  'rounded-br-lg',
+                              ),
                             meta?.cellClassName,
                           )}
                         >
@@ -145,7 +154,7 @@ export function DataTableDesktopView<TData>({
         </div>
       )}
 
-      <div className="hidden md:block">
+      <div className="hidden md:block mt-4">
         <DataTablePagination
           labels={labels}
           page={page}

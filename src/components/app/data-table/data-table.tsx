@@ -12,6 +12,7 @@ import {
   DataTableActiveFilterChips,
   DataTableFilterTrigger,
 } from './data-table-filter-trigger'
+import { DataTableInlineFilters } from './data-table-inline-filters'
 import { DataTableMobileView } from './data-table-mobile-view'
 import { DataTableShell } from './data-table-shell'
 import {
@@ -33,8 +34,8 @@ import type {
 } from './data-table-utils'
 import { getActiveFilterCount } from './data-table-utils'
 import { useDataTableAccumulation } from './use-data-table-accumulation'
-import { useDataTableColumns } from './use-data-table-columns'
 import { useDataTableColumnVisibility } from './use-data-table-column-visibility'
+import { useDataTableColumns } from './use-data-table-columns'
 import { useDataTableSelectionState } from './use-data-table-selection-state'
 
 type DataTableProps<TData> = {
@@ -212,8 +213,7 @@ export function DataTable<TData>({
   const clearButton = hasStructuredFilters ? (
     <Button
       variant="outline"
-      size="sm"
-      className="hidden md:inline-flex"
+      className="hidden md:inline-flex h-10"
       onClick={() => {
         filters?.onClear()
       }}
@@ -234,11 +234,26 @@ export function DataTable<TData>({
     />
   ) : null
 
+  const useInlineFilters = !isMobile && !!filters
+
+  const inlineFilters =
+    useInlineFilters && filters ? (
+      <DataTableInlineFilters
+        definitions={filters.definitions}
+        values={filters.values}
+        onApply={(id, value) =>
+          filters.onApply({ ...filters.values, [id]: value })
+        }
+      />
+    ) : null
+
   const toolbarFilterProps = {
-    filterTrigger,
+    ...(useInlineFilters
+      ? { filterTrigger: null, activeFilterChips: null }
+      : { filterTrigger, activeFilterChips }),
     clearButton,
-    activeFilterChips,
     hasStructuredFilters,
+    ...(useInlineFilters ? { inlineFilters } : {}),
   }
 
   const stateRenderProps = {

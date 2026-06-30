@@ -60,7 +60,11 @@ export function useDataTableColumns<TData>({
       cols.push({
         id: 'actions',
         enableHiding: false,
-        meta: { label: '', mobileRole: 'actions' } as unknown as AppColumnMeta,
+        meta: {
+          label: '',
+          mobileRole: 'actions',
+          sticky: true,
+        } as unknown as AppColumnMeta,
         header: ({ table }) => (
           <div className="flex items-center justify-between">
             {'Action'}

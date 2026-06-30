@@ -7,6 +7,7 @@ export type AppColumnMeta = {
   label: string
   mobileRole?: 'title' | 'subtitle' | 'meta' | 'badge' | 'hidden' | 'actions'
   skeleton?: 'text' | 'badge' | 'avatar' | 'number' | 'actions'
+  sticky?: boolean
 }
 
 export type DataTableLabels = {
