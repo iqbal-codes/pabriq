@@ -322,29 +322,37 @@ async function completeTaskTransition(params: {
   })
 }
 
-async function handleBoardTransition(params: {
-  task: ProductionTask
-  orgId: string
-  actorId: string
-  completedRequirementIds: string[]
-}): Promise<{ transitioned: boolean; result?: AdvanceTaskResult }> {
-  if (params.task.board !== 'pre_production') {
-    return { transitioned: false }
-  }
-
-  const prodStages = await db
+async function getFirstActiveProductionStage(
+  orgId: string,
+): Promise<Stage | null> {
+  const rows = await db
     .select()
     .from(stagesTable)
     .where(
       and(
-        eq(stagesTable.orgId, params.orgId),
+        eq(stagesTable.orgId, orgId),
         eq(stagesTable.active, true),
         eq(stagesTable.board, 'production'),
       ),
     )
     .orderBy(asc(stagesTable.orderIndex))
+    .limit(1)
 
-  if (prodStages.length === 0) {
+  return (rows[0] as Stage) ?? null
+}
+async function handleBoardTransition(params: {
+  task: ProductionTask
+  orgId: string
+  actorId: string
+  completedRequirementIds: string[]
+  isAtLastStage: boolean
+}): Promise<{ transitioned: boolean; result?: AdvanceTaskResult }> {
+  if (params.task.board !== 'pre_production' || !params.isAtLastStage) {
+    return { transitioned: false }
+  }
+
+  const firstProdStage = await getFirstActiveProductionStage(params.orgId)
+  if (!firstProdStage) {
     return { transitioned: false }
   }
 
@@ -352,7 +360,7 @@ async function handleBoardTransition(params: {
     .update(tasksTable)
     .set({
       board: 'production',
-      stageId: prodStages[0].id,
+      stageId: firstProdStage.id,
       status: 'in_progress',
       updatedAt: new Date(),
     })
@@ -363,7 +371,7 @@ async function handleBoardTransition(params: {
     taskId: params.task.id,
     type: 'board_transition',
     fromStageId: params.task.stageId,
-    toStageId: prodStages[0].id,
+    toStageId: firstProdStage.id,
     data: { fromBoard: 'pre_production', toBoard: 'production' },
     actorId: params.actorId,
   })
@@ -449,34 +457,12 @@ export async function advanceTask(
   const completedReqIds = Object.keys(requirementResponses ?? {})
 
   const nextStageIdx = currentStageIdx + 1
-
-  // Handle board transition: when pre_production completes all stages, move to production board
-  const boardResult = await handleBoardTransition({
-    task,
-    orgId,
-    actorId,
-    completedRequirementIds: completedReqIds,
-  })
-  if (boardResult.transitioned) {
-    return boardResult.result!
-  }
-
-  if (nextStageIdx >= allStages.length) {
-    await completeTaskTransition({
-      taskId,
-      orgId,
-      actorId,
-      fromStageId: task.stageId,
-      completedRequirementIds: completedReqIds,
-    })
-    return { ok: true, pendingApproval: false }
-  }
-
-  const nextStage = allStages[nextStageIdx] as Stage
+  const isAtLastStage = nextStageIdx >= allStages.length
 
   // When advancing from queue (isQueued), always enter the first stage first
   // Approval/requirement is checked when trying to ADVANCE from that stage
   if (isQueued) {
+    const nextStage = allStages[nextStageIdx] as Stage
     await transitionToStage({
       taskId,
       orgId,
@@ -489,19 +475,21 @@ export async function advanceTask(
     return { ok: true, pendingApproval: false }
   }
 
-  // For non-queued tasks, check requirements and approval when trying to exit current stage
-  if (!isQueued) {
-    const currentStage = allStages[currentStageIdx] as Stage
-    const reqError = validateStageRequirements(
-      currentStage.requirements,
-      requirementResponses,
-    )
-    if (reqError !== null) {
-      return { ok: false, error: reqError }
-    }
-  }
+  // For non-queued tasks, validate requirements (already done above) and check approval
+  const currentStage = allStages[currentStageIdx] as Stage
 
-  if (nextStage.needApproval) {
+  // Check if current stage requires approval when leaving it
+  if (currentStage.needApproval) {
+    // Compute destination for the activity log
+    let toStageId: string | null = null
+    if (!isAtLastStage) {
+      toStageId = (allStages[nextStageIdx] as Stage).id
+    } else if (task.board === 'pre_production') {
+      const firstProdStage = await getFirstActiveProductionStage(orgId)
+      toStageId = firstProdStage?.id ?? null
+    }
+    // else: final stage on production board → toStageId stays null (completion)
+
     const now = new Date()
     await db
       .update(tasksTable)
@@ -517,14 +505,38 @@ export async function advanceTask(
       taskId,
       type: 'advancement_requested',
       fromStageId: task.stageId,
-      toStageId: nextStage.id,
-      data: { fromStage: task.stageId, toStage: nextStage.id },
+      toStageId,
+      data: { fromStage: task.stageId, toStage: toStageId },
       actorId,
     })
 
     return { ok: true, pendingApproval: true }
   }
 
+  // No approval needed — handle board transition or advance
+  const boardResult = await handleBoardTransition({
+    task,
+    orgId,
+    actorId,
+    completedRequirementIds: completedReqIds,
+    isAtLastStage,
+  })
+  if (boardResult.transitioned && boardResult.result) {
+    return boardResult.result
+  }
+
+  if (isAtLastStage) {
+    await completeTaskTransition({
+      taskId,
+      orgId,
+      actorId,
+      fromStageId: task.stageId,
+      completedRequirementIds: completedReqIds,
+    })
+    return { ok: true, pendingApproval: false }
+  }
+
+  const nextStage = allStages[nextStageIdx] as Stage
   await transitionToStage({
     taskId,
     orgId,
@@ -575,6 +587,7 @@ export async function approveTaskAdvance(
 
   const currentStageIdx = allStages.findIndex((s) => s.id === task.stageId)
   const nextStageIdx = currentStageIdx + 1
+  const isAtLastStage = nextStageIdx >= allStages.length
 
   await logActivity({
     orgId,
@@ -591,12 +604,13 @@ export async function approveTaskAdvance(
     orgId,
     actorId,
     completedRequirementIds: [],
+    isAtLastStage,
   })
-  if (boardResult.transitioned) {
-    return boardResult.result!
+  if (boardResult.transitioned && boardResult.result) {
+    return boardResult.result
   }
 
-  if (nextStageIdx >= allStages.length) {
+  if (isAtLastStage) {
     await completeTaskTransition({
       taskId,
       orgId,

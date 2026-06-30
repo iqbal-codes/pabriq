@@ -33,6 +33,7 @@ type Props = {
   tasks: BoardTask[]
   onClickCard?: (taskId: string) => void
   variant?: ColumnVariant
+  needApproval?: boolean
 }
 
 export function KanbanColumn({
@@ -41,6 +42,7 @@ export function KanbanColumn({
   tasks,
   onClickCard,
   variant = 'queue',
+  needApproval,
 }: Props) {
   const t = useTranslations('production')
   const styles = variantStyles[variant]
@@ -50,7 +52,14 @@ export function KanbanColumn({
       <CardHeader
         className={`flex flex-row items-center justify-between p-3 rounded-t-xl ${styles.headerBg}`}
       >
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-sm font-semibold">{title}</h3>
+          {needApproval && (
+            <Badge variant="warning" className="text-xs">
+              {t('needApproval')}
+            </Badge>
+          )}
+        </div>
         <Badge
           className={`text-xs size-5 ${styles.badgeBg} text-white`}
           aria-label={t('columnTaskCount', { column: title, count })}

@@ -39,12 +39,24 @@ export function KanbanPage({ orgId }: Props) {
   const canApprove = canApproveProductionTask(role)
 
   const { data: stages } = useStages()
-  const activeStages = useMemo(() => {
+  const allActiveStages = useMemo(() => {
     if (!stages) return []
     return stages
       .filter((s) => s.active)
       .sort((a, b) => a.orderIndex - b.orderIndex)
   }, [stages])
+
+  const getBoardStages = useMemo(() => {
+    return (board: string) =>
+      allActiveStages
+        .filter((s) => s.board === board)
+        .sort((a, b) => a.orderIndex - b.orderIndex)
+  }, [allActiveStages])
+
+  const productionEntryStage = useMemo(
+    () => allActiveStages.find((s) => s.board === 'production'),
+    [allActiveStages],
+  )
 
   const filters = useMemo(
     () => ({
@@ -62,17 +74,23 @@ export function KanbanPage({ orgId }: Props) {
   const { approveAdvance, rejectAdvance } = useTaskMutations()
 
   const reviewStageName = useMemo(() => {
-    if (!reviewTask || !activeStages.length) return ''
-    const s = activeStages.find((st) => st.id === reviewTask.stageId)
+    if (!reviewTask || !allActiveStages.length) return ''
+    const s = allActiveStages.find((st) => st.id === reviewTask.stageId)
     return s?.name ?? ''
-  }, [reviewTask, activeStages])
+  }, [reviewTask, allActiveStages])
 
   const reviewNextStageName = useMemo(() => {
-    if (!reviewTask || !activeStages.length) return ''
-    const idx = activeStages.findIndex((st) => st.id === reviewTask.stageId)
-    const next = activeStages[idx + 1]
-    return next?.name ?? ''
-  }, [reviewTask, activeStages])
+    if (!reviewTask || !allActiveStages.length) return ''
+    const boardStages = getBoardStages(reviewTask.board)
+    const idx = boardStages.findIndex((st) => st.id === reviewTask.stageId)
+    const next = boardStages[idx + 1]
+    if (next) return next.name
+    // At last stage on pre_production → show production entry stage
+    if (reviewTask.board === 'pre_production' && productionEntryStage) {
+      return productionEntryStage.name
+    }
+    return ''
+  }, [reviewTask, allActiveStages, getBoardStages, productionEntryStage])
 
   const reviewRequirementResponses = useMemo(() => {
     if (!reviewTask) return undefined
@@ -83,10 +101,10 @@ export function KanbanPage({ orgId }: Props) {
   }, [reviewTask])
 
   const reviewRequirements = useMemo(() => {
-    if (!reviewTask || !activeStages.length) return []
-    const stage = activeStages.find((st) => st.id === reviewTask.stageId)
+    if (!reviewTask || !allActiveStages.length) return []
+    const stage = allActiveStages.find((st) => st.id === reviewTask.stageId)
     return stage?.requirements ?? []
-  }, [reviewTask, activeStages])
+  }, [reviewTask, allActiveStages])
 
   return (
     <div className="flex flex-col overflow-hidden gap-4 h-full">
@@ -103,7 +121,7 @@ export function KanbanPage({ orgId }: Props) {
           className="w-48"
         >
           <option value="">{t('allStages')}</option>
-          {activeStages.map((s) => (
+          {allActiveStages.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
             </option>
@@ -117,7 +135,7 @@ export function KanbanPage({ orgId }: Props) {
           </div>
         ) : boardData ? (
           <KanbanBoard
-            stages={activeStages}
+            stages={allActiveStages}
             boardData={boardData}
             onClickCard={setSelectedTaskId}
           />

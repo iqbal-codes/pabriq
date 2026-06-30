@@ -64,6 +64,19 @@ vi.mock('../hooks', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
         },
+        {
+          id: 'stage-prod-1',
+          name: 'Print',
+          board: 'production',
+          orderIndex: 0,
+          active: true,
+          needApproval: false,
+          requirements: [],
+          description: null,
+          orgId: 'org-1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       ],
       isLoading: false,
     }),
@@ -117,29 +130,45 @@ vi.mock('../hooks', () => {
     }),
     useTaskDetail: (taskId: string) => ({
       data: taskId
-        ? {
-            id: taskId,
-            orgId: 'org-1',
-            orderId: 'order-1',
-            board: 'pre_production',
-            stageId: 'stage-1',
-            status: 'pending_approval',
-            taskNumber: 'TSK-1',
-            lineItemId: 'line-item-1',
-            priority: false,
-            context: {
-              productName: 'Product A',
-              customerName: 'Customer A',
-              orderNumber: 'ORD-001',
-              quantity: 100,
-              requirementResponses: {
-                'req-proof': { value: 'Yes' },
+        ? taskId === 'task-last-stage'
+          ? {
+              id: taskId,
+              orgId: 'org-1',
+              orderId: 'order-1',
+              board: 'pre_production',
+              stageId: 'stage-2',
+              status: 'pending_approval',
+              taskNumber: 'TSK-2',
+              lineItemId: 'line-item-2',
+              priority: false,
+              context: {},
+              assignedTo: null,
+              createdAt: '2026-05-01T00:00:00Z',
+              updatedAt: '2026-05-06T00:00:00Z',
+            }
+          : {
+              id: taskId,
+              orgId: 'org-1',
+              orderId: 'order-1',
+              board: 'pre_production',
+              stageId: 'stage-1',
+              status: 'pending_approval',
+              taskNumber: 'TSK-1',
+              lineItemId: 'line-item-1',
+              priority: false,
+              context: {
+                productName: 'Product A',
+                customerName: 'Customer A',
+                orderNumber: 'ORD-001',
+                quantity: 100,
+                requirementResponses: {
+                  'req-proof': { value: 'Yes' },
+                },
               },
-            },
-            assignedTo: null,
-            createdAt: '2026-05-01T00:00:00Z',
-            updatedAt: '2026-05-06T00:00:00Z',
-          }
+              assignedTo: null,
+              createdAt: '2026-05-01T00:00:00Z',
+              updatedAt: '2026-05-06T00:00:00Z',
+            }
         : null,
       isLoading: false,
     }),
@@ -167,9 +196,14 @@ vi.mock('../components/kanban-board', () => ({
 
 vi.mock('../components/task-detail-modal', () => ({
   TaskDetailModal: ({ onReview }: { onReview?: (taskId: string) => void }) => (
-    <button type="button" onClick={() => onReview?.('task-1')}>
-      Review Task
-    </button>
+    <div>
+      <button type="button" onClick={() => onReview?.('task-1')}>
+        Review Task
+      </button>
+      <button type="button" onClick={() => onReview?.('task-last-stage')}>
+        Review Last Stage Task
+      </button>
+    </div>
   ),
 }))
 
@@ -372,5 +406,15 @@ describe('KanbanPage', () => {
     await userEvent.click(screen.getByText('Review Task'))
     await userEvent.click(screen.getByText('Reject'))
     expect(screen.queryByText('Review Advancement')).not.toBeInTheDocument()
+  })
+
+  it('shows production entry stage as destination for last pre_production stage review', async () => {
+    renderPage()
+    await userEvent.click(screen.getByText('Open Task'))
+    await userEvent.click(screen.getByText('Review Last Stage Task'))
+    // task-last-stage is at stage-2 (last pre_production stage)
+    // reviewNextStageName should show 'Print' (first production stage)
+    expect(screen.getByText('Review Advancement')).toBeInTheDocument()
+    expect(screen.getByText('Print')).toBeInTheDocument()
   })
 })

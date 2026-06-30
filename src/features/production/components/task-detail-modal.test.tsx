@@ -26,6 +26,8 @@ const enMessages = {
     advanceTo: 'Advance to {stage}',
     done: 'Done',
     reviewAdvancement: 'Review',
+    requestReview: 'Request Review',
+    continueToProduction: 'Continue to Production',
     queue: 'Queue',
     statusQueued: 'Queued',
     statusInProgress: 'In Progress',
@@ -34,8 +36,7 @@ const enMessages = {
     attachments: 'Attachments',
     noActivity: 'No activity yet',
     openTask: 'Open task {task}',
-    columnTaskCount:
-      '{column}: {count, plural, one {# task} other {# tasks}}',
+    columnTaskCount: '{column}: {count, plural, one {# task} other {# tasks}}',
   },
   status: {
     queued: 'Queued',
@@ -51,14 +52,16 @@ const taskStatusMap: Record<string, string> = {
   'task-pending': 'pending_approval',
   'task-done': 'completed',
   'task-final-stage': 'in_progress',
+  'task-approval': 'in_progress',
 }
 
 const taskStageMap: Record<string, string | null> = {
   'task-queued': null,
   'task-1': 'stage-1',
-  'task-final-stage': 'stage-2',
+  'task-final-stage': 'stage-approval',
   'task-pending': 'stage-1',
   'task-done': 'stage-2',
+  'task-approval': 'stage-approval',
 }
 
 vi.mock('../hooks', () => {
@@ -131,6 +134,19 @@ vi.mock('../hooks', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
         },
+        {
+          id: 'stage-approval',
+          name: 'QC',
+          board: 'pre_production',
+          orderIndex: 2,
+          active: true,
+          needApproval: true,
+          requirements: [],
+          description: null,
+          orgId: 'org-1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       ],
       isLoading: false,
     }),
@@ -143,7 +159,10 @@ vi.mock('../hooks', () => {
   }
 })
 
-function renderModal(taskId = 'task-1') {
+function renderModal(
+  taskId = 'task-1',
+  props?: { canApprove?: boolean; onReview?: (taskId: string) => void },
+) {
   const onOpenChange = vi.fn()
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -156,6 +175,8 @@ function renderModal(taskId = 'task-1') {
           orgId="org-1"
           open={true}
           onOpenChange={onOpenChange}
+          canApprove={props?.canApprove}
+          onReview={props?.onReview}
         />
       </IntlProvider>
     </QueryClientProvider>,
@@ -174,9 +195,9 @@ describe('TaskDetailModal', () => {
 
   it('renders Details and Activity tabs', () => {
     renderModal()
-    expect(
-      screen.getAllByText('Specification').length,
-    ).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Specification').length).toBeGreaterThanOrEqual(
+      1,
+    )
     expect(screen.getByText('Activity')).toBeInTheDocument()
   })
 
@@ -196,10 +217,9 @@ describe('TaskDetailModal', () => {
     expect(screen.getByText('Started Design')).toBeInTheDocument()
   })
 
-  it('shows Done for final active stage without hardcoded Selesai', () => {
+  it('shows Request Review for final active stage with needApproval', () => {
     renderModal('task-final-stage')
-    expect(screen.getByText('Done')).toBeInTheDocument()
-    expect(screen.queryByText('Selesai')).not.toBeInTheDocument()
+    expect(screen.getByText('Request Review')).toBeInTheDocument()
   })
 
   it('does not close when advance returns a server error', async () => {
@@ -250,5 +270,33 @@ describe('TaskDetailModal', () => {
     await userEvent.type(input, 'Hello world')
     await userEvent.click(screen.getByText('Send'))
     expect(input).toHaveValue('')
+  })
+
+  it('shows Request Review for in_progress task at needApproval stage', () => {
+    renderModal('task-approval')
+    expect(screen.getByText('Request Review')).toBeInTheDocument()
+  })
+
+  it('calls onReview when advance returns pendingApproval and canApprove is true', async () => {
+    mutationMocks.advanceTaskMutate.mockImplementation(
+      (_vars: unknown, options?: { onSuccess?: (result: unknown) => void }) => {
+        options?.onSuccess?.({ ok: true, pendingApproval: true })
+      },
+    )
+    const onReview = vi.fn()
+    renderModal('task-approval', { canApprove: true, onReview })
+    await userEvent.click(screen.getByText('Request Review'))
+    expect(onReview).toHaveBeenCalledWith('task-approval')
+  })
+
+  it('closes modal when advance returns pendingApproval but canApprove is false', async () => {
+    mutationMocks.advanceTaskMutate.mockImplementation(
+      (_vars: unknown, options?: { onSuccess?: (result: unknown) => void }) => {
+        options?.onSuccess?.({ ok: true, pendingApproval: true })
+      },
+    )
+    const { onOpenChange } = renderModal('task-approval', { canApprove: false })
+    await userEvent.click(screen.getByText('Request Review'))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 })

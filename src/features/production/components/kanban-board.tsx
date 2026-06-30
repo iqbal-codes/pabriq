@@ -56,13 +56,13 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
           tasks={boardData.stages.get(stage.id) ?? []}
           onClickCard={onClickCard}
           variant="preProduction"
+          needApproval={stage.needApproval}
         />
       ))}
 
       {preProdStages.length > 0 && prodStages.length > 0 && (
         <Separator orientation="vertical" className="h-auto self-stretch" />
       )}
-
       {prodStages.map((stage) => (
         <KanbanColumn
           key={stage.id}
@@ -71,6 +71,7 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
           tasks={boardData.stages.get(stage.id) ?? []}
           onClickCard={onClickCard}
           variant="production"
+          needApproval={stage.needApproval}
         />
       ))}
 

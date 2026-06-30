@@ -89,16 +89,26 @@ export function TaskDetailModal({
   const quantity = ctx?.quantity ?? ''
   const spec = ctx?.requirements ?? ''
 
-  const activeStages = (stages ?? [])
+  const boardStages = (stages ?? [])
+    .filter((s) => s.active && s.board === task.board)
+    .sort((a, b) => a.orderIndex - b.orderIndex)
+
+  const allActiveStages = (stages ?? [])
     .filter((s) => s.active)
     .sort((a, b) => a.orderIndex - b.orderIndex)
 
   const currentStageIndex = task.stageId
-    ? activeStages.findIndex((s) => s.id === task.stageId)
+    ? boardStages.findIndex((s) => s.id === task.stageId)
     : -1
   const currentStage =
-    currentStageIndex >= 0 ? activeStages[currentStageIndex] : null
-  const nextStage = activeStages[currentStageIndex + 1]
+    currentStageIndex >= 0 ? boardStages[currentStageIndex] : null
+  const nextStage = boardStages[currentStageIndex + 1]
+  const isAtLastBoardStage =
+    currentStageIndex >= 0 && currentStageIndex >= boardStages.length - 1
+  const productionEntryStage =
+    task.board === 'pre_production'
+      ? allActiveStages.find((s) => s.board === 'production')
+      : undefined
   const hasRequirements =
     currentStage !== null && currentStage.requirements?.length > 0
 
@@ -118,6 +128,15 @@ export function TaskDetailModal({
       {
         onSuccess: (result) => {
           if ('error' in result) return
+          if (
+            'pendingApproval' in result &&
+            result.pendingApproval &&
+            canApprove &&
+            onReview
+          ) {
+            onReview(taskId)
+            return
+          }
           onOpenChange(false)
         },
       },
@@ -262,11 +281,15 @@ export function TaskDetailModal({
           )}
           {!showRequirementForm &&
             task.status === 'in_progress' &&
-            (nextStage || currentStageIndex === activeStages.length - 1) && (
+            (nextStage || isAtLastBoardStage) && (
               <Button onClick={handleAdvanceClick}>
-                {currentStageIndex === activeStages.length - 1
-                  ? t('done')
-                  : t('advanceTo', { stage: nextStage?.name })}
+                {currentStage?.needApproval
+                  ? t('requestReview')
+                  : isAtLastBoardStage && productionEntryStage
+                    ? t('continueToProduction')
+                    : isAtLastBoardStage
+                      ? t('done')
+                      : t('advanceTo', { stage: nextStage?.name })}
               </Button>
             )}
           {!showRequirementForm &&

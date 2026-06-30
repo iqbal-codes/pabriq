@@ -69,6 +69,7 @@ const enMessages = {
     productionTasks: 'Production Tasks',
     openTask: 'Open task {task}',
     columnTaskCount: '{column}: {count, plural, one {# task} other {# tasks}}',
+    needApproval: 'Requires Approval',
   },
   status: {
     in_progress: 'In Progress',
@@ -140,5 +141,26 @@ describe('KanbanBoard', () => {
     expect(
       screen.getByRole('region', { name: 'Production Tasks' }),
     ).toBeInTheDocument()
+  })
+
+  it('renders Requires Approval badge on stage with needApproval', () => {
+    renderBoard({
+      queued: [],
+      stages: new Map(),
+      done: [],
+    })
+    // stage2 has needApproval: true
+    expect(screen.getByText('Requires Approval')).toBeInTheDocument()
+  })
+
+  it('does not render Requires Approval badge on stage without needApproval', () => {
+    renderBoard({
+      queued: [],
+      stages: new Map(),
+      done: [],
+    })
+    // Only one badge should appear (stage2 has needApproval: true, stage1 does not)
+    const badges = screen.getAllByText('Requires Approval')
+    expect(badges).toHaveLength(1)
   })
 })

@@ -24,6 +24,14 @@ async function resolveOrgAndRole(): Promise<{ orgId: string; role: string }> {
   if (memberships.length === 0) throw new Error('No organization')
   return { orgId: memberships[0].orgId, role: memberships[0].role }
 }
+async function resolveManageStagesOrgId(): Promise<string> {
+  const { orgId, role } = await resolveOrgAndRole()
+  const { canManageStages } = await import('#/features/permissions/model')
+  if (!canManageStages(role as 'owner' | 'admin' | 'member')) {
+    throw new Error('Not authorized')
+  }
+  return orgId
+}
 
 export const listStagesFn = createServerFn({ method: 'GET' })
   .inputValidator((input: { board?: string }) => input)
@@ -39,7 +47,7 @@ export const createStageFn = createServerFn({ method: 'POST' })
   .inputValidator((input: Omit<CreateStageInput, 'orgId'>) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
     const [orgId, { createStage }] = await Promise.all([
-      resolveOrgId(),
+      resolveManageStagesOrgId(),
       import('./model'),
     ])
     try {
@@ -59,7 +67,7 @@ export const updateStageFn = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }): Promise<MutationResult> => {
     const [orgId, { updateStage }] = await Promise.all([
-      resolveOrgId(),
+      resolveManageStagesOrgId(),
       import('./model'),
     ])
     try {
@@ -77,7 +85,7 @@ export const reorderStagesFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { stageIds: string[] }) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
     const [orgId, { reorderStages }] = await Promise.all([
-      resolveOrgId(),
+      resolveManageStagesOrgId(),
       import('./model'),
     ])
     try {
@@ -95,7 +103,7 @@ export const toggleStageFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { id: string; active: boolean }) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
     const [orgId, { toggleStage }] = await Promise.all([
-      resolveOrgId(),
+      resolveManageStagesOrgId(),
       import('./model'),
     ])
     try {
@@ -113,7 +121,7 @@ export const deleteStageFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
     const [orgId, { deleteStage }] = await Promise.all([
-      resolveOrgId(),
+      resolveManageStagesOrgId(),
       import('./model'),
     ])
     try {
