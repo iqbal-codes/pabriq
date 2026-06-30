@@ -90,7 +90,6 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
         shippingFee: shippingAmount > 0 ? shippingAmount : undefined,
         shippingFeeDescription:
           shippingAmount > 0 ? value.shippingFeeDescription : undefined,
-        invoicePercentage: 100, // Always pay remaining 100%
         invoiceDueDate: value.dueDate,
         invoicePaymentMethodId: value.paymentMethodId,
         invoiceNotes: value.notes || undefined,

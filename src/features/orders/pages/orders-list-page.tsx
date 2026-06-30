@@ -56,7 +56,8 @@ export function OrdersListPage() {
     [ctx.org.id, search, statusFilter, sort, page, perPage],
   )
 
-  const { data, isFetching } = useOrdersList(queryFilters)
+  const { data, error, isFetching, isLoading, refetch } =
+    useOrdersList(queryFilters)
   const rows = data?.rows ?? []
   const totalRows = data?.totalRows ?? 0
 
@@ -111,6 +112,7 @@ export function OrdersListPage() {
     <PageContent>
       <PageHeader
         title={t('title')}
+        description={t('listDescription')}
         primaryAction={{
           label: t('createOrder'),
           href: '/orders/new',
@@ -119,10 +121,12 @@ export function OrdersListPage() {
       <DataTable
         columns={columns}
         data={rows}
+        error={error ? t('loadOrdersFailed') : null}
+        errorMessage={error ? t('loadOrdersFailedDesc') : undefined}
         getRowId={(row) => row.id}
-        isRefetching={isFetching}
-        isLoading={rows.length === 0 && isFetching}
-        enableRowSelection
+        isRefetching={isFetching && !isLoading}
+        isLoading={isLoading}
+        onRefetch={() => void refetch()}
         labels={labels}
         onPageChange={setPage}
         onPerPageChange={handlePerPageChange}

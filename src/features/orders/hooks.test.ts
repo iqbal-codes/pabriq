@@ -35,13 +35,16 @@ describe('useOrdersList', () => {
 
   it('calls listOrdersFn with orgId', async () => {
     mockListOrdersFn.mockResolvedValue({ rows: [], totalRows: 0 })
-    renderHook(() => useOrdersList({ orgId: 'org-1' }), {
+    const { result } = renderHook(() => useOrdersList({ orgId: 'org-1' }), {
       wrapper: createWrapper(),
     })
     await waitFor(() => {
       expect(mockListOrdersFn).toHaveBeenCalledWith({
         data: { orgId: 'org-1' },
       })
+    })
+    await waitFor(() => {
+      expect(result.current.data).toEqual({ rows: [], totalRows: 0 })
     })
   })
 })

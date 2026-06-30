@@ -5,7 +5,7 @@ import { useMarkInvoicePaid } from '#/features/invoices/hooks'
 import { useAdvanceOrderStatus } from '#/features/orders/hooks'
 import type { GetOrderResult } from '#/features/orders/model'
 import { approveOrderFn, rejectOrderFn } from '#/features/orders/server'
-import { generateOrderTokenFn } from '#/features/portal/server'
+import { useCopyOrderPortalLink } from './use-copy-order-portal-link'
 
 type UseOrderMutationsParams = {
   data: GetOrderResult | null | undefined
@@ -45,36 +45,17 @@ export function useOrderMutations({
     },
   })
 
-  const generateToken = useMutation({
-    mutationFn: (orderId: string) =>
-      generateOrderTokenFn({ data: { orderId } }),
-    onSuccess: (_result, orderId) => {
-      queryClient.invalidateQueries({
-        queryKey: ['orders', 'detail', orderId],
-      })
-    },
-  })
+  const { copyPortalLink, isGeneratingLink } = useCopyOrderPortalLink()
 
   const markInvoicePaid = useMarkInvoicePaid()
   const advanceOrderStatus = useAdvanceOrderStatus()
 
   const handleCopyPortalLink = async () => {
     if (!data) return
-    const { order } = data
-
-    let token = order.orderToken
-    if (!token) {
-      const result = await generateToken.mutateAsync(order.id)
-      if (!('token' in result)) {
-        toast.error(t('generateLinkFailed'))
-        return
-      }
-      token = result.token
-    }
-
-    const url = `${window.location.origin}/order/${token}`
-    await navigator.clipboard.writeText(url)
-    toast.success(t('linkCopied'))
+    await copyPortalLink({
+      id: data.order.id,
+      orderToken: data.order.orderToken,
+    })
   }
 
   const handleApprove = async () => {
@@ -123,7 +104,7 @@ export function useOrderMutations({
   }
 
   return {
-    isGeneratingLink: generateToken.isPending,
+    isGeneratingLink,
     isApproving: approveOrder.isPending,
     isRejecting: rejectOrder.isPending,
     isMarkingPaid: markInvoicePaid.isPending,

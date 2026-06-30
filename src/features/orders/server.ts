@@ -196,7 +196,6 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
       trackingNumber?: string
       shippingFee?: number
       shippingFeeDescription?: string
-      invoicePercentage?: number
       invoiceDueDate: string
       invoicePaymentMethodId: string
       invoiceNotes?: string
@@ -291,12 +290,17 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
 
     // 4. Create final invoice if there's remaining balance
     if (remainingAmount > 0) {
+      const remainingPercentage =
+        order.total > 0
+          ? Math.round((remainingAmount / order.total) * 10_000) / 100
+          : 100
+
       await createInvoice(orgId, {
         orderId: data.id,
         customerId,
         customerName,
         lineItems: [],
-        percentage: data.invoicePercentage ?? 100,
+        percentage: remainingPercentage,
         dueDate: data.invoiceDueDate,
         paymentMethodId: data.invoicePaymentMethodId,
         notes: data.invoiceNotes,

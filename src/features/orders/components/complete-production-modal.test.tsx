@@ -105,7 +105,9 @@ describe('CompleteProductionModal', () => {
     expect(
       screen.getByText('All tasks have been completed ✓'),
     ).toBeInTheDocument()
-    expect(screen.getAllByText('Payment Method').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Payment Method').length).toBeGreaterThanOrEqual(
+      1,
+    )
     // remainingAmount (250,000) formatted as IDR
     expect(screen.getAllByText(/250\.000/).length).toBeGreaterThanOrEqual(1)
   })
@@ -166,9 +168,13 @@ describe('CompleteProductionModal', () => {
       expect(mutateAsync).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 'order-1',
-          invoicePercentage: 100,
           invoicePaymentMethodId: 'pm-1',
           shippingFee: 50000,
+        }),
+      )
+      expect(mutateAsync).toHaveBeenCalledWith(
+        expect.not.objectContaining({
+          invoicePercentage: expect.anything(),
         }),
       )
     })

@@ -145,6 +145,7 @@ export function ViewOrderPage() {
           <OrderInvoicesSection
             orderInvoices={orderInvoices}
             invoicePayments={invoicePayments ?? {}}
+            canCreateInvoice={derived.canCreateInvoice}
             onCreateInvoice={() => setInvoiceModalOpen(true)}
             onMarkInvoicePaid={mutations.handleMarkInvoicePaid}
             isMarkingPaid={mutations.isMarkingPaid}

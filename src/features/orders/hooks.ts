@@ -1,5 +1,6 @@
 import {
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
@@ -15,7 +16,7 @@ import {
 } from './server'
 
 export function useOrdersList(filters: ListOrdersParams) {
-  return useSuspenseQuery({
+  return useQuery({
     queryKey: queryKeys.orders.list(filters),
     queryFn: () => listOrdersFn({ data: filters }),
   })
@@ -75,7 +76,6 @@ export function useCompleteProduction() {
       trackingNumber?: string
       shippingFee?: number
       shippingFeeDescription?: string
-      invoicePercentage?: number
       invoiceDueDate: string
       invoicePaymentMethodId: string
       invoiceNotes?: string

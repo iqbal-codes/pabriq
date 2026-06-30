@@ -9,6 +9,7 @@ type OrderInvoicesSectionProps = {
     string,
     Array<{ id: string; proofAssetId: string | null }>
   >
+  canCreateInvoice: boolean
   onCreateInvoice: () => void
   onMarkInvoicePaid: (invoiceId: string) => void
   isMarkingPaid: boolean
@@ -17,6 +18,7 @@ type OrderInvoicesSectionProps = {
 export function OrderInvoicesSection({
   orderInvoices,
   invoicePayments,
+  canCreateInvoice,
   onCreateInvoice,
   onMarkInvoicePaid,
   isMarkingPaid,
@@ -27,10 +29,12 @@ export function OrderInvoicesSection({
     <div>
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-lg font-semibold">{it('title')}</h3>
-        <Button variant="outline" size="sm" onClick={onCreateInvoice}>
-          <span className="mr-1">+</span>
-          {it('createInvoice')}
-        </Button>
+        {canCreateInvoice && (
+          <Button variant="outline" size="sm" onClick={onCreateInvoice}>
+            <span className="mr-1">+</span>
+            {it('createInvoice')}
+          </Button>
+        )}
       </div>
       <OrderInvoicesCard
         orderInvoices={orderInvoices}

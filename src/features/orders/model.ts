@@ -127,6 +127,8 @@ export type OrderRow = {
   paymentStatus: string
   dueDate: string | null
   maxDeadline: Date | null
+  deliveredAt: Date | null
+  shippedAt: Date | null
 }
 
 export type ListOrdersParams = {
@@ -257,6 +259,8 @@ export async function listOrders(
         orderNumber: ordersTable.orderNumber,
         orderToken: ordersTable.orderToken,
         createdAt: ordersTable.createdAt,
+        deliveredAt: ordersTable.deliveredAt,
+        shippedAt: ordersTable.shippedAt,
       })
       .from(ordersTable)
       .leftJoin(customersTable, eq(ordersTable.customerId, customersTable.id))
@@ -732,7 +736,7 @@ export async function advanceOrderStatus(
   } else if (order.status === 'in_progress') {
     await db
       .update(ordersTable)
-      .set({ status: 'in_delivery', updatedAt: now })
+      .set({ status: 'in_delivery', shippedAt: now, updatedAt: now })
       .where(eq(ordersTable.id, id))
   } else if (order.status === 'in_delivery') {
     await db

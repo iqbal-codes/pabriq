@@ -1,3 +1,5 @@
+import { TriangleAlert } from 'lucide-react'
+import type React from 'react'
 import type {
   AppColumnDef,
   DataTableFiltersConfig,
@@ -12,6 +14,43 @@ const currencyFormatter = new Intl.NumberFormat('id-ID', {
   minimumFractionDigits: 0,
 })
 
+export function formatOrderDeadlineCell(
+  date: Date | null,
+  orderStatus: string,
+  t: TranslationFn,
+): React.ReactNode {
+  if (!date) return <span className="text-muted-foreground">—</span>
+  const deadline = new Date(date)
+  const isOverdue =
+    deadline < new Date() &&
+    orderStatus !== 'completed' &&
+    orderStatus !== 'in_delivery'
+  if (isOverdue) {
+    return (
+      <span className="inline-flex items-center gap-1 text-destructive font-medium">
+        <TriangleAlert className="size-3.5" />
+        {t('overdueDeadline')}
+        <span className="text-muted-foreground text-xs">
+          {deadline.toLocaleDateString('id-ID', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          })}
+        </span>
+      </span>
+    )
+  }
+  return (
+    <span>
+      {deadline.toLocaleDateString('id-ID', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })}
+    </span>
+  )
+}
+
 export type TranslationFn = (
   key: string,
   values?: Record<string, unknown>,
@@ -23,11 +62,16 @@ export function getOrderColumns(t: TranslationFn): AppColumnDef<OrderRow>[] {
       accessorKey: 'orderNumber',
       header: t('orderNumber'),
       meta: { label: t('orderNumber'), mobileRole: 'title' },
+      cell: ({ row }) => (
+        <span className="font-mono font-medium text-foreground">
+          {row.original.orderNumber ?? '—'}
+        </span>
+      ),
     },
     {
       accessorKey: 'customerName',
       header: t('customer'),
-      meta: { label: t('customer'), mobileRole: 'meta' },
+      meta: { label: t('customer'), mobileRole: 'subtitle' },
       cell: ({ row }) => (
         <span>{row.original.customerName ?? t('guestCustomer')}</span>
       ),
@@ -41,9 +85,11 @@ export function getOrderColumns(t: TranslationFn): AppColumnDef<OrderRow>[] {
     {
       accessorKey: 'total',
       header: t('total'),
-      meta: { label: t('total'), mobileRole: 'meta' },
+      meta: { label: t('total'), mobileRole: 'meta', align: 'end' },
       cell: ({ row }) => (
-        <span>{currencyFormatter.format(row.original.total)}</span>
+        <span className="font-medium tabular-nums">
+          {currencyFormatter.format(row.original.total)}
+        </span>
       ),
     },
     {
@@ -82,39 +128,32 @@ export function getOrderColumns(t: TranslationFn): AppColumnDef<OrderRow>[] {
       },
     },
     {
-      accessorKey: 'dueDate',
-      header: t('dueDate'),
-      meta: { label: t('dueDate'), mobileRole: 'meta' },
-      cell: ({ row }) => {
-        const date = row.original.dueDate
-        if (!date) return <span className="text-muted-foreground">—</span>
-        return (
-          <span>
-            {new Date(`${date}T00:00:00`).toLocaleDateString('id-ID', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-            })}
-          </span>
-        )
-      },
-    },
-    {
       accessorKey: 'maxDeadline',
       header: t('deadline'),
       meta: { label: t('deadline'), mobileRole: 'meta' },
+      cell: ({ row }) =>
+        formatOrderDeadlineCell(
+          row.original.maxDeadline,
+          row.original.status,
+          t,
+        ),
+    },
+    {
+      accessorKey: 'shippedAt',
+      header: t('completedAt'),
+      meta: { label: t('completedAt'), mobileRole: 'meta' },
       cell: ({ row }) => {
-        const date = row.original.maxDeadline
-        if (!date) return <span className="text-muted-foreground">—</span>
-        const deadline = new Date(date)
-        const now = new Date()
-        const isOverdue = deadline < now
+        const { status, shippedAt } = row.original
+        if ((status !== 'in_delivery' && status !== 'completed') || !shippedAt)
+          return <span className="text-muted-foreground">—</span>
         return (
-          <span className={isOverdue ? 'text-destructive font-medium' : ''}>
-            {deadline.toLocaleDateString('id-ID', {
+          <span>
+            {shippedAt.toLocaleString('id-ID', {
               year: 'numeric',
               month: 'short',
               day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
             })}
           </span>
         )
@@ -123,7 +162,7 @@ export function getOrderColumns(t: TranslationFn): AppColumnDef<OrderRow>[] {
     {
       accessorKey: 'createdAt',
       header: t('createdAt'),
-      meta: { label: t('createdAt'), mobileRole: 'meta' },
+      meta: { label: t('createdAt'), mobileRole: 'hidden' },
       cell: ({ row }) => {
         const date = row.original.createdAt
         if (!date) return <span className="text-muted-foreground">—</span>
