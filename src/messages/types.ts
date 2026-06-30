@@ -725,7 +725,6 @@ export type Messages = {
     chatOnWhatsApp: string;
     confirmFailed: string;
     notFound: string;
-    completedThanks: string;
     statusDraft: string;
     statusPending: string;
     statusApproved: string;
@@ -761,6 +760,37 @@ export type Messages = {
     timelineCompleted: string;
     timelineTransition: string;
     timelineStageFallback: string;
+    timelineProductionComplete: string;
+    timelineBoardTransition: string;
+    timelineStatusInProgress: string;
+    timelineStatusCompleted: string;
+    timelineStatusWaitingApproval: string;
+
+    progressOverview: string;
+    progressStatusApprovedHelp: string;
+    progressStatusProductionHelp: string;
+    progressStatusDeliveryHelp: string;
+    progressStatusCompletedHelp: string;
+    progressStatusFallbackHelp: string;
+    nextStep: string;
+    nextStepPayment: string;
+    nextStepProduction: string;
+    nextStepDelivery: string;
+    nextStepCompleted: string;
+    estimatedCompletionLabel: string;
+    estimatedCompletionUnavailable: string;
+    paymentSummary: string;
+    paymentSummaryNoInvoice: string;
+    paymentSummaryUnpaid: string;
+    paymentSummaryAllPaid: string;
+    lineItemsHelp: string;
+    productionDaysLabel: string;
+    invoiceDialogTitle: string;
+    invoiceDialogEmpty: string;
+    invoiceShipmentFee: string;
+    invoiceViewAll: string;
+    invoiceSummary: string;
+    invoiceSummaryUnpaid: string;
   };
   assistant: {
     trigger: string;
