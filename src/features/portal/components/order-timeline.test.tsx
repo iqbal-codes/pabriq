@@ -77,4 +77,24 @@ describe('OrderTimeline', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('Requirements submitted')).toBeInTheDocument()
   })
+
+  it('renders a stage_transition with no stages as queued', () => {
+    const queuedEvent: OrderTaskEvent = {
+      id: 'act-0',
+      taskId: 't1',
+      lineItemId: 'li-1',
+      taskNumber: 'TSK-1',
+      productName: 'Custom T-Shirt',
+      type: 'stage_transition',
+      fromStageName: null,
+      toStageName: null,
+      createdAt: new Date('2026-05-09'),
+    }
+    render(
+      <IntlProvider locale="en" messages={enMessages}>
+        <OrderTimeline events={[queuedEvent]} />
+      </IntlProvider>,
+    )
+    expect(screen.getByText('Added to queue')).toBeInTheDocument()
+  })
 })

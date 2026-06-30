@@ -9,7 +9,7 @@ export function ShippingAddressCard({
 }) {
   const t = useTranslations('portal')
 
-  if (!address) return null
+  const hasAddress = address && (address.streetAddress || address.areaName)
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
@@ -20,9 +20,11 @@ export function ShippingAddressCard({
             {t('shippingAddress')}
           </p>
           <p className="text-sm text-muted-foreground">
-            {address.streetAddress
-              ? `${address.streetAddress}, ${address.areaName}`
-              : address.areaName}
+            {hasAddress
+              ? address.streetAddress
+                ? `${address.streetAddress}, ${address.areaName}`
+                : address.areaName
+              : t('noShippingAddress')}
           </p>
         </div>
       </div>

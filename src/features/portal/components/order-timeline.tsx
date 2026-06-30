@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, Clock, Upload } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Upload } from 'lucide-react'
 import { useLocale, useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
 import { formatShortDate } from '#/lib/formatters'
@@ -9,22 +9,12 @@ type Props = {
 }
 
 function getIcon(event: OrderTaskEvent): React.ReactNode {
-  switch (event.type) {
-    case 'created':
-      return (
-        <Clock className="size-3.5 text-muted-foreground shrink-0 mt-0.5" />
-      )
-    case 'moved_to_stage':
-    case 'stage_transition':
-      return (
-        <ArrowRight className="size-3.5 text-brand-accent shrink-0 mt-0.5" />
-      )
-    case 'completed':
-    case 'approved_and_moved':
-      return <CheckCircle2 className="size-3.5 text-success shrink-0 mt-0.5" />
-    default:
-      return null
+  if (event.type === 'completed' || event.type === 'approved_and_moved') {
+    return <CheckCircle2 className="size-3.5 text-success shrink-0 mt-0.5" />
   }
+  return (
+    <ArrowRight className="size-3.5 text-muted-foreground shrink-0 mt-0.5" />
+  )
 }
 
 function RequirementResponses({
@@ -87,12 +77,18 @@ function RequirementResponses({
 export function OrderTimeline({ events }: Props) {
   const t = useTranslations('portal')
   const locale = useLocale()
+  const sortedEvents = [...events].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  )
 
   function getDescription(event: OrderTaskEvent): string {
     const fromName = event.fromStageName
     const toName = event.toStageName
 
     if (event.type === 'moved_to_stage' || event.type === 'stage_transition') {
+      if (!fromName && !toName) {
+        return t('timelineQueued')
+      }
       if (!fromName && toName) {
         return t('timelineStarted', { stage: toName })
       }
@@ -108,9 +104,7 @@ export function OrderTimeline({ events }: Props) {
       case 'created':
         return t('timelineQueued')
       case 'completed':
-        return t('timelineCompleted', {
-          stage: fromName ?? t('timelineStageFallback'),
-        })
+        return t('timelineProductionComplete')
       case 'approved_and_moved':
         return toName
           ? t('timelineTransition', {
@@ -120,6 +114,12 @@ export function OrderTimeline({ events }: Props) {
           : t('timelineCompleted', {
               stage: fromName ?? t('timelineStageFallback'),
             })
+      case 'board_transition':
+        return toName
+          ? t('timelineBoardTransition', { stage: toName })
+          : t('timelineStarted', {
+              stage: fromName ?? t('timelineStageFallback'),
+            })
       default:
         return event.type
     }
@@ -127,13 +127,15 @@ export function OrderTimeline({ events }: Props) {
 
   return (
     <div className="space-y-3">
-      {events.map((event, i) => (
+      {sortedEvents.map((event, i) => (
         <div key={event.id} className="flex gap-3">
           <div className="flex flex-col items-center">
             <div className="size-6 flex items-start justify-center shrink-0 mt-0.5">
               {getIcon(event)}
             </div>
-            {i < events.length - 1 && <div className="w-px flex-1 bg-border" />}
+            {i < sortedEvents.length - 1 && (
+              <div className="w-px flex-1 bg-border" />
+            )}
           </div>
           <div className="pb-3 min-w-0 flex-1">
             <p className="text-xs text-muted-foreground">
