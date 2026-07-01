@@ -15,6 +15,7 @@ const messages = {
   },
   production: {
     markAsShipped: 'Mark as Shipped',
+    startOrderProduction: 'Start Production',
   },
 }
 
@@ -23,8 +24,7 @@ const pendingOrder = {
   orderToken: 'token-1',
   status: 'pending',
 }
-
-function renderActionBar() {
+function renderActionBar(overrides?: { canStartProduction?: boolean }) {
   return render(
     <IntlProvider locale="en" messages={messages}>
       <TooltipProvider>
@@ -36,6 +36,9 @@ function renderActionBar() {
           isApproving={false}
           onReject={vi.fn()}
           isRejecting={false}
+          onStartProduction={vi.fn()}
+          isStartingProduction={false}
+          canStartProduction={overrides?.canStartProduction ?? false}
           onCompleteProduction={vi.fn()}
           onCompleteOrder={vi.fn()}
           isCompletingOrder={false}
@@ -71,5 +74,21 @@ describe('OrderActionBar', () => {
     })
     expect(quotationLink).toBeInTheDocument()
     expect(quotationLink.className).toContain('size-8')
+  })
+
+  it('shows Start Production button when canStartProduction is true', () => {
+    renderActionBar({ canStartProduction: true })
+    const startButton = screen.getByRole('button', {
+      name: 'Start Production',
+    })
+    expect(startButton).toBeInTheDocument()
+  })
+
+  it('hides Start Production button when canStartProduction is false', () => {
+    renderActionBar({ canStartProduction: false })
+    const startButton = screen.queryByRole('button', {
+      name: 'Start Production',
+    })
+    expect(startButton).not.toBeInTheDocument()
   })
 })

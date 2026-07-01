@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '#/db/index'
 import {
   customers as customersTable,
+  invoices as invoicesTable,
   orderLineItems as lineItemsTable,
   orders as ordersTable,
   organization,
@@ -25,7 +26,11 @@ import {
   toggleStage,
   updateStage,
 } from './model'
-import { spawnProductionTasks, spawnTasksForApprovedOrder } from './spawner'
+import {
+  spawnProductionTasks,
+  spawnTasksForApprovedOrder,
+  startProductionForOrder,
+} from './spawner'
 
 const org1Id = '00000000-0000-0000-0000-000000000001'
 const org2Id = '00000000-0000-0000-0000-000000000002'
@@ -236,6 +241,32 @@ async function seedOrder(
   return { orderId, customerId, productId }
 }
 
+async function seedPaidInvoice(
+  orderId: string,
+  customerId: string,
+  orgId: string,
+) {
+  const now = new Date()
+  await db.insert(invoicesTable).values({
+    id: crypto.randomUUID(),
+    orgId,
+    invoiceNumber: `INV-${crypto.randomUUID()}`,
+    orderId,
+    customerId,
+    customerName: 'Test Customer',
+    status: 'paid',
+    percentage: 50,
+    subtotal: 10000,
+    total: 5000,
+    dueDate: '2026-06-01',
+    issuedDate: '2026-05-01',
+    paidAt: now,
+    paidBy: 'user-1',
+    createdAt: now,
+    updatedAt: now,
+  })
+}
+
 describe('order approval and task spawning', () => {
   it('approves a pending order', async () => {
     const { orderId } = await seedOrder(org1Id, 'pending')
@@ -359,6 +390,56 @@ describe('order approval and task spawning', () => {
       .where(eq(tasksTable.orderId, o2))
 
     expect(tasks2[0].taskNumber).toBe('TSK-2')
+  })
+
+  it('starts production for approved order with paid invoice', async () => {
+    const { orderId, customerId } = await seedOrder(org1Id, 'pending')
+    await approveOrder(orderId, org1Id, 'user-1')
+    await seedPaidInvoice(orderId, customerId, org1Id)
+
+    await startProductionForOrder(orderId, org1Id, 'user-1')
+
+    const orderRows = await db
+      .select()
+      .from(ordersTable)
+      .where(eq(ordersTable.id, orderId))
+      .limit(1)
+
+    expect(orderRows[0].status).toBe('in_progress')
+
+    const tasks = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.orderId, orderId))
+
+    expect(tasks).toHaveLength(1)
+    expect(tasks[0].board).toBe('pre_production')
+    expect(tasks[0].status).toBe('queued')
+    expect(tasks[0].stageId).toBeNull()
+  })
+
+  it('rejects start production without paid invoice', async () => {
+    const { orderId } = await seedOrder(org1Id, 'pending')
+    await approveOrder(orderId, org1Id, 'user-1')
+
+    await expect(
+      startProductionForOrder(orderId, org1Id, 'user-1'),
+    ).rejects.toThrow('At least one paid invoice is required to start production')
+  })
+
+  it('does not duplicate tasks on repeated spawnTasksForApprovedOrder calls', async () => {
+    const { orderId } = await seedOrder(org1Id, 'pending')
+    await approveOrder(orderId, org1Id, 'user-1')
+
+    await spawnTasksForApprovedOrder(orderId, org1Id)
+    await spawnTasksForApprovedOrder(orderId, org1Id)
+
+    const tasks = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.orderId, orderId))
+
+    expect(tasks).toHaveLength(1)
   })
 })
 

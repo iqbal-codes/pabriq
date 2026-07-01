@@ -699,6 +699,9 @@ export type Messages = {
     invoiceAmountRequired: string;
     completeProductionFailed: string;
     orderNumberLabel: string;
+    startOrderProduction: string;
+    productionStarted: string;
+    startProductionFailed: string;
   };
   portal: {
     title: string;
@@ -800,6 +803,89 @@ export type Messages = {
     invoiceViewAll: string;
     invoiceSummary: string;
     invoiceSummaryUnpaid: string;
+    // Shell + shared chrome
+    skipToContent: string;
+    orderPillLabel: string;
+
+    // Status hero + tracker
+    stageTrackerLabel: string;
+    stageAwaiting: string;
+    stageRemaining: string;
+    stageInProgress: string;
+    stageComplete: string;
+    stageCurrent: string;
+    stageUpcoming: string;
+    stagesUnknown: string;
+
+    // Loading + error states
+    loadingTitle: string;
+    loadingDescription: string;
+    notFoundTitle: string;
+    notFoundAction: string;
+
+    // Pending view
+    pendingHeroTitle: string;
+    pendingHeroSubtitle: string;
+    pendingStepsTitle: string;
+    pendingStepReview: string;
+    pendingStepApprove: string;
+    pendingStepConfirm: string;
+    pendingReceivedAt: string;
+
+    // Rejected view
+    rejectedHeroTitle: string;
+    rejectedHeroSubtitle: string;
+    rejectedReasonTitle: string;
+    rejectedReasonEmpty: string;
+    rejectedAffectedItems: string;
+    rejectedResubmitCta: string;
+
+    // Draft view (multi-step)
+    draftStepsTitle: string;
+    draftSubmitHelp: string;
+    draftStepCustomer: string;
+    draftStepShipping: string;
+    draftStepItems: string;
+    draftStepCustomerDesc: string;
+    draftStepShippingDesc: string;
+    draftStepItemsDesc: string;
+    draftStepComplete: string;
+    draftStepEmpty: string;
+    draftStepInProgress: string;
+    draftGuestShort: string;
+
+    // Progress view (status hero + obligations)
+    progressHeroLabel: string;
+    progressChecklistTitle: string;
+    obligationPayTitle: string;
+    obligationPayBody: string;
+    obligationNextTitle: string;
+    obligationNextProduction: string;
+    obligationNextDelivery: string;
+    obligationNextCompleted: string;
+    itemsSectionTitle: string;
+    itemsSectionDescription: string;
+    invoicesSectionTitle: string;
+    invoicesSectionDescription: string;
+    invoicePaidOn: string;
+    invoiceUnpaidNoDue: string;
+    invoiceDueLabel: string;
+    invoiceOverdueOn: string;
+    invoiceBankCopy: string;
+    invoiceBankCopied: string;
+    invoiceProofPending: string;
+    invoicePaymentInstructions: string;
+    invoiceShowAll: string;
+    invoiceShowLess: string;
+    itemTaskNumber: string;
+    itemDeadlineLabel: string;
+    itemProductionDaysInline: string;
+    itemShowTimeline: string;
+    itemHideTimeline: string;
+    itemAttachmentsLabel: string;
+    itemNoAttachments: string;
+    itemNoEvents: string;
+    rejectedNote: string;
   };
   assistant: {
     trigger: string;

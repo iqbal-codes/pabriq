@@ -14,6 +14,7 @@ const APPROVED_STATUSES = new Set([
 export type OrderDerivedState = {
   isApprovedOrLater: boolean
   canCreateInvoice: boolean
+  canStartProduction: boolean
   invoicedPct: number
   invoicedAmt: number
   remainingPct: number
@@ -65,7 +66,14 @@ export function useOrderDerivedState(params: {
     orderStatus === 'completed' ||
     orderStatus === 'cancelled' ||
     orderStatus === 'rejected'
-  const canCompleteOrder = allInvoicesPaid && !isTerminalOrder
+
+  const hasPaidInvoice = orderInvoices.some((inv) => inv.status === 'paid')
+  const hasProductionTasks = (tasksData?.length ?? 0) > 0
+  const canStartProduction =
+    orderStatus === 'approved' && hasPaidInvoice && !hasProductionTasks
+
+  const canCompleteOrder =
+    orderStatus === 'in_delivery' && allInvoicesPaid && totalInvoicedPct >= 100
   // Allow creating invoices only while the order is active and there is
   // remaining percentage left to invoice.
   const canCreateInvoice =
@@ -74,6 +82,7 @@ export function useOrderDerivedState(params: {
   return {
     isApprovedOrLater,
     canCreateInvoice,
+    canStartProduction,
     invoicedPct,
     invoicedAmt,
     remainingPct,
