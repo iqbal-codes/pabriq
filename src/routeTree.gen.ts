@@ -43,6 +43,7 @@ import { Route as OrgCustomersIdEditRouteImport } from './routes/_org/customers/
 import { Route as ApiDocumentsOrdersIdQuotationRouteImport } from './routes/api/documents/orders/$id/quotation'
 import { Route as ApiDocumentsInvoicesTokenTokenRouteImport } from './routes/api/documents/invoices/token/$token'
 import { Route as ApiDocumentsInvoicesIdPdfRouteImport } from './routes/api/documents/invoices/$id/pdf'
+import { Route as ApiDocumentsInvoicesPortalInvoiceIdTokenRouteImport } from './routes/api/documents/invoices/portal/$invoiceId/$token'
 
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
@@ -218,6 +219,12 @@ const ApiDocumentsInvoicesIdPdfRoute =
     path: '/api/documents/invoices/$id/pdf',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiDocumentsInvoicesPortalInvoiceIdTokenRoute =
+  ApiDocumentsInvoicesPortalInvoiceIdTokenRouteImport.update({
+    id: '/api/documents/invoices/portal/$invoiceId/$token',
+    path: '/api/documents/invoices/portal/$invoiceId/$token',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof OrgIndexRoute
@@ -253,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/api/documents/invoices/$id/pdf': typeof ApiDocumentsInvoicesIdPdfRoute
   '/api/documents/invoices/token/$token': typeof ApiDocumentsInvoicesTokenTokenRoute
   '/api/documents/orders/$id/quotation': typeof ApiDocumentsOrdersIdQuotationRoute
+  '/api/documents/invoices/portal/$invoiceId/$token': typeof ApiDocumentsInvoicesPortalInvoiceIdTokenRoute
 }
 export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
@@ -287,6 +295,7 @@ export interface FileRoutesByTo {
   '/api/documents/invoices/$id/pdf': typeof ApiDocumentsInvoicesIdPdfRoute
   '/api/documents/invoices/token/$token': typeof ApiDocumentsInvoicesTokenTokenRoute
   '/api/documents/orders/$id/quotation': typeof ApiDocumentsOrdersIdQuotationRoute
+  '/api/documents/invoices/portal/$invoiceId/$token': typeof ApiDocumentsInvoicesPortalInvoiceIdTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -324,6 +333,7 @@ export interface FileRoutesById {
   '/api/documents/invoices/$id/pdf': typeof ApiDocumentsInvoicesIdPdfRoute
   '/api/documents/invoices/token/$token': typeof ApiDocumentsInvoicesTokenTokenRoute
   '/api/documents/orders/$id/quotation': typeof ApiDocumentsOrdersIdQuotationRoute
+  '/api/documents/invoices/portal/$invoiceId/$token': typeof ApiDocumentsInvoicesPortalInvoiceIdTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -361,6 +371,7 @@ export interface FileRouteTypes {
     | '/api/documents/invoices/$id/pdf'
     | '/api/documents/invoices/token/$token'
     | '/api/documents/orders/$id/quotation'
+    | '/api/documents/invoices/portal/$invoiceId/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/onboarding'
@@ -395,6 +406,7 @@ export interface FileRouteTypes {
     | '/api/documents/invoices/$id/pdf'
     | '/api/documents/invoices/token/$token'
     | '/api/documents/orders/$id/quotation'
+    | '/api/documents/invoices/portal/$invoiceId/$token'
   id:
     | '__root__'
     | '/_org'
@@ -431,6 +443,7 @@ export interface FileRouteTypes {
     | '/api/documents/invoices/$id/pdf'
     | '/api/documents/invoices/token/$token'
     | '/api/documents/orders/$id/quotation'
+    | '/api/documents/invoices/portal/$invoiceId/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -444,6 +457,7 @@ export interface RootRouteChildren {
   ApiDocumentsInvoicesIdPdfRoute: typeof ApiDocumentsInvoicesIdPdfRoute
   ApiDocumentsInvoicesTokenTokenRoute: typeof ApiDocumentsInvoicesTokenTokenRoute
   ApiDocumentsOrdersIdQuotationRoute: typeof ApiDocumentsOrdersIdQuotationRoute
+  ApiDocumentsInvoicesPortalInvoiceIdTokenRoute: typeof ApiDocumentsInvoicesPortalInvoiceIdTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -686,6 +700,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDocumentsInvoicesIdPdfRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/documents/invoices/portal/$invoiceId/$token': {
+      id: '/api/documents/invoices/portal/$invoiceId/$token'
+      path: '/api/documents/invoices/portal/$invoiceId/$token'
+      fullPath: '/api/documents/invoices/portal/$invoiceId/$token'
+      preLoaderRoute: typeof ApiDocumentsInvoicesPortalInvoiceIdTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -765,6 +786,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiDocumentsInvoicesIdPdfRoute: ApiDocumentsInvoicesIdPdfRoute,
   ApiDocumentsInvoicesTokenTokenRoute: ApiDocumentsInvoicesTokenTokenRoute,
   ApiDocumentsOrdersIdQuotationRoute: ApiDocumentsOrdersIdQuotationRoute,
+  ApiDocumentsInvoicesPortalInvoiceIdTokenRoute:
+    ApiDocumentsInvoicesPortalInvoiceIdTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

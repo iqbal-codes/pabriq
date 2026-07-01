@@ -535,6 +535,15 @@ export type Messages = {
     noResults: string;
     createdAt: string;
     uploadFailed: string;
+    proofRemoved: string;
+    removeFailed: string;
+    submitPaymentProof: string;
+    resendPaymentProof: string;
+    paymentNote: string;
+    paymentNotePlaceholder: string;
+    submitProofSuccess: string;
+    submitProofFailed: string;
+    uploadFilesFirst: string;
     failed: string;
     orderLabel: string;
     alreadyInvoiced: string;
