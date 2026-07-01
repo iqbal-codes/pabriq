@@ -35,6 +35,7 @@ export function useOrderMutations({
       queryClient.invalidateQueries({
         queryKey: ['orders', 'detail', variables.id],
       })
+      queryClient.invalidateQueries({ queryKey: ['production'] })
     },
   })
 
@@ -55,8 +56,7 @@ export function useOrderMutations({
   const markInvoicePaid = useMarkInvoicePaid()
   const advanceOrderStatus = useAdvanceOrderStatus()
   const startProduction = useMutation({
-    mutationFn: (input: { id: string }) =>
-      startProductionFn({ data: input }),
+    mutationFn: (input: { id: string }) => startProductionFn({ data: input }),
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['orders', 'lists'] })
       queryClient.invalidateQueries({
@@ -65,7 +65,6 @@ export function useOrderMutations({
       queryClient.invalidateQueries({ queryKey: ['production'] })
     },
   })
-
 
   const handleCopyPortalLink = async () => {
     if (!data) return
@@ -131,7 +130,6 @@ export function useOrderMutations({
       toast.error(result.error ?? pt('startProductionFailed'))
     }
   }
-
 
   return {
     isGeneratingLink,

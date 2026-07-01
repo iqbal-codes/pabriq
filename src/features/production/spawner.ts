@@ -8,6 +8,7 @@ import {
   productionTasks as tasksTable,
 } from '#/db/schema'
 import { advanceOrderStatus, getOrder } from '#/features/orders/model'
+import { spawnQueuedPreProductionTasksForOrder } from '#/features/production/task-spawn-helpers'
 
 async function getProductPriorityMap(
   orgId: string,
@@ -34,93 +35,10 @@ export async function spawnTasksForApprovedOrder(
   orderId: string,
   orgId: string,
 ): Promise<void> {
-  const orderData = await getOrder(orderId, orgId)
-  if (!orderData) throw new Error('Order not found')
-
-  const { order, lineItems, customerName } = orderData
-  if (order.status !== 'approved' && order.status !== 'production') {
-    throw new Error('Order is not approved')
-  }
-  if (lineItems.length === 0) throw new Error('Order has no line items')
-
-  const [latestTask, productPriorityMap, existingTasks] = await Promise.all([
-    db
-      .select({ taskNumber: tasksTable.taskNumber })
-      .from(tasksTable)
-      .where(eq(tasksTable.orgId, orgId))
-      .orderBy(desc(tasksTable.createdAt), desc(tasksTable.id))
-      .limit(1),
-    getProductPriorityMap(orgId, [
-      ...new Set(lineItems.map((item) => item.productId)),
-    ]),
-    db
-      .select({ lineItemId: tasksTable.lineItemId })
-      .from(tasksTable)
-      .where(and(eq(tasksTable.orgId, orgId), eq(tasksTable.orderId, orderId))),
-  ])
-
-  const existingLineItemIds = new Set(
-    existingTasks
-      .map((t) => t.lineItemId)
-      .filter((id): id is string => id !== null),
-  )
-  const missingLineItems = lineItems.filter(
-    (item) => !existingLineItemIds.has(item.id),
-  )
-
-  if (missingLineItems.length === 0) return
-
-  let nextNum = latestTask[0]?.taskNumber
-    ? Number.parseInt(latestTask[0].taskNumber.split('-')[1], 10) + 1
-    : 1
-  const now = new Date()
-
-  const taskValues: (typeof tasksTable.$inferInsert)[] = []
-  const activityValues: (typeof activityTable.$inferInsert)[] = []
-
-  for (const item of missingLineItems) {
-    const id = crypto.randomUUID()
-    const taskNumber = `TSK-${nextNum}`
-    nextNum++
-    taskValues.push({
-      id,
-      orgId,
-      orderId,
-      board: 'pre_production',
-      stageId: null,
-      status: 'queued',
-      taskNumber,
-      lineItemId: item.id,
-      priority: productPriorityMap.get(item.productId) ?? false,
-      context: {
-        productName: item.name ?? '',
-        customerName: customerName ?? '',
-        requirements: item.notes ?? null,
-        orderNumber: order.orderNumber ?? '',
-        quantity: item.quantity ?? 1,
-      },
-      createdAt: now,
-      updatedAt: now,
-    })
-
-    activityValues.push({
-      id: crypto.randomUUID(),
-      orgId,
-      taskId: id,
-      type: 'stage_transition',
-      fromStageId: null,
-      toStageId: null,
-      data: {},
-      actorId: 'system',
-      createdAt: now,
-    })
-  }
-
-  await db.transaction(async (tx) => {
-    await Promise.all([
-      tx.insert(tasksTable).values(taskValues),
-      tx.insert(activityTable).values(activityValues),
-    ])
+  await spawnQueuedPreProductionTasksForOrder(db, {
+    orderId,
+    orgId,
+    allowedStatuses: ['approved', 'production'] as const,
   })
 }
 
@@ -175,6 +93,7 @@ export async function spawnProductionTasks(
         requirements: item.notes ?? null,
         orderNumber: order.orderNumber ?? '',
         quantity: item.quantity ?? 1,
+        deadline: item.deadline.toISOString(),
       },
       createdAt: now,
       updatedAt: now,

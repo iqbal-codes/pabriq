@@ -268,7 +268,7 @@ async function seedPaidInvoice(
 }
 
 describe('order approval and task spawning', () => {
-  it('approves a pending order', async () => {
+  it('approves a pending order and queues pre-production tasks before payment', async () => {
     const { orderId } = await seedOrder(org1Id, 'pending')
 
     await approveOrder(orderId, org1Id, 'user-1')
@@ -282,6 +282,44 @@ describe('order approval and task spawning', () => {
     expect(orderRows[0].status).toBe('approved')
     expect(orderRows[0].approvedAt).not.toBeNull()
     expect(orderRows[0].approvedBy).toBe('user-1')
+
+    const tasks = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.orderId, orderId))
+
+    expect(tasks).toHaveLength(1)
+    expect(tasks[0].board).toBe('pre_production')
+    expect(tasks[0].status).toBe('queued')
+    expect(tasks[0].stageId).toBeNull()
+    expect(tasks[0].orgId).toBe(org1Id)
+    expect(tasks[0].orderId).toBe(orderId)
+  })
+
+  it('rejects a non-pending order approval', async () => {
+    const { orderId } = await seedOrder(org1Id, 'draft')
+
+    await expect(approveOrder(orderId, org1Id, 'user-1')).rejects.toThrow(
+      'Only pending orders can be approved',
+    )
+  })
+
+  it('rejects approval of pending order with no line items and rolls back', async () => {
+    const { orderId } = await seedOrder(org1Id, 'pending')
+
+    await db.delete(lineItemsTable).where(eq(lineItemsTable.orderId, orderId))
+
+    await expect(approveOrder(orderId, org1Id, 'user-1')).rejects.toThrow(
+      'Order has no line items',
+    )
+
+    const orderRows = await db
+      .select({ status: ordersTable.status })
+      .from(ordersTable)
+      .where(eq(ordersTable.id, orderId))
+      .limit(1)
+
+    expect(orderRows[0].status).toBe('pending')
   })
 
   it('rejects a non-pending order approval', async () => {
@@ -528,6 +566,52 @@ describe('listBoardTasks', () => {
       'task-low-old',
       'task-low-new',
     ])
+  })
+
+  it('merges line item deadline into context.deadline', async () => {
+    const { orderId } = await seedOrder(org1Id)
+    const [lineItem] = await db
+      .select({
+        id: lineItemsTable.id,
+        deadline: lineItemsTable.deadline,
+      })
+      .from(lineItemsTable)
+      .where(eq(lineItemsTable.orderId, orderId))
+      .limit(1)
+    expect(lineItem).toBeDefined()
+    expect(lineItem?.deadline).toBeInstanceOf(Date)
+
+    await db.insert(tasksTable).values({
+      id: 'task-with-line-item-deadline',
+      orgId: org1Id,
+      orderId,
+      board: 'pre_production',
+      stageId: null,
+      status: 'queued',
+      taskNumber: 'TSK-DEADLINE',
+      lineItemId: lineItem.id,
+      priority: false,
+      context: {
+        productName: 'Deadline Merge Product',
+        customerName: 'Customer',
+        requirements: null,
+        orderNumber: 'ORD-DEADLINE',
+        quantity: 1,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const { queued } = await listBoardTasks(org1Id)
+    const task = queued.find(
+      (t) => t.task.id === 'task-with-line-item-deadline',
+    )
+    expect(task).toBeDefined()
+    const ctx = task?.task.context as Record<
+      string,
+      string | number | boolean | null
+    >
+    expect(ctx.deadline).toBe(lineItem.deadline.toISOString())
   })
 })
 

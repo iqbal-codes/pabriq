@@ -125,13 +125,13 @@ describe('useOrderDerivedState.canStartProduction', () => {
     expect(state.canStartProduction).toBe(false)
   })
 
-  it('is false for approved order with paid invoice and existing tasks', () => {
+  it('is true for approved order with paid invoice and existing tasks', () => {
     const state = derive(
       makeOrder('approved'),
       [makeInvoice('i1', 'paid', 50, 500_000)],
       [{ task: { status: 'queued' } }],
     )
-    expect(state.canStartProduction).toBe(false)
+    expect(state.canStartProduction).toBe(true)
   })
 })
 
