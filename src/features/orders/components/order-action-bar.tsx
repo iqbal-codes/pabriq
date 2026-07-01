@@ -1,4 +1,11 @@
-import { CheckCircle2, Link2, Printer, Truck, XCircle } from 'lucide-react'
+import {
+  CheckCircle2,
+  Factory,
+  Link2,
+  Printer,
+  Truck,
+  XCircle,
+} from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { Button } from '#/components/ui/button'
 import {
@@ -15,6 +22,9 @@ export function OrderActionBar({
   isApproving,
   onReject,
   isRejecting,
+  onStartProduction,
+  isStartingProduction,
+  canStartProduction,
   onCompleteProduction,
   onCompleteOrder,
   isCompletingOrder,
@@ -28,6 +38,9 @@ export function OrderActionBar({
   isApproving: boolean
   onReject: () => void
   isRejecting: boolean
+  onStartProduction: () => void
+  isStartingProduction: boolean
+  canStartProduction: boolean
   onCompleteProduction: () => void
   onCompleteOrder: () => void
   isCompletingOrder: boolean
@@ -91,6 +104,18 @@ export function OrderActionBar({
             {t('reject')}
           </Button>
         </>
+      )}
+
+      {canStartProduction && (
+        <Button
+          type="button"
+          size="sm"
+          onClick={onStartProduction}
+          disabled={isStartingProduction}
+        >
+          <Factory className="size-4" />
+          {pt('startOrderProduction')}
+        </Button>
       )}
 
       {canCompleteProduction && (

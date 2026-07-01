@@ -4,7 +4,11 @@ import { useTranslations } from 'use-intl'
 import { useMarkInvoicePaid } from '#/features/invoices/hooks'
 import { useAdvanceOrderStatus } from '#/features/orders/hooks'
 import type { GetOrderResult } from '#/features/orders/model'
-import { approveOrderFn, rejectOrderFn } from '#/features/orders/server'
+import {
+  approveOrderFn,
+  rejectOrderFn,
+  startProductionFn,
+} from '#/features/orders/server'
 import { useCopyOrderPortalLink } from './use-copy-order-portal-link'
 
 type UseOrderMutationsParams = {
@@ -22,6 +26,7 @@ export function useOrderMutations({
   const t = useTranslations('orders')
   const ct = useTranslations('common')
   const it = useTranslations('invoices')
+  const pt = useTranslations('production')
 
   const approveOrder = useMutation({
     mutationFn: (input: { id: string }) => approveOrderFn({ data: input }),
@@ -30,6 +35,7 @@ export function useOrderMutations({
       queryClient.invalidateQueries({
         queryKey: ['orders', 'detail', variables.id],
       })
+      queryClient.invalidateQueries({ queryKey: ['production'] })
     },
   })
 
@@ -49,6 +55,16 @@ export function useOrderMutations({
 
   const markInvoicePaid = useMarkInvoicePaid()
   const advanceOrderStatus = useAdvanceOrderStatus()
+  const startProduction = useMutation({
+    mutationFn: (input: { id: string }) => startProductionFn({ data: input }),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['orders', 'lists'] })
+      queryClient.invalidateQueries({
+        queryKey: ['orders', 'detail', variables.id],
+      })
+      queryClient.invalidateQueries({ queryKey: ['production'] })
+    },
+  })
 
   const handleCopyPortalLink = async () => {
     if (!data) return
@@ -103,16 +119,30 @@ export function useOrderMutations({
     }
   }
 
+  const handleStartProduction = async () => {
+    if (!data) return
+    const result = await startProduction.mutateAsync({
+      id: data.order.id,
+    })
+    if (result.ok) {
+      toast.success(pt('productionStarted'))
+    } else {
+      toast.error(result.error ?? pt('startProductionFailed'))
+    }
+  }
+
   return {
     isGeneratingLink,
     isApproving: approveOrder.isPending,
     isRejecting: rejectOrder.isPending,
     isMarkingPaid: markInvoicePaid.isPending,
     isCompletingOrder: advanceOrderStatus.isPending,
+    isStartingProduction: startProduction.isPending,
     handleCopyPortalLink,
     handleApprove,
     handleReject,
     handleMarkInvoicePaid,
     handleCompleteOrder,
+    handleStartProduction,
   }
 }

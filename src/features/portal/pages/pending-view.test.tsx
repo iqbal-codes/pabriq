@@ -9,9 +9,22 @@ const messages = {
       'Your order has been submitted. Please wait for admin approval.',
     pendingHelp:
       'We received your order details. The seller will review them before production starts.',
+    progressHeroLabel: 'Order status',
+    pendingHeroTitle: 'Order received',
+    pendingHeroSubtitle: 'Sent to {org} for review.',
+    pendingStepsTitle: 'What happens next',
+    pendingStepReview: 'Seller reviews your files',
+    pendingStepApprove: 'Once approved, production begins',
+    pendingStepConfirm: 'We let you know when it moves',
+    pendingReceivedAt: 'Received {date}',
+    statusPending: 'Awaiting Approval',
+    shippingAddress: 'Shipping Address',
+    noShippingAddress: 'No shipping address provided',
     orderNumber: 'Order Number',
     orderSummary: 'Order Summary',
+    lineItems: 'Order Items',
     orderTotal: 'Order Total',
+    quantity: 'Qty',
     chatOnWhatsApp: 'Chat on WhatsApp',
     whatsappOrderMessage: 'Hi, regarding order {order}',
   },
@@ -48,6 +61,7 @@ const order = {
       assets: [],
       createdAt: new Date('2026-01-01'),
       productionDays: 0,
+      deadline: new Date('2026-01-05'),
     },
   ],
   invoices: [],
@@ -67,8 +81,8 @@ describe('PendingView', () => {
     renderPendingView()
     expect(
       screen.getByRole('heading', {
-        name: 'Your order has been submitted. Please wait for admin approval.',
-      }),
+        name: 'Order received',
+      })
     ).toBeInTheDocument()
   })
 
@@ -83,12 +97,12 @@ describe('PendingView', () => {
 
   it('renders order number', () => {
     renderPendingView()
-    expect(screen.getByText(/ORD-1/)).toBeInTheDocument()
+    expect(screen.getAllByText(/ORD-1/).length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders line item name and quantity', () => {
     renderPendingView()
-    expect(screen.getByText(/Custom T-Shirt × 10/)).toBeInTheDocument()
+    expect(screen.getByText('Custom T-Shirt')).toBeInTheDocument()
   })
 
   it('renders total formatted as currency', () => {

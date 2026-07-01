@@ -1,6 +1,6 @@
 import { useStore } from '@tanstack/react-form'
 import { useNavigate, useRouteContext } from '@tanstack/react-router'
-import { Copy, Link2 } from 'lucide-react'
+import { Copy } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
@@ -21,7 +21,6 @@ import { useCustomersList } from '#/features/customers/hooks'
 import { OrderFormFields } from '#/features/orders/components/order-form-fields'
 import { defaultOrderValues } from '#/features/orders/components/order-form-types'
 import { useCreateDraftOrder } from '#/features/orders/hooks'
-import { useGenerateOrderToken } from '#/features/portal/hooks'
 import { useProductsList } from '#/features/products/hooks'
 
 const currencyFormatter = new Intl.NumberFormat('en-ID', {
@@ -39,7 +38,6 @@ export function CreateOrderPage() {
   const pt = useTranslations('portal')
   const ct = useTranslations('common')
   const createOrder = useCreateDraftOrder()
-  const generateToken = useGenerateOrderToken()
   const { data: customersData } = useCustomersList({ orgId: ctx.org.id })
   const { data: productsData } = useProductsList({ orgId: ctx.org.id })
   const customers = customersData?.rows ?? []
@@ -52,7 +50,6 @@ export function CreateOrderPage() {
     total: number
   } | null>(null)
   const [portalUrl, setPortalUrl] = useState<string | null>(null)
-  const [isGeneratingLink, setIsGeneratingLink] = useState(false)
 
   const form = useAppForm({
     defaultValues: defaultOrderValues(),
@@ -81,25 +78,14 @@ export function CreateOrderPage() {
         customerName: customer?.name ?? t('guestCustomer'),
         total: result.order.total,
       })
+      if (result.order.orderToken) {
+        setPortalUrl(
+          `${window.location.origin}/order/${result.order.orderToken}`,
+        )
+      }
       setConfirmationOpen(true)
     },
   })
-
-  const handleGenerateLink = async () => {
-    if (!createdOrder) return
-    setIsGeneratingLink(true)
-    try {
-      const result = await generateToken.mutateAsync({
-        orderId: createdOrder.id,
-      })
-      if (result.ok) {
-        const url = `${window.location.origin}/order/${result.token}`
-        setPortalUrl(url)
-      }
-    } finally {
-      setIsGeneratingLink(false)
-    }
-  }
 
   const handleCopyLink = () => {
     if (portalUrl) {
@@ -152,26 +138,16 @@ export function CreateOrderPage() {
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="mt-4 space-y-4">
-            {!portalUrl ? (
-              <Button
-                variant="outline"
-                onClick={handleGenerateLink}
-                disabled={isGeneratingLink}
-                className="w-full"
-              >
-                <Link2 className="mr-2 size-4" />
-                {t('generateLink')}
-              </Button>
-            ) : (
+          {portalUrl && (
+            <div className="mt-4 space-y-4">
               <div className="flex gap-2">
                 <Input value={portalUrl} readOnly className="flex-1" />
                 <Button onClick={handleCopyLink} variant="outline" size="icon">
                   <Copy className="size-4" />
                 </Button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
           <AlertDialogFooter>
             <Button variant="outline" onClick={handleDismiss}>
               {ct('close')}

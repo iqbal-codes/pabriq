@@ -20,6 +20,7 @@ import {
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
+import { spawnQueuedPreProductionTasksForOrder } from '#/features/production/task-spawn-helpers'
 import { listBreakpoints } from '#/features/products/model'
 import { addWorkingDays } from '#/lib/date-utils'
 
@@ -490,6 +491,7 @@ export async function createDraftOrder(
   const orderTotal = items.reduce((sum, i) => sum + i.total, 0)
   const orderNumber = await generateOrderNumber(orgId)
   const validUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+  const orderToken = crypto.randomUUID().replace(/-/g, '').slice(0, 32)
 
   await db.insert(ordersTable).values({
     id: orderId,
@@ -499,6 +501,7 @@ export async function createDraftOrder(
     notes: input.notes ?? null,
     total: orderTotal,
     orderNumber,
+    orderToken,
     validUntil,
     createdAt: now,
     updatedAt: now,
@@ -517,7 +520,7 @@ export async function createDraftOrder(
       notes: input.notes ?? null,
       total: orderTotal,
       orderNumber,
-      orderToken: null,
+      orderToken,
       validUntil,
       approvedAt: null,
       approvedBy: null,
@@ -663,26 +666,34 @@ export async function approveOrder(
   orgId: string,
   approvedBy: string,
 ): Promise<void> {
-  const orderRows = await db
-    .select()
-    .from(ordersTable)
-    .where(and(eq(ordersTable.id, id), eq(ordersTable.orgId, orgId)))
-    .limit(1)
+  await db.transaction(async (tx) => {
+    const orderRows = await tx
+      .select({ id: ordersTable.id, status: ordersTable.status })
+      .from(ordersTable)
+      .where(and(eq(ordersTable.id, id), eq(ordersTable.orgId, orgId)))
+      .limit(1)
 
-  if (orderRows.length === 0) throw new Error('Order not found')
-  if (orderRows[0].status !== 'pending')
-    throw new Error('Only pending orders can be approved')
+    if (orderRows.length === 0) throw new Error('Order not found')
+    if (orderRows[0].status !== 'pending')
+      throw new Error('Only pending orders can be approved')
 
-  const now = new Date()
-  await db
-    .update(ordersTable)
-    .set({
-      status: 'approved',
-      approvedAt: now,
-      approvedBy,
-      updatedAt: now,
+    const now = new Date()
+    await tx
+      .update(ordersTable)
+      .set({
+        status: 'approved',
+        approvedAt: now,
+        approvedBy,
+        updatedAt: now,
+      })
+      .where(and(eq(ordersTable.id, id), eq(ordersTable.orgId, orgId)))
+
+    await spawnQueuedPreProductionTasksForOrder(tx, {
+      orderId: id,
+      orgId,
+      allowedStatuses: ['approved'] as const,
     })
-    .where(eq(ordersTable.id, id))
+  })
 }
 
 export async function rejectOrder(

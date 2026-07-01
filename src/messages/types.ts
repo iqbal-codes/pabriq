@@ -226,6 +226,7 @@ export type Messages = {
     addToOrder: string;
     lineSubtotal: string;
     maxQtyError: string;
+    minQtyError: string;
     phone: string;
     email: string;
     copyOrderLink: string;
@@ -535,6 +536,15 @@ export type Messages = {
     noResults: string;
     createdAt: string;
     uploadFailed: string;
+    proofRemoved: string;
+    removeFailed: string;
+    submitPaymentProof: string;
+    resendPaymentProof: string;
+    paymentNote: string;
+    paymentNotePlaceholder: string;
+    submitProofSuccess: string;
+    submitProofFailed: string;
+    uploadFilesFirst: string;
     failed: string;
     orderLabel: string;
     alreadyInvoiced: string;
@@ -646,6 +656,11 @@ export type Messages = {
     customerLabel: string;
     quantityLabel: string;
     priorityBadge: string;
+    deadlineToday: string;
+    deadlineTomorrow: string;
+    deadlineDaysLeft: string;
+    deadlineDaysOverdue: string;
+    deadlineLabel: string;
     taskCreated: string;
     noActivity: string;
     tabActive: string;
@@ -690,6 +705,9 @@ export type Messages = {
     invoiceAmountRequired: string;
     completeProductionFailed: string;
     orderNumberLabel: string;
+    startOrderProduction: string;
+    productionStarted: string;
+    startProductionFailed: string;
   };
   portal: {
     title: string;
@@ -725,7 +743,6 @@ export type Messages = {
     chatOnWhatsApp: string;
     confirmFailed: string;
     notFound: string;
-    completedThanks: string;
     statusDraft: string;
     statusPending: string;
     statusApproved: string;
@@ -761,6 +778,120 @@ export type Messages = {
     timelineCompleted: string;
     timelineTransition: string;
     timelineStageFallback: string;
+    timelineProductionComplete: string;
+    timelineBoardTransition: string;
+    timelineStatusInProgress: string;
+    timelineStatusCompleted: string;
+    timelineStatusWaitingApproval: string;
+
+    progressOverview: string;
+    progressStatusApprovedHelp: string;
+    progressStatusProductionHelp: string;
+    progressStatusDeliveryHelp: string;
+    progressStatusCompletedHelp: string;
+    progressStatusFallbackHelp: string;
+    nextStep: string;
+    nextStepPayment: string;
+    nextStepProduction: string;
+    nextStepDelivery: string;
+    nextStepCompleted: string;
+    estimatedCompletionLabel: string;
+    estimatedCompletionUnavailable: string;
+    paymentSummary: string;
+    paymentSummaryNoInvoice: string;
+    paymentSummaryUnpaid: string;
+    paymentSummaryAllPaid: string;
+    lineItemsHelp: string;
+    productionDaysLabel: string;
+    invoiceDialogTitle: string;
+    invoiceDialogEmpty: string;
+    invoiceShipmentFee: string;
+    invoiceViewAll: string;
+    invoiceSummary: string;
+    invoiceSummaryUnpaid: string;
+    // Shell + shared chrome
+    skipToContent: string;
+    orderPillLabel: string;
+
+    // Status hero + tracker
+    stageTrackerLabel: string;
+    stageAwaiting: string;
+    stageRemaining: string;
+    stageInProgress: string;
+    stageComplete: string;
+    stageCurrent: string;
+    stageUpcoming: string;
+    stagesUnknown: string;
+
+    // Loading + error states
+    loadingTitle: string;
+    loadingDescription: string;
+    notFoundTitle: string;
+    notFoundAction: string;
+
+    // Pending view
+    pendingHeroTitle: string;
+    pendingHeroSubtitle: string;
+    pendingStepsTitle: string;
+    pendingStepReview: string;
+    pendingStepApprove: string;
+    pendingStepConfirm: string;
+    pendingReceivedAt: string;
+
+    // Rejected view
+    rejectedHeroTitle: string;
+    rejectedHeroSubtitle: string;
+    rejectedReasonTitle: string;
+    rejectedReasonEmpty: string;
+    rejectedAffectedItems: string;
+    rejectedResubmitCta: string;
+
+    // Draft view (multi-step)
+    draftStepsTitle: string;
+    draftSubmitHelp: string;
+    draftStepCustomer: string;
+    draftStepShipping: string;
+    draftStepItems: string;
+    draftStepCustomerDesc: string;
+    draftStepShippingDesc: string;
+    draftStepItemsDesc: string;
+    draftStepComplete: string;
+    draftStepEmpty: string;
+    draftStepInProgress: string;
+    draftGuestShort: string;
+
+    // Progress view (status hero + obligations)
+    progressHeroLabel: string;
+    progressChecklistTitle: string;
+    obligationPayTitle: string;
+    obligationPayBody: string;
+    obligationNextTitle: string;
+    obligationNextProduction: string;
+    obligationNextDelivery: string;
+    obligationNextCompleted: string;
+    itemsSectionTitle: string;
+    itemsSectionDescription: string;
+    invoicesSectionTitle: string;
+    invoicesSectionDescription: string;
+    invoicePaidOn: string;
+    invoiceUnpaidNoDue: string;
+    invoiceDueLabel: string;
+    invoiceOverdueOn: string;
+    invoiceBankCopy: string;
+    invoiceBankCopied: string;
+    invoiceProofPending: string;
+    invoicePaymentInstructions: string;
+    invoiceShowAll: string;
+    invoiceShowLess: string;
+    itemTaskNumber: string;
+    itemDeadlineLabel: string;
+    itemProductionDaysInline: string;
+    itemShowTimeline: string;
+    itemHideTimeline: string;
+    itemAttachmentsLabel: string;
+    itemNoAttachments: string;
+    itemNoEvents: string;
+    rejectedNote: string;
   };
   assistant: {
     trigger: string;

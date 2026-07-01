@@ -71,21 +71,16 @@ export const getAssetsForLineItemFn = createServerFn({ method: 'GET' })
 export const approveOrderFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
-    const [orgId, { auth }, { approveOrder }, { spawnTasksForApprovedOrder }] =
-      await Promise.all([
-        resolveOrgId(),
-        import('#/lib/auth'),
-        import('./model'),
-        import('#/features/production/spawner'),
-      ])
+    const [orgId, { auth }, { approveOrder }] = await Promise.all([
+      resolveOrgId(),
+      import('#/lib/auth'),
+      import('./model'),
+    ])
     const headers = getRequestHeaders()
     const session = await auth.api.getSession({ headers })
     const userId = session?.user.id ?? 'unknown'
     try {
-      await Promise.all([
-        approveOrder(data.id, orgId, userId),
-        spawnTasksForApprovedOrder(data.id, orgId),
-      ])
+      await approveOrder(data.id, orgId, userId)
       return { ok: true }
     } catch (e) {
       return {
@@ -316,4 +311,26 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
     })
 
     return { ok: true }
+  })
+
+export const startProductionFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ data }): Promise<MutationResult> => {
+    const [orgId, { auth }, { startProductionForOrder }] = await Promise.all([
+      resolveOrgId(),
+      import('#/lib/auth'),
+      import('#/features/production/spawner'),
+    ])
+    const headers = getRequestHeaders()
+    const session = await auth.api.getSession({ headers })
+    const userId = session?.user.id ?? 'unknown'
+    try {
+      await startProductionForOrder(data.id, orgId, userId)
+      return { ok: true }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
   })

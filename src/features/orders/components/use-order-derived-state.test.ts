@@ -60,9 +60,10 @@ function makeInvoice(
 function derive(
   data: GetOrderResult | null | undefined,
   orderInvoices: InvoiceRow[],
+  tasksData?: Array<{ task: { status: string } }>,
 ) {
   return renderHook(() =>
-    useOrderDerivedState({ data, orderInvoices, tasksData: [] }),
+    useOrderDerivedState({ data, orderInvoices, tasksData: tasksData ?? [] }),
   ).result.current
 }
 
@@ -106,5 +107,48 @@ describe('useOrderDerivedState.canCreateInvoice', () => {
   it('is false for a draft order', () => {
     const state = derive(makeOrder('draft'), [])
     expect(state.canCreateInvoice).toBe(false)
+  })
+})
+
+describe('useOrderDerivedState.canStartProduction', () => {
+  it('is true for approved order with paid invoice and no tasks', () => {
+    const state = derive(
+      makeOrder('approved'),
+      [makeInvoice('i1', 'paid', 50, 500_000)],
+      [],
+    )
+    expect(state.canStartProduction).toBe(true)
+  })
+
+  it('is false for approved order with no paid invoice', () => {
+    const state = derive(makeOrder('approved'), [])
+    expect(state.canStartProduction).toBe(false)
+  })
+
+  it('is true for approved order with paid invoice and existing tasks', () => {
+    const state = derive(
+      makeOrder('approved'),
+      [makeInvoice('i1', 'paid', 50, 500_000)],
+      [{ task: { status: 'queued' } }],
+    )
+    expect(state.canStartProduction).toBe(true)
+  })
+})
+
+describe('useOrderDerivedState.canCompleteOrder', () => {
+  it('is false for approved order with one paid 50% invoice', () => {
+    const state = derive(
+      makeOrder('approved'),
+      [makeInvoice('i1', 'paid', 50, 500_000)],
+    )
+    expect(state.canCompleteOrder).toBe(false)
+  })
+
+  it('is true for in_delivery order with one paid 100% invoice', () => {
+    const state = derive(
+      makeOrder('in_delivery'),
+      [makeInvoice('i1', 'paid', 100, 1_000_000)],
+    )
+    expect(state.canCompleteOrder).toBe(true)
   })
 })

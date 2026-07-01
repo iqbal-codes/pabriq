@@ -1,6 +1,7 @@
 import { MessageCircle } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { Button } from '#/components/ui/button'
+import { cn } from '#/lib/utils'
 import type { PortalOrder } from '../model'
 
 type PortalContactButtonProps = {
@@ -24,9 +25,9 @@ export function PortalContactButton({
   )}`
 
   return (
-    <Button asChild variant="outline" className={className}>
+    <Button asChild variant="outline" className={cn('gap-2', className)}>
       <a href={waUrl} target="_blank" rel="noopener noreferrer">
-        <MessageCircle className="mr-2 size-4" />
+        <MessageCircle className="size-4" />
         {label === 'chatOnWhatsApp' ? t('chatOnWhatsApp') : t('contactAdmin')}
       </a>
     </Button>

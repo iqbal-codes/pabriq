@@ -116,6 +116,9 @@ export function ViewOrderPage() {
         isApproving={mutations.isApproving}
         onReject={() => setRejectDialogOpen(true)}
         isRejecting={mutations.isRejecting}
+        onStartProduction={mutations.handleStartProduction}
+        isStartingProduction={mutations.isStartingProduction}
+        canStartProduction={derived.canStartProduction}
         onCompleteProduction={() => setCompleteProductionModalOpen(true)}
         onCompleteOrder={mutations.handleCompleteOrder}
         isCompletingOrder={mutations.isCompletingOrder}

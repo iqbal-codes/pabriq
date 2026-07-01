@@ -4,37 +4,66 @@ import type { PortalOrder } from '../model'
 
 export function PortalOrderSummary({
   order,
+  className,
 }: {
-  order: Pick<PortalOrder, 'lineItems' | 'total'>
+  order: Pick<PortalOrder, 'lineItems' | 'total' | 'orderNumber'>
+  className?: string
 }) {
   const t = useTranslations('portal')
   const locale = useLocale()
 
+  if (order.lineItems.length === 0) return null
+
   return (
-    <div className="border-t border-border pt-6 text-left">
-      <h2 className="mb-4 text-sm font-medium text-card-foreground">
-        {t('orderSummary')}
-      </h2>
-      <div className="space-y-3">
+    <section
+      aria-labelledby="portal-order-summary-title"
+      className={className}
+    >
+      <header className="flex items-baseline justify-between gap-3 border-b border-border pb-2">
+        <h2
+          id="portal-order-summary-title"
+          className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+        >
+          {t('orderSummary')}
+        </h2>
+        {order.orderNumber ? (
+          <span className="font-mono text-xs text-muted-foreground">
+            {order.orderNumber}
+          </span>
+        ) : null}
+      </header>
+      <dl className="divide-y divide-border">
         {order.lineItems.map((item) => (
-          <div key={item.id} className="flex justify-between text-sm">
-            <span className="text-card-foreground">
-              {item.name || item.productName} × {item.quantity}
-            </span>
-            <span className="font-medium text-card-foreground">
+          <div
+            key={item.id}
+            className="flex items-baseline justify-between gap-4 py-2.5"
+          >
+            <div className="min-w-0">
+              <dt className="truncate text-sm font-medium text-foreground">
+                {item.name || item.productName}
+              </dt>
+              <dd className="mt-0.5 text-xs text-muted-foreground">
+                <span className="tabular-nums">{item.quantity}</span>
+                {' × '}
+                <span className="tabular-nums">
+                  {formatCurrency(item.unitPrice, locale)}
+                </span>
+              </dd>
+            </div>
+            <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
               {formatCurrency(item.total, locale)}
             </span>
           </div>
         ))}
-      </div>
-      <div className="mt-4 flex justify-between border-t border-border pt-4">
-        <span className="font-medium text-card-foreground">
+      </dl>
+      <div className="flex items-baseline justify-between gap-4 border-t border-border pt-3">
+        <span className="text-sm font-medium text-muted-foreground">
           {t('orderTotal')}
         </span>
-        <span className="font-semibold text-card-foreground">
+        <span className="text-base font-semibold tabular-nums text-foreground">
           {formatCurrency(order.total, locale)}
         </span>
       </div>
-    </div>
+    </section>
   )
 }

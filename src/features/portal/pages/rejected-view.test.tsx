@@ -1,17 +1,27 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { IntlProvider } from 'use-intl'
 import { describe, expect, it } from 'vitest'
 import { RejectedView } from './rejected-view'
 
 const messages = {
   portal: {
-    rejectedTitle: 'Order Rejected',
-    rejectedHelp:
-      'Contact the seller to revise the order or confirm the next step.',
-    orderSummary: 'Order Summary',
-    orderTotal: 'Order Total',
+    progressHeroLabel: 'Order status',
+    rejectedHeroTitle: 'This order needs revision',
+    rejectedHeroSubtitle: 'Use the note below to fix and resubmit.',
+    rejectedReasonTitle: 'Reason from the seller',
+    rejectedReasonEmpty: 'No reason provided.',
+    rejectedAffectedItems: 'Affected items',
+    rejectedNote: 'Reason: {note}',
+    rejectedHelp: 'Contact the seller to revise the order or confirm the next step.',
+    rejectedResubmitCta: 'Discuss with the seller',
+    retry: 'Retry',
     contactAdmin: 'Contact Admin via WhatsApp',
     whatsappOrderMessage: 'Hi, regarding order {order}',
+    orderSummary: 'Order Summary',
+    orderTotal: 'Order Total',
+    shippingAddress: 'Shipping Address',
+    noShippingAddress: 'No shipping address provided',
+    quantity: 'Qty',
   },
 }
 
@@ -46,6 +56,7 @@ const order = {
       assets: [],
       createdAt: new Date('2026-01-01'),
       productionDays: 0,
+      deadline: new Date('2026-01-05'),
     },
   ],
   invoices: [],
@@ -64,9 +75,9 @@ function renderRejectedView(o = order) {
 describe('RejectedView', () => {
   it('renders the rejected title', () => {
     renderRejectedView()
-    expect(screen.getAllByText('Order Rejected').length).toBeGreaterThanOrEqual(
-      1,
-    )
+    expect(
+      screen.getByRole('heading', { name: 'This order needs revision' }),
+    ).toBeInTheDocument()
   })
 
   it('renders the reject reason', () => {
@@ -85,7 +96,8 @@ describe('RejectedView', () => {
 
   it('renders line item name and quantity', () => {
     renderRejectedView()
-    expect(screen.getByText('Custom T-Shirt × 10')).toBeInTheDocument()
+    const list = screen.getByRole('list')
+    expect(within(list).getByText('Custom T-Shirt')).toBeInTheDocument()
   })
 
   it('renders formatted total', () => {
@@ -111,8 +123,8 @@ describe('RejectedView', () => {
     renderRejectedView(orderWithoutReason as typeof order)
     expect(screen.queryByText('Artwork is blurry')).not.toBeInTheDocument()
     // Title should still render
-    expect(screen.getAllByText('Order Rejected').length).toBeGreaterThanOrEqual(
-      1,
-    )
+    expect(
+      screen.getByRole('heading', { name: 'This order needs revision' }),
+    ).toBeInTheDocument()
   })
 })
