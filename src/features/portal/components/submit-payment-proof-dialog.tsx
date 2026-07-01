@@ -16,11 +16,8 @@ import {
 import { Textarea } from '#/components/ui/textarea'
 import type { UploadItem } from '#/features/assets/upload-machine'
 import {
-  portalGetInvoiceUploadUrlFn,
-  portalSubmitPaymentFn,
-  submitPaymentProofFn,
+  portalGetInvoiceUploadUrlFn, submitPaymentProofFn,
 } from '#/features/portal/server'
-
 type Props = {
   invoiceId: string
   token: string
@@ -33,7 +30,6 @@ export function SubmitPaymentProofDialog({ invoiceId, token, hasExistingProof }:
   const [open, setOpen] = useState(false)
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([])
   const [reference, setReference] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const uploadedAssetIds = useRef<string[]>([])
 
   // Reset state when dialog closes
@@ -122,28 +118,11 @@ export function SubmitPaymentProofDialog({ invoiceId, token, hasExistingProof }:
       toast.error(t('uploadFilesFirst'))
       return
     }
-
-    setIsSubmitting(true)
-    try {
-      const result = await portalSubmitPaymentFn({
-        data: {
-          token,
-          invoiceId,
-          reference: reference.trim() || null,
-          assetIds: uploadedAssetIds.current,
-        },
-      })
-
-      if (!result.ok) throw new Error(result.error)
-
-      toast.success(t('submitProofSuccess'))
-      handleOpenChange(false)
-      await router.invalidate()
-    } catch (_err) {
-      toast.error(t('submitProofFailed'))
-    } finally {
-      setIsSubmitting(false)
-    }
+    // The adapter already called submitPaymentProofFn per-asset during upload.
+    // Invalidate the route so the parent re-fetches with updated invoice state.
+    handleOpenChange(false)
+    toast.success(t('submitProofSuccess'))
+    await router.invalidate()
   }
 
   return (
@@ -203,15 +182,15 @@ export function SubmitPaymentProofDialog({ invoiceId, token, hasExistingProof }:
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}
-            disabled={isSubmitting}
+            disabled={false}
           >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!hasUploads || isUploading || isSubmitting}
+            disabled={!hasUploads || isUploading}
           >
-            {isSubmitting ? t('pendingConfirmation') : t('submitPaymentProof')}
+            {t('submitPaymentProof')}
           </Button>
         </DialogFooter>
       </DialogContent>

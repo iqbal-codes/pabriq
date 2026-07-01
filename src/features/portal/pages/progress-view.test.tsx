@@ -18,13 +18,12 @@ vi.mock('../hooks', () => ({
 
 const messages = {
   portal: {
-    estimatedCompletion: 'Estimasi selesai: {date}',
     orderSummary: 'Ringkasan Pesanan',
     lineItems: 'Item',
     orderTotal: 'Total',
     completedThanks: 'Terima kasih',
     noStageTransitions: 'Belum ada perpindahan tahap',
-    taskTimeline: 'Linimasa Tugas',
+    taskTimeline: 'Timeline Tugas',
     notes: 'Catatan',
     attachment: 'Lampiran',
     currentStage: 'Tahap Saat Ini',
@@ -32,7 +31,7 @@ const messages = {
     progressStatusApprovedHelp:
       'Pesanan Anda sudah disetujui. Penjual sedang menyiapkannya untuk produksi.',
     progressStatusProductionHelp:
-      'Pesanan Anda sedang diproduksi. Buka setiap item untuk melihat linimasa tahap, catatan, dan lampiran.',
+      'Pesanan Anda sedang diproduksi. Buka setiap item untuk melihat timeline tahap, catatan, dan lampiran.',
     progressStatusDeliveryHelp:
       'Pesanan Anda sedang dikirim atau disiapkan untuk serah terima.',
     progressStatusCompletedHelp:
@@ -47,6 +46,7 @@ const messages = {
     nextStepDelivery: 'Tunggu informasi serah terima pengiriman dari penjual.',
     nextStepCompleted: 'Simpan halaman ini sebagai catatan pesanan Anda.',
     estimatedCompletionLabel: 'Estimasi selesai',
+    completedOnLabel: 'Selesai pada',
     estimatedCompletionUnavailable: 'Belum ada estimasi selesai',
     activeStages: 'Tahap aktif',
     activeStagesEmpty: 'Belum ada tahap produksi aktif',
@@ -60,7 +60,7 @@ const messages = {
     paymentSummaryUnpaid:
       '{count, plural, one {# invoice belum dibayar} other {# invoice belum dibayar}} · {amount}',
     paymentSummaryAllPaid: 'Semua invoice telah dibayar',
-    lineItemsHelp: 'Buka item untuk melihat linimasa, catatan, dan lampiran.',
+    lineItemsHelp: 'Buka item untuk melihat timeline, catatan, dan lampiran.',
     productionDaysLabel:
       '{days, plural, one {# hari produksi} other {# hari produksi}}',
     chatOnWhatsApp: 'Chat via WhatsApp',
@@ -71,6 +71,42 @@ const messages = {
     invoiceViewAll: 'Lihat semua invoice',
     invoiceSummary: '{count} invoice · {amount}',
     invoiceSummaryUnpaid: '{count} belum dibayar · {amount}',
+    progressHeroLabel: 'Status pesanan',
+    progressChecklistTitle: 'Yang perlu Anda perhatikan',
+    obligationPayTitle: 'Selesaikan invoice yang belum dibayar',
+    obligationPayBody: '{count} invoice menunggu bukti pembayaran Anda',
+    obligationNextTitle: 'Selanjutnya',
+    itemsSectionTitle: 'Item dalam pesanan',
+    itemsSectionDescription: 'Setiap item menampilkan timeline, catatan, dan lampiran.',
+    itemTaskNumber: 'Tugas',
+    itemShowTimeline: 'Lihat timeline',
+    itemHideTimeline: 'Sembunyikan timeline',
+    itemProductionDaysInline: 'Produksi {days} hari',
+    itemDeadlineLabel: 'Deadline {date}',
+    itemAttachmentsLabel: 'Lampiran',
+    itemNoEvents: 'Belum ada pembaruan tahap',
+    shippingAddress: 'Alamat Pengiriman',
+    noShippingAddress: 'Belum ada alamat pengiriman',
+    customerInfo: 'Informasi Pelanggan',
+    quantity: 'Jml',
+    itemName: 'Nama Item',
+    itemNamePlaceholder: 'Masukkan nama item',
+    itemNotes: 'Catatan',
+    itemNotesPlaceholder: 'Tambahkan catatan',
+    invoiceShowAll: 'Lihat semua ({count})',
+    invoiceShowLess: 'Sembunyikan',
+    invoicePaidOn: 'Lunas',
+    invoiceUnpaidNoDue: 'Belum dibayar',
+    invoiceDueLabel: 'Jatuh tempo {date}',
+    invoiceOverdueOn: 'Terlambat {date}',
+    invoiceBankCopy: 'Salin nomor rekening',
+    invoiceBankCopied: 'Tersalin',
+    invoiceProofPending: 'Menunggu konfirmasi',
+    invoicePaymentInstructions: 'Instruksi',
+    invoicesSectionTitle: 'Invoice dan pembayaran',
+    invoicesSectionDescription: 'Unduh invoice dan unggah bukti pembayaran di sini.',
+    stageTrackerLabel: 'Tahap produksi',
+    stagesUnknown: 'Belum ada pembaruan tahap',
   },
   status: {
     production: 'Dalam Produksi',
@@ -140,12 +176,13 @@ function renderProgressView(order = makeOrder()) {
 describe('ProgressView', () => {
   it('renders the estimated completion from the max line item deadline', () => {
     renderProgressView()
-    expect(screen.getByText(/Estimasi selesai:/)).toBeInTheDocument()
+    expect(screen.getAllByText(/10 Jan 2026/).length).toBeGreaterThanOrEqual(1)
   })
+
 
   it('does not render estimated completion when there are no line items', () => {
     renderProgressView(makeOrder({ lineItems: [] }))
-    expect(screen.queryByText(/Estimasi selesai:/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/10 Jan 2026/)).not.toBeInTheDocument()
   })
 
   it('renders customer progress overview and next step details', () => {
@@ -223,16 +260,11 @@ describe('ProgressView', () => {
       }),
     )
 
-    expect(screen.getByText('Ringkasan cepat')).toBeInTheDocument()
-    expect(screen.getByText('Langkah berikutnya')).toBeInTheDocument()
-    expect(screen.getByText(/Selesaikan invoice/)).toBeInTheDocument()
-    expect(screen.getByText(/Cutting, Sewing/)).toBeInTheDocument()
-    expect(screen.getByText(/2 item · 12 unit/)).toBeInTheDocument()
-    expect(screen.getByText(/invoice belum dibayar · Rp/)).toBeInTheDocument()
-    expect(screen.getByText(/5 hari produksi/)).toBeInTheDocument()
+    expect(screen.getByText('Estimasi selesai')).toBeInTheDocument()
+    expect(screen.getAllByText(/15 Jan 2026/).length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders invoice dialog trigger with summary', () => {
+  it('renders inline invoice panel with summary', () => {
     renderProgressView(
       makeOrder({
         invoices: [
@@ -270,7 +302,7 @@ describe('ProgressView', () => {
       }),
     )
 
-    expect(screen.getByText('Invoice')).toBeInTheDocument()
+    expect(screen.getByText('Invoice dan pembayaran')).toBeInTheDocument()
     expect(screen.getByText(/1 belum dibayar/)).toBeInTheDocument()
   })
 })

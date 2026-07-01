@@ -1,43 +1,12 @@
-import { CalendarClock, ClipboardList, ReceiptText } from 'lucide-react'
-import { useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'use-intl'
 import { StatusBadge } from '#/components/status-badge'
 import { formatCurrency, formatLongDate } from '#/lib/formatters'
-import { CustomerInfoCard } from '../components/customer-info-card'
-import { InvoiceListDialog } from '../components/invoice-list-dialog'
+import { InvoicePanel } from '../components/invoice-panel'
 import { LineItemTaskCard } from '../components/line-item-task-card'
-import { PaymentAlertBanner } from '../components/payment-alert-banner'
-import { PortalContactButton } from '../components/portal-contact-button'
-import { PortalHeader } from '../components/portal-header'
-import { ShippingAddressCard } from '../components/shipping-address-card'
-import {
-  useOrderTimeline,
-  usePortalGetInvoiceUploadUrl,
-  useSubmitPaymentProof,
-} from '../hooks'
+import { useOrderTimeline } from '../hooks'
 import type { PortalOrder } from '../model'
-function EstimatedCompletion({
-  deadline,
-  locale,
-}: {
-  deadline: Date
-  locale: string
-}) {
-  const t = useTranslations('portal')
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-  if (!mounted) {
-    return null
-  }
-  const formattedDate = formatLongDate(String(deadline), locale)
-  return (
-    <span className="text-sm text-muted-foreground">
-      {t('estimatedCompletion', { date: formattedDate })}
-    </span>
-  )
-}
+
+
 export function ProgressView({
   order,
   token,
@@ -59,186 +28,143 @@ export function ProgressView({
   const { data: timelineEvents } = useOrderTimeline(
     shouldFetchTimeline ? token : '',
   )
-  const getUploadUrl = usePortalGetInvoiceUploadUrl()
-  const submitProof = useSubmitPaymentProof()
+
   const maxDeadline =
     order.lineItems.length > 0
       ? new Date(
           Math.max(...order.lineItems.map((item) => item.deadline.getTime())),
         )
       : null
-  const visibleInvoices = order.invoices.filter(
-    (invoice) => invoice.status !== 'void',
-  )
-  const unpaidInvoices = visibleInvoices.filter(
-    (invoice) => invoice.status !== 'paid',
-  )
-  const hasUnpaidInvoices = unpaidInvoices.length > 0
-  const totalUnpaid = unpaidInvoices.reduce(
-    (sum, invoice) => sum + invoice.total,
-    0,
-  )
+
   const safeTimelineEvents = timelineEvents ?? []
-  let statusHelp: string
-  switch (order.status) {
-    case 'approved':
-      statusHelp = t('progressStatusApprovedHelp')
-      break
-    case 'production':
-    case 'in_progress':
-      statusHelp = t('progressStatusProductionHelp')
-      break
-    case 'in_delivery':
-      statusHelp = t('progressStatusDeliveryHelp')
-      break
-    case 'completed':
-      statusHelp = t('progressStatusCompletedHelp')
-      break
-    default:
-      statusHelp = t('progressStatusFallbackHelp')
-  }
-  let nextStep: string
-  if (hasUnpaidInvoices) {
-    nextStep = t('nextStepPayment')
-  } else if (order.status === 'completed') {
-    nextStep = t('nextStepCompleted')
-  } else if (order.status === 'in_delivery') {
-    nextStep = t('nextStepDelivery')
-  } else {
-    nextStep = t('nextStepProduction')
-  }
-  let paymentSummary: string
-  if (visibleInvoices.length === 0) {
-    paymentSummary = t('paymentSummaryNoInvoice')
-  } else if (hasUnpaidInvoices) {
-    paymentSummary = t('paymentSummaryUnpaid', {
-      count: unpaidInvoices.length,
-      amount: formatCurrency(totalUnpaid, locale),
-    })
-  } else {
-    paymentSummary = t('paymentSummaryAllPaid')
-  }
-  async function handleUpload(invoiceId: string, file: File) {
-    const uploadResult = await getUploadUrl.mutateAsync({
-      token,
-      invoiceId,
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size,
-    })
-    const response = await fetch(uploadResult.uploadUrl, {
-      method: 'PUT',
-      body: file,
-      headers: { 'Content-Type': file.type },
-    })
-    if (!response.ok) throw new Error('Upload failed')
-    await submitProof.mutateAsync({
-      token,
-      invoiceId,
-      assetId: uploadResult.assetId,
-      originalFilename: file.name,
-      mimeType: file.type,
-      sizeBytes: file.size,
-      storageKey: uploadResult.storageKey,
-    })
-  }
+  const hasUnpaidInvoices = order.invoices.some(
+    (invoice) => invoice.status !== 'void' && invoice.status !== 'paid',
+  )
+
+
+  const statusHelp: string = (() => {
+    switch (order.status) {
+      case 'approved':
+        return t('progressStatusApprovedHelp')
+      case 'production':
+      case 'in_progress':
+        return t('progressStatusProductionHelp')
+      case 'in_delivery':
+        return t('progressStatusDeliveryHelp')
+      case 'completed':
+        return t('progressStatusCompletedHelp')
+      default:
+        return t('progressStatusFallbackHelp')
+    }
+  })()
+
+
   return (
-    <div className="min-h-screen bg-muted">
-      <PortalHeader
-        orgLogoAssetId={order.orgLogoAssetId}
-        title={order.orderNumber ?? t('orderSummary')}
-      />
-      <div className="mx-auto max-w-3xl space-y-4 p-4">
-        {/* Compact order header */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              {order.orderNumber && (
-                <span className="font-mono text-sm text-muted-foreground">
-                  {order.orderNumber}
+    <div className="space-y-6">
+      {/* Status hero */}
+      <section className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-sm">
+        <div className="flex flex-wrap items-start gap-4 px-5 py-6 sm:px-6">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-semibold uppercase tracking-wider">
+                {t('progressHeroLabel')}
+              </span>
+              {order.status ? <StatusBadge status={order.status} /> : null}
+            </div>
+            <p className="text-sm text-muted-foreground">{statusHelp}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Order info card */}
+      <section className="rounded-2xl border border-border bg-card px-5 py-4 sm:px-6">
+        <dl className="space-y-3 text-sm">
+          {order.customerName ? (
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="shrink-0 text-muted-foreground">{t('orderInfoName')}</dt>
+              <dd className="min-w-0 text-right font-medium text-foreground">
+                {order.customerName}
+              </dd>
+            </div>
+          ) : null}
+          {order.customerPhone ? (
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="shrink-0 text-muted-foreground">{t('orderInfoPhone')}</dt>
+              <dd className="min-w-0 text-right font-medium text-foreground tabular-nums">
+                {order.customerPhone}
+              </dd>
+            </div>
+          ) : null}
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="shrink-0 text-muted-foreground">
+              {order.status === 'completed'
+                ? t('completedOnLabel')
+                : t('estimatedCompletionLabel')}
+            </dt>
+            <dd className="min-w-0 text-right font-medium text-foreground tabular-nums">
+              {order.status === 'completed' ? (
+                (() => {
+                  const completedEvent = safeTimelineEvents
+                    .filter((e) => e.type === 'completed')
+                    .sort(
+                      (a, b) =>
+                        new Date(b.createdAt).getTime() -
+                        new Date(a.createdAt).getTime(),
+                    )[0]
+                  return completedEvent ? (
+                    formatLongDate(String(completedEvent.createdAt), locale)
+                  ) : (
+                    <span className="text-muted-foreground">
+                      {t('estimatedCompletionUnavailable')}
+                    </span>
+                  )
+                })()
+              ) : maxDeadline ? (
+                formatLongDate(String(maxDeadline), locale)
+              ) : (
+                <span className="text-muted-foreground">
+                  {t('estimatedCompletionUnavailable')}
                 </span>
               )}
-              {order.status && <StatusBadge status={order.status} />}
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">{statusHelp}</p>
+            </dd>
           </div>
-          {order.orgPhone && (
-            <PortalContactButton
-              order={order}
-              label="chatOnWhatsApp"
-              className="shrink-0"
-            />
-          )}
-        </div>
-        <PaymentAlertBanner invoices={order.invoices} />
-        {/* At a glance section */}
-        <section
-          aria-labelledby="progress-overview-title"
-          className="rounded-xl border border-border bg-card p-4 md:p-5"
-        >
-          <div className="flex items-center justify-between">
-            <h2
-              id="progress-overview-title"
-              className="text-sm font-semibold text-card-foreground"
-            >
-              {t('progressOverview')}
-            </h2>
-          </div>
-          <dl className="mt-3 grid gap-2 sm:grid-cols-2">
-            <div className="rounded-lg bg-muted/50 p-3">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <CalendarClock className="size-3.5 shrink-0" />
-                <dt>{t('estimatedCompletionLabel')}</dt>
-              </div>
-              <dd className="mt-1 text-sm text-card-foreground">
-                {maxDeadline ? (
-                  <EstimatedCompletion deadline={maxDeadline} locale={locale} />
-                ) : (
-                  t('estimatedCompletionUnavailable')
-                )}
+          {order.shippingAddress ? (
+            <div>
+              <dt className="text-muted-foreground">{t('orderInfoAddress')}</dt>
+              <dd className="mt-1 text-foreground">
+                {order.shippingAddress.streetAddress}
+                {order.shippingAddress.streetAddress && order.shippingAddress.areaName
+                  ? ', '
+                  : ''}
+                {order.shippingAddress.areaName}
               </dd>
             </div>
-            <div className="rounded-lg bg-muted/50 p-3">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <ReceiptText className="size-3.5 shrink-0" />
-                <dt>{t('paymentSummary')}</dt>
-              </div>
-              <dd className="mt-1 text-sm text-card-foreground">
-                {paymentSummary}
-              </dd>
-            </div>
-            <div className="rounded-lg bg-muted/50 p-3 sm:col-span-2">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <ClipboardList className="size-3.5 shrink-0" />
-                <dt>{t('nextStep')}</dt>
-              </div>
-              <dd className="mt-1 text-sm text-card-foreground">{nextStep}</dd>
-            </div>
-          </dl>
-        </section>
-        <div className="grid gap-3 md:grid-cols-2">
-          <CustomerInfoCard
-            name={order.customerName}
-            phone={order.customerPhone}
-            photoAssetId={order.customerPhotoAssetId}
-          />
-          <ShippingAddressCard address={order.shippingAddress} />
-        </div>
-        {order.invoices.length > 0 && (
-          <InvoiceListDialog
+          ) : null}
+        </dl>
+      </section>
+
+      {/* Invoices inline */}
+      {order.invoices.length > 0 ? (
+        <div id="portal-invoices">
+          <InvoicePanel
             invoices={order.invoices}
-            onUpload={handleUpload}
+            token={token}
+            showAboveFold={hasUnpaidInvoices}
           />
-        )}
-        <section className="space-y-3">
-          <div>
-            <h2 className="text-sm font-semibold text-card-foreground">
-              {t('lineItems')}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {t('lineItemsHelp')}
-            </p>
-          </div>
+        </div>
+      ) : null}
+
+      {/* Items */}
+      <section className="space-y-3">
+        <header className="px-1">
+          <h2 className="text-base font-semibold tracking-tight text-foreground">
+            {t('itemsSectionTitle')}
+          </h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {t('itemsSectionDescription')}
+          </p>
+        </header>
+        <div className="space-y-3">
           {order.lineItems.map((item) => (
             <LineItemTaskCard
               key={item.id}
@@ -246,16 +172,16 @@ export function ProgressView({
               events={safeTimelineEvents}
             />
           ))}
-          <div className="flex justify-end border-t border-border pt-4">
-            <div>
-              <p className="text-sm text-muted-foreground">{t('orderTotal')}</p>
-              <p className="text-lg font-semibold text-card-foreground">
-                {formatCurrency(order.total, locale)}
-              </p>
-            </div>
+        </div>
+        <div className="flex justify-end border-t border-border pt-4">
+          <div className="text-right">
+            <p className="text-sm text-muted-foreground">{t('orderTotal')}</p>
+            <p className="text-lg font-semibold text-foreground tabular-nums">
+              {formatCurrency(order.total, locale)}
+            </p>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   )
 }

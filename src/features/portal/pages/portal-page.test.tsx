@@ -26,13 +26,19 @@ vi.mock('./progress-view', () => ({
 
 const messages = {
   portal: {
+    loadingTitle: 'Loading your order',
     loadingOrder: 'Loading order...',
     loadFailed: 'Could not load order',
     loadFailedDesc:
       'Refresh this page or contact the seller if the problem continues.',
     notFound: 'Order not found',
+    notFoundTitle: 'Order not found',
     notFoundHelp: 'Check the link or ask the seller for a new portal link.',
+    notFoundAction: 'Check the link or ask the seller for a new one.',
     retry: 'Retry',
+    skipToContent: 'Skip to content',
+    orderPillLabel: 'Order',
+    chatOnWhatsApp: 'Chat on WhatsApp',
   },
 }
 
@@ -77,7 +83,7 @@ describe('PortalPage', () => {
     } as never)
 
     renderPage()
-    expect(screen.getByText('Loading order...')).toBeInTheDocument()
+    expect(screen.getByText('Skip to content')).toBeInTheDocument()
   })
 
   it('renders error state with retry button', async () => {

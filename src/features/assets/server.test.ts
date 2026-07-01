@@ -60,7 +60,7 @@ describe('finalizeUpload validation', () => {
       },
       payment_proof: {
         maxBytes: 25 * 1024 * 1024,
-        kinds: ['image', 'file'],
+        kinds: ['image'],
       },
     }
 

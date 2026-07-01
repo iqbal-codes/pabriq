@@ -47,7 +47,7 @@ export const USAGE_LIMITS: Record<
   payment_proof: {
     maxActive: 10,
     maxBytes: 25 * 1024 * 1024,
-    kinds: ['image', 'file'],
+    kinds: ['image'],
   },
 }
 
