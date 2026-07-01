@@ -48,7 +48,10 @@ export const OrderLineItemRow = withForm({
               validators={{
                 onChange: ({ value }) => {
                   const p = products.find((pr) => pr.id === item.productId)
-                  if (p?.maxQuantity != null && Number(value) > p.maxQuantity) {
+                  if (p?.minQuantity && Number(value) < p.minQuantity) {
+                    return t('minQtyError', { min: p.minQuantity })
+                  }
+                  if (p?.maxQuantity && Number(value) > p.maxQuantity) {
                     return t('maxQtyError', { max: p.maxQuantity })
                   }
                   return undefined

@@ -226,6 +226,7 @@ export type Messages = {
     addToOrder: string;
     lineSubtotal: string;
     maxQtyError: string;
+    minQtyError: string;
     phone: string;
     email: string;
     copyOrderLink: string;
@@ -655,6 +656,11 @@ export type Messages = {
     customerLabel: string;
     quantityLabel: string;
     priorityBadge: string;
+    deadlineToday: string;
+    deadlineTomorrow: string;
+    deadlineDaysLeft: string;
+    deadlineDaysOverdue: string;
+    deadlineLabel: string;
     taskCreated: string;
     noActivity: string;
     tabActive: string;

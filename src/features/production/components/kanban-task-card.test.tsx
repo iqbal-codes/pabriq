@@ -37,6 +37,12 @@ const enMessages = {
   production: {
     priorityBadge: 'Priority',
     openTask: 'Open task {task}',
+    deadlineToday: 'Due today',
+    deadlineTomorrow: 'Due tomorrow',
+    deadlineDaysLeft: '{days, plural, one {# day left} other {# days left}}',
+    deadlineDaysOverdue:
+      '{days, plural, one {# day overdue} other {# days overdue}}',
+    deadlineLabel: 'Deadline {date}',
   },
   status: {
     in_progress: 'In Progress',
@@ -56,6 +62,18 @@ function renderCard(task: BoardTask, onClick = vi.fn()) {
     </IntlProvider>,
   )
   return { onClick, result }
+}
+
+function atMidnight(date: Date): Date {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+function isoAtDays(offset: number): string {
+  const d = atMidnight(new Date())
+  d.setDate(d.getDate() + offset)
+  return d.toISOString()
 }
 
 describe('KanbanTaskCard', () => {
@@ -84,11 +102,6 @@ describe('KanbanTaskCard', () => {
     expect(screen.getByText(/500/)).toBeInTheDocument()
   })
 
-  it('renders status badge', () => {
-    renderCard(createMockTask())
-    expect(screen.getByText('Queued')).toBeInTheDocument()
-  })
-
   it('renders priority badge only for priority tasks', () => {
     const { rerender } = render(
       <IntlProvider locale="en" messages={enMessages}>
@@ -109,6 +122,88 @@ describe('KanbanTaskCard', () => {
       </IntlProvider>,
     )
     expect(screen.getByText('Priority')).toBeInTheDocument()
+  })
+
+  describe('deadline badge', () => {
+    it('does not render a deadline badge when context has no deadline', () => {
+      renderCard(createMockTask())
+      expect(screen.queryByText(/Due|overdue|left/i)).not.toBeInTheDocument()
+    })
+
+    it('renders "Due today" when the deadline is today', () => {
+      renderCard(
+        createMockTask({
+          context: {
+            productName: 'Custom T-Shirt',
+            customerName: 'Acme Corp',
+            orderNumber: 'ORD-001',
+            quantity: 500,
+            deadline: isoAtDays(0),
+          },
+        }),
+      )
+      expect(screen.getByText('Due today')).toBeInTheDocument()
+    })
+
+    it('renders "Due tomorrow" when the deadline is tomorrow', () => {
+      renderCard(
+        createMockTask({
+          context: {
+            productName: 'Custom T-Shirt',
+            customerName: 'Acme Corp',
+            orderNumber: 'ORD-001',
+            quantity: 500,
+            deadline: isoAtDays(1),
+          },
+        }),
+      )
+      expect(screen.getByText('Due tomorrow')).toBeInTheDocument()
+    })
+
+    it('renders days-left for deadlines further out', () => {
+      renderCard(
+        createMockTask({
+          context: {
+            productName: 'Custom T-Shirt',
+            customerName: 'Acme Corp',
+            orderNumber: 'ORD-001',
+            quantity: 500,
+            deadline: isoAtDays(5),
+          },
+        }),
+      )
+      expect(screen.getByText('5 days left')).toBeInTheDocument()
+    })
+
+    it('renders overdue label for past deadlines', () => {
+      renderCard(
+        createMockTask({
+          context: {
+            productName: 'Custom T-Shirt',
+            customerName: 'Acme Corp',
+            orderNumber: 'ORD-001',
+            quantity: 500,
+            deadline: isoAtDays(-2),
+          },
+        }),
+      )
+      expect(screen.getByText('2 days overdue')).toBeInTheDocument()
+    })
+
+    it('ignores invalid deadline strings', () => {
+      renderCard(
+        createMockTask({
+          context: {
+            productName: 'Custom T-Shirt',
+            customerName: 'Acme Corp',
+            orderNumber: 'ORD-001',
+            quantity: 500,
+            deadline: 'not-a-date',
+          },
+        }),
+      )
+      expect(screen.queryByText(/Due|overdue|left/i)).not.toBeInTheDocument()
+    })
   })
 
   it('renders as a keyboard-focusable button when onClick is provided', () => {

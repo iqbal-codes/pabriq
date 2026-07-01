@@ -3,6 +3,7 @@ import { db } from '#/db/index'
 import type { Requirement } from '#/db/schema'
 import {
   taskActivity as activityTable,
+  orderLineItems as lineItemsTable,
   productionStages as stagesTable,
   productionTasks as tasksTable,
 } from '#/db/schema'
@@ -784,38 +785,55 @@ export async function listBoardTasks(
     taskConditions.push(eq(tasksTable.board, filter.board))
   }
 
-  let tasks = await db
+  const rows = await db
     .select()
     .from(tasksTable)
+    .leftJoin(lineItemsTable, eq(lineItemsTable.id, tasksTable.lineItemId))
     .where(and(...taskConditions))
 
-  if (filter?.search) {
-    const searchStr = filter.search
-    tasks = tasks.filter((t) => {
-      const ctx = t.context as Record<
-        string,
-        string | number | boolean | null
-      > | null
-      const term = searchStr.toLowerCase()
-      return (
-        t.id.includes(searchStr) ||
-        (t.taskNumber ?? '').toLowerCase().includes(term) ||
-        ((ctx?.productName as string) ?? '').toLowerCase().includes(term) ||
-        ((ctx?.orderNumber as string) ?? '').toLowerCase().includes(term) ||
-        ((ctx?.customerName as string) ?? '').toLowerCase().includes(term)
-      )
-    })
-  }
+  const tasks: ProductionTask[] = rows.map((row) => {
+    const task = row.production_tasks
+    const lineItemDeadline = row.order_line_items?.deadline ?? null
+    const ctx = (task.context ?? {}) as Record<
+      string,
+      string | number | boolean | null
+    >
+    if (ctx.deadline == null || ctx.deadline === '') {
+      ctx.deadline =
+        lineItemDeadline != null ? lineItemDeadline.toISOString() : null
+    }
+    return { ...task, context: ctx }
+  })
 
-  if (filter?.stageId) {
-    tasks = tasks.filter((t) => t.stageId === filter.stageId)
-  }
+  const searchFiltered = filter?.search
+    ? (() => {
+        const searchStr = filter.search
+        const term = searchStr.toLowerCase()
+        return tasks.filter((t) => {
+          const ctx = t.context as Record<
+            string,
+            string | number | boolean | null
+          > | null
+          return (
+            t.id.includes(searchStr) ||
+            (t.taskNumber ?? '').toLowerCase().includes(term) ||
+            ((ctx?.productName as string) ?? '').toLowerCase().includes(term) ||
+            ((ctx?.orderNumber as string) ?? '').toLowerCase().includes(term) ||
+            ((ctx?.customerName as string) ?? '').toLowerCase().includes(term)
+          )
+        })
+      })()
+    : tasks
+
+  const stageFiltered = filter?.stageId
+    ? searchFiltered.filter((t) => t.stageId === filter.stageId)
+    : searchFiltered
 
   const queued: BoardTask[] = []
   const stages = new Map<string, BoardTask[]>()
   const done: BoardTask[] = []
 
-  for (const task of tasks as ProductionTask[]) {
+  for (const task of stageFiltered) {
     const bt: BoardTask = {
       task,
       stage: task.stageId ? (stageMap.get(task.stageId) ?? null) : null,

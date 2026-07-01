@@ -414,6 +414,7 @@ export const productionTasks = pgTable('production_tasks', {
       requirements: string | null
       orderNumber?: string
       quantity?: number
+      deadline?: string
       requirementResponses?: Record<
         string,
         { assetIds?: string[]; value?: string }

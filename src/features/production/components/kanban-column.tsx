@@ -67,7 +67,7 @@ export function KanbanColumn({
           {count}
         </Badge>
       </CardHeader>
-      <CardContent className="flex flex-col gap-2 overflow-y-auto p-3 pt-0">
+      <CardContent className="flex flex-col gap-2 overflow-y-auto p-3">
         {tasks.length === 0 ? (
           <p className="py-8 text-center text-xs text-muted-foreground">
             {t('noTasks')}

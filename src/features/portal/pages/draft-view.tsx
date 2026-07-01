@@ -392,9 +392,11 @@ export function DraftView({
             <Button variant="outline" asChild>
               <a href={`/order/${token}`}>{t('retry')}</a>
             </Button>
-            <form.SubmitButton className="flex-1">
-              {isSubmitting ? t('submitting') : t('submit')}
-            </form.SubmitButton>
+            <form.AppForm>
+              <form.SubmitButton className="flex-1">
+                {isSubmitting ? t('submitting') : t('submit')}
+              </form.SubmitButton>
+            </form.AppForm>
           </FormActions>
         </div>
 
