@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm'
+import { buildOrderBy, type SortColumnMap, type SortState } from '#/lib/sorting'
 import { db } from '#/db/index'
 import type { Requirement } from '#/db/schema'
 import {
@@ -469,14 +470,14 @@ export async function advanceTask(
   if (isQueued) {
     const nextStage = allStages[nextStageIdx] as Stage
     await transitionToStage({
-          taskId,
-          orgId,
-          actorId,
-          fromStageId: task.stageId,
-          toStageId: nextStage.id,
-          completedRequirementIds: [],
-          status: 'in_progress',
-        })
+      taskId,
+      orgId,
+      actorId,
+      fromStageId: task.stageId,
+      toStageId: nextStage.id,
+      completedRequirementIds: [],
+      status: 'in_progress',
+    })
     return { ok: true, pendingApproval: false }
   }
 
@@ -543,15 +544,15 @@ export async function advanceTask(
 
   const nextStage = allStages[nextStageIdx] as Stage
   await transitionToStage({
-        taskId,
-        orgId,
-        actorId,
-        fromStageId: task.stageId,
-        toStageId: nextStage.id,
-        requirementResponses,
-        completedRequirementIds: [],
-        status: 'in_progress',
-      })
+    taskId,
+    orgId,
+    actorId,
+    fromStageId: task.stageId,
+    toStageId: nextStage.id,
+    requirementResponses,
+    completedRequirementIds: [],
+    status: 'in_progress',
+  })
 
   return { ok: true, pendingApproval: false }
 }
@@ -629,14 +630,14 @@ export async function approveTaskAdvance(
 
   const nextStage = allStages[nextStageIdx] as Stage
   await transitionToStage({
-        taskId,
-        orgId,
-        actorId,
-        fromStageId: task.stageId,
-        toStageId: nextStage.id,
-        completedRequirementIds: [],
-        status: 'in_progress',
-      })
+    taskId,
+    orgId,
+    actorId,
+    fromStageId: task.stageId,
+    toStageId: nextStage.id,
+    completedRequirementIds: [],
+    status: 'in_progress',
+  })
 
   return { ok: true, pendingApproval: false }
 }
@@ -875,6 +876,7 @@ export async function listArchivedTasks(
     search?: string
     page?: number
     perPage?: number
+    sort?: SortState | null
   },
 ): Promise<{ rows: ArchivedTaskRow[]; totalRows: number }> {
   const page = filter?.page ?? 1
@@ -902,11 +904,25 @@ export async function listArchivedTasks(
       )
     : undefined
 
+  const ARCHIVED_TASK_SORT_COLUMNS = {
+    taskNumber: tasksTable.taskNumber,
+    orderNumber: sql`${tasksTable.context}->>'orderNumber'`,
+    productName: sql`${tasksTable.context}->>'productName'`,
+    customerName: sql`${tasksTable.context}->>'customerName'`,
+    archivedAt: { expression: tasksTable.archivedAt, nulls: 'last' },
+  } satisfies SortColumnMap
+
   const allTasks = await db
     .select()
     .from(tasksTable)
     .where(and(baseConditions, searchCondition))
-    .orderBy(desc(tasksTable.archivedAt))
+    .orderBy(
+      buildOrderBy(
+        filter?.sort,
+        ARCHIVED_TASK_SORT_COLUMNS,
+        desc(tasksTable.archivedAt),
+      ),
+    )
 
   const totalRows = allTasks.length
   const paged = allTasks.slice((page - 1) * perPage, page * perPage)

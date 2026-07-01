@@ -1,10 +1,10 @@
 import { Link, useRouteContext } from '@tanstack/react-router'
 import { Eye, Printer } from 'lucide-react'
-import { parseAsInteger, parseAsString, useQueryState } from 'nuqs'
-import { useCallback, useMemo } from 'react'
+import { parseAsString, useQueryState } from 'nuqs'
+import { useMemo } from 'react'
 import { useTranslations } from 'use-intl'
 import type { AppColumnDef } from '#/components/app/data-table'
-import { DataTable } from '#/components/app/data-table'
+import { DataTable, useListPageState } from '#/components/app/data-table'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { StatusBadge } from '#/components/status-badge'
@@ -29,12 +29,16 @@ export function InvoiceListPage() {
   }
   const t = useTranslations('invoices')
   const dt = useTranslations('dataTable')
-  const [search] = useQueryState('q', parseAsString.withDefault(''))
-  const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
-  const [perPage, setPerPage] = useQueryState(
-    'perPage',
-    parseAsInteger.withDefault(25),
-  )
+  const {
+    search,
+    page,
+    setPage,
+    perPage,
+    sort,
+    handleSortChange,
+    handlePerPageChange,
+  } = useListPageState()
+
   const [statusFilter] = useQueryState('status', parseAsString.withDefault(''))
 
   const queryFilters = useMemo(
@@ -42,23 +46,16 @@ export function InvoiceListPage() {
       orgId: ctx.org.id,
       q: search || undefined,
       status: statusFilter || undefined,
+      sort,
       page,
       perPage,
     }),
-    [ctx.org.id, search, statusFilter, page, perPage],
+    [ctx.org.id, search, statusFilter, sort, page, perPage],
   )
 
   const { data, isFetching } = useInvoicesList(queryFilters)
   const rows = data?.rows ?? []
   const totalRows = data?.totalRows ?? 0
-
-  const handlePerPageChange = useCallback(
-    (pp: number) => {
-      setPerPage(pp)
-      setPage(1)
-    },
-    [setPerPage, setPage],
-  )
 
   const columns = useMemo<AppColumnDef<InvoiceRow>[]>(
     () => [
@@ -141,6 +138,8 @@ export function InvoiceListPage() {
         perPage={perPage}
         onPageChange={setPage}
         onPerPageChange={handlePerPageChange}
+        sort={sort}
+        onSortChange={handleSortChange}
         rowActions={(row) => (
           <div className="flex items-center gap-1">
             <Tooltip>

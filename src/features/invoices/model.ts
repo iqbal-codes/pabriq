@@ -1,4 +1,6 @@
 import { and, desc, eq, ilike, inArray, or, type SQL, sql } from 'drizzle-orm'
+import { buildOrderBy, type SortColumnMap } from '#/lib/sorting'
+import type { SortState } from '#/lib/sorting'
 import { db } from '#/db/index'
 import {
   customers as customersTable,
@@ -131,6 +133,7 @@ export type ListInvoicesParams = {
   status?: string
   q?: string
   orderId?: string
+  sort?: SortState | null
   page?: number
   perPage?: number
 }
@@ -410,6 +413,15 @@ export async function getInvoice(
   }
 }
 
+const INVOICE_SORT_COLUMNS = {
+  invoiceNumber: invoicesTable.invoiceNumber,
+  customerName: invoicesTable.customerName,
+  total: invoicesTable.total,
+  dueDate: invoicesTable.dueDate,
+  status: invoicesTable.status,
+  createdAt: invoicesTable.createdAt,
+} satisfies SortColumnMap
+
 export async function listInvoices(
   params: ListInvoicesParams,
 ): Promise<ListInvoicesResult> {
@@ -453,7 +465,13 @@ export async function listInvoices(
       })
       .from(invoicesTable)
       .where(allConditions)
-      .orderBy(desc(invoicesTable.createdAt))
+      .orderBy(
+        buildOrderBy(
+          params.sort,
+          INVOICE_SORT_COLUMNS,
+          desc(invoicesTable.createdAt),
+        ),
+      )
       .limit(perPage)
       .offset((page - 1) * perPage),
     db

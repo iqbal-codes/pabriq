@@ -1,14 +1,4 @@
-import {
-  type AnyColumn,
-  and,
-  asc,
-  desc,
-  eq,
-  ilike,
-  or,
-  type SQL,
-  sql,
-} from 'drizzle-orm'
+import { and, desc, eq, ilike, or, type SQL, sql } from 'drizzle-orm'
 import { customers as customersTable } from '#/db/schema'
 import {
   createAddressFn,
@@ -16,6 +6,7 @@ import {
   type ShippingAddress,
   updateAddressFn,
 } from '#/features/address/model'
+import { buildOrderBy, type SortColumnMap, type SortState } from '#/lib/sorting'
 
 export type Customer = {
   id: string
@@ -62,7 +53,7 @@ export type ListCustomersParams = {
   orgId: string
   search?: string
   status?: string
-  sort?: { field: string; direction: 'asc' | 'desc' } | null
+  sort?: SortState | null
   page?: number
   perPage?: number
 }
@@ -136,13 +127,12 @@ async function getDb() {
   return db
 }
 
-const ALLOWED_SORT_FIELDS = new Set(['name', 'email', 'createdAt', 'active'])
-const SORT_COLUMNS: Record<string, AnyColumn> = {
+const CUSTOMER_SORT_COLUMNS = {
   name: customersTable.name,
   email: customersTable.email,
   createdAt: customersTable.createdAt,
   active: customersTable.active,
-}
+} satisfies SortColumnMap
 
 export async function listCustomers(
   params: ListCustomersParams,
@@ -169,12 +159,11 @@ export async function listCustomers(
 
   const allConditions = and(...conditions) as SQL
 
-  const orderBy =
-    params.sort && ALLOWED_SORT_FIELDS.has(params.sort.field)
-      ? params.sort.direction === 'asc'
-        ? asc(SORT_COLUMNS[params.sort.field])
-        : desc(SORT_COLUMNS[params.sort.field])
-      : desc(customersTable.createdAt)
+  const orderBy = buildOrderBy(
+    params.sort,
+    CUSTOMER_SORT_COLUMNS,
+    desc(customersTable.createdAt),
+  )
 
   const page = params.page ?? 1
   const perPage = params.perPage ?? 25

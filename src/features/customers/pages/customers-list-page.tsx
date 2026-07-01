@@ -122,6 +122,7 @@ export function CustomersListPage() {
       accessorKey: 'phone',
       header: t('phone'),
       meta: { label: t('phone'), mobileRole: 'meta' },
+      enableSorting: false,
     },
     {
       accessorKey: 'email',

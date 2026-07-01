@@ -96,6 +96,7 @@ export function getOrderColumns(t: TranslationFn): AppColumnDef<OrderRow>[] {
       accessorKey: 'paymentStatus',
       header: t('paymentStatus'),
       meta: { label: t('paymentStatus'), mobileRole: 'meta' },
+      enableSorting: false,
       cell: ({ row }) => {
         const status = row.original.paymentStatus
         if (status === 'no_invoice')

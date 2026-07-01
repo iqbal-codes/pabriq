@@ -1,4 +1,12 @@
 import type { ColumnDef } from '@tanstack/react-table'
+import {
+  decodeSort,
+  encodeSort,
+  type SortDirection,
+  type SortState,
+} from '#/lib/sorting'
+export type { SortDirection, SortState }
+export { decodeSort, encodeSort }
 
 export type AppColumnMeta = {
   align?: 'start' | 'center' | 'end'
@@ -40,11 +48,6 @@ export type DataTableSlotContext<TData> = {
   visibleRows: TData[]
 }
 
-export type SortState = {
-  field: string
-  direction: 'asc' | 'desc'
-}
-
 const STORAGE_PREFIX = 'pabriq-datatable-columns'
 
 export function getStoredVisibility(tableId: string): Record<string, boolean> {
@@ -76,19 +79,6 @@ export function removeStoredVisibility(tableId: string) {
   } catch {
     /* noop */
   }
-}
-
-export function encodeSort(field: string, direction: 'asc' | 'desc'): string {
-  return `${field}:${direction}`
-}
-
-export function decodeSort(encoded: string): SortState | null {
-  const idx = encoded.lastIndexOf(':')
-  if (idx === -1) return null
-  const field = encoded.slice(0, idx)
-  const direction = encoded.slice(idx + 1)
-  if (direction !== 'asc' && direction !== 'desc') return null
-  return { field, direction }
 }
 
 export type AppColumnDef<TData> = ColumnDef<TData> & {
