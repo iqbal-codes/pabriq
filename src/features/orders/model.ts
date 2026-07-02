@@ -1134,14 +1134,11 @@ export async function markShipped(
     throw new Error('Only in_progress orders can be shipped')
 
   const now = new Date()
-  await db
-    .update(ordersTable)
-    .set({
-      status: 'in_delivery',
-      courier: delivery.courier ?? null,
-      trackingNumber: delivery.trackingNumber ?? null,
-      shippedAt: now,
-      updatedAt: now,
-    })
-    .where(eq(ordersTable.id, id))
+  await db.update(ordersTable).set({
+    status: 'in_delivery',
+    ...(delivery.courier !== undefined ? { courier: delivery.courier } : {}),
+    trackingNumber: delivery.trackingNumber ?? null,
+    shippedAt: now,
+    updatedAt: now,
+  })
 }

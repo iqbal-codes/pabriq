@@ -11,12 +11,10 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslations } from 'use-intl'
-
+import { AvatarPhoto } from '#/components/app/avatar-photo'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import type { PageAction } from '#/components/app/page-shell/page-shell-types'
-import { OrderStatusBadge } from '#/features/orders/components/order-status-badge'
-import { AvatarPhoto } from '#/components/app/avatar-photo'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { CreateInvoiceModal } from '#/features/invoices/components/create-invoice-modal'
@@ -28,6 +26,7 @@ import {
 import { CompleteProductionModal } from '#/features/orders/components/complete-production-modal'
 import { OrderInvoicesSection } from '#/features/orders/components/order-invoices-section'
 import { OrderLineItemsCard } from '#/features/orders/components/order-line-items-card'
+import { OrderStatusBadge } from '#/features/orders/components/order-status-badge'
 import { RejectReasonDialog } from '#/features/orders/components/reject-reason-dialog'
 import { RejectedReasonBanner } from '#/features/orders/components/rejected-reason-banner'
 import { useOrderDerivedState } from '#/features/orders/components/use-order-derived-state'
@@ -153,9 +152,12 @@ export function ViewOrderPage() {
             }
           : unpaidInvoice && isManualTransfer
             ? {
-                label: t('confirmDpPayment'),
+                label: orderInvoices.some((inv) => inv.status === 'paid')
+                  ? t('confirmSettlementPayment')
+                  : t('confirmDpPayment'),
                 icon: CheckCircle2,
-                onClick: () => mutations.handleMarkInvoicePaid(unpaidInvoice.id),
+                onClick: () =>
+                  mutations.handleMarkInvoicePaid(unpaidInvoice.id),
                 isLoading: mutations.isMarkingPaid,
               }
             : derived.canStartProduction
@@ -165,20 +167,26 @@ export function ViewOrderPage() {
                   onClick: mutations.handleStartProduction,
                   isLoading: mutations.isStartingProduction,
                 }
-              : derived.canCompleteProduction
+              : derived.canSendSettlementInvoice
                 ? {
-                    label: prt('markAsShipped'),
-                    icon: Truck,
-                    onClick: () => setCompleteProductionModalOpen(true),
+                    label: t('sendSettlementInvoice'),
+                    icon: FileText,
+                    onClick: () => setInvoiceModalOpen(true),
                   }
-                : derived.canCompleteOrder
+                : derived.canCompleteProduction
                   ? {
-                      label: t('completeOrder'),
-                      icon: CheckCircle2,
-                      onClick: mutations.handleCompleteOrder,
-                      isLoading: mutations.isCompletingOrder,
+                      label: prt('markAsShipped'),
+                      icon: Truck,
+                      onClick: () => setCompleteProductionModalOpen(true),
                     }
-                  : undefined
+                  : derived.canCompleteOrder
+                    ? {
+                        label: t('completeOrder'),
+                        icon: CheckCircle2,
+                        onClick: mutations.handleCompleteOrder,
+                        isLoading: mutations.isCompletingOrder,
+                      }
+                    : undefined
 
   const secondaryActions: PageAction[] = [
     {

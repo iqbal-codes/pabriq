@@ -66,15 +66,17 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
       notes: '',
     },
     onSubmit: async ({ value }) => {
-      if (!value.paymentMethodId) {
+      const isInvoiceNeeded = order.remainingAmount > 0
+
+      if (isInvoiceNeeded && !value.paymentMethodId) {
         toast.error(t('paymentMethodRequired'))
         return
       }
 
-      const shippingAmount = value.shippingFee || 0
+      const shippingAmount = isInvoiceNeeded ? value.shippingFee || 0 : 0
       const invoiceTotal = order.remainingAmount + shippingAmount
 
-      if (invoiceTotal <= 0) {
+      if (isInvoiceNeeded && invoiceTotal <= 0) {
         toast.error(t('invoiceAmountRequired'))
         return
       }
@@ -83,12 +85,17 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
         id: order.id,
         courier: value.courier || undefined,
         trackingNumber: value.trackingNumber || undefined,
-        shippingFee: shippingAmount > 0 ? shippingAmount : undefined,
+        shippingFee:
+          isInvoiceNeeded && shippingAmount > 0 ? shippingAmount : undefined,
         shippingFeeDescription:
-          shippingAmount > 0 ? value.shippingFeeDescription : undefined,
-        invoiceDueDate: value.dueDate,
-        invoicePaymentMethodId: value.paymentMethodId,
-        invoiceNotes: value.notes || undefined,
+          isInvoiceNeeded && shippingAmount > 0
+            ? value.shippingFeeDescription
+            : undefined,
+        invoiceDueDate: isInvoiceNeeded ? value.dueDate : undefined,
+        invoicePaymentMethodId: isInvoiceNeeded
+          ? value.paymentMethodId
+          : undefined,
+        invoiceNotes: isInvoiceNeeded && value.notes ? value.notes : undefined,
       })
 
       if (result.ok) {
@@ -149,46 +156,55 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
                   />
 
                   {/* Payment Details */}
-                  <FormSection title={t('payment')}>
-                    <FormGrid columns={1}>
-                      <form.AppField name="paymentMethodId">
-                        {(field) => (
-                          <field.SelectField
-                            label={it('paymentMethod')}
-                            options={paymentMethodOptions}
-                            placeholder={it('paymentMethod')}
-                          />
-                        )}
-                      </form.AppField>
+                  {order.remainingAmount > 0 && (
+                    <FormSection title={t('payment')}>
+                      <FormGrid columns={1}>
+                        <form.AppField name="paymentMethodId">
+                          {(field) => (
+                            <field.SelectField
+                              label={it('paymentMethod')}
+                              options={paymentMethodOptions}
+                              placeholder={it('paymentMethod')}
+                            />
+                          )}
+                        </form.AppField>
 
-                      <form.AppField name="notes">
-                        {(field) => <field.TextareaField label={it('notes')} />}
-                      </form.AppField>
-                    </FormGrid>
-                  </FormSection>
+                        <form.AppField name="notes">
+                          {(field) => (
+                            <field.TextareaField label={it('notes')} />
+                          )}
+                        </form.AppField>
+                      </FormGrid>
+                    </FormSection>
+                  )}
 
-                  <FinalInvoicePreview
-                    order={order}
-                    shippingAmount={shippingAmount}
-                    invoiceTotal={invoiceTotal}
-                    labels={{
-                      title: t('finalInvoice'),
-                      orderTotal: t('orderTotal'),
-                      alreadyPaid: t('alreadyPaid'),
-                      remainingPayment: t('remainingPayment'),
-                      shippingFee: t('shipmentFee'),
-                      total: t('total'),
-                    }}
-                  />
+                  {order.remainingAmount > 0 && (
+                    <FinalInvoicePreview
+                      order={order}
+                      shippingAmount={shippingAmount}
+                      invoiceTotal={invoiceTotal}
+                      labels={{
+                        title: t('finalInvoice'),
+                        orderTotal: t('orderTotal'),
+                        alreadyPaid: t('alreadyPaid'),
+                        remainingPayment: t('remainingPayment'),
+                        shippingFee: t('shipmentFee'),
+                        total: t('total'),
+                      }}
+                    />
+                  )}
 
                   <FormActions>
                     <form.AppForm>
                       <form.SubmitButton
                         disabled={
-                          completeProduction.isPending || invoiceTotal <= 0
+                          completeProduction.isPending ||
+                          (order.remainingAmount > 0 && invoiceTotal <= 0)
                         }
                       >
-                        {t('createInvoiceAndShip')}
+                        {order.remainingAmount > 0
+                          ? t('createInvoiceAndShip')
+                          : t('markAsShipped')}
                       </form.SubmitButton>
                     </form.AppForm>
                   </FormActions>

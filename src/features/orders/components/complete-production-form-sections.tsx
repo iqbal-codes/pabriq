@@ -33,7 +33,10 @@ export interface CompleteProductionForm {
 
 type ShipmentDetailsSectionProps = {
   form: CompleteProductionForm
-  order: { shippingAddress: ShippingAddress | null }
+  order: {
+    shippingAddress: ShippingAddress | null
+    remainingAmount?: number
+  }
   labels: {
     title: string
     address: string
@@ -70,14 +73,16 @@ export function ShipmentDetailsSection({
           </div>
         )}
 
-        <form.AppField name="courier">
-          {(field) => (
-            <field.TextField
-              label={labels.courier}
-              placeholder={labels.courierPlaceholder}
-            />
-          )}
-        </form.AppField>
+        {order.remainingAmount !== 0 && (
+          <form.AppField name="courier">
+            {(field) => (
+              <field.TextField
+                label={labels.courier}
+                placeholder={labels.courierPlaceholder}
+              />
+            )}
+          </form.AppField>
+        )}
 
         <form.AppField name="trackingNumber">
           {(field) => (
@@ -88,17 +93,18 @@ export function ShipmentDetailsSection({
           )}
         </form.AppField>
 
-        <form.AppField name="shippingFee">
-          {(field) => (
-            <field.NumberField
-              label={labels.shippingFee}
-              optional
-              optionalLabel={` ${labels.optional}`}
-              placeholder="0"
-            />
-          )}
-        </form.AppField>
-
+        {order.remainingAmount !== 0 && (
+          <form.AppField name="shippingFee">
+            {(field) => (
+              <field.NumberField
+                label={labels.shippingFee}
+                optional
+                optionalLabel={` ${labels.optional}`}
+                placeholder="0"
+              />
+            )}
+          </form.AppField>
+        )}
         {shippingAmount > 0 && (
           <form.AppField name="shippingFeeDescription">
             {(field) => (
