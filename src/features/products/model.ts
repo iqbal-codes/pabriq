@@ -2,9 +2,9 @@ import { and, asc, desc, eq, like } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   pricingBreakpoints as breakpointsTable,
+  productAddons as addonsTable,
   products as productsTable,
 } from '#/db/schema'
-
 export type Product = {
   id: string
   orgId: string
@@ -18,11 +18,14 @@ export type Product = {
   productionDays: number
   minQuantity: number
   maxQuantity: number | null
+  negotiateAboveQuantity: number | null
+  repeatOrderUnitPrice: number | null
+  repeatOrderMinQuantity: number | null
+  maxProductionQuantity: number | null
   pricingMode: 'interpolated' | 'step'
   createdAt: Date
   updatedAt: Date
 }
-
 export type CreateProductInput = {
   orgId: string
   name: string
@@ -34,8 +37,13 @@ export type CreateProductInput = {
   productionDays?: number
   minQuantity?: number
   maxQuantity?: number
+  negotiateAboveQuantity?: number
+  repeatOrderUnitPrice?: number
+  repeatOrderMinQuantity?: number
+  maxProductionQuantity?: number
   pricingMode?: 'interpolated' | 'step'
   pricingBreakpoints?: Array<{ minQuantity: number; unitPrice: number }>
+  productAddons?: Array<{ name: string; unitSurcharge: number }>
 }
 
 export type UpdateProductInput = {
@@ -50,9 +58,14 @@ export type UpdateProductInput = {
   productionDays?: number
   minQuantity?: number
   maxQuantity?: number | null
+  negotiateAboveQuantity?: number | null
+  repeatOrderUnitPrice?: number | null
+  repeatOrderMinQuantity?: number | null
+  maxProductionQuantity?: number | null
   active?: boolean
   pricingMode?: 'interpolated' | 'step'
   pricingBreakpoints?: Array<{ minQuantity: number; unitPrice: number }>
+  productAddons?: Array<{ name: string; unitSurcharge: number }>
 }
 
 export type ProductListOptions = {
@@ -87,6 +100,10 @@ export type ProductRow = {
   productionDays: number
   minQuantity: number
   maxQuantity: number | null
+  negotiateAboveQuantity: number | null
+  repeatOrderUnitPrice: number | null
+  repeatOrderMinQuantity: number | null
+  maxProductionQuantity: number | null
   minDiscountPrice: number | null
   pricingMode: 'step' | 'interpolated'
   createdAt: Date
@@ -113,6 +130,10 @@ export async function createProduct(
     productionDays: input.productionDays ?? 1,
     minQuantity: input.minQuantity ?? 1,
     maxQuantity: input.maxQuantity ?? null,
+    negotiateAboveQuantity: input.negotiateAboveQuantity ?? null,
+    repeatOrderUnitPrice: input.repeatOrderUnitPrice ?? null,
+    repeatOrderMinQuantity: input.repeatOrderMinQuantity ?? null,
+    maxProductionQuantity: input.maxProductionQuantity ?? null,
     pricingMode: input.pricingMode ?? 'interpolated',
     active: true,
     createdAt: now,
@@ -130,6 +151,19 @@ export async function createProduct(
       updatedAt: now,
     }))
     await db.insert(breakpointsTable).values(breakpoints)
+  }
+
+  if (input.productAddons && input.productAddons.length > 0) {
+    const addons = input.productAddons.map((a) => ({
+      id: generateId(),
+      orgId: input.orgId,
+      productId: id,
+      name: a.name,
+      unitSurcharge: a.unitSurcharge,
+      createdAt: now,
+      updatedAt: now,
+    }))
+    await db.insert(addonsTable).values(addons)
   }
 
   const rows = await db
@@ -158,6 +192,14 @@ export async function updateProduct(
     updates.productionDays = input.productionDays
   if (input.minQuantity !== undefined) updates.minQuantity = input.minQuantity
   if (input.maxQuantity !== undefined) updates.maxQuantity = input.maxQuantity
+  if (input.negotiateAboveQuantity !== undefined)
+    updates.negotiateAboveQuantity = input.negotiateAboveQuantity
+  if (input.repeatOrderUnitPrice !== undefined)
+    updates.repeatOrderUnitPrice = input.repeatOrderUnitPrice
+  if (input.repeatOrderMinQuantity !== undefined)
+    updates.repeatOrderMinQuantity = input.repeatOrderMinQuantity
+  if (input.maxProductionQuantity !== undefined)
+    updates.maxProductionQuantity = input.maxProductionQuantity
   if (input.active !== undefined) updates.active = input.active
   if (input.pricingMode !== undefined) updates.pricingMode = input.pricingMode
 
@@ -184,6 +226,25 @@ export async function updateProduct(
         updatedAt: now,
       }))
       await db.insert(breakpointsTable).values(breakpoints)
+    }
+  }
+
+  if (input.productAddons !== undefined) {
+    await db
+      .delete(addonsTable)
+      .where(eq(addonsTable.productId, input.id))
+
+    if (input.productAddons.length > 0) {
+      const addons = input.productAddons.map((a) => ({
+        id: generateId(),
+        orgId: input.orgId,
+        productId: input.id,
+        name: a.name,
+        unitSurcharge: a.unitSurcharge,
+        createdAt: now,
+        updatedAt: now,
+      }))
+      await db.insert(addonsTable).values(addons)
     }
   }
 
@@ -337,4 +398,27 @@ export async function deleteBreakpoint(
   await db
     .delete(breakpointsTable)
     .where(and(eq(breakpointsTable.id, id), eq(breakpointsTable.orgId, orgId)))
+}
+
+export type ProductAddon = {
+  id: string
+  orgId: string
+  productId: string
+  name: string
+  unitSurcharge: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+export async function listProductAddons(
+  productId: string,
+  orgId: string,
+): Promise<ProductAddon[]> {
+  return db
+    .select()
+    .from(addonsTable)
+    .where(
+      and(eq(addonsTable.productId, productId), eq(addonsTable.orgId, orgId)),
+    )
+    .orderBy(asc(addonsTable.createdAt)) as Promise<ProductAddon[]>
 }

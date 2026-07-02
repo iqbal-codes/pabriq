@@ -181,6 +181,12 @@ const en: Messages = {
     internalDeadline: "Production Deadline",
     overdueDeadline: "Overdue",
     completedAt: "Completed On",
+    hargaNego: "Negotiated Price",
+    repeatOrder: "Repeat Order",
+    addons: "Addons",
+    manualDeadline: "Manual Deadline",
+    manualDeadlineRequired: "Manual deadline is required for quantities exceeding production capacity",
+    quantityExceedsProductionCap: "Quantity exceeds production capacity. A manual deadline is required.",
   },
   breadcrumb: {
     dashboard: "Dashboard",
@@ -471,6 +477,17 @@ const en: Messages = {
       interpolateOn:
         "Prices are calculated using linear interpolation between breakpoints",
       interpolateOff: "Prices use the nearest lower breakpoint (step pricing)",
+    },
+    negotiateAboveQuantity: "Negotiate Above Quantity",
+    repeatOrderUnitPrice: "Repeat Order Unit Price",
+    repeatOrderMinQuantity: "Repeat Order Min Quantity",
+    maxProductionQuantity: "Max Production Quantity",
+    addons: {
+      title: "Addons",
+      addAddon: "Add Addon",
+      noAddons: "No addons configured",
+      name: "Addon Name",
+      unitSurcharge: "Unit Surcharge",
     },
   },
   invoices: {

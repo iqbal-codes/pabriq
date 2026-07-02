@@ -161,6 +161,10 @@ export const products = pgTable('products', {
   productionDays: integer('production_days').notNull().default(1),
   minQuantity: integer('min_quantity').notNull().default(1),
   maxQuantity: integer('max_quantity'),
+  negotiateAboveQuantity: integer('negotiate_above_quantity'),
+  repeatOrderUnitPrice: integer('repeat_order_unit_price'),
+  repeatOrderMinQuantity: integer('repeat_order_min_quantity'),
+  maxProductionQuantity: integer('max_production_quantity'),
   pricingMode: text('pricing_mode').notNull().default('interpolated'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
@@ -176,6 +180,20 @@ export const pricingBreakpoints = pgTable('pricing_breakpoints', {
     .references(() => products.id, { onDelete: 'cascade' }),
   minQuantity: integer('min_quantity').notNull().default(1),
   unitPrice: real('unit_price').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+export const productAddons = pgTable('product_addons', {
+  id: text('id').primaryKey(),
+  orgId: text('org_id')
+    .notNull()
+    .references(() => organization.id, { onDelete: 'cascade' }),
+  productId: text('product_id')
+    .notNull()
+    .references(() => products.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  unitSurcharge: real('unit_surcharge').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
@@ -248,6 +266,25 @@ export const orderLineItems = pgTable('order_line_items', {
   }),
   productionDays: integer('production_days').notNull().default(1),
   deadline: timestamp('deadline').notNull().defaultNow(),
+  isRepeatOrder: boolean('is_repeat_order').notNull().default(false),
+  manualDeadline: boolean('manual_deadline').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+export const orderLineItemAddons = pgTable('order_line_item_addons', {
+  id: text('id').primaryKey(),
+  orgId: text('org_id')
+    .notNull()
+    .references(() => organization.id, { onDelete: 'cascade' }),
+  lineItemId: text('line_item_id')
+    .notNull()
+    .references(() => orderLineItems.id, { onDelete: 'cascade' }),
+  productAddonId: text('product_addon_id').references(() => productAddons.id, {
+    onDelete: 'set null',
+  }),
+  name: text('name').notNull(),
+  unitSurcharge: real('unit_surcharge').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })

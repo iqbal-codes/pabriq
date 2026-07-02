@@ -127,6 +127,20 @@
       "when": 1747576800000,
       "tag": "0023_product_priority",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1747600000000,
+      "tag": "0024_order_line_items_deadline",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1747700000000,
+      "tag": "0025_pricing_workflow_controls",
+      "breakpoints": true
     }
   ]
 }

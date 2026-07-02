@@ -3,6 +3,11 @@ import { z } from 'zod'
 const emailSchema = z.email()
 const phoneNumberSchema = z.string().regex(/^\d{8,16}$/)
 
+const productAddonSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  unitSurcharge: z.number().min(0, 'Unit surcharge must not be negative'),
+})
+
 const pricingBreakpointSchema = z.object({
   minQuantity: z.number().min(1, 'Min quantity must be at least 1'),
   unitPrice: z.number().min(0, 'Unit price must not be negative'),
@@ -18,6 +23,10 @@ export const productFormSchema = z.object({
   productionDays: z.number(),
   minQuantity: z.number(),
   maxQuantity: z.union([z.number(), z.undefined()]),
+  negotiateAboveQuantity: z.union([z.number(), z.undefined()]),
+  repeatOrderUnitPrice: z.union([z.number(), z.undefined()]),
+  repeatOrderMinQuantity: z.union([z.number(), z.undefined()]),
+  maxProductionQuantity: z.union([z.number(), z.undefined()]),
   pricingMode: z.enum(['interpolated', 'step']),
   pricingBreakpoints: z
     .array(pricingBreakpointSchema)
@@ -32,6 +41,7 @@ export const productFormSchema = z.object({
         }
       }
     }),
+  productAddons: z.array(productAddonSchema),
 })
 
 export const customerFormSchema = z.object({

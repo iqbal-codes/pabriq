@@ -8,6 +8,7 @@ import { PageHeader } from '#/components/app/page-shell/page-header'
 import { ProductFormFields } from '#/features/products/components/product-form-fields'
 import {
   useProduct,
+  useProductAddons,
   useProductBreakpoints,
   useUpdateProduct,
 } from '#/features/products/hooks'
@@ -18,6 +19,7 @@ export function EditProductPage() {
   const { id } = useParams({ from: '/_org/products/$id/edit' })
   const product = useProduct(id).data
   const breakpoints = useProductBreakpoints(product?.id ?? '')
+  const addons = useProductAddons(product?.id ?? '')
   const t = useTranslations('products')
   const ct = useTranslations('common')
   const updateProduct = useUpdateProduct()
@@ -35,6 +37,10 @@ export function EditProductPage() {
       productionDays: product?.productionDays ?? 1,
       minQuantity: product?.minQuantity ?? 1,
       maxQuantity: (product?.maxQuantity ?? undefined) as number | undefined,
+      negotiateAboveQuantity: (product?.negotiateAboveQuantity ?? undefined) as number | undefined,
+      repeatOrderUnitPrice: (product?.repeatOrderUnitPrice ?? undefined) as number | undefined,
+      repeatOrderMinQuantity: (product?.repeatOrderMinQuantity ?? undefined) as number | undefined,
+      maxProductionQuantity: (product?.maxProductionQuantity ?? undefined) as number | undefined,
       pricingMode:
         (product?.pricingMode as 'interpolated' | 'step' | undefined) ??
         'interpolated',
@@ -42,18 +48,23 @@ export function EditProductPage() {
         (breakpoints.data as
           | Array<{ minQuantity: number; unitPrice: number }>
           | undefined) ?? [],
+      productAddons: (addons.data?.map((a) => ({
+        name: a.name,
+        unitSurcharge: a.unitSurcharge,
+      })) ?? []) as Array<{ name: string; unitSurcharge: number }>,
     },
     validators: {
       onChange: productFormSchema,
     },
     onSubmit: async ({ value, formApi }) => {
       if (!formApi.state.isValid) return
-      const { pricingBreakpoints, pricingMode, ...productValues } = value
+      const { pricingBreakpoints, pricingMode, productAddons, ...productValues } = value
       const result = await updateProduct.mutateAsync({
         ...productValues,
         id: product?.id ?? '',
         pricingMode,
         pricingBreakpoints,
+        productAddons,
       })
       if (result.ok) {
         toast.success(t('updated'))

@@ -17,7 +17,7 @@ import {
   taskActivity,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
-import { normalizeDesignName } from '#/features/orders/line-item-display'
+import { addWorkingDays } from '#/lib/date-utils'
 
 export type PortalAsset = {
   id: string
@@ -500,6 +500,26 @@ export async function confirmPortalOrder(
           })
         }
       }
+      // Recompute non-manual deadlines from submission timestamp
+      const lineItems = await tx
+        .select({
+          id: orderLineItems.id,
+          productionDays: orderLineItems.productionDays,
+          manualDeadline: orderLineItems.manualDeadline,
+        })
+        .from(orderLineItems)
+        .where(eq(orderLineItems.orderId, input.orderId))
+
+      for (const li of lineItems) {
+        if (!li.manualDeadline) {
+          const newDeadline = addWorkingDays(now, li.productionDays)
+          await tx
+            .update(orderLineItems)
+            .set({ deadline: newDeadline, updatedAt: now })
+            .where(eq(orderLineItems.id, li.id))
+        }
+      }
+
 
       await tx
         .update(orders)

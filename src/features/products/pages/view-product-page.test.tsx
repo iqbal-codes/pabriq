@@ -30,6 +30,9 @@ vi.mock('#/features/products/hooks', () => ({
       { minQuantity: 10, unitPrice: 45000 },
     ],
   }),
+  useProductAddons: () => ({
+    data: [] as Array<{ id: string; name: string; unitSurcharge: number }>,
+  }),
 }))
 
 vi.mock('@tanstack/react-router', () => ({

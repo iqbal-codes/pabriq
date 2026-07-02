@@ -1,6 +1,7 @@
 export { AddressField } from './address-field'
 export { AreaSearchField } from './area-search-field'
 export { ComboboxField } from './combobox-field'
+export { DateField } from './date-field'
 export { EmailField } from './email-field'
 export { FileUploadField, PortalFileUploadField } from './file-upload-field'
 export { NumberField } from './number-field'

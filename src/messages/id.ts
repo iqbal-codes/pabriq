@@ -181,6 +181,12 @@ const id: Messages = {
     internalDeadline: "Tenggat Produksi",
     overdueDeadline: "Terlambat",
     completedAt: "Selesai Pada",
+    hargaNego: "Harga Negosiasi",
+    repeatOrder: "Pesanan Ulang",
+    addons: "Addon",
+    manualDeadline: "Tenggat Manual",
+    manualDeadlineRequired: "Tenggat manual diperlukan untuk kuantitas yang melebihi kapasitas produksi",
+    quantityExceedsProductionCap: "Kuantitas melebihi kapasitas produksi. Tenggat manual diperlukan.",
   },
   breadcrumb: {
     dashboard: "Dasbor",
@@ -474,6 +480,17 @@ const id: Messages = {
         "Harga dihitung menggunakan interpolasi linier antar tingkatan",
       interpolateOff:
         "Harga menggunakan tingkatan terendah terdekat (step pricing)",
+    },
+    negotiateAboveQuantity: "Negosiasi Di Atas Kuantitas",
+    repeatOrderUnitPrice: "Harga Satuan Pesanan Ulang",
+    repeatOrderMinQuantity: "Min. Kuantitas Pesanan Ulang",
+    maxProductionQuantity: "Maks. Kuantitas Produksi",
+    addons: {
+      title: "Addon",
+      addAddon: "Tambah Addon",
+      noAddons: "Belum ada addon",
+      name: "Nama Addon",
+      unitSurcharge: "Biaya Tambahan Satuan",
     },
   },
   invoices: {
