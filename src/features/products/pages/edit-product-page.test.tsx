@@ -27,6 +27,9 @@ vi.mock('#/features/products/hooks', () => ({
   useProductBreakpoints: () => ({
     data: [] as Array<{ minQuantity: number; unitPrice: number }>,
   }),
+  useProductAddons: () => ({
+    data: [] as Array<{ id: string; name: string; unitSurcharge: number }>,
+  }),
   useUpdateProduct: () => ({
     mutateAsync: vi.fn().mockResolvedValue({ ok: true }),
   }),

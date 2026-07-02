@@ -15,8 +15,13 @@ export const ProductFormFields = withForm({
     productionDays: 1,
     minQuantity: 1,
     maxQuantity: undefined as number | undefined,
+    negotiateAboveQuantity: undefined as number | undefined,
+    repeatOrderUnitPrice: undefined as number | undefined,
+    repeatOrderMinQuantity: undefined as number | undefined,
+    maxProductionQuantity: undefined as number | undefined,
     pricingMode: 'interpolated' as 'interpolated' | 'step',
     pricingBreakpoints: [] as Array<{ minQuantity: number; unitPrice: number }>,
+    productAddons: [] as Array<{ name: string; unitSurcharge: number }>,
   },
   render: function Render({ form }) {
     const t = useTranslations('products')
@@ -83,6 +88,29 @@ export const ProductFormFields = withForm({
             </form.AppField>
             <form.AppField name="maxQuantity">
               {(field) => <field.NumberField label={t('maxQuantity')} />}
+            </form.AppField>
+          </FormGrid>
+
+          <FormGrid columns={2}>
+            <form.AppField name="negotiateAboveQuantity">
+              {(field) => (
+                <field.NumberField label={t('negotiateAboveQuantity')} />
+              )}
+            </form.AppField>
+            <form.AppField name="repeatOrderUnitPrice">
+              {(field) => (
+                <field.NumberField label={t('repeatOrderUnitPrice')} />
+              )}
+            </form.AppField>
+            <form.AppField name="repeatOrderMinQuantity">
+              {(field) => (
+                <field.NumberField label={t('repeatOrderMinQuantity')} />
+              )}
+            </form.AppField>
+            <form.AppField name="maxProductionQuantity">
+              {(field) => (
+                <field.NumberField label={t('maxProductionQuantity')} />
+              )}
             </form.AppField>
           </FormGrid>
 
@@ -179,6 +207,81 @@ export const ProductFormFields = withForm({
                           onClick={() =>
                             breakpointsField.removeValue(
                               breakpointsField.state.value.indexOf(bp),
+                            )
+                          }
+                          className="mb-0.5"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </form.AppField>
+          </div>
+
+          {/* Product addons */}
+          <div className="mt-6">
+            <form.AppField name="productAddons" mode="array">
+              {(addonsField) => (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium">
+                      {t('addons.title')}
+                    </h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        addonsField.pushValue({
+                          name: '',
+                          unitSurcharge: 0,
+                        })
+                      }}
+                    >
+                      <Plus className="size-4 mr-1" />
+                      {t('addons.addAddon')}
+                    </Button>
+                  </div>
+                  {addonsField.state.value.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {t('addons.noAddons')}
+                    </p>
+                  ) : (
+                    addonsField.state.value.map((addon) => (
+                      <div
+                        key={addonsField.state.value.indexOf(addon)}
+                        className="flex items-end gap-3"
+                      >
+                        <div className="flex-1">
+                          <form.AppField
+                            name={`productAddons[${addonsField.state.value.indexOf(addon)}].name`}
+                          >
+                            {(field) => (
+                              <field.TextField label={t('addons.name')} />
+                            )}
+                          </form.AppField>
+                        </div>
+                        <div className="flex-1">
+                          <form.AppField
+                            name={`productAddons[${addonsField.state.value.indexOf(addon)}].unitSurcharge`}
+                          >
+                            {(field) => (
+                              <field.NumberField
+                                label={t('addons.unitSurcharge')}
+                              />
+                            )}
+                          </form.AppField>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            addonsField.removeValue(
+                              addonsField.state.value.indexOf(addon),
                             )
                           }
                           className="mb-0.5"

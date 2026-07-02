@@ -31,6 +31,10 @@ export const OrderFormFields = withForm({
           designName: '',
           notes: '',
           attachments: [],
+          addonIds: [],
+          isRepeatOrder: false,
+          deadline: '',
+          manualDeadline: false,
         },
       ])
     }

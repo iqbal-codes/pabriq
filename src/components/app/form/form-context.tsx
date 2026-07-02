@@ -5,6 +5,7 @@ import {
   AddressField,
   AreaSearchField,
   ComboboxField,
+  DateField,
   EmailField,
   FileUploadField,
   NumberField,
@@ -24,6 +25,7 @@ export const { useAppForm, withForm } = createFormHook({
   fieldComponents: {
     AddressField,
     ComboboxField,
+    DateField,
     TextField,
     EmailField,
     PasswordField,

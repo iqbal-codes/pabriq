@@ -26,22 +26,28 @@ export function CreateProductPage() {
       productionDays: 1,
       minQuantity: 1,
       maxQuantity: undefined as number | undefined,
+      negotiateAboveQuantity: undefined as number | undefined,
+      repeatOrderUnitPrice: undefined as number | undefined,
+      repeatOrderMinQuantity: undefined as number | undefined,
+      maxProductionQuantity: undefined as number | undefined,
       pricingMode: 'interpolated' as 'interpolated' | 'step',
       pricingBreakpoints: [] as Array<{
         minQuantity: number
         unitPrice: number
       }>,
+      productAddons: [] as Array<{ name: string; unitSurcharge: number }>,
     },
     validators: {
       onChange: productFormSchema,
     },
     onSubmit: async ({ value, formApi }) => {
       if (!formApi.state.isValid) return
-      const { pricingBreakpoints, pricingMode, ...productValues } = value
+      const { pricingBreakpoints, pricingMode, productAddons, ...productValues } = value
       const result = await createProduct.mutateAsync({
         ...productValues,
         pricingMode,
         pricingBreakpoints,
+        productAddons,
       })
       if (result.ok) {
         toast.success(t('created'))

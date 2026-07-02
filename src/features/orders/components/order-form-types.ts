@@ -9,6 +9,10 @@ export type OrderFormValues = {
     designName: string
     notes: string
     attachments: string[]
+    addonIds: string[]
+    isRepeatOrder: boolean
+    deadline: string
+    manualDeadline: boolean
   }>
 }
 

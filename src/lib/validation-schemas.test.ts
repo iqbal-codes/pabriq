@@ -12,9 +12,14 @@ describe('productFormSchema', () => {
       basePrice: 0,
       productionDays: 1,
       minQuantity: 1,
-      maxQuantity: null,
+      maxQuantity: undefined,
+      negotiateAboveQuantity: undefined,
+      repeatOrderUnitPrice: undefined,
+      repeatOrderMinQuantity: undefined,
+      maxProductionQuantity: undefined,
       pricingMode: 'interpolated',
       pricingBreakpoints: [],
+      productAddons: [],
     })
     expect(result.success).toBe(false)
   })
@@ -30,8 +35,13 @@ describe('productFormSchema', () => {
       productionDays: 3,
       minQuantity: 1,
       maxQuantity: 100,
+      negotiateAboveQuantity: undefined,
+      repeatOrderUnitPrice: undefined,
+      repeatOrderMinQuantity: undefined,
+      maxProductionQuantity: undefined,
       pricingMode: 'interpolated',
       pricingBreakpoints: [{ minQuantity: 1, unitPrice: 50000 }],
+      productAddons: [],
     })
     expect(result.success).toBe(true)
   })
@@ -47,8 +57,13 @@ describe('productFormSchema', () => {
       productionDays: 1,
       minQuantity: 1,
       maxQuantity: undefined,
+      negotiateAboveQuantity: undefined,
+      repeatOrderUnitPrice: undefined,
+      repeatOrderMinQuantity: undefined,
+      maxProductionQuantity: undefined,
       pricingMode: 'step',
       pricingBreakpoints: [],
+      productAddons: [],
     })
     expect(result.success).toBe(true)
   })

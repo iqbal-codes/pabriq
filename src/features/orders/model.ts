@@ -4,8 +4,10 @@ import {
   assets as assetsTable,
   customers as customersTable,
   invoices as invoicesTable,
+  orderLineItemAddons as lineItemAddonsTable,
   orderLineItems as lineItemsTable,
   orders as ordersTable,
+  productAddons as productAddonsTable,
   products as productsTable,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
@@ -14,7 +16,6 @@ import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
 import { spawnQueuedPreProductionTasksForOrder } from '#/features/production/task-spawn-helpers'
 import { listBreakpoints } from '#/features/products/model'
 import { addWorkingDays } from '#/lib/date-utils'
-import { normalizeDesignName } from '#/features/orders/line-item-display'
 import { buildOrderBy, type SortColumnMap, type SortState } from '#/lib/sorting'
 
 export type Order = {
@@ -59,6 +60,14 @@ export type OrderLineItem = {
   notes: string | null
   productionDays: number
   deadline: Date
+  isRepeatOrder: boolean
+  manualDeadline: boolean
+  selectedAddons: Array<{
+    id: string
+    productAddonId: string | null
+    name: string
+    unitSurcharge: number
+  }>
   createdAt: Date
   updatedAt: Date
 }
@@ -70,6 +79,16 @@ export type LineItemInput = {
   unitPrice?: number
   designName?: string
   notes?: string
+  addonIds?: string[]
+  selectedAddons?: Array<{
+    id: string
+    productAddonId: string | null
+    name: string
+    unitSurcharge: number
+  }>
+  isRepeatOrder?: boolean
+  deadline?: Date
+  manualDeadline?: boolean
 }
 
 export type CreateDraftOrderInput = {
@@ -81,14 +100,7 @@ export type CreateDraftOrderInput = {
 export type UpdateDraftOrderInput = {
   customerId: string | null
   notes?: string
-  lineItems: Array<{
-    id?: string
-    productId: string
-    quantity: number
-    unitPrice?: number
-    designName?: string
-    notes?: string
-  }>
+  lineItems: LineItemInput[]
 }
 
 export type CreateDraftOrderResult = {
@@ -169,25 +181,126 @@ async function generateOrderNumber(orgId: string): Promise<string> {
   return `${prefix}${String(nextNum).padStart(3, '0')}`
 }
 
-async function computeLineItemPricing(
-  productId: string,
-  quantity: number,
-  unitPrice?: number,
-): Promise<{ unitPrice: number; total: number }> {
-  const breakpoints = await listBreakpoints(productId)
-  const result = calculateUnitPrice({
-    quantity,
-    breakpoints: breakpoints as Breakpoint[],
-    manualUnitPrice: unitPrice,
-  })
+async function computeLineItemPricing(input: {
+  orgId: string
+  productId: string
+  quantity: number
+  manualUnitPrice?: number
+  isRepeatOrder?: boolean
+  addonIds?: string[]
+}): Promise<{
+  unitPrice: number
+  total: number
+  selectedAddons: Array<{
+    productAddonId: string
+    name: string
+    unitSurcharge: number
+  }>
+}> {
+  const productRows = await db
+    .select({
+      basePrice: productsTable.basePrice,
+      minQuantity: productsTable.minQuantity,
+      pricingMode: productsTable.pricingMode,
+      repeatOrderUnitPrice: productsTable.repeatOrderUnitPrice,
+      repeatOrderMinQuantity: productsTable.repeatOrderMinQuantity,
+      negotiateAboveQuantity: productsTable.negotiateAboveQuantity,
+    })
+    .from(productsTable)
+    .where(eq(productsTable.id, input.productId))
+    .limit(1)
+  const product = productRows[0]
+  if (!product) throw new Error('Product not found')
 
-  if ('code' in result) {
-    throw new Error(result.message)
+  // Load breakpoints
+  const breakpointRows = await listBreakpoints(input.productId)
+  const breakpoints: Breakpoint[] = breakpointRows.map((bp) => ({
+    minQuantity: bp.minQuantity,
+    unitPrice: bp.unitPrice,
+  }))
+
+  // Inject base price at minQuantity if no explicit breakpoint
+  const hasExplicitAtMinQty = breakpoints.some(
+    (bp) => bp.minQuantity === product.minQuantity,
+  )
+  if (!hasExplicitAtMinQty) {
+    breakpoints.unshift({
+      minQuantity: product.minQuantity,
+      unitPrice: product.basePrice,
+    })
   }
 
+  // Load addons
+  let selectedAddons: Array<{
+    productAddonId: string
+    name: string
+    unitSurcharge: number
+  }> = []
+  let addonSurcharge = 0
+  if (input.addonIds && input.addonIds.length > 0) {
+    const addonRows = await db
+      .select({
+        id: productAddonsTable.id,
+        name: productAddonsTable.name,
+        unitSurcharge: productAddonsTable.unitSurcharge,
+      })
+      .from(productAddonsTable)
+      .where(
+        and(
+          eq(productAddonsTable.productId, input.productId),
+          eq(productAddonsTable.orgId, input.orgId),
+          inArray(productAddonsTable.id, input.addonIds),
+        ),
+      )
+    if (addonRows.length !== input.addonIds.length) {
+      throw new Error('Invalid product addon')
+    }
+    selectedAddons = addonRows.map((a) => ({
+      productAddonId: a.id,
+      name: a.name,
+      unitSurcharge: a.unitSurcharge,
+    }))
+    addonSurcharge = selectedAddons.reduce((sum, a) => sum + a.unitSurcharge, 0)
+  }
+
+  let baseUnitPrice: number
+
+  if (input.isRepeatOrder) {
+    if (product.repeatOrderUnitPrice == null) {
+      throw new Error('Product does not support repeat orders')
+    }
+    const minQty = product.repeatOrderMinQuantity ?? product.minQuantity
+    if (input.quantity < minQty) {
+      throw new Error(`Quantity below repeat order minimum of ${minQty}`)
+    }
+    baseUnitPrice = product.repeatOrderUnitPrice
+  } else if (
+    product.negotiateAboveQuantity != null &&
+    input.quantity > product.negotiateAboveQuantity
+  ) {
+    // Use cheapest known price
+    const cheapest =
+      breakpoints.length > 0
+        ? Math.min(...breakpoints.map((bp) => bp.unitPrice))
+        : product.basePrice
+    baseUnitPrice = input.manualUnitPrice ?? cheapest
+  } else {
+    const result = calculateUnitPrice({
+      quantity: input.quantity,
+      breakpoints,
+      mode: product.pricingMode as 'interpolated' | 'step',
+    })
+    if ('code' in result) {
+      throw new Error(result.message)
+    }
+    baseUnitPrice = result.unitPrice.amount
+  }
+
+  const unitPrice = baseUnitPrice + addonSurcharge
   return {
-    unitPrice: result.unitPrice.amount,
-    total: result.lineTotal.amount,
+    unitPrice,
+    total: unitPrice * input.quantity,
+    selectedAddons,
   }
 }
 
@@ -371,6 +484,43 @@ export async function getOrder(
 >>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
     .orderBy(lineItemsTable.createdAt)
 
+  // Fetch addon snapshots for all line items
+  const lineItemIds = itemRows.map((item) => item.id)
+  const addonRows =
+    lineItemIds.length > 0
+      ? await db
+          .select({
+            id: lineItemAddonsTable.id,
+            lineItemId: lineItemAddonsTable.lineItemId,
+            productAddonId: lineItemAddonsTable.productAddonId,
+            name: lineItemAddonsTable.name,
+            unitSurcharge: lineItemAddonsTable.unitSurcharge,
+          })
+          .from(lineItemAddonsTable)
+          .where(inArray(lineItemAddonsTable.lineItemId, lineItemIds))
+      : []
+
+  // Group addons by line item ID
+  const addonsByLineItem = new Map<
+    string,
+    Array<{
+      id: string
+      productAddonId: string | null
+      name: string
+      unitSurcharge: number
+    }>
+  >()
+  for (const addon of addonRows) {
+    const existing = addonsByLineItem.get(addon.lineItemId) ?? []
+    existing.push({
+      id: addon.id,
+      productAddonId: addon.productAddonId,
+      name: addon.name,
+      unitSurcharge: addon.unitSurcharge,
+    })
+    addonsByLineItem.set(addon.lineItemId, existing)
+  }
+
   const customer = orderRows[0].customerId
     ? (
         await db
@@ -391,9 +541,22 @@ export async function getOrder(
       )[0]
     : null
 
+  // Enrich line items with addon data
+  const enrichedLineItems: OrderLineItem[] = itemRows.map((item) => {
+    const row = item as Omit<OrderLineItem, 'selectedAddons'> & {
+      selectedAddons?: OrderLineItem['selectedAddons']
+    }
+    return {
+      ...row,
+      isRepeatOrder: row.isRepeatOrder ?? false,
+      manualDeadline: row.manualDeadline ?? false,
+      selectedAddons: addonsByLineItem.get(item.id) ?? [],
+    }
+  })
+
   return {
     order: orderRows[0] as Order,
-    lineItems: itemRows as OrderLineItem[],
+    lineItems: enrichedLineItems,
     customerName: customer?.name ?? null,
     customerPhone: customer?.phone ?? null,
     customerPhotoAssetId: customer?.photoAssetId ?? null,
@@ -446,6 +609,16 @@ export async function createDraftOrder(
   const now = new Date()
   const orderId = generateId()
   const items: OrderLineItem[] = []
+  const allAddonInserts: Array<{
+    id: string
+    orgId: string
+    lineItemId: string
+    productAddonId: string
+    name: string
+    unitSurcharge: number
+    createdAt: Date
+    updatedAt: Date
+  }> = []
 
   for (const li of input.lineItems) {
     const productRows = await db
@@ -454,7 +627,14 @@ export async function createDraftOrder(
         name: productsTable.name,
         active: productsTable.active,
         productionDays: productsTable.productionDays,
-        name: productsTable.name,
+        minQuantity: productsTable.minQuantity,
+        maxQuantity: productsTable.maxQuantity,
+        pricingMode: productsTable.pricingMode,
+        basePrice: productsTable.basePrice,
+        repeatOrderUnitPrice: productsTable.repeatOrderUnitPrice,
+        repeatOrderMinQuantity: productsTable.repeatOrderMinQuantity,
+        negotiateAboveQuantity: productsTable.negotiateAboveQuantity,
+        maxProductionQuantity: productsTable.maxProductionQuantity,
       })
       .from(productsTable)
       .where(
@@ -462,16 +642,47 @@ export async function createDraftOrder(
       )
       .limit(1)
     if (productRows.length === 0) throw new Error('Product not found')
-    if (!productRows[0].active) throw new Error('Product is not active')
+    const product = productRows[0]
+    if (!product.active) throw new Error('Product is not active')
 
-    const pricing = await computeLineItemPricing(
-      li.productId,
-      li.quantity,
-      li.unitPrice,
-    )
+    // Validate minimum quantity
+    if (li.isRepeatOrder) {
+      const minQty = product.repeatOrderMinQuantity ?? product.minQuantity
+      if (li.quantity < minQty) {
+        throw new Error(`Quantity below repeat order minimum of ${minQty}`)
+      }
+    } else {
+      if (li.quantity < product.minQuantity) {
+        throw new Error(`Quantity below minimum of ${product.minQuantity}`)
+      }
+    }
+
+    // Validate max production quantity
+    if (
+      product.maxProductionQuantity != null &&
+      li.quantity > product.maxProductionQuantity &&
+      !li.manualDeadline
+    ) {
+      throw new Error('Manual deadline required')
+    }
+
+    const pricing = await computeLineItemPricing({
+      orgId,
+      productId: li.productId,
+      quantity: li.quantity,
+      manualUnitPrice: li.unitPrice,
+      isRepeatOrder: li.isRepeatOrder,
+      addonIds: li.addonIds,
+    })
 
     const itemId = li.id ?? generateId()
-    const deadline = addWorkingDays(now, productRows[0].productionDays)
+    let deadline: Date
+    if (li.manualDeadline && li.deadline) {
+      deadline = li.deadline
+    } else {
+      deadline = addWorkingDays(now, product.productionDays)
+    }
+
     items.push({
       id: itemId,
       orgId,
@@ -483,11 +694,33 @@ export async function createDraftOrder(
       productName: productRows[0].name,
       designName: normalizeDesignName(li.designName),
       notes: li.notes ?? null,
-      productionDays: productRows[0].productionDays,
+      productionDays: product.productionDays,
       deadline,
+      isRepeatOrder: li.isRepeatOrder ?? false,
+      manualDeadline: li.manualDeadline ?? false,
+      selectedAddons: pricing.selectedAddons.map((a) => ({
+        id: generateId(),
+        productAddonId: a.productAddonId,
+        name: a.name,
+        unitSurcharge: a.unitSurcharge,
+      })),
       createdAt: now,
       updatedAt: now,
     })
+
+    // Collect addon snapshot inserts
+    for (const addon of pricing.selectedAddons) {
+      allAddonInserts.push({
+        id: generateId(),
+        orgId,
+        lineItemId: itemId,
+        productAddonId: addon.productAddonId,
+        name: addon.name,
+        unitSurcharge: addon.unitSurcharge,
+        createdAt: now,
+        updatedAt: now,
+      })
+    }
   }
 
   const orderTotal = items.reduce((sum, i) => sum + i.total, 0)
@@ -510,7 +743,12 @@ export async function createDraftOrder(
   })
 
   if (items.length > 0) {
-    await db.insert(lineItemsTable).values(items)
+    const dbItems = items.map(({ selectedAddons: _, ...rest }) => rest)
+    await db.insert(lineItemsTable).values(dbItems)
+  }
+
+  if (allAddonInserts.length > 0) {
+    await db.insert(lineItemAddonsTable).values(allAddonInserts)
   }
 
   return {
@@ -568,13 +806,23 @@ export async function updateDraftOrder(
     if (customerRows.length === 0) throw new Error('Customer not found')
   }
 
-  // Validate all products and collect productionDays + names
+<<<<<<< HEAD
+  // Validate all products and collect productionDays
   const productProductionDays = new Map<string, number>()
 <<<<<<< HEAD
   const productNames = new Map<string, string>()
 =======
-  const productNameMap = new Map<string, string>()
->>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
+  // Validate all products and collect product data
+  const productDataMap = new Map<
+    string,
+    {
+      productionDays: number
+      minQuantity: number
+      repeatOrderMinQuantity: number | null
+      maxProductionQuantity: number | null
+    }
+  >()
+>>>>>>> 70d2ed3 (Add 3D rubber pricing workflow controls)
   for (const li of input.lineItems) {
     const productRows = await db
       .select({
@@ -582,7 +830,10 @@ export async function updateDraftOrder(
         name: productsTable.name,
         active: productsTable.active,
         productionDays: productsTable.productionDays,
-        name: productsTable.name,
+        minQuantity: productsTable.minQuantity,
+        repeatOrderUnitPrice: productsTable.repeatOrderUnitPrice,
+        repeatOrderMinQuantity: productsTable.repeatOrderMinQuantity,
+        maxProductionQuantity: productsTable.maxProductionQuantity,
       })
       .from(productsTable)
       .where(
@@ -590,7 +841,8 @@ export async function updateDraftOrder(
       )
       .limit(1)
     if (productRows.length === 0) throw new Error('Product not found')
-    if (!productRows[0].active) {
+    const product = productRows[0]
+    if (!product.active) {
       const existingItems = await db
         .select({ id: lineItemsTable.id })
         .from(lineItemsTable)
@@ -605,31 +857,80 @@ export async function updateDraftOrder(
         throw new Error('Cannot add inactive product')
       }
     }
+<<<<<<< HEAD
     productProductionDays.set(li.productId, productRows[0].productionDays)
 <<<<<<< HEAD
     productNames.set(li.productId, productRows[0].name)
 =======
-    productNameMap.set(li.productId, productRows[0].name)
->>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
+
+    // Validate minimum quantity
+    if (li.isRepeatOrder) {
+      const minQty = product.repeatOrderMinQuantity ?? product.minQuantity
+      if (li.quantity < minQty) {
+        throw new Error(`Quantity below repeat order minimum of ${minQty}`)
+      }
+    } else {
+      if (li.quantity < product.minQuantity) {
+        throw new Error(`Quantity below minimum of ${product.minQuantity}`)
+      }
+    }
+
+    // Validate max production quantity
+    if (
+      product.maxProductionQuantity != null &&
+      li.quantity > product.maxProductionQuantity &&
+      !li.manualDeadline
+    ) {
+      throw new Error('Manual deadline required')
+    }
+
+    productDataMap.set(li.productId, {
+      productionDays: product.productionDays,
+      minQuantity: product.minQuantity,
+      repeatOrderMinQuantity: product.repeatOrderMinQuantity,
+      maxProductionQuantity: product.maxProductionQuantity,
+    })
+>>>>>>> 70d2ed3 (Add 3D rubber pricing workflow controls)
   }
 
   const now = new Date()
 
-  // Delete existing line items
+  // Delete existing line items (cascade deletes addon snapshots)
   await db.delete(lineItemsTable).where(eq(lineItemsTable.orderId, id))
 
   // Insert new line items
   const items: OrderLineItem[] = []
+  const allAddonInserts: Array<{
+    id: string
+    orgId: string
+    lineItemId: string
+    productAddonId: string
+    name: string
+    unitSurcharge: number
+    createdAt: Date
+    updatedAt: Date
+  }> = []
+
   for (const li of input.lineItems) {
-    const pricing = await computeLineItemPricing(
-      li.productId,
-      li.quantity,
-      li.unitPrice,
-    )
-    const productionDays = productProductionDays.get(li.productId) ?? 1
-    const deadline = addWorkingDays(now, productionDays)
+    const pricing = await computeLineItemPricing({
+      orgId,
+      productId: li.productId,
+      quantity: li.quantity,
+      manualUnitPrice: li.unitPrice,
+      isRepeatOrder: li.isRepeatOrder,
+      addonIds: li.addonIds,
+    })
+    const productData = productDataMap.get(li.productId)
+    const productionDays = productData?.productionDays ?? 1
 
     const itemId = li.id ?? generateId()
+    let deadline: Date
+    if (li.manualDeadline && li.deadline) {
+      deadline = li.deadline
+    } else {
+      deadline = addWorkingDays(now, productionDays)
+    }
+
     items.push({
       id: itemId,
       orgId,
@@ -647,9 +948,31 @@ export async function updateDraftOrder(
       notes: li.notes ?? null,
       productionDays,
       deadline,
+      isRepeatOrder: li.isRepeatOrder ?? false,
+      manualDeadline: li.manualDeadline ?? false,
+      selectedAddons: pricing.selectedAddons.map((a) => ({
+        id: generateId(),
+        productAddonId: a.productAddonId,
+        name: a.name,
+        unitSurcharge: a.unitSurcharge,
+      })),
       createdAt: now,
       updatedAt: now,
     })
+
+    // Collect addon snapshot inserts
+    for (const addon of pricing.selectedAddons) {
+      allAddonInserts.push({
+        id: generateId(),
+        orgId,
+        lineItemId: itemId,
+        productAddonId: addon.productAddonId,
+        name: addon.name,
+        unitSurcharge: addon.unitSurcharge,
+        createdAt: now,
+        updatedAt: now,
+      })
+    }
   }
 
   const orderTotal = items.reduce((sum, i) => sum + i.total, 0)
@@ -665,7 +988,12 @@ export async function updateDraftOrder(
     .where(eq(ordersTable.id, id))
 
   if (items.length > 0) {
-    await db.insert(lineItemsTable).values(items)
+    const dbItems = items.map(({ selectedAddons: _, ...rest }) => rest)
+    await db.insert(lineItemsTable).values(dbItems)
+  }
+
+  if (allAddonInserts.length > 0) {
+    await db.insert(lineItemAddonsTable).values(allAddonInserts)
   }
 
   return {

@@ -16,11 +16,16 @@ function TestWrapper() {
       productionDays: 1,
       minQuantity: 1,
       maxQuantity: undefined as number | undefined,
+      negotiateAboveQuantity: undefined as number | undefined,
+      repeatOrderUnitPrice: undefined as number | undefined,
+      repeatOrderMinQuantity: undefined as number | undefined,
+      maxProductionQuantity: undefined as number | undefined,
       pricingMode: 'interpolated' as 'interpolated' | 'step',
       pricingBreakpoints: [] as Array<{
         minQuantity: number
         unitPrice: number
       }>,
+      productAddons: [] as Array<{ name: string; unitSurcharge: number }>,
     },
   })
 
@@ -45,6 +50,10 @@ function TestWrapper() {
           maxQuantity: 'Max. Quantity',
           photo: 'Primary Photo',
           pricingAndOrders: 'Pricing & Orders',
+          negotiateAboveQuantity: 'Negotiate Above Quantity',
+          repeatOrderUnitPrice: 'Repeat Order Unit Price',
+          repeatOrderMinQuantity: 'Repeat Order Min Quantity',
+          maxProductionQuantity: 'Max Production Quantity',
           pricing: {
             breakpoints: 'Pricing Breakpoints',
             addBreakpoint: 'Add Breakpoint',
@@ -54,6 +63,13 @@ function TestWrapper() {
             interpolate: 'Interpolate pricing',
             interpolateOn: 'Prices use linear interpolation',
             interpolateOff: 'Prices use step pricing',
+          },
+          addons: {
+            title: 'Addons',
+            addAddon: 'Add Addon',
+            noAddons: 'No addons configured',
+            name: 'Addon Name',
+            unitSurcharge: 'Unit Surcharge',
           },
         },
       }}

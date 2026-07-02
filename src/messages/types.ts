@@ -264,6 +264,12 @@ export type Messages = {
     internalDeadline: string;
     overdueDeadline: string;
     completedAt: string;
+    hargaNego: string;
+    repeatOrder: string;
+    addons: string;
+    manualDeadline: string;
+    manualDeadlineRequired: string;
+    quantityExceedsProductionCap: string;
   };
   breadcrumb: {
     dashboard: string;
@@ -474,6 +480,17 @@ export type Messages = {
       interpolate: string;
       interpolateOn: string;
       interpolateOff: string;
+    };
+    negotiateAboveQuantity: string;
+    repeatOrderUnitPrice: string;
+    repeatOrderMinQuantity: string;
+    maxProductionQuantity: string;
+    addons: {
+      title: string;
+      addAddon: string;
+      noAddons: string;
+      name: string;
+      unitSurcharge: string;
     };
   };
   invoices: {
