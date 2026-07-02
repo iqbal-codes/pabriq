@@ -76,8 +76,8 @@ export function useCompleteProduction() {
       trackingNumber?: string
       shippingFee?: number
       shippingFeeDescription?: string
-      invoiceDueDate: string
-      invoicePaymentMethodId: string
+      invoiceDueDate?: string
+      invoicePaymentMethodId?: string
       invoiceNotes?: string
     }) => completeProductionFn({ data: input }),
     onSuccess: (_data, variables) => {

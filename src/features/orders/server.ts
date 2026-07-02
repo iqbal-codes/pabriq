@@ -191,8 +191,8 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
       trackingNumber?: string
       shippingFee?: number
       shippingFeeDescription?: string
-      invoiceDueDate: string
-      invoicePaymentMethodId: string
+      invoiceDueDate?: string
+      invoicePaymentMethodId?: string
       invoiceNotes?: string
     }) => input,
   )
@@ -291,6 +291,12 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
 
     // 4. Create final invoice if there's remaining balance
     if (remainingAmount > 0) {
+      if (!data.invoiceDueDate || !data.invoicePaymentMethodId) {
+        throw new Error(
+          'Due date and payment method are required to create the final invoice',
+        )
+      }
+
       const remainingPercentage =
         order.total > 0
           ? Math.round((remainingAmount / order.total) * 10_000) / 100
