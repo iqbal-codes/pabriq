@@ -267,6 +267,8 @@ export type Messages = {
     downloadQuotation: string;
     sendDpInvoice: string;
     confirmDpPayment: string;
+    sendSettlementInvoice: string;
+    confirmSettlementPayment: string;
     loadOrdersFailed: string;
     loadOrdersFailedDesc: string;
     copyLinkFailed: string;

@@ -184,6 +184,8 @@ const id: Messages = {
     downloadQuotation: "Unduh Penawaran",
     sendDpInvoice: "Kirim Invoice DP",
     confirmDpPayment: "Konfirmasi DP",
+    sendSettlementInvoice: "Kirim Invoice Pelunasan",
+    confirmSettlementPayment: "Konfirmasi Pelunasan",
     loadOrdersFailed: "Tidak dapat memuat pesanan",
     loadOrdersFailedDesc: "Periksa koneksi Anda lalu coba lagi.",
     copyLinkFailed: "Tidak dapat menyalin tautan portal",

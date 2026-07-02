@@ -203,22 +203,31 @@ describe('useOrderDerivedState.canCompleteOrder', () => {
 })
 
 describe('useOrderDerivedState.canCompleteProduction', () => {
-  it('is true for in_progress order with all tasks completed', () => {
+  it('is true for in_progress order with all tasks completed and fully paid 100% invoice', () => {
     const state = derive(
       makeOrder('in_progress'),
-      [],
+      [makeInvoice('i1', 'paid', 100, 1_000_000)],
       [{ task: { status: 'completed' } }],
     )
     expect(state.canCompleteProduction).toBe(true)
   })
 
-  it('is true for approved order with all tasks completed (non-linear flow)', () => {
+  it('is false for in_progress order with all tasks completed but unpaid final invoice', () => {
     const state = derive(
-      makeOrder('approved'),
-      [],
+      makeOrder('in_progress'),
+      [makeInvoice('i1', 'unpaid', 100, 1_000_000)],
       [{ task: { status: 'completed' } }],
     )
-    expect(state.canCompleteProduction).toBe(true)
+    expect(state.canCompleteProduction).toBe(false)
+  })
+
+  it('is false for approved order even if all tasks completed and invoices paid', () => {
+    const state = derive(
+      makeOrder('approved'),
+      [makeInvoice('i1', 'paid', 100, 1_000_000)],
+      [{ task: { status: 'completed' } }],
+    )
+    expect(state.canCompleteProduction).toBe(false)
   })
 
   it('is false for approved order with incomplete tasks', () => {
@@ -230,12 +239,53 @@ describe('useOrderDerivedState.canCompleteProduction', () => {
     expect(state.canCompleteProduction).toBe(false)
   })
 
-  it('is false when a final invoice already exists', () => {
+  it('is false when no invoices exist', () => {
     const state = derive(
       makeOrder('in_progress'),
-      [makeInvoice('i1', 'paid', 100, 1_000_000)],
+      [],
       [{ task: { status: 'completed' } }],
     )
     expect(state.canCompleteProduction).toBe(false)
+  })
+
+  it('is false when only DP invoice paid (50% invoiced)', () => {
+    const state = derive(
+      makeOrder('in_progress'),
+      [makeInvoice('i1', 'paid', 50, 500_000)],
+      [{ task: { status: 'completed' } }],
+    )
+    expect(state.canCompleteProduction).toBe(false)
+  })
+})
+
+describe('useOrderDerivedState.canSendSettlementInvoice', () => {
+  it('is true for in_progress order when final invoice does not exist', () => {
+    const state = derive(
+      makeOrder('in_progress'),
+      [makeInvoice('i1', 'paid', 50, 500_000)],
+      [],
+    )
+    expect(state.canSendSettlementInvoice).toBe(true)
+  })
+
+  it('is false for approved order even if tasks ready and no final invoice', () => {
+    const state = derive(
+      makeOrder('approved'),
+      [makeInvoice('i1', 'paid', 50, 500_000)],
+      [],
+    )
+    expect(state.canSendSettlementInvoice).toBe(false)
+  })
+
+  it('is false when final invoice already exists (total >= 100%)', () => {
+    const state = derive(
+      makeOrder('in_progress'),
+      [
+        makeInvoice('i1', 'paid', 50, 500_000),
+        makeInvoice('i2', 'unpaid', 50, 500_000),
+      ],
+      [],
+    )
+    expect(state.canSendSettlementInvoice).toBe(false)
   })
 })

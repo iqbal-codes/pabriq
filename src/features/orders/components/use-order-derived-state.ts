@@ -1,6 +1,6 @@
-import { READY_FOR_PRODUCTION_STATUS } from '#/features/production/constants'
 import type { InvoiceRow } from '#/features/invoices/model'
 import type { GetOrderResult } from '#/features/orders/model'
+import { READY_FOR_PRODUCTION_STATUS } from '#/features/production/constants'
 
 type OrderTaskSummary = { task: { status: string } }
 
@@ -16,6 +16,7 @@ export type OrderDerivedState = {
   isApprovedOrLater: boolean
   canCreateInvoice: boolean
   canSendDpInvoice: boolean
+  canSendSettlementInvoice: boolean
   canStartProduction: boolean
   invoicedPct: number
   invoicedAmt: number
@@ -52,20 +53,20 @@ export function useOrderDerivedState(params: {
     .filter((inv) => inv.status !== 'void')
     .reduce((sum, inv) => sum + (inv.percentage ?? 0), 0)
   const hasFinalInvoice = totalInvoicedPct >= 100
-
-  // Check if all production tasks are completed
-  const allTasksCompleted =
-    tasksData?.every((t) => t.task.status === 'completed') ?? true
-  const canCompleteProduction =
-    (orderStatus === 'in_progress' || orderStatus === 'approved') &&
-    allTasksCompleted &&
-    !hasFinalInvoice
-
   // Check if all non-void invoices are paid
   const activeInvoices = orderInvoices.filter((inv) => inv.status !== 'void')
   const allInvoicesPaid =
     activeInvoices.length > 0 &&
     activeInvoices.every((inv) => inv.status === 'paid')
+
+  // Check if all production tasks are completed
+  const allTasksCompleted =
+    tasksData?.every((t) => t.task.status === 'completed') ?? true
+  const canCompleteProduction =
+    orderStatus === 'in_progress' &&
+    allTasksCompleted &&
+    allInvoicesPaid &&
+    totalInvoicedPct >= 100
   const isTerminalOrder =
     orderStatus === 'completed' ||
     orderStatus === 'cancelled' ||
@@ -79,6 +80,8 @@ export function useOrderDerivedState(params: {
     orderStatus === 'approved' && hasPaidInvoice && allTasksReadyForProduction
   const canSendDpInvoice =
     orderStatus === 'approved' && allTasksReadyForProduction && !hasPaidInvoice
+  const canSendSettlementInvoice =
+    orderStatus === 'in_progress' && !hasFinalInvoice
 
   const canCompleteOrder =
     orderStatus === 'in_delivery' && allInvoicesPaid && totalInvoicedPct >= 100
@@ -91,6 +94,7 @@ export function useOrderDerivedState(params: {
     isApprovedOrLater,
     canCreateInvoice,
     canSendDpInvoice,
+    canSendSettlementInvoice,
     canStartProduction,
     invoicedPct,
     invoicedAmt,

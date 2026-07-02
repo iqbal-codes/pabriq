@@ -184,6 +184,8 @@ const en: Messages = {
     downloadQuotation: "Download Quotation",
     sendDpInvoice: "Send DP Invoice",
     confirmDpPayment: "Confirm DP Payment",
+    sendSettlementInvoice: "Send Settlement Invoice",
+    confirmSettlementPayment: "Confirm Settlement",
     loadOrdersFailed: "Could not load orders",
     loadOrdersFailedDesc: "Check your connection and try again.",
     copyLinkFailed: "Could not copy the portal link",
