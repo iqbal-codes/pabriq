@@ -1,5 +1,6 @@
 export { AddressField } from './address-field'
 export { AreaSearchField } from './area-search-field'
+export { CheckboxGroupField } from './checkbox-group-field'
 export { ComboboxField } from './combobox-field'
 export { DateField } from './date-field'
 export { EmailField } from './email-field'

@@ -24,6 +24,7 @@ export type ComboboxFieldProps = FieldProps & {
   search?: (query: string) => Promise<ComboboxOption[]>
   searchDelay?: number
   itemRender?: (option: ComboboxOption, isSelected: boolean) => React.ReactNode
+  onValueChange?: (value: string | string[]) => void
 }
 
 export type NumberFieldCallbacks<TValue = number> = {

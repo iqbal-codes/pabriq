@@ -4,6 +4,7 @@ import { FormError } from './form-error'
 import {
   AddressField,
   AreaSearchField,
+  CheckboxGroupField,
   ComboboxField,
   DateField,
   EmailField,
@@ -24,6 +25,7 @@ import { SubmitButton } from './form-submit'
 export const { useAppForm, withForm } = createFormHook({
   fieldComponents: {
     AddressField,
+    CheckboxGroupField,
     ComboboxField,
     DateField,
     TextField,

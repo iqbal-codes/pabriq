@@ -66,6 +66,7 @@ function ComboboxFieldSingle({
   search,
   searchDelay = 300,
   itemRender,
+  onValueChange,
 }: ComboboxFieldProps) {
   const field = useFieldContext<string>()
   const error = firstError(field.state.meta.errors)
@@ -113,6 +114,7 @@ function ComboboxFieldSingle({
 
   function handleSelect(selectedValue: string) {
     field.handleChange(selectedValue)
+    onValueChange?.(selectedValue)
     setQuery('')
     setOpen(false)
     field.handleBlur()
@@ -121,6 +123,7 @@ function ComboboxFieldSingle({
   function handleClear(e: React.MouseEvent) {
     e.stopPropagation()
     field.handleChange('')
+    onValueChange?.('')
     setQuery('')
     debouncedQueryRef.current = ''
     field.handleBlur()
@@ -235,6 +238,7 @@ function ComboboxFieldMulti({
   search,
   searchDelay = 300,
   itemRender,
+  onValueChange,
 }: ComboboxFieldProps) {
   const field = useFieldContext<string[]>()
   const error = firstError(field.state.meta.errors)
@@ -282,13 +286,16 @@ function ComboboxFieldMulti({
       ? values.filter((v) => v !== selectedValue)
       : [...values, selectedValue]
     field.handleChange(next)
+    onValueChange?.(next)
     setQuery('')
     field.handleBlur()
   }
 
   function handleRemove(removeValue: string, e: React.MouseEvent) {
     e.stopPropagation()
-    field.handleChange(values.filter((v) => v !== removeValue))
+    const next = values.filter((v) => v !== removeValue)
+    field.handleChange(next)
+    onValueChange?.(next)
     field.handleBlur()
   }
 
