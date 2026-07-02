@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useTranslations } from 'use-intl'
 import { FormGrid, withForm } from '#/components/app/form'
 import { formatNumber } from '#/components/app/form/form-utils'
@@ -67,6 +67,15 @@ export const OrderLineItemRow = withForm({
         )
       }
     }
+    // Recalculate price when addons change
+    useEffect(() => {
+      const qty = parseInt(item.quantity, 10) || 0
+      if (item.productId && qty > 0 && addonOptions.length > 0) {
+        recalculatePrice(qty)
+      }
+      // Only trigger on addonIds changes
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [item.addonIds.join(',')])
 
     return (
       <div className="space-y-3 rounded-lg border p-4">
@@ -192,9 +201,8 @@ export const OrderLineItemRow = withForm({
         {addonOptions.length > 0 && (
           <form.AppField name={`lineItems[${index}].addonIds`}>
             {(field) => (
-              <field.ComboboxField
+              <field.CheckboxGroupField
                 label={t('addons')}
-                mode="multi"
                 options={addonOptions}
               />
             )}

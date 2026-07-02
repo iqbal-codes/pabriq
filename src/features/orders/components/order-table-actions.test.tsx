@@ -52,6 +52,8 @@ const draftRowWithToken: OrderRow = {
   paymentStatus: 'unpaid',
   dueDate: null,
   maxDeadline: null,
+  deliveredAt: null,
+  shippedAt: null,
 }
 
 const draftRowWithoutToken: OrderRow = {

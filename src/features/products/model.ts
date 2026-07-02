@@ -112,6 +112,12 @@ export type ProductRow = {
 function generateId(): string {
   return crypto.randomUUID()
 }
+/** Coerce empty-string and undefined to null (covers form fields that submit '' for optional columns). */
+function toNull<T>(value: T | '' | null | undefined): T | null {
+  if (value === '' || value == null) return null
+  return value
+}
+
 
 export async function createProduct(
   input: CreateProductInput,
@@ -122,18 +128,18 @@ export async function createProduct(
     id,
     orgId: input.orgId,
     name: input.name,
-    description: input.description ?? null,
+    description: toNull(input.description),
     priority: input.priority ?? false,
-    productionNotes: input.productionNotes ?? null,
-    primaryImageAssetId: input.primaryImageAssetId ?? null,
+    productionNotes: toNull(input.productionNotes),
+    primaryImageAssetId: toNull(input.primaryImageAssetId),
     basePrice: input.basePrice ?? 0,
     productionDays: input.productionDays ?? 1,
     minQuantity: input.minQuantity ?? 1,
-    maxQuantity: input.maxQuantity ?? null,
-    negotiateAboveQuantity: input.negotiateAboveQuantity ?? null,
-    repeatOrderUnitPrice: input.repeatOrderUnitPrice ?? null,
-    repeatOrderMinQuantity: input.repeatOrderMinQuantity ?? null,
-    maxProductionQuantity: input.maxProductionQuantity ?? null,
+    maxQuantity: toNull(input.maxQuantity),
+    negotiateAboveQuantity: toNull(input.negotiateAboveQuantity),
+    repeatOrderUnitPrice: toNull(input.repeatOrderUnitPrice),
+    repeatOrderMinQuantity: toNull(input.repeatOrderMinQuantity),
+    maxProductionQuantity: toNull(input.maxProductionQuantity),
     pricingMode: input.pricingMode ?? 'interpolated',
     active: true,
     createdAt: now,
@@ -181,25 +187,25 @@ export async function updateProduct(
   const now = new Date()
   const updates: Record<string, unknown> = { updatedAt: now }
   if (input.name !== undefined) updates.name = input.name
-  if (input.description !== undefined) updates.description = input.description
+  if (input.description !== undefined) updates.description = toNull(input.description)
   if (input.priority !== undefined) updates.priority = input.priority
   if (input.productionNotes !== undefined)
-    updates.productionNotes = input.productionNotes
+    updates.productionNotes = toNull(input.productionNotes)
   if (input.primaryImageAssetId !== undefined)
-    updates.primaryImageAssetId = input.primaryImageAssetId
+    updates.primaryImageAssetId = toNull(input.primaryImageAssetId)
   if (input.basePrice !== undefined) updates.basePrice = input.basePrice
   if (input.productionDays !== undefined)
     updates.productionDays = input.productionDays
   if (input.minQuantity !== undefined) updates.minQuantity = input.minQuantity
-  if (input.maxQuantity !== undefined) updates.maxQuantity = input.maxQuantity
+  if (input.maxQuantity !== undefined) updates.maxQuantity = toNull(input.maxQuantity)
   if (input.negotiateAboveQuantity !== undefined)
-    updates.negotiateAboveQuantity = input.negotiateAboveQuantity
+    updates.negotiateAboveQuantity = toNull(input.negotiateAboveQuantity)
   if (input.repeatOrderUnitPrice !== undefined)
-    updates.repeatOrderUnitPrice = input.repeatOrderUnitPrice
+    updates.repeatOrderUnitPrice = toNull(input.repeatOrderUnitPrice)
   if (input.repeatOrderMinQuantity !== undefined)
-    updates.repeatOrderMinQuantity = input.repeatOrderMinQuantity
+    updates.repeatOrderMinQuantity = toNull(input.repeatOrderMinQuantity)
   if (input.maxProductionQuantity !== undefined)
-    updates.maxProductionQuantity = input.maxProductionQuantity
+    updates.maxProductionQuantity = toNull(input.maxProductionQuantity)
   if (input.active !== undefined) updates.active = input.active
   if (input.pricingMode !== undefined) updates.pricingMode = input.pricingMode
 

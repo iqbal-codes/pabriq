@@ -39,9 +39,9 @@ export function EditOrderPage() {
           notes: li.notes ?? '',
           attachments: [] as string[],
           addonIds:
-            li.selectedAddons?.map((a) => a.productAddonId).filter(Boolean) as
-              | string[]
-              ?? [],
+            (li.selectedAddons
+              ?.map((a) => a.productAddonId)
+              .filter(Boolean) as string[]) ?? [],
           isRepeatOrder: li.isRepeatOrder ?? false,
           deadline:
             li.manualDeadline && li.deadline
@@ -81,7 +81,7 @@ export function EditOrderPage() {
               isNegotiated && i.unitPrice
                 ? Number.parseFloat(i.unitPrice)
                 : undefined,
-            name: i.name || undefined,
+            designName: i.designName || undefined,
             notes: i.notes || undefined,
             addonIds: i.addonIds.length > 0 ? i.addonIds : undefined,
             isRepeatOrder: i.isRepeatOrder || undefined,

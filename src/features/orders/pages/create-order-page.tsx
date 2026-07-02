@@ -83,7 +83,7 @@ export function CreateOrderPage() {
               isNegotiated && i.unitPrice
                 ? Number.parseFloat(i.unitPrice)
                 : undefined,
-            name: i.name || undefined,
+            designName: i.designName || undefined,
             notes: i.notes || undefined,
             addonIds: i.addonIds.length > 0 ? i.addonIds : undefined,
             isRepeatOrder: i.isRepeatOrder || undefined,

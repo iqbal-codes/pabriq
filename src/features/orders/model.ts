@@ -463,6 +463,8 @@ export async function getOrder(
       assetId: lineItemsTable.assetId,
       productionDays: lineItemsTable.productionDays,
       deadline: lineItemsTable.deadline,
+      isRepeatOrder: lineItemsTable.isRepeatOrder,
+      manualDeadline: lineItemsTable.manualDeadline,
       createdAt: lineItemsTable.createdAt,
       updatedAt: lineItemsTable.updatedAt,
       productName: productsTable.name,
@@ -475,13 +477,7 @@ export async function getOrder(
         eq(productsTable.orgId, lineItemsTable.orgId),
       ),
     )
-<<<<<<< HEAD
-    .where(
-      and(eq(lineItemsTable.orderId, id), eq(lineItemsTable.orgId, orgId)),
-    )
-=======
     .where(and(eq(lineItemsTable.orderId, id), eq(lineItemsTable.orgId, orgId)))
->>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
     .orderBy(lineItemsTable.createdAt)
 
   // Fetch addon snapshots for all line items
@@ -588,7 +584,6 @@ export async function getAssetsForLineItem(
     .orderBy(assetsTable.createdAt)
   return rows
 }
-
 
 export async function createDraftOrder(
   orgId: string,
@@ -806,12 +801,9 @@ export async function updateDraftOrder(
     if (customerRows.length === 0) throw new Error('Customer not found')
   }
 
-<<<<<<< HEAD
   // Validate all products and collect productionDays
   const productProductionDays = new Map<string, number>()
-<<<<<<< HEAD
   const productNames = new Map<string, string>()
-=======
   // Validate all products and collect product data
   const productDataMap = new Map<
     string,
@@ -822,7 +814,6 @@ export async function updateDraftOrder(
       maxProductionQuantity: number | null
     }
   >()
->>>>>>> 70d2ed3 (Add 3D rubber pricing workflow controls)
   for (const li of input.lineItems) {
     const productRows = await db
       .select({
@@ -857,11 +848,8 @@ export async function updateDraftOrder(
         throw new Error('Cannot add inactive product')
       }
     }
-<<<<<<< HEAD
     productProductionDays.set(li.productId, productRows[0].productionDays)
-<<<<<<< HEAD
     productNames.set(li.productId, productRows[0].name)
-=======
 
     // Validate minimum quantity
     if (li.isRepeatOrder) {
@@ -890,7 +878,6 @@ export async function updateDraftOrder(
       repeatOrderMinQuantity: product.repeatOrderMinQuantity,
       maxProductionQuantity: product.maxProductionQuantity,
     })
->>>>>>> 70d2ed3 (Add 3D rubber pricing workflow controls)
   }
 
   const now = new Date()
@@ -939,11 +926,7 @@ export async function updateDraftOrder(
       quantity: li.quantity,
       unitPrice: pricing.unitPrice,
       total: pricing.total,
-<<<<<<< HEAD
       productName: productNames.get(li.productId) ?? 'Unknown',
-=======
-      productName: productNameMap.get(li.productId) ?? 'Unknown',
->>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
       designName: normalizeDesignName(li.designName),
       notes: li.notes ?? null,
       productionDays,

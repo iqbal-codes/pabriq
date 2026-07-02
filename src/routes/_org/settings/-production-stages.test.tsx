@@ -10,7 +10,7 @@ describe('production-stages route', () => {
     const beforeLoad = Route.options.beforeLoad
     expect(beforeLoad).toBeDefined()
     expect(() =>
-      beforeLoad({
+      beforeLoad!({
         context: { org: { role: 'member' } },
       } as BeforeLoadArgs),
     ).toThrow()
@@ -19,7 +19,7 @@ describe('production-stages route', () => {
   it('allows owner to access production-stages settings', () => {
     const beforeLoad = Route.options.beforeLoad
     expect(beforeLoad).toBeDefined()
-    const result = beforeLoad({
+    const result = beforeLoad!({
       context: { org: { role: 'owner' } },
     } as BeforeLoadArgs)
     expect(result).toEqual({
@@ -31,7 +31,7 @@ describe('production-stages route', () => {
   it('allows admin to access production-stages settings', () => {
     const beforeLoad = Route.options.beforeLoad
     expect(beforeLoad).toBeDefined()
-    const result = beforeLoad({
+    const result = beforeLoad!({
       context: { org: { role: 'admin' } },
     } as BeforeLoadArgs)
     expect(result).toEqual({
