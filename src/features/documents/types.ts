@@ -40,6 +40,7 @@ export interface InvoicePdfData {
   invoiceNumber: string
   issuedDate: string
   dueDate: string
+  createdAt: string
   percentage: number | null
   paymentLabel: string | null
   customer: CustomerPdfInfo

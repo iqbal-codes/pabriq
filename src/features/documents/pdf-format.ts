@@ -21,3 +21,11 @@ export function formatPdfDate(date: Date | string): string {
 export function formatPdfPercent(percent: number): string {
   return `${percent.toFixed(2)}%`
 }
+
+export function formatPdfDateTime(date: Date | string): string {
+  const value = typeof date === 'string' ? new Date(date) : date
+  const dateStr = formatPdfDate(value)
+  const hours = String(value.getHours()).padStart(2, '0')
+  const minutes = String(value.getMinutes()).padStart(2, '0')
+  return `${dateStr}, ${hours}:${minutes}`
+}

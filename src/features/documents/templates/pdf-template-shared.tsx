@@ -1,6 +1,6 @@
-import type React from 'react'
-import type { Style } from '@react-pdf/types'
 import { Font, StyleSheet, Text, View } from '@react-pdf/renderer'
+import type { Style } from '@react-pdf/types'
+import type React from 'react'
 
 export const PDF_COLORS = {
   BLUE: '#0075ff',
@@ -63,6 +63,7 @@ export interface PdfStyles {
   alreadyPaidLine: Style
   alreadyPaidLabelText: Style
   alreadyPaidValueText: Style
+  documentFooter: Style
 }
 
 export function createPdfStyles(variant: 'invoice' | 'quotation'): PdfStyles {
@@ -81,14 +82,14 @@ export function createPdfStyles(variant: 'invoice' | 'quotation'): PdfStyles {
       marginBottom: 40,
     },
     logoWrap: {
-      width: '50%',
+      width: '35%',
     },
     logo: {
       maxWidth: isInvoice ? 120 : 150,
       maxHeight: isInvoice ? 120 : 174,
     },
     metaWrap: {
-      width: '40%',
+      width: '60%',
     },
     title: {
       textAlign: 'right',
@@ -99,11 +100,11 @@ export function createPdfStyles(variant: 'invoice' | 'quotation'): PdfStyles {
     },
     metaRow: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       marginBottom: 5,
     },
     metaLabel: {
-      width: 118,
+      width: 150,
       marginLeft: 'auto',
     },
     metaLabelText: {
@@ -113,7 +114,7 @@ export function createPdfStyles(variant: 'invoice' | 'quotation'): PdfStyles {
       color: PDF_COLORS.GRAY_LABEL,
     },
     metaValue: {
-      width: 115,
+      width: 120,
     },
     metaValueText: {
       padding: '4 12',
@@ -175,7 +176,7 @@ export function createPdfStyles(variant: 'invoice' | 'quotation'): PdfStyles {
       marginTop: 50,
     },
     notesSection: {
-      width: '50%',
+      width: '35%',
     },
     notesTitle: {
       padding: isInvoice ? '4 12' : '4 12 17',
@@ -187,7 +188,7 @@ export function createPdfStyles(variant: 'invoice' | 'quotation'): PdfStyles {
       width: '100%',
     },
     pricingSection: {
-      width: isInvoice ? '50%' : '40%',
+      width: isInvoice ? '60%' : '50%',
     },
     pricingLine: {
       flexDirection: 'row',
@@ -195,7 +196,7 @@ export function createPdfStyles(variant: 'invoice' | 'quotation'): PdfStyles {
       marginBottom: 4,
     },
     pricingLabel: {
-      width: '50%',
+      width: '60%',
     },
     pricingLabelText: {
       padding: '4 12',
@@ -204,7 +205,7 @@ export function createPdfStyles(variant: 'invoice' | 'quotation'): PdfStyles {
       fontSize: isInvoice ? 12 : 15,
     },
     pricingValue: {
-      width: '50%',
+      width: '40%',
     },
     pricingValueText: {
       padding: '4 12',
@@ -256,6 +257,15 @@ export function createPdfStyles(variant: 'invoice' | 'quotation'): PdfStyles {
       fontWeight: 500,
       fontSize: 12,
       color: PDF_COLORS.GRAY_LABEL,
+    },
+    documentFooter: {
+      position: 'absolute',
+      bottom: 30,
+      left: 40,
+      right: 40,
+      textAlign: 'center',
+      fontSize: 9,
+      color: '#9595a8',
     },
   }) as PdfStyles
 }

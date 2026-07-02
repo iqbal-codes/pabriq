@@ -339,6 +339,7 @@ export async function generateInvoicePdf(
     invoiceNumber: invoice.invoiceNumber,
     issuedDate: invoice.issuedDate,
     dueDate: invoice.dueDate,
+    createdAt: invoice.createdAt.toISOString(),
     percentage: invoice.percentage,
     paymentLabel,
     customer: customerPdfInfo,

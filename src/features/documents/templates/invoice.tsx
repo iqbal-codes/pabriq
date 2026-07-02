@@ -1,16 +1,16 @@
 import { Document, Image, Page, Text, View } from '@react-pdf/renderer'
 import {
   formatPdfCurrency,
-  formatPdfDate,
+  formatPdfDateTime,
   formatPdfPercent,
 } from '../pdf-format'
 import { PDF_LOCALE } from '../pdf-locale'
 import type { InvoicePdfData } from '../types'
 import {
-  PdfAddressBlock,
-  PdfPricingLine,
-  PdfMetaRow,
   createPdfStyles,
+  PdfAddressBlock,
+  PdfMetaRow,
+  PdfPricingLine,
   registerPdfFonts,
 } from './pdf-template-shared'
 
@@ -34,19 +34,6 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
           </View>
           <View style={styles.metaWrap}>
             <Text style={styles.title}>{PDF_LOCALE.invoice}</Text>
-            {data.paymentLabel && (
-              <Text
-                style={{
-                  textAlign: 'right',
-                  fontSize: 12,
-                  color: '#0075ff',
-                  fontWeight: 600,
-                  marginBottom: 8,
-                }}
-              >
-                {data.paymentLabel}
-              </Text>
-            )}
             <PdfMetaRow
               styles={styles}
               label={PDF_LOCALE.invoiceNo}
@@ -55,13 +42,13 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
             <PdfMetaRow
               styles={styles}
               label={PDF_LOCALE.invoiceDate}
-              value={formatPdfDate(data.issuedDate)}
+              value={formatPdfDateTime(data.createdAt)}
             />
-            <PdfMetaRow
+            {/* <PdfMetaRow
               styles={styles}
               label={PDF_LOCALE.due}
               value={formatPdfDate(data.dueDate)}
-            />
+            /> */}
           </View>
         </View>
 
@@ -170,6 +157,13 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
               label={PDF_LOCALE.subtotal}
               value={formatPdfCurrency(data.subtotal)}
             />
+            {data.percentage !== null && data.percentage < 100 && (
+              <PdfPricingLine
+                styles={styles}
+                label={PDF_LOCALE.paymentAmount}
+                value={formatPdfCurrency(data.total)}
+              />
+            )}
             {data.shippingFee > 0 && (
               <PdfPricingLine
                 styles={styles}
@@ -202,6 +196,9 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
             </View>
           </View>
         </View>
+        <Text style={styles.documentFooter} fixed>
+          {PDF_LOCALE.thankYouMessage}
+        </Text>
       </Page>
     </Document>
   )
