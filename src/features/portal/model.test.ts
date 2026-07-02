@@ -367,19 +367,22 @@ describe('confirmPortalOrder', () => {
 })
 
 describe('updatePortalLineItem', () => {
-  it('updates name and notes', async () => {
+  it('updates designName and notes', async () => {
     const result = await updatePortalLineItem(lineItem1Id, {
-      name: 'Custom Name',
+      designName: 'Custom Name',
       notes: 'Custom notes',
     })
     expect(result.ok).toBe(true)
 
     const rows = await db
-      .select({ name: orderLineItems.name, notes: orderLineItems.notes })
+      .select({
+        designName: orderLineItems.designName,
+        notes: orderLineItems.notes,
+      })
       .from(orderLineItems)
       .where(eq(orderLineItems.id, lineItem1Id))
       .limit(1)
-    expect(rows[0]?.name).toBe('Custom Name')
+    expect(rows[0]?.designName).toBe('Custom Name')
     expect(rows[0]?.notes).toBe('Custom notes')
   })
 
@@ -416,7 +419,7 @@ describe('updatePortalLineItem', () => {
 
   it('returns notFound for unknown item', async () => {
     const result = await updatePortalLineItem('unknown-id', {
-      name: 'Test',
+      designName: 'Test',
     })
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.error).toBe('notFound')

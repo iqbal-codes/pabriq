@@ -9,6 +9,7 @@ import {
   products as productsTable,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
+import { normalizeDesignName } from '#/features/orders/line-item-display'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
 import { spawnQueuedPreProductionTasksForOrder } from '#/features/production/task-spawn-helpers'
 import { listBreakpoints } from '#/features/products/model'
@@ -361,9 +362,13 @@ export async function getOrder(
         eq(productsTable.orgId, lineItemsTable.orgId),
       ),
     )
+<<<<<<< HEAD
     .where(
       and(eq(lineItemsTable.orderId, id), eq(lineItemsTable.orgId, orgId)),
     )
+=======
+    .where(and(eq(lineItemsTable.orderId, id), eq(lineItemsTable.orgId, orgId)))
+>>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
     .orderBy(lineItemsTable.createdAt)
 
   const customer = orderRows[0].customerId
@@ -449,6 +454,7 @@ export async function createDraftOrder(
         name: productsTable.name,
         active: productsTable.active,
         productionDays: productsTable.productionDays,
+        name: productsTable.name,
       })
       .from(productsTable)
       .where(
@@ -562,9 +568,13 @@ export async function updateDraftOrder(
     if (customerRows.length === 0) throw new Error('Customer not found')
   }
 
-  // Validate all products and collect productionDays
+  // Validate all products and collect productionDays + names
   const productProductionDays = new Map<string, number>()
+<<<<<<< HEAD
   const productNames = new Map<string, string>()
+=======
+  const productNameMap = new Map<string, string>()
+>>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
   for (const li of input.lineItems) {
     const productRows = await db
       .select({
@@ -572,6 +582,7 @@ export async function updateDraftOrder(
         name: productsTable.name,
         active: productsTable.active,
         productionDays: productsTable.productionDays,
+        name: productsTable.name,
       })
       .from(productsTable)
       .where(
@@ -595,7 +606,11 @@ export async function updateDraftOrder(
       }
     }
     productProductionDays.set(li.productId, productRows[0].productionDays)
+<<<<<<< HEAD
     productNames.set(li.productId, productRows[0].name)
+=======
+    productNameMap.set(li.productId, productRows[0].name)
+>>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
   }
 
   const now = new Date()
@@ -623,7 +638,11 @@ export async function updateDraftOrder(
       quantity: li.quantity,
       unitPrice: pricing.unitPrice,
       total: pricing.total,
+<<<<<<< HEAD
       productName: productNames.get(li.productId) ?? 'Unknown',
+=======
+      productName: productNameMap.get(li.productId) ?? 'Unknown',
+>>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
       designName: normalizeDesignName(li.designName),
       notes: li.notes ?? null,
       productionDays,

@@ -65,6 +65,7 @@ export function KanbanTaskCard({ task, onClick }: Props) {
     string | number | boolean | null
   > | null
   const productName = getCtx(ctx, 'productName')
+  const designName = getCtx(ctx, 'designName')
   const orderNum = getCtx(ctx, 'orderNumber')
   const quantity = getCtx(ctx, 'quantity')
   const deadline = getDeadlineInfo(ctx, locale)
@@ -109,6 +110,9 @@ export function KanbanTaskCard({ task, onClick }: Props) {
         <p className="text-sm font-medium leading-tight truncate">
           {productName}
         </p>
+        {designName && designName !== '-' && (
+          <p className="text-xs text-muted-foreground truncate">{designName}</p>
+        )}
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs text-muted-foreground truncate">
             {quantity ? `${quantity} ${ct('pcs')}` : ''}

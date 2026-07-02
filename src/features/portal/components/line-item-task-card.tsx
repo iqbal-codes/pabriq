@@ -4,8 +4,9 @@ import { useLocale, useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
-import { cn } from '#/lib/utils'
+import { getVisibleDesignName } from '#/features/orders/line-item-display'
 import { formatCurrency, formatLongDate } from '#/lib/formatters'
+import { cn } from '#/lib/utils'
 import type { OrderTaskEvent, PortalLineItem } from '../model'
 import { OrderTimeline } from './order-timeline'
 
@@ -92,7 +93,12 @@ export function LineItemTaskCard({
             ) : null}
           </div>
           <h3 className="mt-1 truncate text-base font-semibold leading-tight">
-            {item.name || item.productName}
+            <span>{item.productName}</span>
+            {getVisibleDesignName(item.designName, item.productName) && (
+              <span className="block text-xs text-muted-foreground">
+                {getVisibleDesignName(item.designName, item.productName)}
+              </span>
+            )}
           </h3>
           <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
             <span>{item.quantity}</span>

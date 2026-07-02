@@ -1,8 +1,13 @@
 import { AlertOctagon, CheckCircle2 } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { Button } from '#/components/ui/button'
+<<<<<<< HEAD
 import { CustomerInfoCard } from '#/features/portal/components/customer-info-card'
 import { ShippingAddressCard } from '#/features/portal/components/shipping-address-card'
+=======
+import { getVisibleDesignName } from '#/features/orders/line-item-display'
+import { cn } from '#/lib/utils'
+>>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
 import { PortalContactButton } from '../components/portal-contact-button'
 import { PortalOrderSummary } from '../components/portal-order-summary'
 import type { PortalOrder } from '../model'
@@ -46,6 +51,79 @@ export function RejectedView({ order }: { order: PortalOrder }) {
             </div>
           </div>
         </div>
+<<<<<<< HEAD
+=======
+
+        <div className="px-5 py-5 sm:px-6">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {t('rejectedReasonTitle')}
+          </p>
+          <div className="mt-2 rounded-lg border border-destructive/30 bg-destructive/[0.03] p-4 text-sm leading-relaxed text-foreground">
+            {reason || t('rejectedReasonEmpty')}
+          </div>
+
+          {order.lineItems.length > 0 ? (
+            <div className="mt-5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {t('rejectedAffectedItems')}
+              </p>
+              <ul className="mt-2 divide-y divide-border overflow-hidden rounded-lg border border-border bg-background">
+                {order.lineItems.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex items-baseline justify-between gap-3 px-3 py-2.5 text-sm"
+                  >
+                    <span className="min-w-0 truncate font-medium text-foreground">
+                      {item.productName}
+                    </span>
+                    {getVisibleDesignName(
+                      item.designName,
+                      item.productName,
+                    ) && (
+                      <span className="text-xs text-muted-foreground">
+                        (
+                        {getVisibleDesignName(
+                          item.designName,
+                          item.productName,
+                        )}
+                        )
+                      </span>
+                    )}
+                    <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                      × <span className="font-semibold">{item.quantity}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            {order.orgPhone ? (
+              <PortalContactButton
+                order={order}
+                label="contactAdmin"
+                className={cn('w-full sm:w-auto')}
+              />
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => window.location.reload()}
+                className="gap-2"
+              >
+                <CheckCircle2 className="size-4" />
+                {t('retry')}
+              </Button>
+            )}
+            {reason ? (
+              <span className="text-xs italic text-muted-foreground">
+                {t('rejectedNote', { note: reason })}
+              </span>
+            ) : null}
+          </div>
+        </div>
+>>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
       </section>
 
       {/* Seller Reason Card */}

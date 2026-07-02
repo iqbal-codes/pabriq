@@ -115,7 +115,9 @@ const id: Messages = {
     validUntil: "Berlaku Sampai",
     notes: "Catatan",
     lineItemNotes: "Catatan Item",
-    lineItemName: "Nama Item",
+    productName: "Produk",
+    designName: "Nama Desain",
+    designNamePlaceholder: "contoh: ONIC",
     quantity: "Kuantitas",
     unitPrice: "Harga Satuan",
     totalLabel: "Total",
@@ -655,6 +657,7 @@ const id: Messages = {
     statusCompleted: "Selesai",
     orderLabel: "Pesanan",
     productLabel: "Produk",
+    designName: "Nama Desain",
     customerLabel: "Pelanggan",
     quantityLabel: "Kuantitas",
     priorityBadge: "Prioritas",
@@ -720,8 +723,13 @@ const id: Messages = {
     quantity: "Jml",
     unitPrice: "Harga Satuan",
     lineTotal: "Total",
+<<<<<<< HEAD
     itemName: "Nama Desain",
     itemNamePlaceholder: "Masukkan nama desain",
+=======
+    designName: "Nama Desain",
+    designNamePlaceholder: "Masukkan nama desain, nama artwork, atau label referensi",
+>>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
     itemNotes: "Catatan / Spesifikasi",
     itemNotesPlaceholder: "Tambahkan catatan atau spesifikasi untuk item ini",
     attachment: "Lampiran",

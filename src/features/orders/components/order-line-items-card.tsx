@@ -3,6 +3,7 @@ import { useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
 import { Badge } from '#/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import { getVisibleDesignName } from '#/features/orders/line-item-display'
 import { getAssetsForLineItemFn } from '#/features/orders/server'
 import { useTaskByLineItemId } from '#/features/production/hooks'
 import { currencyFormatter } from './view-order-utils'
@@ -15,7 +16,8 @@ function LineItemRow({
   item: {
     id: string
     productId: string
-    name: string | null
+    productName: string
+    designName: string | null
     notes: string | null
     quantity: number
     unitPrice: number
@@ -36,7 +38,12 @@ function LineItemRow({
     <div className="rounded-lg border p-4 space-y-2">
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <p className="font-medium">{item.name || item.productId}</p>
+          <p className="font-medium">{item.productName}</p>
+          {getVisibleDesignName(item.designName, item.productName) && (
+            <p className="text-xs text-muted-foreground">
+              Design: {getVisibleDesignName(item.designName, item.productName)}
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
             {item.quantity} × {currencyFormatter.format(item.unitPrice)}
           </p>
@@ -86,7 +93,8 @@ export function OrderLineItemsCard({
   lineItems: Array<{
     id: string
     productId: string
-    name: string | null
+    productName: string
+    designName: string | null
     notes: string | null
     quantity: number
     unitPrice: number

@@ -84,6 +84,7 @@ export function TaskDetailModal({
     string | number | boolean | null
   > | null
   const productName = ctx?.productName ?? ''
+  const designName = ctx?.designName ?? ''
   const customerName = ctx?.customerName ?? ''
   const orderNumber = ctx?.orderNumber ?? ''
   const quantity = ctx?.quantity ?? ''
@@ -187,6 +188,14 @@ export function TaskDetailModal({
                 </span>
                 <p className="font-medium">{productName}</p>
               </div>
+              {designName && (
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    {t('designName')}
+                  </p>
+                  <p className="text-sm font-medium">{designName}</p>
+                </div>
+              )}
               <div>
                 <span className="text-muted-foreground text-xs">
                   {t('customerLabel')}

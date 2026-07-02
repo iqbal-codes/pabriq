@@ -28,7 +28,7 @@ export const OrderFormFields = withForm({
           productId: product.id,
           quantity: String(product.minQuantity),
           unitPrice,
-          name: product.name,
+          designName: '',
           notes: '',
           attachments: [],
         },

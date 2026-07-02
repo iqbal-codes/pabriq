@@ -410,6 +410,7 @@ export const productionTasks = pgTable('production_tasks', {
   context: json('context')
     .$type<{
       productName: string
+      designName?: string | null
       customerName: string
       requirements: string | null
       orderNumber?: string

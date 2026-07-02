@@ -108,7 +108,7 @@ export const updatePortalLineItemFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { updatePortalLineItem } = await import('./model')
     return updatePortalLineItem(data.itemId, {
-      name: data.name,
+      designName: data.designName,
       notes: data.notes,
       assetId: data.assetId,
     })

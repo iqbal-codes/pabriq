@@ -35,7 +35,7 @@ export function EditOrderPage() {
           productId: li.productId,
           quantity: String(li.quantity),
           unitPrice: String(li.unitPrice),
-          name: li.name ?? '',
+          designName: li.designName ?? '',
           notes: li.notes ?? '',
           attachments: [] as string[],
         })) ?? [],
@@ -54,7 +54,7 @@ export function EditOrderPage() {
           productId: i.productId,
           quantity: parseInt(i.quantity, 10) || 1,
           unitPrice: i.unitPrice ? Number.parseFloat(i.unitPrice) : undefined,
-          name: i.name || undefined,
+          designName: i.designName || undefined,
           notes: i.notes || undefined,
         })),
       })

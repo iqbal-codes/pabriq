@@ -198,7 +198,9 @@ export type Messages = {
     validUntil: string;
     notes: string;
     lineItemNotes: string;
-    lineItemName: string;
+    productName: string;
+    designName: string;
+    designNamePlaceholder: string;
     quantity: string;
     unitPrice: string;
     totalLabel: string;
@@ -653,6 +655,7 @@ export type Messages = {
     statusCompleted: string;
     orderLabel: string;
     productLabel: string;
+    designName: string;
     customerLabel: string;
     quantityLabel: string;
     priorityBadge: string;
@@ -718,8 +721,8 @@ export type Messages = {
     quantity: string;
     unitPrice: string;
     lineTotal: string;
-    itemName: string;
-    itemNamePlaceholder: string;
+    designName: string;
+    designNamePlaceholder: string;
     itemNotes: string;
     itemNotesPlaceholder: string;
     attachment: string;

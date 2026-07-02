@@ -1,4 +1,5 @@
 import { useLocale, useTranslations } from 'use-intl'
+import { getVisibleDesignName } from '#/features/orders/line-item-display'
 import { formatCurrency } from '#/lib/formatters'
 import type { PortalOrder } from '../model'
 
@@ -36,10 +37,22 @@ export function PortalOrderSummary({
             className="flex items-baseline justify-between gap-4 py-2.5"
           >
             <div className="min-w-0">
+<<<<<<< HEAD
               <span className="block truncate text-sm font-medium text-foreground">
                 {item.name || item.productName}
               </span>
               <span className="block mt-0.5 text-xs text-muted-foreground">
+=======
+              <dt className="truncate text-sm font-medium text-foreground">
+                {item.productName}
+              </dt>
+              {getVisibleDesignName(item.designName, item.productName) && (
+                <dd className="text-xs text-muted-foreground">
+                  {getVisibleDesignName(item.designName, item.productName)}
+                </dd>
+              )}
+              <dd className="mt-0.5 text-xs text-muted-foreground">
+>>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
                 <span className="tabular-nums">{item.quantity}</span>
                 {' × '}
                 <span className="tabular-nums">

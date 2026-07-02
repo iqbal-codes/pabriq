@@ -8,6 +8,7 @@ import {
   products as productsTable,
   productionTasks as tasksTable,
 } from '#/db/schema'
+import { getVisibleDesignName } from '#/features/orders/line-item-display'
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 type TaskSpawnClient =
@@ -46,7 +47,7 @@ export async function spawnQueuedPreProductionTasksForOrder(
     .select({
       id: lineItemsTable.id,
       productId: lineItemsTable.productId,
-      name: lineItemsTable.name,
+      designName: lineItemsTable.designName,
       notes: lineItemsTable.notes,
       quantity: lineItemsTable.quantity,
       deadline: lineItemsTable.deadline,
@@ -88,7 +89,11 @@ export async function spawnQueuedPreProductionTasksForOrder(
       .limit(1),
     uniqueProductIds.length > 0
       ? client
-          .select({ id: productsTable.id, priority: productsTable.priority })
+          .select({
+            id: productsTable.id,
+            priority: productsTable.priority,
+            name: productsTable.name,
+          })
           .from(productsTable)
           .where(
             and(
@@ -105,6 +110,9 @@ export async function spawnQueuedPreProductionTasksForOrder(
 
   const productPriorityMap = new Map(
     productPriorityRows.map((row) => [row.id, row.priority]),
+  )
+  const productNameMap = new Map(
+    productPriorityRows.map((row) => [row.id, row.name]),
   )
 
   const existingLineItemIds = new Set(
@@ -141,7 +149,11 @@ export async function spawnQueuedPreProductionTasksForOrder(
       lineItemId: item.id,
       priority: productPriorityMap.get(item.productId) ?? false,
       context: {
-        productName: item.name ?? '',
+        productName: productNameMap.get(item.productId) ?? '',
+        designName: getVisibleDesignName(
+          item.designName,
+          productNameMap.get(item.productId) ?? '',
+        ),
         customerName: customerName ?? '',
         requirements: item.notes ?? null,
         orderNumber: order.orderNumber ?? '',

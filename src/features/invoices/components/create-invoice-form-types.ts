@@ -1,4 +1,5 @@
 import type { OrderForInvoice } from '#/features/invoices/model'
+import { formatProductDesignLabel } from '#/features/orders/line-item-display'
 
 export type InvoicePercentageMode = 'full' | 'remaining' | 'custom'
 
@@ -28,7 +29,10 @@ export function defaultCreateInvoiceValues(
       paymentMethodId: '',
       notes: '',
       lineItems: orderData.lineItems.map((item) => ({
-        description: item.name ?? '',
+        description: formatProductDesignLabel(
+          item.productName,
+          item.designName,
+        ),
         quantity: item.quantity,
         unitPrice: item.unitPrice,
       })),

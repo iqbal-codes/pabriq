@@ -17,6 +17,7 @@ import {
   taskActivity,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
+import { normalizeDesignName } from '#/features/orders/line-item-display'
 
 export type PortalAsset = {
   id: string
@@ -31,7 +32,7 @@ export type PortalLineItem = {
   quantity: number
   unitPrice: number
   total: number
-  name: string | null
+  designName: string | null
   notes: string | null
   assetIds: string[]
   assets: PortalAsset[]
@@ -150,9 +151,26 @@ export async function getPortalOrder(
 
   const [itemRows, productRows, allStages, taskRows] = await Promise.all([
     db
-      .select()
+      .select({
+        id: orderLineItems.id,
+        productId: orderLineItems.productId,
+        quantity: orderLineItems.quantity,
+        unitPrice: orderLineItems.unitPrice,
+        total: orderLineItems.total,
+        designName: orderLineItems.designName,
+        notes: orderLineItems.notes,
+        assetId: orderLineItems.assetId,
+        productionDays: orderLineItems.productionDays,
+        deadline: orderLineItems.deadline,
+        createdAt: orderLineItems.createdAt,
+      })
       .from(orderLineItems)
-      .where(eq(orderLineItems.orderId, order.id)),
+      .where(
+        and(
+          eq(orderLineItems.orderId, order.id),
+          eq(orderLineItems.orgId, order.orgId),
+        ),
+      ),
     db
       .select({
         id: products.id,
@@ -180,6 +198,7 @@ export async function getPortalOrder(
   const productDaysMap = new Map(
     productRows.map((p) => [p.id, p.productionDays]),
   )
+  const stageNameMap = new Map(allStages.map((s) => [s.id, s.name]))
 
   const lineItemIds = itemRows.map((item) => item.id)
   const assetRows =
@@ -220,8 +239,6 @@ export async function getPortalOrder(
     assetsByLineItem.set(asset.ownerId, assetList)
   }
 
-  const stageNameMap = new Map(allStages.map((s) => [s.id, s.name]))
-
   const taskByLineItem = new Map(taskRows.map((t) => [t.lineItemId, t]))
 
   const items: PortalLineItem[] = itemRows.map((item) => {
@@ -232,7 +249,7 @@ export async function getPortalOrder(
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       total: item.total,
-      name: item.name ?? null,
+      designName: item.designName ?? null,
       notes: item.notes ?? null,
       assetIds: assetIdsByLineItem.get(item.id) ?? [],
       assets: assetsByLineItem.get(item.id) ?? [],
@@ -504,7 +521,7 @@ export async function confirmPortalOrder(
 }
 
 export type UpdatePortalLineItemInput = {
-  name?: string
+  designName?: string
   notes?: string
   assetId?: string | null
 }
@@ -524,7 +541,8 @@ export async function updatePortalLineItem(
   }
 
   const updateData: Record<string, unknown> = { updatedAt: new Date() }
-  if (input.name !== undefined) updateData.name = input.name
+  if (input.designName !== undefined)
+    updateData.designName = normalizeDesignName(input.designName)
   if (input.notes !== undefined) updateData.notes = input.notes
   if (input.assetId !== undefined) updateData.assetId = input.assetId
 
@@ -783,8 +801,7 @@ function buildTimelineEvents(params: {
       )
 
     const lastTransition = transitions[transitions.length - 1]
-    const lastTransitionEndsNull =
-      lastTransition && !lastTransition.toStageId
+    const lastTransitionEndsNull = lastTransition && !lastTransition.toStageId
     const completedActivity = completedByTaskId.get(task.id)
 
     for (const trans of transitions) {
@@ -850,7 +867,6 @@ function buildTimelineEvents(params: {
           : undefined,
       })
     }
-
 
     // Handle board transitions (pre-production → production)
     const boardTransitions = taskActivities
@@ -976,11 +992,11 @@ export async function getOrderTasksTimeline(
       and(
         inArray(taskActivity.taskId, taskIds),
         or(
-                  eq(taskActivity.type, 'stage_transition'),
-                  eq(taskActivity.type, 'created'),
-                  eq(taskActivity.type, 'completed'),
-                  eq(taskActivity.type, 'board_transition'),
-                ),
+          eq(taskActivity.type, 'stage_transition'),
+          eq(taskActivity.type, 'created'),
+          eq(taskActivity.type, 'completed'),
+          eq(taskActivity.type, 'board_transition'),
+        ),
       ),
     )
     .orderBy(asc(taskActivity.createdAt))

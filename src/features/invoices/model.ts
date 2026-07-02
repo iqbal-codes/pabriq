@@ -10,7 +10,9 @@ import {
   orders as ordersTable,
   paymentMethods as paymentMethodsTable,
   payments as paymentsTable,
+  products as productsTable,
 } from '#/db/schema'
+import { formatProductDesignLabel } from '#/features/orders/line-item-display'
 
 export type Invoice = {
   id: string
@@ -169,7 +171,8 @@ export type OrderForInvoice = {
   }
   lineItems: Array<{
     id: string
-    name: string | null
+    productName: string
+    designName: string | null
     quantity: number
     unitPrice: number
     total: number
@@ -241,17 +244,25 @@ export async function createInvoice(
     const order = orderRows[0]
     const percentage = input.percentage ?? 100
 
-    const orderItemRows = await db
-      .select()
-      .from(orderLineItemsTable)
-      .where(eq(orderLineItemsTable.orderId, input.orderId))
+    const [orderItemRows, productRows] = await Promise.all([
+      db
+        .select()
+        .from(orderLineItemsTable)
+        .where(eq(orderLineItemsTable.orderId, input.orderId)),
+      db
+        .select({ id: productsTable.id, name: productsTable.name })
+        .from(productsTable)
+        .where(eq(productsTable.orgId, orgId)),
+    ])
+    const productNameMap = new Map(productRows.map((p) => [p.id, p.name]))
 
     for (const oi of orderItemRows) {
+      const productName = productNameMap.get(oi.productId) ?? 'Unknown'
       items.push({
         id: generateId(),
         invoiceId,
         lineType: 'product',
-        description: oi.name ?? 'Order item',
+        description: formatProductDesignLabel(productName, oi.designName),
         quantity: oi.quantity,
         unitPrice: oi.unitPrice,
         total: oi.total,

@@ -8,6 +8,10 @@ import {
 } from '#/components/app/form'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
+<<<<<<< HEAD
+=======
+import { getVisibleDesignName } from '#/features/orders/line-item-display'
+>>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
 import { CustomerInfoCard } from '#/features/portal/components/customer-info-card'
 import { formatCurrency } from '#/lib/formatters'
 import { cn } from '#/lib/utils'
@@ -125,7 +129,7 @@ export function DraftView({
       },
       lineItems: order.lineItems.map((item) => ({
         id: item.id,
-        name: item.name ?? '',
+        designName: item.designName ?? '',
         notes: item.notes ?? '',
         attachmentIds: item.assetIds,
       })),
@@ -156,11 +160,14 @@ export function DraftView({
       >((acc, li) => {
         const orig = origItemMap.get(li.id)
         if (!orig) return acc
-        if (li.name !== (orig.name ?? '') || li.notes !== (orig.notes ?? '')) {
+        if (
+          li.designName !== (orig.designName ?? '') ||
+          li.notes !== (orig.notes ?? '')
+        ) {
           acc.push(
             updateLineItem.mutateAsync({
               itemId: li.id,
-              name: li.name || undefined,
+              designName: li.designName || undefined,
               notes: li.notes || undefined,
             }),
           )
@@ -201,6 +208,7 @@ export function DraftView({
             {t('draftSubmitHelp', { org: order.orgName })}
           </p>
           {/* Mini-stepper */}
+<<<<<<< HEAD
           <div className="mt-6 space-y-2">
             <ol
               aria-label={t('draftStepsTitle')}
@@ -235,6 +243,31 @@ export function DraftView({
               ))}
             </div>
           </div>
+=======
+          <ol
+            aria-label={t('draftStepsTitle')}
+            className="mt-4 flex items-center gap-2 overflow-x-auto"
+          >
+            {DRAFT_STEPS.map((step) => {
+              const isDone =
+                (step.id === 'customer' && hasCustomer) ||
+                (step.id === 'shipping' && hasAddress) ||
+                (step.id === 'items' && itemsHaveContent)
+              return (
+                <li key={step.id} className="flex flex-1 items-center gap-2">
+                  <span
+                    className={cn(
+                      'flex h-1.5 flex-1 rounded-full',
+                      isDone ? 'bg-primary' : 'bg-muted',
+                    )}
+                    aria-hidden
+                  />
+                  <span className="sr-only">{t(step.titleKey)}</span>
+                </li>
+              )
+            })}
+          </ol>
+>>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
         </header>
 
         {/* Contact and Shipping details side-by-side on desktop */}
@@ -337,8 +370,28 @@ export function DraftView({
                   <div className="min-w-0">
                     <h3 className="text-sm font-semibold text-foreground">
                       {item.productName}
+<<<<<<< HEAD
                     </h3>
                     <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+=======
+                    </p>
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {item.productName}
+                    </p>
+                    {getVisibleDesignName(
+                      item.designName,
+                      item.productName,
+                    ) && (
+                      <p className="text-xs text-muted-foreground">
+                        {t('designName')}:{' '}
+                        {getVisibleDesignName(
+                          item.designName,
+                          item.productName,
+                        )}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground tabular-nums">
+>>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
                       {t('quantity')}: {item.quantity} ×{' '}
                       {formatCurrency(item.unitPrice, locale)}
                     </p>
@@ -347,11 +400,11 @@ export function DraftView({
                     {formatCurrency(item.total, locale)}
                   </p>
                 </div>
-                <form.AppField name={`lineItems[${i}].name`}>
+                <form.AppField name={`lineItems[${i}].designName`}>
                   {(field) => (
                     <field.TextField
-                      label={t('itemName')}
-                      placeholder={t('itemNamePlaceholder')}
+                      label={t('designName')}
+                      placeholder={t('designNamePlaceholder')}
                     />
                   )}
                 </form.AppField>

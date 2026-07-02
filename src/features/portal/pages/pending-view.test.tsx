@@ -50,7 +50,7 @@ const order = {
       id: 'li-1',
       taskId: 't1',
       taskNumber: 'TSK-1',
-      name: 'Custom T-Shirt',
+      designName: 'Custom T-Shirt',
       productName: 'T-Shirt',
       quantity: 10,
       unitPrice: 10000,
@@ -82,7 +82,7 @@ describe('PendingView', () => {
     expect(
       screen.getByRole('heading', {
         name: 'Order received',
-      })
+      }),
     ).toBeInTheDocument()
   })
 
@@ -100,9 +100,9 @@ describe('PendingView', () => {
     expect(screen.getAllByText(/ORD-1/).length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders line item name and quantity', () => {
+  it('renders line item product name and quantity', () => {
     renderPendingView()
-    expect(screen.getByText('Custom T-Shirt')).toBeInTheDocument()
+    expect(screen.getByText('T-Shirt')).toBeInTheDocument()
   })
 
   it('renders total formatted as currency', () => {
