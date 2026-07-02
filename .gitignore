@@ -20,3 +20,6 @@ docs/specs/later
 /playwright-report/
 /test-results/
 /.playwright-cli/
+
+# Impeccable live config (dev tool)
+.impeccable/live/
