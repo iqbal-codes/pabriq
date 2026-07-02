@@ -124,6 +124,7 @@ vi.mock('../hooks', () => {
           },
         ],
         stages: new Map(),
+        readyForProduction: [],
         done: [],
       },
       isLoading: false,

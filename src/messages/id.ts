@@ -754,6 +754,8 @@ const id: Messages = {
     startOrderProduction: "Mulai Produksi",
     productionStarted: "Produksi dimulai",
     startProductionFailed: "Gagal memulai produksi",
+    readyForProduction: "Siap Produksi",
+    markReadyForProduction: "Tandai Siap Produksi",
   },
   portal: {
     title: "Konfirmasi Pesanan",

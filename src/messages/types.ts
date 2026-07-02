@@ -748,6 +748,8 @@ export type Messages = {
     startOrderProduction: string;
     productionStarted: string;
     startProductionFailed: string;
+    readyForProduction: string;
+    markReadyForProduction: string;
   };
   portal: {
     title: string;

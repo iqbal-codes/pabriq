@@ -11,6 +11,7 @@ import {
   productionTasks as tasksTable,
 } from '#/db/schema'
 import { approveOrder, rejectOrder } from '#/features/orders/model'
+import { READY_FOR_PRODUCTION_STATUS } from '#/features/production/constants'
 import {
   advanceTask,
   listArchivedTasks,
@@ -431,10 +432,42 @@ describe('order approval and task spawning', () => {
     expect(tasks2[0].taskNumber).toBe('TSK-2')
   })
 
-  it('starts production for approved order with paid invoice', async () => {
+  it('starts production for approved order with paid invoice and ready tasks', async () => {
+    const preProdStage = await createStage({
+      orgId: org1Id,
+      name: 'Design',
+      orderIndex: 0,
+    })
+    const prodStage = await createStage({
+      orgId: org1Id,
+      name: 'Print',
+      board: 'production',
+      orderIndex: 1,
+    })
+
     const { orderId, customerId } = await seedOrder(org1Id, 'pending')
     await approveOrder(orderId, org1Id, 'user-1')
     await seedPaidInvoice(orderId, customerId, org1Id)
+
+    // Advance task: queue → pre-production stage
+    const tasks = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.orderId, orderId))
+    const taskId = tasks[0].id
+
+    await advanceTask(taskId, org1Id, 'operator-1')
+    // Advance from stage → ready_for_production
+    await advanceTask(taskId, org1Id, 'operator-1')
+
+    // Verify task is ready
+    const taskBefore = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.id, taskId))
+      .limit(1)
+    expect(taskBefore[0].status).toBe(READY_FOR_PRODUCTION_STATUS)
+    expect(taskBefore[0].board).toBe('pre_production')
 
     await startProductionForOrder(orderId, org1Id, 'user-1')
 
@@ -443,18 +476,16 @@ describe('order approval and task spawning', () => {
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId))
       .limit(1)
-
     expect(orderRows[0].status).toBe('in_progress')
 
-    const tasks = await db
+    const taskAfter = await db
       .select()
       .from(tasksTable)
-      .where(eq(tasksTable.orderId, orderId))
-
-    expect(tasks).toHaveLength(1)
-    expect(tasks[0].board).toBe('pre_production')
-    expect(tasks[0].status).toBe('queued')
-    expect(tasks[0].stageId).toBeNull()
+      .where(eq(tasksTable.id, taskId))
+      .limit(1)
+    expect(taskAfter[0].status).toBe('in_progress')
+    expect(taskAfter[0].board).toBe('production')
+    expect(taskAfter[0].stageId).toBe(prodStage.id)
   })
 
   it('rejects start production without paid invoice', async () => {
@@ -466,6 +497,54 @@ describe('order approval and task spawning', () => {
     ).rejects.toThrow(
       'At least one paid invoice is required to start production',
     )
+  })
+
+  it('rejects start production when tasks are not ready', async () => {
+    await createStage({ orgId: org1Id, name: 'Design', orderIndex: 0 })
+    await createStage({
+      orgId: org1Id,
+      name: 'Print',
+      board: 'production',
+      orderIndex: 1,
+    })
+
+    const { orderId, customerId } = await seedOrder(org1Id, 'pending')
+    await approveOrder(orderId, org1Id, 'user-1')
+    await seedPaidInvoice(orderId, customerId, org1Id)
+
+    await expect(
+      startProductionForOrder(orderId, org1Id, 'user-1'),
+    ).rejects.toThrow(
+      'All pre-production tasks must be ready before production can start',
+    )
+
+    const orderRows = await db
+      .select({ status: ordersTable.status })
+      .from(ordersTable)
+      .where(eq(ordersTable.id, orderId))
+      .limit(1)
+    expect(orderRows[0].status).toBe('approved')
+  })
+
+  it('rejects start production when no active production stage', async () => {
+    await createStage({ orgId: org1Id, name: 'Design', orderIndex: 0 })
+
+    const { orderId, customerId } = await seedOrder(org1Id, 'pending')
+    await approveOrder(orderId, org1Id, 'user-1')
+    await seedPaidInvoice(orderId, customerId, org1Id)
+
+    // Advance task to ready_for_production
+    const tasks = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.orderId, orderId))
+    const taskId = tasks[0].id
+    await advanceTask(taskId, org1Id, 'operator-1')
+    await advanceTask(taskId, org1Id, 'operator-1')
+
+    await expect(
+      startProductionForOrder(orderId, org1Id, 'user-1'),
+    ).rejects.toThrow('No active production stage')
   })
 
   it('does not duplicate tasks on repeated spawnTasksForApprovedOrder calls', async () => {
@@ -616,6 +695,41 @@ describe('listBoardTasks', () => {
     >
     expect(ctx.deadline).toBe(lineItem.deadline.toISOString())
   })
+
+  it('places ready_for_production tasks in readyForProduction bucket', async () => {
+    const { orderId } = await seedOrder(org1Id)
+
+    await db.insert(tasksTable).values({
+      id: 'task-ready',
+      orgId: org1Id,
+      orderId,
+      board: 'pre_production',
+      stageId: null,
+      status: READY_FOR_PRODUCTION_STATUS,
+      taskNumber: 'TSK-READY',
+      lineItemId: 'line-item-1',
+      priority: false,
+      context: {
+        productName: 'Ready Product',
+        customerName: 'Customer',
+        requirements: null,
+        orderNumber: 'ORD-READY',
+        quantity: 1,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const boardTasks = await listBoardTasks(org1Id)
+
+    expect(boardTasks.readyForProduction).toHaveLength(1)
+    expect(boardTasks.readyForProduction[0].task.id).toBe('task-ready')
+    expect(boardTasks.done).toHaveLength(0)
+    // Should not appear in any stage bucket
+    for (const stageTasks of boardTasks.stages.values()) {
+      expect(stageTasks.find((t) => t.task.id === 'task-ready')).toBeUndefined()
+    }
+  })
 })
 
 describe('task advancement', () => {
@@ -765,7 +879,7 @@ describe('task advancement', () => {
     expect(task[0].stageId).toBe(designStage.id)
   })
 
-  it('advances through stages then to completed on last stage', async () => {
+  it('advances through pre-production stages then to ready_for_production on last stage', async () => {
     await createStage({ orgId: org1Id, name: 'QC', orderIndex: 0 })
 
     const { taskId } = await seedTask(org1Id)
@@ -785,16 +899,25 @@ describe('task advancement', () => {
       .from(tasksTable)
       .where(eq(tasksTable.id, taskId))
       .limit(1)
-    expect(task[0].status).toBe('completed')
+    expect(task[0].status).toBe(READY_FOR_PRODUCTION_STATUS)
     expect(task[0].stageId).toBeNull()
+    expect(task[0].board).toBe('pre_production')
   })
 
-  it('blocks advancement from completed status', async () => {
+  it('blocks advancement from ready_for_production status', async () => {
     await createStage({ orgId: org1Id, name: 'QC', orderIndex: 0 })
 
     const { taskId } = await seedTask(org1Id)
     await advanceTask(taskId, org1Id, 'operator-1')
+    // Second advance from last pre-production stage → ready_for_production
     await advanceTask(taskId, org1Id, 'operator-1')
+
+    const task = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.id, taskId))
+      .limit(1)
+    expect(task[0].status).toBe(READY_FOR_PRODUCTION_STATUS)
 
     const result = await advanceTask(taskId, org1Id, 'operator-1')
     expect(result.ok).toBe(false)
@@ -920,16 +1043,14 @@ describe('task advancement', () => {
   })
 
   it('approveTaskAdvance scopes stages to task board when orderIndex overlaps across boards', async () => {
-    const preProdStages = [
-      await createStage({ orgId: org1Id, name: 'Design', orderIndex: 0 }),
-      await createStage({
-        orgId: org1Id,
-        name: 'QC',
-        orderIndex: 2,
-        needApproval: true,
-      }),
-    ]
-    const printStage = await createStage({
+    await createStage({ orgId: org1Id, name: 'Design', orderIndex: 0 })
+    await createStage({
+      orgId: org1Id,
+      name: 'QC',
+      orderIndex: 2,
+      needApproval: true,
+    })
+    await createStage({
       orgId: org1Id,
       name: 'Print',
       board: 'production',
@@ -957,7 +1078,6 @@ describe('task advancement', () => {
       .limit(1)
       .then((r) => r[0])
     expect(taskBeforeApproval.status).toBe('pending_approval')
-    expect(taskBeforeApproval.stageId).toBe(preProdStages[1].id)
 
     const result = await approveTaskAdvance(taskId, org1Id, 'admin-1', 'admin')
     expect(result.ok).toBe(true)
@@ -969,20 +1089,20 @@ describe('task advancement', () => {
       .limit(1)
       .then((r) => r[0])
 
-    // QC is the last pre_production stage → board transition to production at Print
-    expect(task.stageId).toBe(printStage.id)
-    expect(task.status).toBe('in_progress')
-    expect(task.board).toBe('production')
+    // QC is the last pre_production stage → marked ready for production
+    expect(task.stageId).toBeNull()
+    expect(task.status).toBe(READY_FOR_PRODUCTION_STATUS)
+    expect(task.board).toBe('pre_production')
   })
 
-  it('moves completed pre_production tasks onto the production board after approval', async () => {
+  it('marks task ready_for_production after last pre-production approval', async () => {
     const preProdStage = await createStage({
       orgId: org1Id,
       name: 'Design',
       orderIndex: 0,
       needApproval: true,
     })
-    const productionStage = await createStage({
+    await createStage({
       orgId: org1Id,
       name: 'Print',
       board: 'production',
@@ -1014,7 +1134,7 @@ describe('task advancement', () => {
       expect(transitionResult.pendingApproval).toBe(true)
     }
 
-    // Approval triggers board transition to production
+    // Approval marks task ready for production (stays on pre_production board)
     const approveResult = await approveTaskAdvance(
       taskId,
       org1Id,
@@ -1029,9 +1149,9 @@ describe('task advancement', () => {
       .where(eq(tasksTable.id, taskId))
       .limit(1)
       .then((r) => r[0])
-    expect(task.status).toBe('in_progress')
-    expect(task.board).toBe('production')
-    expect(task.stageId).toBe(productionStage.id)
+    expect(task.status).toBe(READY_FOR_PRODUCTION_STATUS)
+    expect(task.board).toBe('pre_production')
+    expect(task.stageId).toBeNull()
   })
 
   it('saves requirementResponses to task context on advance', async () => {

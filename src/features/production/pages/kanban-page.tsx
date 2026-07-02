@@ -53,10 +53,6 @@ export function KanbanPage({ orgId }: Props) {
         .sort((a, b) => a.orderIndex - b.orderIndex)
   }, [allActiveStages])
 
-  const productionEntryStage = useMemo(
-    () => allActiveStages.find((s) => s.board === 'production'),
-    [allActiveStages],
-  )
 
   const filters = useMemo(
     () => ({
@@ -85,12 +81,12 @@ export function KanbanPage({ orgId }: Props) {
     const idx = boardStages.findIndex((st) => st.id === reviewTask.stageId)
     const next = boardStages[idx + 1]
     if (next) return next.name
-    // At last stage on pre_production → show production entry stage
-    if (reviewTask.board === 'pre_production' && productionEntryStage) {
-      return productionEntryStage.name
+    // At last stage on pre_production → show ready for production label
+    if (reviewTask.board === 'pre_production') {
+      return t('readyForProduction')
     }
     return ''
-  }, [reviewTask, allActiveStages, getBoardStages, productionEntryStage])
+  }, [reviewTask, allActiveStages, getBoardStages, t])
 
   const reviewRequirementResponses = useMemo(() => {
     if (!reviewTask) return undefined

@@ -750,6 +750,8 @@ const en: Messages = {
     startOrderProduction: "Start Production",
     productionStarted: "Production started",
     startProductionFailed: "Failed to start production",
+    readyForProduction: "Ready for Production",
+    markReadyForProduction: "Mark Ready for Production",
   },
   portal: {
     title: "Order Confirmation",
