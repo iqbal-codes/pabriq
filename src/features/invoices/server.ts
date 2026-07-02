@@ -321,6 +321,7 @@ export const getOrderForInvoiceFn = createServerFn({ method: 'GET' })
         orderLineItems: orderLineItemsTable,
         invoices: invoicesTable,
         customers: customersTable,
+        products: productsTable,
       },
       { eq, and },
     ] = await Promise.all([
@@ -342,7 +343,8 @@ export const getOrderForInvoiceFn = createServerFn({ method: 'GET' })
       db
         .select({
           id: orderLineItemsTable.id,
-          name: orderLineItemsTable.name,
+          productId: orderLineItemsTable.productId,
+          designName: orderLineItemsTable.designName,
           quantity: orderLineItemsTable.quantity,
           unitPrice: orderLineItemsTable.unitPrice,
           total: orderLineItemsTable.total,
@@ -383,6 +385,12 @@ export const getOrderForInvoiceFn = createServerFn({ method: 'GET' })
           .limit(1)
       : []
 
+    const productRows = await db
+      .select({ id: productsTable.id, name: productsTable.name })
+      .from(productsTable)
+      .where(eq(productsTable.orgId, orgId))
+    const productNameMap = new Map(productRows.map((p) => [p.id, p.name]))
+
     const invoicedPercentage = invoiceRows.reduce(
       (sum, inv) => sum + (inv.percentage ?? 0),
       0,
@@ -405,7 +413,10 @@ export const getOrderForInvoiceFn = createServerFn({ method: 'GET' })
         status: order.status,
         notes: order.notes,
       },
-      lineItems: itemRows,
+      lineItems: itemRows.map((item) => ({
+        ...item,
+        productName: productNameMap.get(item.productId) ?? 'Unknown Product',
+      })),
       existingInvoices: invoiceRows.map((inv) => ({
         id: inv.id,
         invoiceNumber: inv.invoiceNumber,

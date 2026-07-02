@@ -7,6 +7,7 @@ import {
   products as productsTable,
   productionTasks as tasksTable,
 } from '#/db/schema'
+import { getVisibleDesignName } from '#/features/orders/line-item-display'
 import { advanceOrderStatus, getOrder } from '#/features/orders/model'
 import { spawnQueuedPreProductionTasksForOrder } from '#/features/production/task-spawn-helpers'
 
@@ -88,7 +89,8 @@ export async function spawnProductionTasks(
       lineItemId: item.id,
       priority: productPriorityMap.get(item.productId) ?? false,
       context: {
-        productName: item.name ?? '',
+        productName: item.productName,
+        designName: getVisibleDesignName(item.designName, item.productName),
         customerName: customerName ?? '',
         requirements: item.notes ?? null,
         orderNumber: order.orderNumber ?? '',

@@ -33,13 +33,21 @@ export const OrderLineItemRow = withForm({
 
     return (
       <div className="space-y-3 rounded-lg border p-4">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {t('productName')}:
+          </span>
+          <span className="text-sm font-medium text-foreground">
+            {product?.name ?? item.productId}
+          </span>
+        </div>
         <div className="flex gap-3">
           <FormGrid columns={3}>
-            <form.AppField name={`lineItems[${index}].name`}>
+            <form.AppField name={`lineItems[${index}].designName`}>
               {(field) => (
                 <field.TextField
-                  label={t('lineItemName')}
-                  placeholder={product?.name ?? ''}
+                  label={t('designName')}
+                  placeholder={t('designNamePlaceholder')}
                 />
               )}
             </form.AppField>

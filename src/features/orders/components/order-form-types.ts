@@ -6,7 +6,7 @@ export type OrderFormValues = {
     productId: string
     quantity: string
     unitPrice: string
-    name: string
+    designName: string
     notes: string
     attachments: string[]
   }>

@@ -115,7 +115,9 @@ const en: Messages = {
     validUntil: "Valid Until",
     notes: "Notes",
     lineItemNotes: "Item Notes",
-    lineItemName: "Item Name",
+    productName: "Product",
+    designName: "Design Name",
+    designNamePlaceholder: "e.g. ONIC",
     quantity: "Quantity",
     unitPrice: "Unit Price",
     totalLabel: "Total",
@@ -650,6 +652,7 @@ const en: Messages = {
     statusCompleted: "Completed",
     orderLabel: "Order",
     productLabel: "Product",
+    designName: "Design Name",
     customerLabel: "Customer",
     quantityLabel: "Quantity",
     priorityBadge: "Priority",
@@ -716,8 +719,13 @@ const en: Messages = {
     quantity: "Qty",
     unitPrice: "Unit Price",
     lineTotal: "Total",
+<<<<<<< HEAD
     itemName: "Design Name",
     itemNamePlaceholder: "Enter design name",
+=======
+    designName: "Design Name",
+    designNamePlaceholder: "Enter design name, artwork name, or reference label",
+>>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
     itemNotes: "Notes / Specification",
     itemNotesPlaceholder: "Add notes or specifications for this item",
     attachment: "Attachment",

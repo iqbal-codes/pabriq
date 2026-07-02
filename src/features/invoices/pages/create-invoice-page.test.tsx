@@ -34,7 +34,8 @@ vi.mock('#/features/invoices/hooks', () => ({
           lineItems: [
             {
               id: 'li-1',
-              name: 'Widget',
+              productName: 'Widget',
+              designName: null,
               quantity: 10,
               unitPrice: 600_000,
               total: 6_000_000,

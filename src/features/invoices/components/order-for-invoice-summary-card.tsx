@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '#/components/ui/table'
 import type { OrderForInvoice } from '#/features/invoices/model'
+import { formatProductDesignLabel } from '#/features/orders/line-item-display'
 import { formatCurrency } from '#/lib/formatters'
 import type { InvoicePercentageMode } from './create-invoice-form-types'
 
@@ -193,7 +194,12 @@ export function OrderForInvoiceSummaryCard(
             <TableBody>
               {orderData.lineItems.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell>{item.name ?? '—'}</TableCell>
+                  <TableCell>
+                    {formatProductDesignLabel(
+                      item.productName,
+                      item.designName,
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">{item.quantity}</TableCell>
                   <TableCell className="text-right">
                     {formatCurrency(item.unitPrice, locale)}
