@@ -609,6 +609,7 @@ export type Messages = {
     taskDetail: string;
     specification: string;
     attachments: string;
+    proofFiles: string;
     activity: string;
     comments: string;
     commentPlaceholder: string;
@@ -676,6 +677,7 @@ export type Messages = {
     customerLabel: string;
     quantityLabel: string;
     priorityBadge: string;
+    needReview: string;
     deadlineToday: string;
     deadlineTomorrow: string;
     deadlineDaysLeft: string;
@@ -793,6 +795,7 @@ export type Messages = {
     rejectedHelp: string;
     requirementsSubmitted: string;
     noStageTransitions: string;
+    timelineQueue: string;
     timelineQueued: string;
     timelineStarted: string;
     timelineCompleted: string;
@@ -856,10 +859,6 @@ export type Messages = {
     // Pending view
     pendingHeroTitle: string;
     pendingHeroSubtitle: string;
-    pendingStepsTitle: string;
-    pendingStepReview: string;
-    pendingStepApprove: string;
-    pendingStepConfirm: string;
     pendingReceivedAt: string;
 
     // Rejected view
