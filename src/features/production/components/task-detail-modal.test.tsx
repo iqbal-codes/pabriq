@@ -195,9 +195,7 @@ describe('TaskDetailModal', () => {
 
   it('renders Details and Activity tabs', () => {
     renderModal()
-    expect(screen.getAllByText('Specification').length).toBeGreaterThanOrEqual(
-      1,
-    )
+    expect(screen.getAllByText('Task Detail').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Activity')).toBeInTheDocument()
   })
 

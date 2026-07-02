@@ -11,6 +11,7 @@ import {
 } from '#/components/ui/dialog'
 import { Label } from '#/components/ui/label'
 import { Textarea } from '#/components/ui/textarea'
+import { AssetFileList } from '#/components/app/asset-file'
 import type { Requirement } from '../model'
 
 type Props = {
@@ -90,21 +91,26 @@ export function ReviewModal({
             </p>
             <div className="space-y-1.5">
               {fulfilledReqs.map(([id, resp]) => (
-                <div key={id} className="flex items-center gap-2 text-sm">
-                  <CheckCircle2
-                    className="size-3.5 text-success shrink-0"
-                    aria-hidden="true"
-                  />
-                  <span className="text-muted-foreground">
-                    {requirementLabelMap.get(id) ?? id}
-                  </span>
-                  {resp.value && (
-                    <span className="truncate">: {resp.value}</span>
-                  )}
-                  {resp.assetIds && resp.assetIds.length > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      ({t('attachmentCount', { count: resp.assetIds.length })})
+                <div key={id} className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2
+                      className="size-3.5 text-success shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span className="text-muted-foreground">
+                      {requirementLabelMap.get(id) ?? id}
                     </span>
+                    {resp.value && (
+                      <span className="truncate">: {resp.value}</span>
+                    )}
+                  </div>
+                  {resp.assetIds && resp.assetIds.length > 0 && (
+                    <AssetFileList
+                      assetIds={resp.assetIds}
+                      layout="list"
+                      showSize
+                      className="ml-5"
+                    />
                   )}
                 </div>
               ))}

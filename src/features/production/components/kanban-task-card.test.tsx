@@ -36,6 +36,7 @@ function createMockTask(overrides: Partial<BoardTask['task']> = {}): BoardTask {
 const enMessages = {
   production: {
     priorityBadge: 'Priority',
+    needReview: 'Need Review',
     openTask: 'Open task {task}',
     deadlineToday: 'Due today',
     deadlineTomorrow: 'Due tomorrow',
@@ -122,6 +123,22 @@ describe('KanbanTaskCard', () => {
       </IntlProvider>,
     )
     expect(screen.getByText('Priority')).toBeInTheDocument()
+  })
+
+  it('renders need review badge for pending_approval status', () => {
+    renderCard(createMockTask({ status: 'pending_approval' }))
+    expect(screen.getByText('Need Review')).toBeInTheDocument()
+  })
+
+  it('does not render need review badge for non-pending status', () => {
+    renderCard(createMockTask({ status: 'in_progress' }))
+    expect(screen.queryByText('Need Review')).not.toBeInTheDocument()
+  })
+
+  it('applies warning border for pending_approval status', () => {
+    renderCard(createMockTask({ status: 'pending_approval' }))
+    const card = screen.getByText('TSK-5').closest('[data-slot="card"]')
+    expect(card?.className).toContain('border-warning/60')
   })
 
   describe('deadline badge', () => {

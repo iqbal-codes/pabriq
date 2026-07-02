@@ -84,7 +84,7 @@ export function KanbanTaskCard({ task, onClick }: Props) {
 
   return (
     <Card
-      className={`gap-0! py-0! ${isInteractive ? 'cursor-pointer hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50' : ''} ${isPendingApproval ? 'opacity-80' : ''}`}
+      className={`gap-0! py-0! ${isInteractive ? 'cursor-pointer hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50' : ''} ${isPendingApproval ? 'border-warning/60' : ''}`}
       onClick={isInteractive ? () => onClick(taskData.id) : undefined}
       role={isInteractive ? 'button' : undefined}
       tabIndex={isInteractive ? 0 : undefined}
@@ -93,16 +93,23 @@ export function KanbanTaskCard({ task, onClick }: Props) {
       }
       onKeyDown={isInteractive ? handleKeyDown : undefined}
     >
-      <CardContent className="p-3 space-y-1">
-        <div className="flex h-[21px] items-center justify-between gap-2">
+      <CardContent className="p-2.5 space-y-0.5">
+        <div className="flex h-5 items-center justify-between gap-1.5">
           <span className="font-mono text-xs font-semibold">
             {taskData.taskNumber || '-'}
           </span>
-          {taskData.priority ? (
-            <Badge variant="warning" className="shrink-0 text-[10px]">
-              {pt('priorityBadge')}
-            </Badge>
-          ) : null}
+          <div className="flex items-center gap-1 shrink-0">
+            {isPendingApproval ? (
+              <Badge variant="warning" className="text-[10px]">
+                {pt('needReview')}
+              </Badge>
+            ) : null}
+            {taskData.priority ? (
+              <Badge variant="warning" className="text-[10px]">
+                {pt('priorityBadge')}
+              </Badge>
+            ) : null}
+          </div>
         </div>
         <div className="text-xs text-muted-foreground font-mono">
           {orderNum}

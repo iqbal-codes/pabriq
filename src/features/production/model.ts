@@ -351,6 +351,7 @@ async function handleBoardTransition(params: {
   orgId: string
   actorId: string
   completedRequirementIds: string[]
+  requirementResponses?: RequirementResponse
   isAtLastStage: boolean
 }): Promise<{ transitioned: boolean; result?: AdvanceTaskResult }> {
   if (params.task.board !== 'pre_production' || !params.isAtLastStage) {
@@ -378,7 +379,11 @@ async function handleBoardTransition(params: {
     type: 'board_transition',
     fromStageId: params.task.stageId,
     toStageId: firstProdStage.id,
-    data: { fromBoard: 'pre_production', toBoard: 'production' },
+    data: {
+      fromBoard: 'pre_production',
+      toBoard: 'production',
+      responses: params.requirementResponses ?? null,
+    },
     actorId: params.actorId,
   })
 
@@ -525,6 +530,7 @@ export async function advanceTask(
     orgId,
     actorId,
     completedRequirementIds: completedReqIds,
+    requirementResponses,
     isAtLastStage,
   })
   if (boardResult.transitioned && boardResult.result) {
@@ -605,12 +611,19 @@ export async function approveTaskAdvance(
     actorId,
   })
 
+  // Extract requirementResponses from task.context (saved during advancement request)
+  const taskContext = task.context as Record<string, unknown> | null
+  const requirementResponses = taskContext?.requirementResponses as
+    | Record<string, { value?: string; assetIds?: string[] }>
+    | undefined
+
   // Handle board transition: when pre_production completes all stages, move to production board
   const boardResult = await handleBoardTransition({
     task,
     orgId,
     actorId,
     completedRequirementIds: [],
+    requirementResponses,
     isAtLastStage,
   })
   if (boardResult.transitioned && boardResult.result) {
@@ -629,6 +642,7 @@ export async function approveTaskAdvance(
   }
 
   const nextStage = allStages[nextStageIdx] as Stage
+
   await transitionToStage({
     taskId,
     orgId,
@@ -636,6 +650,7 @@ export async function approveTaskAdvance(
     fromStageId: task.stageId,
     toStageId: nextStage.id,
     completedRequirementIds: [],
+    requirementResponses,
     status: 'in_progress',
   })
 

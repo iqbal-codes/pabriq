@@ -1,10 +1,14 @@
 import { ArrowRight, CheckCircle2, Clock, XCircle } from 'lucide-react'
 import { useTranslations } from 'use-intl'
+import { AssetFileList } from '#/components/app/asset-file'
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar'
-import type { TaskActivity } from '#/features/production/model'
+import type { Stage, TaskActivity } from '#/features/production/model'
 
 const systemActivityIconMap: Record<string, React.ReactNode> = {
   stage_transition: (
+    <ArrowRight className="size-3.5 text-brand-accent shrink-0 mt-0.5" />
+  ),
+  board_transition: (
     <ArrowRight className="size-3.5 text-brand-accent shrink-0 mt-0.5" />
   ),
   advancement_requested: (
@@ -35,10 +39,14 @@ export function ActivityRow({
   activity,
   stageNameMap,
   actorMap,
+  stages,
+  taskContext,
 }: {
   activity: TaskActivity
   stageNameMap: Map<string, string>
   actorMap: Map<string, { name: string; image: string | null }>
+  stages?: Stage[]
+  taskContext?: Record<string, unknown> | null
 }): React.ReactElement {
   const t = useTranslations('production')
   const fromName = activity.fromStageId
@@ -59,6 +67,7 @@ export function ActivityRow({
 
   function getDescription(): string {
     switch (activity.type) {
+      case 'board_transition':
       case 'stage_transition':
         if (!fromName && !toName) return t('taskCreated')
         if (!toName) return `Completed from ${fromName}`
@@ -102,19 +111,59 @@ export function ActivityRow({
   }
 
   const isSystem =
-    activity.type === 'stage_transition' || activity.actorId === 'system'
+    activity.type === 'stage_transition' ||
+    activity.type === 'board_transition' ||
+    activity.actorId === 'system'
 
+  // Cast TaskActivity.data to read responses or reviewNotes safely
+  const activityData = data as
+    | {
+        responses?: Record<string, { assetIds?: string[]; value?: string }>
+        reviewNotes?: string
+      }
+    | null
+    | undefined
+
+  const responses = activityData?.responses
+  let proofAssetIds: string[] = []
+  if (responses && Object.keys(responses).length > 0) {
+    proofAssetIds = Object.values(responses).flatMap((r) => r.assetIds ?? [])
+  } else if (
+    activity.fromStageId &&
+    stages &&
+    taskContext?.requirementResponses
+  ) {
+    const sourceStage = stages.find((s) => s.id === activity.fromStageId)
+    if (sourceStage?.requirements) {
+      const sourceReqIds = sourceStage.requirements.map((r) => r.id)
+      const contextResponses = taskContext.requirementResponses as Record<
+        string,
+        { assetIds?: string[] }
+      >
+      proofAssetIds = Object.entries(contextResponses)
+        .filter(([reqId]) => sourceReqIds.includes(reqId))
+        .flatMap(([, r]) => r.assetIds ?? [])
+    }
+  }
   if (isSystem) {
     return (
       <div className="flex gap-2.5 border-b pb-2.5 last:border-0">
         <div className="size-6 flex items-start justify-center shrink-0 mt-0.5">
           {systemActivityIconMap[activity.type] ?? <div className="size-3.5" />}
         </div>
-        <div className="min-w-0 text-sm">
+        <div className="flex-1 min-w-0 text-sm">
           <p className="text-xs text-foreground">{getDescription()}</p>
           <span className="text-xs text-muted-foreground">
             {dateStr} {timeStr}
           </span>
+          {proofAssetIds.length > 0 && (
+            <AssetFileList
+              assetIds={proofAssetIds}
+              layout="list"
+              showSize
+              className="mt-2"
+            />
+          )}
         </div>
       </div>
     )
@@ -127,7 +176,7 @@ export function ActivityRow({
           {user ? getInitials(user.name) : '?'}
         </AvatarFallback>
       </Avatar>
-      <div className="min-w-0 text-sm">
+      <div className="flex-1 min-w-0 text-sm">
         <div className="flex items-center gap-1.5">
           <span className="font-medium">
             {user?.name ?? activity.actorId.slice(0, 8)}
@@ -140,9 +189,9 @@ export function ActivityRow({
           {userActivityIconMap[activity.type] ?? <div className="size-3.5" />}
           <p className="text-xs text-foreground">{getDescription()}</p>
           {(activity.type === 'approved' || activity.type === 'rejected') &&
-            data.reviewNotes && (
+            activityData?.reviewNotes && (
               <span className="text-muted-foreground truncate">
-                · {String(data.reviewNotes)}
+                · {String(activityData.reviewNotes)}
               </span>
             )}
         </div>
