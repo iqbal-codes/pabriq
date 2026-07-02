@@ -1,12 +1,14 @@
-import { and, desc, eq, inArray } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   taskActivity as activityTable,
   invoices as invoicesTable,
   orders as ordersTable,
   products as productsTable,
+  productionStages as stagesTable,
   productionTasks as tasksTable,
 } from '#/db/schema'
+import { READY_FOR_PRODUCTION_STATUS } from '#/features/production/constants'
 import { getVisibleDesignName } from '#/features/orders/line-item-display'
 import { advanceOrderStatus, getOrder } from '#/features/orders/model'
 import { spawnQueuedPreProductionTasksForOrder } from '#/features/production/task-spawn-helpers'
@@ -167,6 +169,75 @@ export async function startProductionForOrder(
     throw new Error('At least one paid invoice is required to start production')
   }
 
+  // Ensure pre-production tasks exist
   await spawnTasksForApprovedOrder(orderId, orgId)
+
+  // Fetch first active production stage
+  const [firstProdStage] = await db
+    .select()
+    .from(stagesTable)
+    .where(
+      and(
+        eq(stagesTable.orgId, orgId),
+        eq(stagesTable.board, 'production'),
+        eq(stagesTable.active, true),
+      ),
+    )
+    .orderBy(asc(stagesTable.orderIndex))
+    .limit(1)
+
+  if (!firstProdStage) {
+    throw new Error('No active production stage')
+  }
+
+  // Fetch all tasks for this order
+  const orderTasks = await db
+    .select()
+    .from(tasksTable)
+    .where(and(eq(tasksTable.orderId, orderId), eq(tasksTable.orgId, orgId)))
+
+  if (orderTasks.length === 0) {
+    throw new Error('No tasks found for order')
+  }
+
+  // All tasks must be ready for production
+  const notReady = orderTasks.filter(
+    (t) => t.status !== READY_FOR_PRODUCTION_STATUS,
+  )
+  if (notReady.length > 0) {
+    throw new Error(
+      'All pre-production tasks must be ready before production can start',
+    )
+  }
+
+  // Move all ready tasks to first production stage
+  const now = new Date()
+  await db.transaction(async (tx) => {
+    await tx
+      .update(tasksTable)
+      .set({
+        board: 'production',
+        stageId: firstProdStage.id,
+        status: 'in_progress',
+        updatedAt: now,
+      })
+      .where(and(eq(tasksTable.orderId, orderId), eq(tasksTable.orgId, orgId)))
+
+    // Log board_transition activity for each task
+    for (const task of orderTasks) {
+      await tx.insert(activityTable).values({
+        id: crypto.randomUUID(),
+        orgId,
+        taskId: task.id,
+        type: 'board_transition',
+        fromStageId: null,
+        toStageId: firstProdStage.id,
+        data: { fromBoard: 'pre_production', toBoard: 'production' },
+        actorId,
+        createdAt: now,
+      })
+    }
+  })
+
   await advanceOrderStatus(orderId, orgId, actorId)
 }

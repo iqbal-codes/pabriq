@@ -1,3 +1,4 @@
+import { READY_FOR_PRODUCTION_STATUS } from '#/features/production/constants'
 import type { InvoiceRow } from '#/features/invoices/model'
 import type { GetOrderResult } from '#/features/orders/model'
 
@@ -68,9 +69,12 @@ export function useOrderDerivedState(params: {
     orderStatus === 'completed' ||
     orderStatus === 'cancelled' ||
     orderStatus === 'rejected'
-
   const hasPaidInvoice = orderInvoices.some((inv) => inv.status === 'paid')
-  const canStartProduction = orderStatus === 'approved' && hasPaidInvoice
+  const allTasksReadyForProduction =
+    (tasksData?.length ?? 0) > 0 &&
+    (tasksData?.every((t) => t.task.status === READY_FOR_PRODUCTION_STATUS) ?? false)
+  const canStartProduction =
+    orderStatus === 'approved' && hasPaidInvoice && allTasksReadyForProduction
 
   const canCompleteOrder =
     orderStatus === 'in_delivery' && allInvoicesPaid && totalInvoicedPct >= 100

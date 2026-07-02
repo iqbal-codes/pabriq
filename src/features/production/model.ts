@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm'
+import { READY_FOR_PRODUCTION_STATUS } from '#/features/production/constants'
 import { buildOrderBy, type SortColumnMap, type SortState } from '#/lib/sorting'
 import { db } from '#/db/index'
 import type { Requirement } from '#/db/schema'
@@ -328,66 +329,37 @@ async function completeTaskTransition(params: {
   })
 }
 
-async function getFirstActiveProductionStage(
-  orgId: string,
-): Promise<Stage | null> {
-  const rows = await db
-    .select()
-    .from(stagesTable)
-    .where(
-      and(
-        eq(stagesTable.orgId, orgId),
-        eq(stagesTable.active, true),
-        eq(stagesTable.board, 'production'),
-      ),
-    )
-    .orderBy(asc(stagesTable.orderIndex))
-    .limit(1)
-
-  return (rows[0] as Stage) ?? null
-}
-async function handleBoardTransition(params: {
-  task: ProductionTask
+async function markTaskReadyForProduction(params: {
+  taskId: string
   orgId: string
   actorId: string
+  fromStageId: string | null
   completedRequirementIds: string[]
   requirementResponses?: RequirementResponse
-  isAtLastStage: boolean
-}): Promise<{ transitioned: boolean; result?: AdvanceTaskResult }> {
-  if (params.task.board !== 'pre_production' || !params.isAtLastStage) {
-    return { transitioned: false }
-  }
-
-  const firstProdStage = await getFirstActiveProductionStage(params.orgId)
-  if (!firstProdStage) {
-    return { transitioned: false }
-  }
-
+}): Promise<void> {
   await db
     .update(tasksTable)
     .set({
-      board: 'production',
-      stageId: firstProdStage.id,
-      status: 'in_progress',
+      board: 'pre_production',
+      stageId: null,
+      status: READY_FOR_PRODUCTION_STATUS,
       updatedAt: new Date(),
     })
-    .where(eq(tasksTable.id, params.task.id))
+    .where(eq(tasksTable.id, params.taskId))
 
   await logActivity({
     orgId: params.orgId,
-    taskId: params.task.id,
-    type: 'board_transition',
-    fromStageId: params.task.stageId,
-    toStageId: firstProdStage.id,
+    taskId: params.taskId,
+    type: 'stage_transition',
+    fromStageId: params.fromStageId,
+    toStageId: null,
     data: {
-      fromBoard: 'pre_production',
-      toBoard: 'production',
+      completedRequirements: params.completedRequirementIds,
+      readyForProduction: true,
       responses: params.requirementResponses ?? null,
     },
     actorId: params.actorId,
   })
-
-  return { transitioned: true, result: { ok: true, pendingApproval: false } }
 }
 
 export async function advanceTask(
@@ -405,7 +377,7 @@ export async function advanceTask(
   if (taskRows.length === 0) throw new Error('Task not found')
   const task = taskRows[0] as ProductionTask
 
-  if (task.status === 'completed' || task.status === 'pending_approval') {
+  if (task.status === 'completed' || task.status === 'pending_approval' || task.status === READY_FOR_PRODUCTION_STATUS) {
     return { ok: false, error: 'Task cannot be advanced from current status' }
   }
 
@@ -496,8 +468,8 @@ export async function advanceTask(
     if (!isAtLastStage) {
       toStageId = (allStages[nextStageIdx] as Stage).id
     } else if (task.board === 'pre_production') {
-      const firstProdStage = await getFirstActiveProductionStage(orgId)
-      toStageId = firstProdStage?.id ?? null
+      // Last pre-production stage → ready_for_production (no stage)
+      toStageId = null
     }
     // else: final stage on production board → toStageId stays null (completion)
 
@@ -524,19 +496,18 @@ export async function advanceTask(
     return { ok: true, pendingApproval: true }
   }
 
-  // No approval needed — handle board transition or advance
-  const boardResult = await handleBoardTransition({
-    task,
-    orgId,
-    actorId,
-    completedRequirementIds: completedReqIds,
-    requirementResponses,
-    isAtLastStage,
-  })
-  if (boardResult.transitioned && boardResult.result) {
-    return boardResult.result
+  // No approval needed — at last pre-production stage, mark ready for production
+  if (isAtLastStage && task.board === 'pre_production') {
+    await markTaskReadyForProduction({
+      taskId,
+      orgId,
+      actorId,
+      fromStageId: task.stageId,
+      completedRequirementIds: completedReqIds,
+      requirementResponses,
+    })
+    return { ok: true, pendingApproval: false }
   }
-
   if (isAtLastStage) {
     await completeTaskTransition({
       taskId,
@@ -617,17 +588,17 @@ export async function approveTaskAdvance(
     | Record<string, { value?: string; assetIds?: string[] }>
     | undefined
 
-  // Handle board transition: when pre_production completes all stages, move to production board
-  const boardResult = await handleBoardTransition({
-    task,
-    orgId,
-    actorId,
-    completedRequirementIds: [],
-    requirementResponses,
-    isAtLastStage,
-  })
-  if (boardResult.transitioned && boardResult.result) {
-    return boardResult.result
+  // When pre_production completes all stages, mark ready for production
+  if (isAtLastStage && task.board === 'pre_production') {
+    await markTaskReadyForProduction({
+      taskId,
+      orgId,
+      actorId,
+      fromStageId: task.stageId,
+      completedRequirementIds: [],
+      requirementResponses,
+    })
+    return { ok: true, pendingApproval: false }
   }
 
   if (isAtLastStage) {
@@ -773,6 +744,7 @@ export async function listBoardTasks(
 ): Promise<{
   queued: BoardTask[]
   stages: Map<string, BoardTask[]>
+  readyForProduction: BoardTask[]
   done: BoardTask[]
 }> {
   const allStages = await listStages(orgId, filter?.board)
@@ -844,9 +816,9 @@ export async function listBoardTasks(
   const stageFiltered = filter?.stageId
     ? searchFiltered.filter((t) => t.stageId === filter.stageId)
     : searchFiltered
-
   const queued: BoardTask[] = []
   const stages = new Map<string, BoardTask[]>()
+  const readyForProduction: BoardTask[] = []
   const done: BoardTask[] = []
 
   for (const task of stageFiltered) {
@@ -857,6 +829,8 @@ export async function listBoardTasks(
 
     if (task.status === 'queued') {
       queued.push(bt)
+    } else if (task.status === READY_FOR_PRODUCTION_STATUS) {
+      readyForProduction.push(bt)
     } else if (task.status === 'completed') {
       done.push(bt)
     } else {
@@ -867,12 +841,13 @@ export async function listBoardTasks(
   }
 
   sortBoardTasks(queued)
+  sortBoardTasks(readyForProduction)
   sortBoardTasks(done)
   for (const stageTasks of stages.values()) {
     sortBoardTasks(stageTasks)
   }
 
-  return { queued, stages, done }
+  return { queued, stages, readyForProduction, done }
 }
 
 export type ArchivedTaskRow = {

@@ -111,13 +111,13 @@ describe('useOrderDerivedState.canCreateInvoice', () => {
 })
 
 describe('useOrderDerivedState.canStartProduction', () => {
-  it('is true for approved order with paid invoice and no tasks', () => {
+  it('is false for approved order with paid invoice and no tasks', () => {
     const state = derive(
       makeOrder('approved'),
       [makeInvoice('i1', 'paid', 50, 500_000)],
       [],
     )
-    expect(state.canStartProduction).toBe(true)
+    expect(state.canStartProduction).toBe(false)
   })
 
   it('is false for approved order with no paid invoice', () => {
@@ -125,13 +125,34 @@ describe('useOrderDerivedState.canStartProduction', () => {
     expect(state.canStartProduction).toBe(false)
   })
 
-  it('is true for approved order with paid invoice and existing tasks', () => {
+  it('is false for approved order with paid invoice and queued task', () => {
     const state = derive(
       makeOrder('approved'),
       [makeInvoice('i1', 'paid', 50, 500_000)],
       [{ task: { status: 'queued' } }],
     )
+    expect(state.canStartProduction).toBe(false)
+  })
+
+  it('is true for approved order with paid invoice and all tasks ready_for_production', () => {
+    const state = derive(
+      makeOrder('approved'),
+      [makeInvoice('i1', 'paid', 50, 500_000)],
+      [{ task: { status: 'ready_for_production' } }],
+    )
     expect(state.canStartProduction).toBe(true)
+  })
+
+  it('is false when some tasks are not ready_for_production', () => {
+    const state = derive(
+      makeOrder('approved'),
+      [makeInvoice('i1', 'paid', 50, 500_000)],
+      [
+        { task: { status: 'ready_for_production' } },
+        { task: { status: 'queued' } },
+      ],
+    )
+    expect(state.canStartProduction).toBe(false)
   })
 })
 

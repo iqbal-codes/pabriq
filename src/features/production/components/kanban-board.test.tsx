@@ -70,21 +70,23 @@ const enMessages = {
     openTask: 'Open task {task}',
     columnTaskCount: '{column}: {count, plural, one {# task} other {# tasks}}',
     needApproval: 'Requires Approval',
+    readyForProduction: 'Ready for Production',
   },
   status: {
     in_progress: 'In Progress',
     queued: 'Queued',
     pending_approval: 'Pending Approval',
     completed: 'Completed',
+    ready_for_production: 'Ready for Production',
   },
   common: {
     pcs: 'pcs',
   },
 }
-
 function renderBoard(data: {
   queued: BoardTask[]
   stages: Map<string, BoardTask[]>
+  readyForProduction: BoardTask[]
   done: BoardTask[]
 }) {
   return render(
@@ -99,6 +101,7 @@ describe('KanbanBoard', () => {
     renderBoard({
       queued: [createTask('t1', 'queued', null)],
       stages: new Map(),
+      readyForProduction: [],
       done: [],
     })
     expect(screen.getByText('Queue')).toBeInTheDocument()
@@ -113,6 +116,7 @@ describe('KanbanBoard', () => {
     renderBoard({
       queued: [],
       stages: stageTasks,
+      readyForProduction: [],
       done: [],
     })
 
@@ -126,9 +130,21 @@ describe('KanbanBoard', () => {
     renderBoard({
       queued: [],
       stages: new Map(),
+      readyForProduction: [],
       done: [createTask('t1', 'completed', null)],
     })
     expect(screen.getByText('Done')).toBeInTheDocument()
+    expect(screen.getByText('P-t1')).toBeInTheDocument()
+  })
+
+  it('renders Ready for Production column', () => {
+    renderBoard({
+      queued: [],
+      stages: new Map(),
+      readyForProduction: [createTask('t1', 'ready_for_production', null)],
+      done: [],
+    })
+    expect(screen.getByText('Ready for Production')).toBeInTheDocument()
     expect(screen.getByText('P-t1')).toBeInTheDocument()
   })
 
@@ -136,6 +152,7 @@ describe('KanbanBoard', () => {
     renderBoard({
       queued: [],
       stages: new Map(),
+      readyForProduction: [],
       done: [],
     })
     expect(
@@ -147,6 +164,7 @@ describe('KanbanBoard', () => {
     renderBoard({
       queued: [],
       stages: new Map(),
+      readyForProduction: [],
       done: [],
     })
     // stage2 has needApproval: true
@@ -157,6 +175,7 @@ describe('KanbanBoard', () => {
     renderBoard({
       queued: [],
       stages: new Map(),
+      readyForProduction: [],
       done: [],
     })
     // Only one badge should appear (stage2 has needApproval: true, stage1 does not)

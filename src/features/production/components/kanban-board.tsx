@@ -9,6 +9,7 @@ type Props = {
   boardData: {
     queued: BoardTask[]
     stages: Map<string, BoardTask[]>
+    readyForProduction: BoardTask[]
     done: BoardTask[]
   }
   onClickCard?: (taskId: string) => void
@@ -59,10 +60,20 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
           needApproval={stage.needApproval}
         />
       ))}
-
-      {preProdStages.length > 0 && prodStages.length > 0 && (
-        <Separator orientation="vertical" className="h-auto self-stretch" />
+      {boardData.readyForProduction.length > 0 && (
+        <KanbanColumn
+          title={t('readyForProduction')}
+          count={boardData.readyForProduction.length}
+          tasks={boardData.readyForProduction}
+          variant="preProduction"
+          onClickCard={onClickCard}
+        />
       )}
+
+      {(boardData.readyForProduction.length > 0 || preProdStages.length > 0) &&
+        prodStages.length > 0 && (
+          <Separator orientation="vertical" className="h-auto self-stretch" />
+        )}
       {prodStages.map((stage) => (
         <KanbanColumn
           key={stage.id}

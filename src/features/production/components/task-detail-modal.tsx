@@ -93,9 +93,6 @@ export function TaskDetailModal({
     .filter((s) => s.active && s.board === task.board)
     .sort((a, b) => a.orderIndex - b.orderIndex);
 
-  const allActiveStages = (stages ?? [])
-    .filter((s) => s.active)
-    .sort((a, b) => a.orderIndex - b.orderIndex);
 
   const currentStageIndex = task.stageId
     ? boardStages.findIndex((s) => s.id === task.stageId)
@@ -105,10 +102,6 @@ export function TaskDetailModal({
   const nextStage = boardStages[currentStageIndex + 1];
   const isAtLastBoardStage =
     currentStageIndex >= 0 && currentStageIndex >= boardStages.length - 1;
-  const productionEntryStage =
-    task.board === "pre_production"
-      ? allActiveStages.find((s) => s.board === "production")
-      : undefined;
   const hasRequirements =
     currentStage !== null && currentStage.requirements?.length > 0;
 
@@ -209,8 +202,8 @@ export function TaskDetailModal({
                     >
                       {currentStage?.needApproval
                         ? t("requestReview")
-                        : isAtLastBoardStage && productionEntryStage
-                          ? t("continueToProduction")
+                        : isAtLastBoardStage && task.board === "pre_production"
+                          ? t("markReadyForProduction")
                           : isAtLastBoardStage
                             ? t("done")
                             : t("advanceTo", { stage: nextStage?.name })}
