@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   Copy,
   Factory,
+  FileText,
   Link2,
   Printer,
   Truck,
@@ -129,27 +130,33 @@ export function ViewOrderPage() {
             onClick: mutations.handleApprove,
             isLoading: mutations.isApproving,
           }
-        : derived.canStartProduction
+        : derived.canSendDpInvoice
           ? {
-              label: prt('startOrderProduction'),
-              icon: Factory,
-              onClick: mutations.handleStartProduction,
-              isLoading: mutations.isStartingProduction,
+              label: t('sendDpInvoice'),
+              icon: FileText,
+              onClick: () => setInvoiceModalOpen(true),
             }
-          : derived.canCompleteProduction
+          : derived.canStartProduction
             ? {
-                label: prt('markAsShipped'),
-                icon: Truck,
-                onClick: () => setCompleteProductionModalOpen(true),
+                label: prt('startOrderProduction'),
+                icon: Factory,
+                onClick: mutations.handleStartProduction,
+                isLoading: mutations.isStartingProduction,
               }
-            : derived.canCompleteOrder
+            : derived.canCompleteProduction
               ? {
-                  label: t('completeOrder'),
-                  icon: CheckCircle2,
-                  onClick: mutations.handleCompleteOrder,
-                  isLoading: mutations.isCompletingOrder,
+                  label: prt('markAsShipped'),
+                  icon: Truck,
+                  onClick: () => setCompleteProductionModalOpen(true),
                 }
-              : undefined
+              : derived.canCompleteOrder
+                ? {
+                    label: t('completeOrder'),
+                    icon: CheckCircle2,
+                    onClick: mutations.handleCompleteOrder,
+                    isLoading: mutations.isCompletingOrder,
+                  }
+                : undefined
 
   const secondaryActions: PageAction[] = [
     {
@@ -206,8 +213,6 @@ export function ViewOrderPage() {
             <OrderInvoicesSection
               orderInvoices={orderInvoices}
               invoicePayments={invoicePayments ?? {}}
-              canCreateInvoice={derived.canCreateInvoice}
-              onCreateInvoice={() => setInvoiceModalOpen(true)}
               onMarkInvoicePaid={mutations.handleMarkInvoicePaid}
               isMarkingPaid={mutations.isMarkingPaid}
             />

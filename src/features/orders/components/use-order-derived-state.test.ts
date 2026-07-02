@@ -156,6 +156,35 @@ describe('useOrderDerivedState.canStartProduction', () => {
   })
 })
 
+describe('useOrderDerivedState.canSendDpInvoice', () => {
+  it('is true when approved, all tasks ready, and no paid invoice', () => {
+    const state = derive(
+      makeOrder('approved'),
+      [],
+      [{ task: { status: 'ready_for_production' } }],
+    )
+    expect(state.canSendDpInvoice).toBe(true)
+  })
+
+  it('is false when tasks are ready but invoice already paid', () => {
+    const state = derive(
+      makeOrder('approved'),
+      [makeInvoice('i1', 'paid', 50, 500_000)],
+      [{ task: { status: 'ready_for_production' } }],
+    )
+    expect(state.canSendDpInvoice).toBe(false)
+  })
+
+  it('is false when tasks are not ready', () => {
+    const state = derive(
+      makeOrder('approved'),
+      [],
+      [{ task: { status: 'queued' } }],
+    )
+    expect(state.canSendDpInvoice).toBe(false)
+  })
+})
+
 describe('useOrderDerivedState.canCompleteOrder', () => {
   it('is false for approved order with one paid 50% invoice', () => {
     const state = derive(makeOrder('approved'), [

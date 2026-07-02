@@ -182,6 +182,7 @@ const id: Messages = {
     paymentVoid: "Batal",
     deadline: "Tenggat",
     downloadQuotation: "Unduh Penawaran",
+    sendDpInvoice: "Kirim Invoice DP",
     loadOrdersFailed: "Tidak dapat memuat pesanan",
     loadOrdersFailedDesc: "Periksa koneksi Anda lalu coba lagi.",
     copyLinkFailed: "Tidak dapat menyalin tautan portal",

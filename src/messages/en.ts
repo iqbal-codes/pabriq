@@ -182,6 +182,7 @@ const en: Messages = {
     paymentVoid: "Void",
     deadline: "Deadline",
     downloadQuotation: "Download Quotation",
+    sendDpInvoice: "Send DP Invoice",
     loadOrdersFailed: "Could not load orders",
     loadOrdersFailedDesc: "Check your connection and try again.",
     copyLinkFailed: "Could not copy the portal link",

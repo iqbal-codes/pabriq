@@ -15,6 +15,7 @@ const APPROVED_STATUSES = new Set([
 export type OrderDerivedState = {
   isApprovedOrLater: boolean
   canCreateInvoice: boolean
+  canSendDpInvoice: boolean
   canStartProduction: boolean
   invoicedPct: number
   invoicedAmt: number
@@ -76,6 +77,8 @@ export function useOrderDerivedState(params: {
       false)
   const canStartProduction =
     orderStatus === 'approved' && hasPaidInvoice && allTasksReadyForProduction
+  const canSendDpInvoice =
+    orderStatus === 'approved' && allTasksReadyForProduction && !hasPaidInvoice
 
   const canCompleteOrder =
     orderStatus === 'in_delivery' && allInvoicesPaid && totalInvoicedPct >= 100
@@ -87,6 +90,7 @@ export function useOrderDerivedState(params: {
   return {
     isApprovedOrLater,
     canCreateInvoice,
+    canSendDpInvoice,
     canStartProduction,
     invoicedPct,
     invoicedAmt,

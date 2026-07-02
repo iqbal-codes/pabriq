@@ -265,6 +265,7 @@ export type Messages = {
     deadline: string;
     createdAt: string;
     downloadQuotation: string;
+    sendDpInvoice: string;
     loadOrdersFailed: string;
     loadOrdersFailedDesc: string;
     copyLinkFailed: string;
