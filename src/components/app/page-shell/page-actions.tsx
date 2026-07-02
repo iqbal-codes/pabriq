@@ -40,11 +40,29 @@ export function PageActions({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {secondaryActions.map((action) => (
-              <DropdownMenuItem key={action.label}>
-                {action.label}
-              </DropdownMenuItem>
-            ))}
+            {secondaryActions.map((action) =>
+              action.href ? (
+                <DropdownMenuItem key={action.label} asChild>
+                  <a
+                    href={action.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {action.icon && <action.icon className="size-4" />}
+                    {action.label}
+                  </a>
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  key={action.label}
+                  onClick={action.onClick}
+                  disabled={action.isLoading}
+                >
+                  {action.icon && <action.icon className="size-4" />}
+                  {action.label}
+                </DropdownMenuItem>
+              ),
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       )}
