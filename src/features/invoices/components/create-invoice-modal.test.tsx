@@ -25,6 +25,7 @@ const messages = {
     invoiceAmount: 'Invoice amount',
     fullAmount: 'Full (100%)',
     remainingAmount: 'Remaining ({percentage}%)',
+    remaining: 'Remaining',
     customAmount: 'Custom',
     stepHint: '({percentage}% steps)',
     decreasePercentage: 'Decrease percentage',
@@ -33,6 +34,11 @@ const messages = {
     paymentMethod: 'Payment Method',
     notes: 'Notes',
     failed: 'Failed',
+  },
+  production: {
+    courier: 'Courier',
+    courierPlaceholder: 'Courier Placeholder',
+    shipmentFee: 'Shipment Fee',
   },
 }
 
@@ -48,7 +54,15 @@ const defaultOrder = {
   customerName: 'Acme Corp',
 }
 
-function renderModal() {
+const dpOrder = {
+  ...defaultOrder,
+  invoicedPercentage: 0,
+  invoicedAmount: 0,
+  remainingPercentage: 100,
+  remainingAmount: 500000,
+}
+
+function renderModal(order = defaultOrder) {
   const onOpenChange = vi.fn()
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -56,11 +70,7 @@ function renderModal() {
   const result = render(
     <QueryClientProvider client={queryClient}>
       <IntlProvider locale="en" messages={messages}>
-        <CreateInvoiceModal
-          open
-          onOpenChange={onOpenChange}
-          order={defaultOrder}
-        />
+        <CreateInvoiceModal open onOpenChange={onOpenChange} order={order} />
       </IntlProvider>
     </QueryClientProvider>,
   )
@@ -68,23 +78,37 @@ function renderModal() {
 }
 
 describe('CreateInvoiceModal', () => {
-  it('renders translated order label, invoice amount, remaining, custom, payment method, and previously invoiced helper', () => {
+  it('renders translated order label, total, remaining, payment method, courier, and shipment fee in Pelunasan mode', () => {
     renderModal()
 
     expect(screen.getByText('Order #ORD-001')).toBeInTheDocument()
-    expect(screen.getByText('Invoice amount')).toBeInTheDocument()
+    expect(screen.queryByText('Invoice amount')).not.toBeInTheDocument()
     expect(screen.getByText('Remaining (50%)')).toBeInTheDocument()
-    expect(screen.getByText('Custom')).toBeInTheDocument()
+    expect(screen.queryByText('Custom')).not.toBeInTheDocument()
     expect(screen.getAllByText('Payment Method').length).toBeGreaterThanOrEqual(
       1,
     )
     expect(screen.getByText(/Already invoiced: 50%/)).toBeInTheDocument()
     expect(screen.getAllByText(/250\.000/).length).toBeGreaterThanOrEqual(1)
+
+    // Courier and shipment fee should be visible in Pelunasan mode
+    expect(screen.getByLabelText('Courier')).toBeInTheDocument()
+    expect(screen.getByLabelText('Shipment Fee')).toBeInTheDocument()
   })
 
-  it('clicking Custom then Increase percentage changes displayed percentage and submit amount', async () => {
+  it('renders invoice amount, full, and custom selectors in DP mode', () => {
+    renderModal(dpOrder)
+
+    expect(screen.getByText('Order #ORD-001')).toBeInTheDocument()
+    expect(screen.getByText('Invoice amount')).toBeInTheDocument()
+    expect(screen.getByText('Custom')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Courier')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Shipment Fee')).not.toBeInTheDocument()
+  })
+
+  it('clicking Custom then Increase percentage changes displayed percentage and submit amount in DP mode', async () => {
     const user = userEvent.setup()
-    renderModal()
+    renderModal(dpOrder)
 
     await user.click(screen.getByRole('button', { name: 'Custom' }))
 
@@ -105,9 +129,9 @@ describe('CreateInvoiceModal', () => {
     expect(submitButton.textContent).toMatch(/275\.000/)
   })
 
-  it('custom mode shows translated step hint and accessible stepper buttons', async () => {
+  it('custom mode shows translated step hint and accessible stepper buttons in DP mode', async () => {
     const user = userEvent.setup()
-    renderModal()
+    renderModal(dpOrder)
 
     await user.click(screen.getByRole('button', { name: 'Custom' }))
 

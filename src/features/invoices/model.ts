@@ -2,6 +2,7 @@ import type { SnapTransactionParameters } from 'midtrans-client'
 import midtransClient from 'midtrans-client'
 
 const { Snap } = midtransClient
+
 import { and, desc, eq, ilike, inArray, or, type SQL, sql } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
@@ -82,6 +83,7 @@ export type CreateInvoiceInput = {
   notes?: string
   shippingFee?: number
   shippingFeeDescription?: string
+  courier?: string
 }
 
 export type CreateInvoiceResult = {
@@ -316,11 +318,18 @@ export async function createInvoice(
       total: Math.round(invoiceTotal * 100) / 100,
       dueDate: input.dueDate,
       issuedDate: input.issuedDate ?? new Date().toISOString().split('T')[0],
-      paymentMethodId: input.paymentMethodId,
+      paymentMethodId: input.paymentMethodId || null,
       notes: input.notes ?? null,
       createdAt: now,
       updatedAt: now,
     })
+
+    if (input.courier) {
+      await db
+        .update(ordersTable)
+        .set({ courier: input.courier, updatedAt: now })
+        .where(eq(ordersTable.id, input.orderId))
+    }
   } else {
     for (const li of input.lineItems) {
       items.push({
@@ -350,7 +359,7 @@ export async function createInvoice(
       total: subtotal,
       dueDate: input.dueDate,
       issuedDate: input.issuedDate ?? new Date().toISOString().split('T')[0],
-      paymentMethodId: input.paymentMethodId,
+      paymentMethodId: input.paymentMethodId || null,
       notes: input.notes ?? null,
       createdAt: now,
       updatedAt: now,
