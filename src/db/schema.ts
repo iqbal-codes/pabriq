@@ -241,7 +241,7 @@ export const orderLineItems = pgTable('order_line_items', {
   quantity: integer('quantity').notNull().default(1),
   unitPrice: real('unit_price').notNull(),
   total: real('total').notNull(),
-  name: text('name'),
+  designName: text('design_name'),
   notes: text('notes'),
   assetId: text('asset_id').references(() => assets.id, {
     onDelete: 'set null',

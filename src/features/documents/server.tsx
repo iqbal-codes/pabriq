@@ -272,6 +272,9 @@ export async function generateInvoicePdf(
   )
 
   const { taxes } = computeLineItemTaxes(lineItems)
+  const shippingFee = lineItems
+    .filter((item) => item.lineType === 'shipping')
+    .reduce((sum, item) => sum + item.total, 0)
   const paymentMethod = pmRows[0] ?? null
 
   // Extract shipping address from order
@@ -296,17 +299,54 @@ export async function generateInvoicePdf(
     alreadyPaid = otherPaidInvoices.reduce((sum, inv) => sum + inv.total, 0)
   }
 
+  // Compute payment label based on percentage and order context
+  let paymentLabel: string | null = null
+  if (invoice.orderId && invoice.percentage != null) {
+    const { PDF_LOCALE } = await import('./pdf-locale')
+    if (invoice.percentage >= 100) {
+      paymentLabel = PDF_LOCALE.paymentTypeFull
+    } else {
+      // Check if there are other invoices for this order
+      const otherInvoices = await db
+        .select({ percentage: invoicesTable.percentage })
+        .from(invoicesTable)
+        .where(
+          and(
+            eq(invoicesTable.orderId, invoice.orderId),
+            eq(invoicesTable.orgId, orgId),
+            ne(invoicesTable.id, invoiceId),
+          ),
+        )
+      const otherTotal = otherInvoices.reduce(
+        (sum, inv) => sum + (inv.percentage ?? 0),
+        0,
+      )
+      if (otherInvoices.length === 0) {
+        // First invoice for this order with percentage < 100 → DP
+        paymentLabel = `${PDF_LOCALE.paymentTypeDP} ${invoice.percentage}%`
+      } else if (invoice.percentage + otherTotal >= 100) {
+        // Combined percentage reaches 100 → this is the final payment
+        paymentLabel = `${PDF_LOCALE.paymentTypePelunasan} ${invoice.percentage}%`
+      } else {
+        // More payments expected → installment
+        paymentLabel = `${PDF_LOCALE.paymentTypeTermin} ${invoice.percentage}%`
+      }
+    }
+  }
+
   const pdfData: InvoicePdfData = {
     org: orgPdfInfo,
     invoiceNumber: invoice.invoiceNumber,
     issuedDate: invoice.issuedDate,
     dueDate: invoice.dueDate,
     percentage: invoice.percentage,
+    paymentLabel,
     customer: customerPdfInfo,
     lineItems,
     subtotal: invoice.subtotal,
     taxes,
     total: invoice.total,
+    shippingFee,
     alreadyPaid,
     shippingAddress,
     notes: invoice.notes ?? null,

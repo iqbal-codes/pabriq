@@ -41,11 +41,13 @@ export interface InvoicePdfData {
   issuedDate: string
   dueDate: string
   percentage: number | null
+  paymentLabel: string | null
   customer: CustomerPdfInfo
   lineItems: PdfLineItem[]
   subtotal: number
   taxes: number
   total: number
+  shippingFee: number
   alreadyPaid: number
   shippingAddress: {
     areaName: string

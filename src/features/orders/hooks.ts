@@ -54,7 +54,7 @@ export function useUpdateDraftOrder() {
         productId: string
         quantity: number
         unitPrice?: number
-        name?: string
+        designName?: string
         notes?: string
       }>
     }) => updateDraftOrderFn({ data: input }),

@@ -11,6 +11,7 @@ import {
 } from 'drizzle-orm'
 import {
   pricingBreakpoints as breakpointsTable,
+  productAddons as productAddonsTable,
   products as productsTable,
 } from '#/db/schema'
 import { resolveOrgId } from '#/lib/auth-session'
@@ -84,6 +85,10 @@ export const listProductsFn = createServerFn({ method: 'GET' })
           pricingMode: sql<
             'interpolated' | 'step'
           >`${productsTable.pricingMode}`,
+          negotiateAboveQuantity: productsTable.negotiateAboveQuantity,
+          repeatOrderUnitPrice: productsTable.repeatOrderUnitPrice,
+          repeatOrderMinQuantity: productsTable.repeatOrderMinQuantity,
+          maxProductionQuantity: productsTable.maxProductionQuantity,
           minDiscountPrice: sql<number | null>`(
           SELECT MIN(b.unit_price)
           FROM ${breakpointsTable} b

@@ -24,6 +24,12 @@ export const PDF_LOCALE = {
   bank: 'Bank',
   accountNo: 'No. Rekening',
   alreadyPaid: 'Sudah Dibayar',
+  shipping: 'Pengiriman',
+  paymentType: 'Jenis Pembayaran',
+  paymentTypeFull: 'Pembayaran Penuh',
+  paymentTypeDP: 'Uang Muka (DP)',
+  paymentTypePelunasan: 'Pelunasan',
+  paymentTypeTermin: 'Pembayaran Termin',
   lineTypes: {
     product: '',
     shipping: '[Pengiriman] ',

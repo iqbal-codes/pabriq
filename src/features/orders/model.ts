@@ -23,6 +23,7 @@ import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
 import { spawnQueuedPreProductionTasksForOrder } from '#/features/production/task-spawn-helpers'
 import { listBreakpoints } from '#/features/products/model'
 import { addWorkingDays } from '#/lib/date-utils'
+import { normalizeDesignName } from '#/features/orders/line-item-display'
 
 export type Order = {
   id: string
@@ -61,7 +62,8 @@ export type OrderLineItem = {
   quantity: number
   unitPrice: number
   total: number
-  name: string | null
+  productName: string
+  designName: string | null
   notes: string | null
   productionDays: number
   deadline: Date
@@ -74,7 +76,7 @@ export type LineItemInput = {
   productId: string
   quantity: number
   unitPrice?: number
-  name?: string
+  designName?: string
   notes?: string
 }
 
@@ -92,7 +94,7 @@ export type UpdateDraftOrderInput = {
     productId: string
     quantity: number
     unitPrice?: number
-    name?: string
+    designName?: string
     notes?: string
   }>
 }
@@ -365,11 +367,35 @@ export async function getOrder(
     .limit(1)
 
   if (orderRows.length === 0) return null
-
   const itemRows = await db
-    .select()
+    .select({
+      id: lineItemsTable.id,
+      orgId: lineItemsTable.orgId,
+      orderId: lineItemsTable.orderId,
+      productId: lineItemsTable.productId,
+      quantity: lineItemsTable.quantity,
+      unitPrice: lineItemsTable.unitPrice,
+      total: lineItemsTable.total,
+      designName: lineItemsTable.designName,
+      notes: lineItemsTable.notes,
+      assetId: lineItemsTable.assetId,
+      productionDays: lineItemsTable.productionDays,
+      deadline: lineItemsTable.deadline,
+      createdAt: lineItemsTable.createdAt,
+      updatedAt: lineItemsTable.updatedAt,
+      productName: productsTable.name,
+    })
     .from(lineItemsTable)
-    .where(eq(lineItemsTable.orderId, id))
+    .innerJoin(
+      productsTable,
+      and(
+        eq(productsTable.id, lineItemsTable.productId),
+        eq(productsTable.orgId, lineItemsTable.orgId),
+      ),
+    )
+    .where(
+      and(eq(lineItemsTable.orderId, id), eq(lineItemsTable.orgId, orgId)),
+    )
     .orderBy(lineItemsTable.createdAt)
 
   const customer = orderRows[0].customerId
@@ -424,9 +450,9 @@ export async function getAssetsForLineItem(
       ),
     )
     .orderBy(assetsTable.createdAt)
-
   return rows
 }
+
 
 export async function createDraftOrder(
   orgId: string,
@@ -452,6 +478,7 @@ export async function createDraftOrder(
     const productRows = await db
       .select({
         id: productsTable.id,
+        name: productsTable.name,
         active: productsTable.active,
         productionDays: productsTable.productionDays,
       })
@@ -479,7 +506,8 @@ export async function createDraftOrder(
       quantity: li.quantity,
       unitPrice: pricing.unitPrice,
       total: pricing.total,
-      name: li.name ?? null,
+      productName: productRows[0].name,
+      designName: normalizeDesignName(li.designName),
       notes: li.notes ?? null,
       productionDays: productRows[0].productionDays,
       deadline,
@@ -568,10 +596,12 @@ export async function updateDraftOrder(
 
   // Validate all products and collect productionDays
   const productProductionDays = new Map<string, number>()
+  const productNames = new Map<string, string>()
   for (const li of input.lineItems) {
     const productRows = await db
       .select({
         id: productsTable.id,
+        name: productsTable.name,
         active: productsTable.active,
         productionDays: productsTable.productionDays,
       })
@@ -597,6 +627,7 @@ export async function updateDraftOrder(
       }
     }
     productProductionDays.set(li.productId, productRows[0].productionDays)
+    productNames.set(li.productId, productRows[0].name)
   }
 
   const now = new Date()
@@ -624,7 +655,8 @@ export async function updateDraftOrder(
       quantity: li.quantity,
       unitPrice: pricing.unitPrice,
       total: pricing.total,
-      name: li.name ?? null,
+      productName: productNames.get(li.productId) ?? 'Unknown',
+      designName: normalizeDesignName(li.designName),
       notes: li.notes ?? null,
       productionDays,
       deadline,

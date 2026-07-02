@@ -34,6 +34,19 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
           </View>
           <View style={styles.metaWrap}>
             <Text style={styles.title}>{PDF_LOCALE.invoice}</Text>
+            {data.paymentLabel && (
+              <Text
+                style={{
+                  textAlign: 'right',
+                  fontSize: 12,
+                  color: '#0075ff',
+                  fontWeight: 600,
+                  marginBottom: 8,
+                }}
+              >
+                {data.paymentLabel}
+              </Text>
+            )}
             <PdfMetaRow
               styles={styles}
               label={PDF_LOCALE.invoiceNo}
@@ -157,6 +170,13 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
               label={PDF_LOCALE.subtotal}
               value={formatPdfCurrency(data.subtotal)}
             />
+            {data.shippingFee > 0 && (
+              <PdfPricingLine
+                styles={styles}
+                label={PDF_LOCALE.shipping}
+                value={formatPdfCurrency(data.shippingFee)}
+              />
+            )}
             <PdfPricingLine
               styles={styles}
               label={PDF_LOCALE.taxes}

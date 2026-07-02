@@ -165,9 +165,9 @@ export function createPdfStyles(variant: 'invoice' | 'quotation'): PdfStyles {
       textAlign: isInvoice ? 'left' : 'right',
     },
     colDesc: { width: isInvoice ? '30%' : '31%' },
-    colRate: { width: isInvoice ? '25%' : '17%' },
+    colRate: { width: isInvoice ? '22%' : '17%' },
     colQty: { width: isInvoice ? '10%' : '17%' },
-    colTax: { width: isInvoice ? '10%' : '17%' },
+    colTax: { width: isInvoice ? '13%' : '17%' },
     colAmt: { width: isInvoice ? '25%' : '18%' },
     footerRow: {
       flexDirection: 'row',
