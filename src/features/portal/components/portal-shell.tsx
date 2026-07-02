@@ -54,7 +54,9 @@ export function PortalShell({
 
       {footer ? (
         <div className="sticky bottom-0 z-10 border-t border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-          <div className="mx-auto w-full max-w-3xl px-4 py-3 sm:px-6">{footer}</div>
+          <div className="mx-auto w-full max-w-3xl px-4 py-3 sm:px-6">
+            {footer}
+          </div>
         </div>
       ) : null}
     </div>

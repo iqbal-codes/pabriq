@@ -37,10 +37,18 @@ export function EditProductPage() {
       productionDays: product?.productionDays ?? 1,
       minQuantity: product?.minQuantity ?? 1,
       maxQuantity: (product?.maxQuantity ?? undefined) as number | undefined,
-      negotiateAboveQuantity: (product?.negotiateAboveQuantity ?? undefined) as number | undefined,
-      repeatOrderUnitPrice: (product?.repeatOrderUnitPrice ?? undefined) as number | undefined,
-      repeatOrderMinQuantity: (product?.repeatOrderMinQuantity ?? undefined) as number | undefined,
-      maxProductionQuantity: (product?.maxProductionQuantity ?? undefined) as number | undefined,
+      negotiateAboveQuantity: (product?.negotiateAboveQuantity ?? undefined) as
+        | number
+        | undefined,
+      repeatOrderUnitPrice: (product?.repeatOrderUnitPrice ?? undefined) as
+        | number
+        | undefined,
+      repeatOrderMinQuantity: (product?.repeatOrderMinQuantity ?? undefined) as
+        | number
+        | undefined,
+      maxProductionQuantity: (product?.maxProductionQuantity ?? undefined) as
+        | number
+        | undefined,
       pricingMode:
         (product?.pricingMode as 'interpolated' | 'step' | undefined) ??
         'interpolated',
@@ -58,7 +66,12 @@ export function EditProductPage() {
     },
     onSubmit: async ({ value, formApi }) => {
       if (!formApi.state.isValid) return
-      const { pricingBreakpoints, pricingMode, productAddons, ...productValues } = value
+      const {
+        pricingBreakpoints,
+        pricingMode,
+        productAddons,
+        ...productValues
+      } = value
       const result = await updateProduct.mutateAsync({
         ...productValues,
         id: product?.id ?? '',

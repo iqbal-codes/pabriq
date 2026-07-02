@@ -127,17 +127,25 @@ export function PaymentMethodFormContent({
           )}
         </form.AppField>
 
-        <form.AppField name="bankName">
-          {(field) => <field.TextField label={t('bankName')} />}
-        </form.AppField>
+        <form.Subscribe selector={(state) => state.values.type}>
+          {(type) =>
+            type === 'bank_transfer' ? (
+              <>
+                <form.AppField name="bankName">
+                  {(field) => <field.TextField label={t('bankName')} />}
+                </form.AppField>
 
-        <form.AppField name="accountNumber">
-          {(field) => <field.TextField label={t('accountNumber')} />}
-        </form.AppField>
+                <form.AppField name="accountNumber">
+                  {(field) => <field.TextField label={t('accountNumber')} />}
+                </form.AppField>
 
-        <form.AppField name="accountHolder">
-          {(field) => <field.TextField label={t('accountHolder')} />}
-        </form.AppField>
+                <form.AppField name="accountHolder">
+                  {(field) => <field.TextField label={t('accountHolder')} />}
+                </form.AppField>
+              </>
+            ) : null
+          }
+        </form.Subscribe>
 
         <form.AppField name="instructions">
           {(field) => <field.TextareaField label={t('instructions')} />}

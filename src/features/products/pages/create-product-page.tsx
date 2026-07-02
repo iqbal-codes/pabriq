@@ -42,7 +42,12 @@ export function CreateProductPage() {
     },
     onSubmit: async ({ value, formApi }) => {
       if (!formApi.state.isValid) return
-      const { pricingBreakpoints, pricingMode, productAddons, ...productValues } = value
+      const {
+        pricingBreakpoints,
+        pricingMode,
+        productAddons,
+        ...productValues
+      } = value
       const result = await createProduct.mutateAsync({
         ...productValues,
         pricingMode,

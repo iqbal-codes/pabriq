@@ -104,8 +104,7 @@ export function ViewProductPage() {
                     {t('addons.title')}
                   </CardTitle>
                   <span className="text-xs text-muted-foreground">
-                    {addons.length}{' '}
-                    {addons.length === 1 ? 'addon' : 'addons'}
+                    {addons.length} {addons.length === 1 ? 'addon' : 'addons'}
                   </span>
                 </div>
               </CardHeader>
@@ -220,9 +219,7 @@ export function ViewProductPage() {
                 <p className="text-sm text-muted-foreground">
                   {t('productionDays')}
                 </p>
-                <p className="font-semibold">
-                  {product.productionDays} days
-                </p>
+                <p className="font-semibold">{product.productionDays} days</p>
               </div>
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">

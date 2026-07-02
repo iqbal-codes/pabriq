@@ -30,8 +30,7 @@ export const Route = createFileRoute(
         try {
           pdfBuffer = await generateInvoicePdf(rows[0].orgId, params.invoiceId)
         } catch (err: unknown) {
-          const message =
-            err instanceof Error ? err.message : 'Unknown error'
+          const message = err instanceof Error ? err.message : 'Unknown error'
           if (message === 'Invoice not found') {
             return new Response('Not found', { status: 404 })
           }

@@ -2,19 +2,26 @@ import { type Page, expect } from '@playwright/test'
 
 /** Set locale cookie to avoid language selector prompts */
 export async function setLocale(page: Page, locale = 'en') {
-  await page.context().addCookies([
-    { name: 'locale', value: locale, domain: 'localhost', path: '/' },
-  ])
+  await page
+    .context()
+    .addCookies([
+      { name: 'locale', value: locale, domain: 'localhost', path: '/' },
+    ])
 }
 
 /** Wait for React hydration by checking for internal React fiber on the form */
 async function waitForHydration(page: Page) {
-  await page.waitForFunction(() => {
-    const form = document.querySelector('form')
-    if (!form) return false
-    // React 18+ stores fiber keys starting with __reactFiber$ or __reactInternalInstance$
-    return Object.keys(form).some((k) => k.startsWith('__reactFiber$') || k.startsWith('__reactProps$'))
-  }, { timeout: 10_000 })
+  await page.waitForFunction(
+    () => {
+      const form = document.querySelector('form')
+      if (!form) return false
+      // React 18+ stores fiber keys starting with __reactFiber$ or __reactInternalInstance$
+      return Object.keys(form).some(
+        (k) => k.startsWith('__reactFiber$') || k.startsWith('__reactProps$'),
+      )
+    },
+    { timeout: 10_000 },
+  )
 }
 
 /** Navigate to a path, set locale cookie, and wait for hydration */
@@ -26,11 +33,7 @@ export async function gotoApp(page: Page, path: string) {
 }
 
 /** Fill the sign-in form and submit */
-export async function signIn(
-  page: Page,
-  email: string,
-  password: string,
-) {
+export async function signIn(page: Page, email: string, password: string) {
   await gotoApp(page, '/sign-in')
   await page.getByLabel('Email').fill(email)
   await page.getByLabel('Password').fill(password)

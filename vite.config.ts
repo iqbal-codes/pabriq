@@ -16,6 +16,9 @@ const config = defineConfig(({ mode }) => {
 
   return {
     resolve: { tsconfigPaths: true },
+    server: {
+      allowedHosts: true,
+    },
     plugins: [
       devtools(),
       neonLaunchpad,

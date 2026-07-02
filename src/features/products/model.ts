@@ -118,7 +118,6 @@ function toNull<T>(value: T | '' | null | undefined): T | null {
   return value
 }
 
-
 export async function createProduct(
   input: CreateProductInput,
 ): Promise<Product> {
@@ -187,7 +186,8 @@ export async function updateProduct(
   const now = new Date()
   const updates: Record<string, unknown> = { updatedAt: now }
   if (input.name !== undefined) updates.name = input.name
-  if (input.description !== undefined) updates.description = toNull(input.description)
+  if (input.description !== undefined)
+    updates.description = toNull(input.description)
   if (input.priority !== undefined) updates.priority = input.priority
   if (input.productionNotes !== undefined)
     updates.productionNotes = toNull(input.productionNotes)
@@ -197,7 +197,8 @@ export async function updateProduct(
   if (input.productionDays !== undefined)
     updates.productionDays = input.productionDays
   if (input.minQuantity !== undefined) updates.minQuantity = input.minQuantity
-  if (input.maxQuantity !== undefined) updates.maxQuantity = toNull(input.maxQuantity)
+  if (input.maxQuantity !== undefined)
+    updates.maxQuantity = toNull(input.maxQuantity)
   if (input.negotiateAboveQuantity !== undefined)
     updates.negotiateAboveQuantity = toNull(input.negotiateAboveQuantity)
   if (input.repeatOrderUnitPrice !== undefined)
@@ -236,9 +237,7 @@ export async function updateProduct(
   }
 
   if (input.productAddons !== undefined) {
-    await db
-      .delete(addonsTable)
-      .where(eq(addonsTable.productId, input.id))
+    await db.delete(addonsTable).where(eq(addonsTable.productId, input.id))
 
     if (input.productAddons.length > 0) {
       const addons = input.productAddons.map((a) => ({

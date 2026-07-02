@@ -16,7 +16,8 @@ import {
 import { Textarea } from '#/components/ui/textarea'
 import type { UploadItem } from '#/features/assets/upload-machine'
 import {
-  portalGetInvoiceUploadUrlFn, submitPaymentProofFn,
+  portalGetInvoiceUploadUrlFn,
+  submitPaymentProofFn,
 } from '#/features/portal/server'
 type Props = {
   invoiceId: string
@@ -24,7 +25,11 @@ type Props = {
   hasExistingProof?: boolean
 }
 
-export function SubmitPaymentProofDialog({ invoiceId, token, hasExistingProof }: Props) {
+export function SubmitPaymentProofDialog({
+  invoiceId,
+  token,
+  hasExistingProof,
+}: Props) {
   const t = useTranslations('invoices')
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -134,7 +139,9 @@ export function SubmitPaymentProofDialog({ invoiceId, token, hasExistingProof }:
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{t(hasExistingProof ? 'resendPaymentProof' : 'submitPaymentProof')}</DialogTitle>
+          <DialogTitle>
+            {t(hasExistingProof ? 'resendPaymentProof' : 'submitPaymentProof')}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
@@ -186,10 +193,7 @@ export function SubmitPaymentProofDialog({ invoiceId, token, hasExistingProof }:
           >
             Cancel
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={!hasUploads || isUploading}
-          >
+          <Button onClick={handleSubmit} disabled={!hasUploads || isUploading}>
             {t('submitPaymentProof')}
           </Button>
         </DialogFooter>

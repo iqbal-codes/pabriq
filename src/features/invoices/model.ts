@@ -1,3 +1,7 @@
+import type { SnapTransactionParameters } from 'midtrans-client'
+import midtransClient from 'midtrans-client'
+
+const { Snap } = midtransClient
 import { and, desc, eq, ilike, inArray, or, type SQL, sql } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
@@ -74,7 +78,7 @@ export type CreateInvoiceInput = {
   percentage?: number
   dueDate: string
   issuedDate?: string
-  paymentMethodId: string
+  paymentMethodId?: string | null
   notes?: string
   shippingFee?: number
   shippingFeeDescription?: string
@@ -1009,4 +1013,79 @@ export async function updateInvoice(
     .limit(1)
 
   return updated as Invoice
+}
+
+export async function createMidtransTransaction(
+  invoiceId: string,
+  orgId: string,
+): Promise<{ token: string; redirectUrl: string }> {
+  const [invoice] = await db
+    .select()
+    .from(invoicesTable)
+    .where(and(eq(invoicesTable.id, invoiceId), eq(invoicesTable.orgId, orgId)))
+    .limit(1)
+
+  if (!invoice) {
+    throw new Error('Invoice not found')
+  }
+
+  const balance = await getInvoiceBalance(invoiceId, orgId)
+
+  if (balance.remaining <= 0) {
+    throw new Error('Invoice is already fully paid')
+  }
+
+  const [customer] = await db
+    .select({
+      name: customersTable.name,
+      email: customersTable.email,
+      phone: customersTable.phone,
+    })
+    .from(customersTable)
+    .where(
+      and(
+        eq(customersTable.id, invoice.customerId),
+        eq(customersTable.orgId, orgId),
+      ),
+    )
+    .limit(1)
+
+  const snap = new Snap({
+    isProduction: process.env.VITE_MIDTRANS_IS_PRODUCTION === 'true',
+    serverKey: process.env.MIDTRANS_SERVER_KEY ?? '',
+    clientKey: process.env.VITE_MIDTRANS_CLIENT_KEY ?? '',
+  })
+
+  const orderId = `${invoice.invoiceNumber}-${Date.now()}`
+
+  const parameter = {
+    transaction_details: {
+      order_id: orderId,
+      gross_amount: Math.round(balance.remaining),
+    },
+    customer_details: customer
+      ? {
+          first_name: customer.name,
+          email: customer.email ?? undefined,
+          phone: customer.phone ?? undefined,
+        }
+      : undefined,
+    enabled_payments: ['qris', 'bca_va', 'bni_va', 'bri_va'],
+    credit_card: {
+      secure: true,
+    },
+  }
+
+  try {
+    const res = await snap.createTransaction(
+      parameter as unknown as SnapTransactionParameters, // Cast required because library type definition is incomplete
+    )
+    return {
+      token: res.token,
+      redirectUrl: res.redirect_url,
+    }
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    throw new Error(`Midtrans transaction creation failed: ${errorMessage}`)
+  }
 }

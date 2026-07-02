@@ -26,13 +26,17 @@ function PortalMessageShell({
 }) {
   const Icon = variant === 'error' ? AlertCircle : Inbox
   const accentClass =
-    variant === 'error' ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'
+    variant === 'error'
+      ? 'bg-destructive/10 text-destructive'
+      : 'bg-muted text-muted-foreground'
 
   return (
     <PortalShell order={{ orgLogoAssetId: null, orderNumber: null }}>
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
-          <div className={`mx-auto mb-4 flex size-12 items-center justify-center rounded-full ${accentClass}`}>
+          <div
+            className={`mx-auto mb-4 flex size-12 items-center justify-center rounded-full ${accentClass}`}
+          >
             <Icon className="size-5" />
           </div>
           {eyebrow ? (

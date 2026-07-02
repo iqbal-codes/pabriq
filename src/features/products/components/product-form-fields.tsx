@@ -227,9 +227,7 @@ export const ProductFormFields = withForm({
               {(addonsField) => (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium">
-                      {t('addons.title')}
-                    </h3>
+                    <h3 className="text-sm font-medium">{t('addons.title')}</h3>
                     <Button
                       type="button"
                       variant="outline"

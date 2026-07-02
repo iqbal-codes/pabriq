@@ -1,5 +1,5 @@
 import { eq, sql } from 'drizzle-orm'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from '#/db/index'
 import {
   customers as customersTable,
@@ -13,6 +13,7 @@ import {
 import {
   confirmPayment,
   createInvoice,
+  createMidtransTransaction,
   createPayment,
   createPaymentMethod,
   deletePaymentMethod,
@@ -26,6 +27,22 @@ import {
   updatePaymentMethod,
   voidInvoice,
 } from './model'
+
+const mockCreateTransaction = vi.fn()
+
+vi.mock('midtrans-client', () => {
+  const SnapMock = vi.fn().mockImplementation(function (this: {
+    createTransaction: unknown
+  }) {
+    this.createTransaction = mockCreateTransaction
+  })
+  return {
+    default: {
+      Snap: SnapMock,
+    },
+    Snap: SnapMock,
+  }
+})
 
 const org1Id = '00000000-0000-0000-0000-000000000001'
 const org2Id = '00000000-0000-0000-0000-000000000002'
@@ -1185,5 +1202,83 @@ describe('getInvoiceBalance', () => {
     expect(balance.pendingAmount).toBe(50000)
     expect(balance.confirmedAmount).toBe(0)
     expect(balance.remaining).toBe(100000) // nothing confirmed yet
+  })
+})
+
+describe('createMidtransTransaction', () => {
+  const midtransOrgId = '00000000-0000-0000-0000-000000000009'
+
+  beforeEach(async () => {
+    const now = new Date()
+    await db.insert(organization).values({
+      id: midtransOrgId,
+      name: 'Midtrans Org',
+      slug: 'midtrans-org',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(customersTable).values({
+      id: 'midtrans-cust',
+      orgId: midtransOrgId,
+      name: 'Midtrans Customer',
+      email: 'midtrans@example.com',
+      phone: '1234567890',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    mockCreateTransaction.mockReset()
+  })
+
+  it('creates transaction with correct order_id and gross_amount', async () => {
+    const result = await createInvoice(midtransOrgId, {
+      customerId: 'midtrans-cust',
+      customerName: 'Midtrans Customer',
+      dueDate: '2026-06-30',
+      paymentMethodId: null,
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoiceId = result.invoice.id
+    mockCreateTransaction.mockResolvedValue({
+      token: 'mock-snap-token',
+      redirect_url: 'https://mock-redirect-url',
+    })
+
+    const { token, redirectUrl } = await createMidtransTransaction(
+      invoiceId,
+      midtransOrgId,
+    )
+
+    expect(token).toBe('mock-snap-token')
+    expect(redirectUrl).toBe('https://mock-redirect-url')
+    expect(mockCreateTransaction).toHaveBeenCalled()
+    const callArgs = mockCreateTransaction.mock.calls[0][0]
+    expect(callArgs.transaction_details.gross_amount).toBe(100000)
+    expect(callArgs.transaction_details.order_id).toContain(
+      result.invoice.invoiceNumber,
+    )
+    expect(callArgs.customer_details.first_name).toBe('Midtrans Customer')
+    expect(callArgs.customer_details.email).toBe('midtrans@example.com')
+  })
+
+  it('throws error if invoice is already fully paid', async () => {
+    const result = await createInvoice(midtransOrgId, {
+      customerId: 'midtrans-cust',
+      customerName: 'Midtrans Customer',
+      dueDate: '2026-06-30',
+      paymentMethodId: null,
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoiceId = result.invoice.id
+    const payment = await createPayment(midtransOrgId, {
+      invoiceId,
+      amount: 100000,
+      method: 'payment_gateway',
+    })
+    await confirmPayment(midtransOrgId, payment.id, 'admin')
+
+    await expect(
+      createMidtransTransaction(invoiceId, midtransOrgId),
+    ).rejects.toThrow('Invoice is already fully paid')
   })
 })

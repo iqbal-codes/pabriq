@@ -13,9 +13,11 @@ const TEST_NAME = 'E2E Testing'
  */
 setup('create test account', async ({ page }) => {
   // Set locale
-  await page.context().addCookies([
-    { name: 'locale', value: 'en', domain: 'localhost', path: '/' },
-  ])
+  await page
+    .context()
+    .addCookies([
+      { name: 'locale', value: 'en', domain: 'localhost', path: '/' },
+    ])
 
   // Try to sign up — if account already exists, the server may reject it
   // or redirect. Either way, we're done.
@@ -23,13 +25,16 @@ setup('create test account', async ({ page }) => {
   await page.waitForLoadState('load')
 
   // Wait for React hydration
-  await page.waitForFunction(() => {
-    const form = document.querySelector('form')
-    if (!form) return false
-    return Object.keys(form).some(
-      (k) => k.startsWith('__reactFiber$') || k.startsWith('__reactProps$'),
-    )
-  }, { timeout: 10_000 })
+  await page.waitForFunction(
+    () => {
+      const form = document.querySelector('form')
+      if (!form) return false
+      return Object.keys(form).some(
+        (k) => k.startsWith('__reactFiber$') || k.startsWith('__reactProps$'),
+      )
+    },
+    { timeout: 10_000 },
+  )
 
   // Fill and submit the sign-up form
   await page.getByLabel('Name').fill(TEST_NAME)

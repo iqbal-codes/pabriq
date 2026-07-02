@@ -1,4 +1,4 @@
-import type { Messages } from "./types";
+import type { Messages } from './types'
 
 // biome-ignore format: locale message map is maintained as a dense dictionary
 const en: Messages = {
@@ -960,6 +960,11 @@ const en: Messages = {
     itemNoAttachments: "No attachments for this item",
     itemNoEvents: "No stage updates yet",
     rejectedNote: "Reason: {note}",
+    payNow: "Pay Now",
+    paymentCancelled: "Payment cancelled. You can try again.",
+    paymentSuccess: "Payment successful!",
+    paymentFailed: "Payment failed. Please try again.",
+    processingPayment: "Processing...",
   },
   combobox: {
     searchPlaceholder: "Search...",
@@ -985,4 +990,4 @@ const en: Messages = {
   },
 };
 
-export default en;
+export default en

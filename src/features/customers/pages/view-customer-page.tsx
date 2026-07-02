@@ -259,9 +259,7 @@ export function ViewCustomerPage() {
                   className="size-20 mb-3"
                 />
                 <h2 className="text-lg font-semibold">{customer.name}</h2>
-                <StatusBadge
-                  status={customer.active ? 'active' : 'inactive'}
-                />
+                <StatusBadge status={customer.active ? 'active' : 'inactive'} />
               </div>
 
               <div className="space-y-4">
@@ -275,7 +273,12 @@ export function ViewCustomerPage() {
                   </div>
                   {customer.email && (
                     <div className="flex items-center gap-1 ml-2">
-                      <Button variant="ghost" size="icon" className="size-6" asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-6"
+                        asChild
+                      >
                         <a href={`mailto:${customer.email}`}>
                           <Mail className="size-3" />
                         </a>
@@ -295,7 +298,12 @@ export function ViewCustomerPage() {
                   </div>
                   {customer.phone && (
                     <div className="flex items-center gap-1 ml-2">
-                      <Button variant="ghost" size="icon" className="size-6" asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-6"
+                        asChild
+                      >
                         <a
                           href={`https://wa.me/${customer.phone.replace(/^0/, '62')}`}
                           target="_blank"

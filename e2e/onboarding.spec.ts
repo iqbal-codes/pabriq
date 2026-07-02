@@ -10,9 +10,7 @@ const TEST_EMAIL = 'e2etesting@gmail.com'
 const TEST_PASSWORD = 'testing123'
 
 test.describe('Onboarding', () => {
-  test('shows onboarding form after sign-in for new user', async ({
-    page,
-  }) => {
+  test('shows onboarding form after sign-in for new user', async ({ page }) => {
     await signIn(page, TEST_EMAIL, TEST_PASSWORD)
     await page.waitForTimeout(3000)
 

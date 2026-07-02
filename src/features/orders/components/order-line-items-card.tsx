@@ -28,7 +28,8 @@ function LineItemRow({
 }) {
   const { data: assets } = useQuery({
     queryKey: ['line-item-assets', item.id],
-    queryFn: () => getAssetsForLineItemFn({ data: { lineItemId: item.id, orgId } }),
+    queryFn: () =>
+      getAssetsForLineItemFn({ data: { lineItemId: item.id, orgId } }),
   })
   const t = useTranslations('production')
   const task = useTaskByLineItemId(item.id, orderId)

@@ -5,7 +5,7 @@ import type {
   UpdatePortalLineItemInput,
 } from './model'
 
-async function getOrgIdFromToken(token: string): Promise<string> {
+export async function getOrgIdFromToken(token: string): Promise<string> {
   const { getPortalOrder } = await import('./model')
   const result = await getPortalOrder(token)
   if (!result.ok) throw new Error('Invalid token')

@@ -60,7 +60,7 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
           needApproval={stage.needApproval}
         />
       ))}
-      {boardData.readyForProduction.length > 0 && (
+      {preProdStages.length > 0 && (
         <KanbanColumn
           title={t('readyForProduction')}
           count={boardData.readyForProduction.length}
@@ -70,10 +70,9 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
         />
       )}
 
-      {(boardData.readyForProduction.length > 0 || preProdStages.length > 0) &&
-        prodStages.length > 0 && (
-          <Separator orientation="vertical" className="h-auto self-stretch" />
-        )}
+      {prodStages.length > 0 && (
+        <Separator orientation="vertical" className="h-auto self-stretch" />
+      )}
       {prodStages.map((stage) => (
         <KanbanColumn
           key={stage.id}

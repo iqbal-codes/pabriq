@@ -294,9 +294,7 @@ export const calculateProductPriceFn = createServerFn({ method: 'GET' })
           : product.basePrice
       baseUnitPrice = cheapest
     } else {
-      const { calculateUnitPrice } = await import(
-        '#/features/pricing/engine'
-      )
+      const { calculateUnitPrice } = await import('#/features/pricing/engine')
       const result = calculateUnitPrice({
         quantity: data.quantity,
         breakpoints: rows,

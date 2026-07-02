@@ -14,9 +14,7 @@ test.describe('Authentication', () => {
       ).toBeVisible()
       await expect(page.getByLabel('Email')).toBeVisible()
       await expect(page.getByLabel('Password')).toBeVisible()
-      await expect(
-        page.getByRole('button', { name: 'Sign in' }),
-      ).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible()
       await expect(
         page.getByRole('link', { name: 'Create one' }),
       ).toHaveAttribute('href', /\/sign-up/)
@@ -40,9 +38,7 @@ test.describe('Authentication', () => {
       expect(errorVisible || page.url().includes('/sign-in')).toBeTruthy()
     })
 
-    test('signs in with valid test account and redirects', async ({
-      page,
-    }) => {
+    test('signs in with valid test account and redirects', async ({ page }) => {
       await signIn(page, TEST_EMAIL, TEST_PASSWORD)
 
       // Should redirect away from sign-in (or show error if account doesn't exist yet)
@@ -77,12 +73,15 @@ test.describe('Authentication', () => {
       await expect(
         page.getByRole('button', { name: 'Create an account' }),
       ).toBeVisible()
-      await expect(
-        page.getByRole('link', { name: 'Sign in' }),
-      ).toHaveAttribute('href', /\/sign-in/)
+      await expect(page.getByRole('link', { name: 'Sign in' })).toHaveAttribute(
+        'href',
+        /\/sign-in/,
+      )
     })
 
-    test('creates new account and redirects to onboarding', async ({ page }) => {
+    test('creates new account and redirects to onboarding', async ({
+      page,
+    }) => {
       const uniqueEmail = `e2e+${Date.now()}@gmail.com`
 
       await gotoApp(page, '/sign-up')
@@ -102,9 +101,7 @@ test.describe('Authentication', () => {
   })
 
   test.describe('Session', () => {
-    test('redirects authenticated user away from sign-in', async ({
-      page,
-    }) => {
+    test('redirects authenticated user away from sign-in', async ({ page }) => {
       // Try to visit sign-in when not authenticated
       await gotoApp(page, '/sign-in')
       await expect(page.getByLabel('Email')).toBeVisible()

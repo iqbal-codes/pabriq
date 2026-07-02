@@ -377,7 +377,11 @@ export async function advanceTask(
   if (taskRows.length === 0) throw new Error('Task not found')
   const task = taskRows[0] as ProductionTask
 
-  if (task.status === 'completed' || task.status === 'pending_approval' || task.status === READY_FOR_PRODUCTION_STATUS) {
+  if (
+    task.status === 'completed' ||
+    task.status === 'pending_approval' ||
+    task.status === READY_FOR_PRODUCTION_STATUS
+  ) {
     return { ok: false, error: 'Task cannot be advanced from current status' }
   }
 

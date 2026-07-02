@@ -103,7 +103,10 @@ export function InvoiceStatusTimeline({
   })
 
   // Invoice paid event (if fully paid with no confirmed payment creating a duplicate)
-  if (invoiceStatus === 'paid' && !payments.some((p) => p.status === 'confirmed')) {
+  if (
+    invoiceStatus === 'paid' &&
+    !payments.some((p) => p.status === 'confirmed')
+  ) {
     events.push({
       id: 'paid',
       type: 'paid',

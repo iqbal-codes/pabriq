@@ -23,7 +23,8 @@ export function PortalHeader({
     <header
       className={cn(
         'sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur transition-shadow',
-        elevated && 'shadow-[0_1px_0_0_var(--border),0_8px_24px_-12px_rgba(0,0,0,0.12)]',
+        elevated &&
+          'shadow-[0_1px_0_0_var(--border),0_8px_24px_-12px_rgba(0,0,0,0.12)]',
       )}
     >
       <div className="mx-auto flex h-14 w-full max-w-3xl items-center gap-3 px-4 sm:px-6">
@@ -44,7 +45,9 @@ export function PortalHeader({
           </span>
           {orderNumber ? (
             <>
-              <span aria-hidden className="text-muted-foreground/40">·</span>
+              <span aria-hidden className="text-muted-foreground/40">
+                ·
+              </span>
               <span className="truncate font-mono text-xs text-muted-foreground">
                 {orderNumber}
               </span>

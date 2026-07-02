@@ -1,11 +1,21 @@
 import { useState } from 'react'
+import { useRouter } from '@tanstack/react-router'
 import { useLocale, useTranslations } from 'use-intl'
-import { Clock, Download, FileText, ReceiptText } from 'lucide-react'
+import {
+  Clock,
+  CreditCard,
+  Download,
+  FileText,
+  Loader2,
+  ReceiptText,
+} from 'lucide-react'
+import { toast } from 'sonner'
 import { StatusBadge } from '#/components/status-badge'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils'
 import { formatCurrency, formatLongDate } from '#/lib/formatters'
+import { createSnapTokenFn } from '#/features/invoices/server'
 import type { PortalInvoice } from '../model'
 import { SubmitPaymentProofDialog } from './submit-payment-proof-dialog'
 
@@ -27,7 +37,12 @@ function InvoiceStatusPill({ invoice }: { invoice: PortalInvoice }) {
   const isOverdue = isUnpaid && daysFromDue(invoice.dueDate) < 0
   const isPendingProof = isUnpaid && invoice.hasPaymentProof
 
-  if (isOverdue) return <Badge variant="destructive">{t('rejectedNote', { note: t('paymentOverdue') })}</Badge>
+  if (isOverdue)
+    return (
+      <Badge variant="destructive">
+        {t('rejectedNote', { note: t('paymentOverdue') })}
+      </Badge>
+    )
   if (isPendingProof) {
     return (
       <Badge variant="secondary">
@@ -40,7 +55,13 @@ function InvoiceStatusPill({ invoice }: { invoice: PortalInvoice }) {
   return <StatusBadge status={invoice.status} />
 }
 
-function InvoiceRow({ invoice, token }: { invoice: PortalInvoice; token: string }) {
+function InvoiceRow({
+  invoice,
+  token,
+}: {
+  invoice: PortalInvoice
+  token: string
+}) {
   const t = useTranslations('portal')
   const locale = useLocale()
   const isUnpaid = invoice.status === 'unpaid'
@@ -98,8 +119,9 @@ function InvoiceRow({ invoice, token }: { invoice: PortalInvoice; token: string 
         </div>
       </div>
 
-
-      {isUnpaid ? (
+      {isUnpaid && invoice.paymentMethodType === 'payment_gateway' ? (
+        <PayNowButton invoiceId={invoice.id} token={token} />
+      ) : isUnpaid ? (
         <SubmitPaymentProofDialog
           invoiceId={invoice.id}
           token={token}
@@ -188,5 +210,72 @@ export function InvoicePanel({ invoices, token, showAboveFold }: Props) {
         </div>
       ) : null}
     </section>
+  )
+}
+
+function PayNowButton({
+  invoiceId,
+  token,
+}: {
+  invoiceId: string
+  token: string
+}) {
+  const t = useTranslations('portal')
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handlePay = async () => {
+    setIsLoading(true)
+    try {
+      const res = await createSnapTokenFn({
+        data: { invoiceId, token },
+      })
+
+      if (!res.ok) {
+        toast.error(res.error)
+        return
+      }
+
+      if (!window.snap) {
+        toast.error('Payment gateway SDK not loaded yet. Please try again.')
+        return
+      }
+
+      window.snap.pay(res.snapToken, {
+        onSuccess: async () => {
+          toast.success(t('paymentSuccess'))
+          await router.invalidate()
+        },
+        onPending: async () => {
+          toast.info(t('processingPayment'))
+          await router.invalidate()
+        },
+        onError: () => {
+          toast.error(t('paymentFailed'))
+        },
+        onClose: () => {
+          toast.warning(t('paymentCancelled'))
+        },
+      })
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <Button
+      onClick={handlePay}
+      disabled={isLoading}
+      className="w-full gap-2 sm:w-auto"
+    >
+      {isLoading ? (
+        <Loader2 className="size-4 animate-spin" />
+      ) : (
+        <CreditCard className="size-4" />
+      )}
+      {t('payNow')}
+    </Button>
   )
 }

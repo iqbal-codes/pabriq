@@ -53,7 +53,6 @@ export function KanbanPage({ orgId }: Props) {
         .sort((a, b) => a.orderIndex - b.orderIndex)
   }, [allActiveStages])
 
-
   const filters = useMemo(
     () => ({
       orgId,

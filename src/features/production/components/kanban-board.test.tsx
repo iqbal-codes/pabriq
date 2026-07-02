@@ -148,6 +148,16 @@ describe('KanbanBoard', () => {
     expect(screen.getByText('P-t1')).toBeInTheDocument()
   })
 
+  it('renders Ready for Production column even when empty', () => {
+    renderBoard({
+      queued: [],
+      stages: new Map(),
+      readyForProduction: [],
+      done: [],
+    })
+    expect(screen.getByText('Ready for Production')).toBeInTheDocument()
+  })
+
   it('board container has region role with accessible name', () => {
     renderBoard({
       queued: [],

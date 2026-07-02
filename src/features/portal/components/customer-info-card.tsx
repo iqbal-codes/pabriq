@@ -1,13 +1,13 @@
-import { Phone, User } from "lucide-react";
-import { useTranslations } from "use-intl";
-import { cn } from "#/lib/utils";
+import { Phone, User } from 'lucide-react'
+import { useTranslations } from 'use-intl'
+import { cn } from '#/lib/utils'
 
 interface CustomerInfoCardProps {
-  name: string | null;
-  phone: string | null;
-  photoAssetId: string | null;
-  className?: string;
-  compact?: boolean;
+  name: string | null
+  phone: string | null
+  photoAssetId: string | null
+  className?: string
+  compact?: boolean
 }
 
 export function CustomerInfoCard({
@@ -16,22 +16,22 @@ export function CustomerInfoCard({
   className,
   compact,
 }: CustomerInfoCardProps) {
-  const t = useTranslations("portal");
+  const t = useTranslations('portal')
 
-  if (!name && !phone) return null;
+  if (!name && !phone) return null
 
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-xl border border-border bg-card p-4",
-        compact && "p-3",
+        'flex items-start gap-3 rounded-xl border border-border bg-card p-4',
+        compact && 'p-3',
         className,
       )}
     >
       <User className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {t("customerInfo")}
+          {t('customerInfo')}
         </p>
         {name ? (
           <p className="mt-0.5 truncate text-sm font-medium text-foreground">
@@ -46,5 +46,5 @@ export function CustomerInfoCard({
         ) : null}
       </div>
     </div>
-  );
+  )
 }

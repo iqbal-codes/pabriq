@@ -85,11 +85,7 @@ export function OrderInvoicesCard({
                         </div>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon-sm"
-                              asChild
-                            >
+                            <Button variant="outline" size="icon-sm" asChild>
                               <a
                                 href={`/api/documents/invoices/${inv.id}/pdf`}
                                 target="_blank"
@@ -103,15 +99,8 @@ export function OrderInvoicesCard({
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              asChild
-                            >
-                              <Link
-                                to="/invoices/$id"
-                                params={{ id: inv.id }}
-                              >
+                            <Button variant="ghost" size="icon-sm" asChild>
+                              <Link to="/invoices/$id" params={{ id: inv.id }}>
                                 <Eye className="size-3.5" />
                               </Link>
                             </Button>

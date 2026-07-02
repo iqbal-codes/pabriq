@@ -935,6 +935,11 @@ export type Messages = {
     itemNoAttachments: string;
     itemNoEvents: string;
     rejectedNote: string;
+    payNow: string;
+    paymentCancelled: string;
+    paymentSuccess: string;
+    paymentFailed: string;
+    processingPayment: string;
   };
   assistant: {
     trigger: string;

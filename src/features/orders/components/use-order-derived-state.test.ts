@@ -158,18 +158,16 @@ describe('useOrderDerivedState.canStartProduction', () => {
 
 describe('useOrderDerivedState.canCompleteOrder', () => {
   it('is false for approved order with one paid 50% invoice', () => {
-    const state = derive(
-      makeOrder('approved'),
-      [makeInvoice('i1', 'paid', 50, 500_000)],
-    )
+    const state = derive(makeOrder('approved'), [
+      makeInvoice('i1', 'paid', 50, 500_000),
+    ])
     expect(state.canCompleteOrder).toBe(false)
   })
 
   it('is true for in_delivery order with one paid 100% invoice', () => {
-    const state = derive(
-      makeOrder('in_delivery'),
-      [makeInvoice('i1', 'paid', 100, 1_000_000)],
-    )
+    const state = derive(makeOrder('in_delivery'), [
+      makeInvoice('i1', 'paid', 100, 1_000_000),
+    ])
     expect(state.canCompleteOrder).toBe(true)
   })
 })

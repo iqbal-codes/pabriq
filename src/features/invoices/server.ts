@@ -1,3 +1,5 @@
+import { getPortalOrder } from '#/features/portal/model'
+import { createMidtransTransaction } from './model'
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { z } from 'zod'
@@ -433,3 +435,39 @@ export const getOrderForInvoiceFn = createServerFn({ method: 'GET' })
       remainingAmount,
     }
   })
+
+export const createSnapTokenFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      invoiceId: z.string(),
+      token: z.string(),
+    }),
+  )
+  .handler(
+    async ({
+      data,
+    }): Promise<
+      { ok: true; snapToken: string } | { ok: false; error: string }
+    > => {
+      try {
+        const portalOrderResult = await getPortalOrder(data.token)
+        if (!portalOrderResult.ok) {
+          return { ok: false, error: 'Invalid token' }
+        }
+        const hasInvoice = portalOrderResult.order.invoices.some(
+          (inv) => inv.id === data.invoiceId,
+        )
+        if (!hasInvoice) {
+          return { ok: false, error: 'Invoice not found in this order' }
+        }
+        const orgId = portalOrderResult.order.orgId
+        const result = await createMidtransTransaction(data.invoiceId, orgId)
+        return { ok: true, snapToken: result.token }
+      } catch (e) {
+        return {
+          ok: false,
+          error: e instanceof Error ? e.message : 'Unknown error',
+        }
+      }
+    },
+  )

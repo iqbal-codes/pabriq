@@ -613,7 +613,12 @@ describe('getOrderTasksTimeline', () => {
       orderIndex: 0,
       active: true,
       requirements: [
-        { id: 'req-design', label: 'Design File', type: 'upload', required: false },
+        {
+          id: 'req-design',
+          label: 'Design File',
+          type: 'upload',
+          required: false,
+        },
         { id: 'req-color', label: 'Color Code', type: 'text', required: false },
       ],
       createdAt: new Date(),

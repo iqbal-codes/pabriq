@@ -53,6 +53,7 @@ export type PortalInvoice = {
   dueDate: string
   status: string
   paymentMethodName: string | null
+  paymentMethodType: string | null
   paymentMethodBankName: string | null
   paymentMethodAccountNumber: string | null
   paymentMethodAccountHolder: string | null
@@ -274,6 +275,7 @@ export async function getPortalOrder(
       dueDate: invoicesTable.dueDate,
       status: invoicesTable.status,
       paymentMethodName: paymentMethodsTable.name,
+      paymentMethodType: paymentMethodsTable.type,
       paymentMethodBankName: paymentMethodsTable.bankName,
       paymentMethodAccountNumber: paymentMethodsTable.accountNumber,
       paymentMethodAccountHolder: paymentMethodsTable.accountHolder,
@@ -342,6 +344,7 @@ export async function getPortalOrder(
     dueDate: inv.dueDate,
     status: inv.status,
     paymentMethodName: inv.paymentMethodName,
+    paymentMethodType: inv.paymentMethodType,
     paymentMethodBankName: inv.paymentMethodBankName,
     paymentMethodAccountNumber: inv.paymentMethodAccountNumber,
     paymentMethodAccountHolder: inv.paymentMethodAccountHolder,

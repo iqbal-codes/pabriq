@@ -1,35 +1,35 @@
-import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { useTranslations } from "use-intl";
-import { AssetFileList } from "#/components/app/asset-file";
-import { Button } from "#/components/ui/button";
+import { useQuery } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
+import { useTranslations } from 'use-intl'
+import { AssetFileList } from '#/components/app/asset-file'
+import { Button } from '#/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "#/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "#/components/ui/tabs";
-import { useMembers } from "#/features/members/hooks";
-import { getAssetsForLineItemFn } from "#/features/orders/server";
+} from '#/components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
+import { useMembers } from '#/features/members/hooks'
+import { getAssetsForLineItemFn } from '#/features/orders/server'
 import {
   useStages,
   useTaskActivities,
   useTaskDetail,
   useTaskMutations,
-} from "../hooks";
-import { ActivityRow } from "./activity-row";
-import { RequirementForm } from "./requirement-form";
-import { Badge } from "#/components/ui/badge";
+} from '../hooks'
+import { ActivityRow } from './activity-row'
+import { RequirementForm } from './requirement-form'
+import { Badge } from '#/components/ui/badge'
 
 type Props = {
-  taskId: string;
-  orgId: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  canApprove?: boolean;
-  onReview?: (taskId: string) => void;
-};
+  taskId: string
+  orgId: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  canApprove?: boolean
+  onReview?: (taskId: string) => void
+}
 
 export function TaskDetailModal({
   taskId,
@@ -39,80 +39,79 @@ export function TaskDetailModal({
   canApprove = false,
   onReview,
 }: Props) {
-  const t = useTranslations("production");
-  const { data: task, isLoading: taskLoading } = useTaskDetail(taskId);
-  const { data: activities } = useTaskActivities(taskId);
-  const { data: stages } = useStages();
-  const { advanceTask, saveComment } = useTaskMutations();
-  const { data: members } = useMembers();
-  const [commentText, setCommentText] = useState("");
-  const [showRequirementForm, setShowRequirementForm] = useState(false);
+  const t = useTranslations('production')
+  const { data: task, isLoading: taskLoading } = useTaskDetail(taskId)
+  const { data: activities } = useTaskActivities(taskId)
+  const { data: stages } = useStages()
+  const { advanceTask, saveComment } = useTaskMutations()
+  const { data: members } = useMembers()
+  const [commentText, setCommentText] = useState('')
+  const [showRequirementForm, setShowRequirementForm] = useState(false)
   const { data: lineItemAssets } = useQuery({
-    queryKey: ["order-assets", task?.lineItemId ?? ""],
+    queryKey: ['order-assets', task?.lineItemId ?? ''],
     queryFn: () => {
-      const lineItemId = task?.lineItemId;
-      if (!lineItemId) throw new Error("No line item");
+      const lineItemId = task?.lineItemId
+      if (!lineItemId) throw new Error('No line item')
       return getAssetsForLineItemFn({
         data: { lineItemId, orgId },
-      });
+      })
     },
     enabled: !!task?.lineItemId,
-  });
+  })
 
   const stageNameMap = useMemo(() => {
-    const map = new Map<string, string>();
+    const map = new Map<string, string>()
     for (const s of stages ?? []) {
-      map.set(s.id, s.name);
+      map.set(s.id, s.name)
     }
-    return map;
-  }, [stages]);
+    return map
+  }, [stages])
 
   const actorMap = useMemo(() => {
-    const map = new Map<string, { name: string; image: string | null }>();
-    if (!members) return map;
+    const map = new Map<string, { name: string; image: string | null }>()
+    if (!members) return map
     for (const m of members) {
-      map.set(m.user.id, { name: m.user.name, image: m.user.image });
+      map.set(m.user.id, { name: m.user.name, image: m.user.image })
     }
-    return map;
-  }, [members]);
+    return map
+  }, [members])
 
-  if (taskLoading || !task) return null;
+  if (taskLoading || !task) return null
 
   const ctx = task.context as Record<
     string,
     string | number | boolean | null
-  > | null;
-  const productName = ctx?.productName ?? "";
-  const designName = ctx?.designName ?? "";
-  const customerName = ctx?.customerName ?? "";
-  const orderNumber = ctx?.orderNumber ?? "";
-  const quantity = ctx?.quantity ?? "";
-  const spec = ctx?.requirements ?? "";
+  > | null
+  const productName = ctx?.productName ?? ''
+  const designName = ctx?.designName ?? ''
+  const customerName = ctx?.customerName ?? ''
+  const orderNumber = ctx?.orderNumber ?? ''
+  const quantity = ctx?.quantity ?? ''
+  const spec = ctx?.requirements ?? ''
 
   const boardStages = (stages ?? [])
     .filter((s) => s.active && s.board === task.board)
-    .sort((a, b) => a.orderIndex - b.orderIndex);
-
+    .sort((a, b) => a.orderIndex - b.orderIndex)
 
   const currentStageIndex = task.stageId
     ? boardStages.findIndex((s) => s.id === task.stageId)
-    : -1;
+    : -1
   const currentStage =
-    currentStageIndex >= 0 ? boardStages[currentStageIndex] : null;
-  const nextStage = boardStages[currentStageIndex + 1];
+    currentStageIndex >= 0 ? boardStages[currentStageIndex] : null
+  const nextStage = boardStages[currentStageIndex + 1]
   const isAtLastBoardStage =
-    currentStageIndex >= 0 && currentStageIndex >= boardStages.length - 1;
+    currentStageIndex >= 0 && currentStageIndex >= boardStages.length - 1
   const hasRequirements =
-    currentStage !== null && currentStage.requirements?.length > 0;
+    currentStage !== null && currentStage.requirements?.length > 0
 
   function handleAdvanceClick() {
     if (hasRequirements) {
-      setShowRequirementForm(true);
+      setShowRequirementForm(true)
     } else {
-      handleAdvance({});
+      handleAdvance({})
     }
   }
-  1;
+  1
   function handleAdvance(
     responses: Record<string, { value?: string; assetIds?: string[] }>,
   ) {
@@ -120,32 +119,32 @@ export function TaskDetailModal({
       { taskId, requirementResponses: responses },
       {
         onSuccess: (result) => {
-          if ("error" in result) return;
+          if ('error' in result) return
           if (
-            "pendingApproval" in result &&
+            'pendingApproval' in result &&
             result.pendingApproval &&
             canApprove &&
             onReview
           ) {
-            onReview(taskId);
-            return;
+            onReview(taskId)
+            return
           }
-          onOpenChange(false);
+          onOpenChange(false)
         },
       },
-    );
+    )
   }
   function handleSendComment() {
-    if (!commentText.trim()) return;
+    if (!commentText.trim()) return
     saveComment.mutate(
       { taskId, text: commentText.trim() },
       {
         onSuccess: (result) => {
-          if ("error" in result) return;
-          setCommentText("");
+          if ('error' in result) return
+          setCommentText('')
         },
       },
-    );
+    )
   }
 
   return (
@@ -174,11 +173,11 @@ export function TaskDetailModal({
               <div className="w-full flex flex-row items-center">
                 <div className="space-y-1 flex-1">
                   <DialogTitle className="text-xl font-bold tracking-tight text-foreground sm:text-2xl text-left">
-                    {productName || t("taskDetail")}
+                    {productName || t('taskDetail')}
                   </DialogTitle>
                   {designName && (
                     <p className="text-sm font-medium text-muted-foreground text-left">
-                      {t("designName")}:{" "}
+                      {t('designName')}:{' '}
                       <span className="text-foreground font-semibold">
                         {designName}
                       </span>
@@ -186,37 +185,37 @@ export function TaskDetailModal({
                   )}
                 </div>
 
-                {task.status === "queued" && nextStage && (
+                {task.status === 'queued' && nextStage && (
                   <Button
                     className="bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95 font-semibold text-sm transition-colors cursor-pointer"
                     onClick={handleAdvanceClick}
                   >
-                    {t("advanceTo", { stage: nextStage.name })}
+                    {t('advanceTo', { stage: nextStage.name })}
                   </Button>
                 )}
-                {task.status === "in_progress" &&
+                {task.status === 'in_progress' &&
                   (nextStage || isAtLastBoardStage) && (
                     <Button
                       className="bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95 font-semibold text-sm transition-colors cursor-pointer"
                       onClick={handleAdvanceClick}
                     >
                       {currentStage?.needApproval
-                        ? t("requestReview")
-                        : isAtLastBoardStage && task.board === "pre_production"
-                          ? t("markReadyForProduction")
+                        ? t('requestReview')
+                        : isAtLastBoardStage && task.board === 'pre_production'
+                          ? t('markReadyForProduction')
                           : isAtLastBoardStage
-                            ? t("done")
-                            : t("advanceTo", { stage: nextStage?.name })}
+                            ? t('done')
+                            : t('advanceTo', { stage: nextStage?.name })}
                     </Button>
                   )}
-                {task.status === "pending_approval" &&
+                {task.status === 'pending_approval' &&
                   canApprove &&
                   onReview && (
                     <Button
                       className="bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95 font-semibold text-sm transition-colors cursor-pointer"
                       onClick={() => onReview(taskId)}
                     >
-                      {t("reviewAdvancement")}
+                      {t('reviewAdvancement')}
                     </Button>
                   )}
               </div>
@@ -232,8 +231,8 @@ export function TaskDetailModal({
                     variant="line"
                     className="w-full justify-start border-0 bg-transparent p-0 rounded-none h-10 gap-6"
                   >
-                    <TabsTrigger value="details">{t("taskDetail")}</TabsTrigger>
-                    <TabsTrigger value="activity">{t("activity")}</TabsTrigger>
+                    <TabsTrigger value="details">{t('taskDetail')}</TabsTrigger>
+                    <TabsTrigger value="activity">{t('activity')}</TabsTrigger>
                   </TabsList>
                 </div>
                 <TabsContent
@@ -244,7 +243,7 @@ export function TaskDetailModal({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6 text-sm">
                     <div className="flex flex-col gap-1.5">
                       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        {t("orderLabel")}
+                        {t('orderLabel')}
                       </span>
                       <div>
                         <span className="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2.5 py-1 rounded border border-border inline-block">
@@ -254,18 +253,18 @@ export function TaskDetailModal({
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        {t("customerLabel")}
+                        {t('customerLabel')}
                       </span>
                       <p className="font-semibold text-foreground">
-                        {customerName || "-"}
+                        {customerName || '-'}
                       </p>
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        {t("quantityLabel")}
+                        {t('quantityLabel')}
                       </span>
                       <p className="font-semibold text-foreground">
-                        {quantity}{" "}
+                        {quantity}{' '}
                         <span className="text-xs font-normal text-muted-foreground">
                           pcs
                         </span>
@@ -276,7 +275,7 @@ export function TaskDetailModal({
                   {spec && (
                     <div className="space-y-2 pt-2">
                       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        {t("specification")}
+                        {t('specification')}
                       </span>
                       <div className="bg-card border border-border rounded-lg p-4 text-sm text-foreground/95 leading-relaxed whitespace-pre-wrap">
                         {spec}
@@ -287,7 +286,7 @@ export function TaskDetailModal({
                   {lineItemAssets && lineItemAssets.length > 0 && (
                     <div className="space-y-3 pt-2">
                       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        {t("attachments")}
+                        {t('attachments')}
                       </span>
                       <AssetFileList
                         assetIds={lineItemAssets.map((a) => a.id)}
@@ -305,7 +304,7 @@ export function TaskDetailModal({
                   <div className="space-y-3 flex-1 overflow-y-auto min-h-0 p-6 pb-2">
                     {(!activities || activities.length === 0) && (
                       <p className="text-sm text-muted-foreground text-center py-12">
-                        {t("noActivity")}
+                        {t('noActivity')}
                       </p>
                     )}
                     {activities?.map((act) => (
@@ -326,7 +325,7 @@ export function TaskDetailModal({
                     <div className="flex gap-2 items-center bg-background p-2 border border-input rounded-lg focus-within:ring-2 focus-within:ring-ring/40 focus-within:border-ring transition-all">
                       <input
                         type="text"
-                        placeholder={t("commentPlaceholder")}
+                        placeholder={t('commentPlaceholder')}
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
                         className="flex-1 ml-2.5 border-0 bg-transparent py-1.5 text-sm outline-none placeholder:text-muted-foreground text-foreground min-w-0"
@@ -337,7 +336,7 @@ export function TaskDetailModal({
                         onClick={handleSendComment}
                         disabled={!commentText.trim()}
                       >
-                        {t("send")}
+                        {t('send')}
                       </Button>
                     </div>
                   </div>
@@ -348,5 +347,5 @@ export function TaskDetailModal({
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

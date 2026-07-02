@@ -16,6 +16,7 @@ import { Route as OrgRouteImport } from './routes/_org'
 import { Route as OrgIndexRouteImport } from './routes/_org/index'
 import { Route as OrderTokenRouteImport } from './routes/order.$token'
 import { Route as InviteAcceptRouteImport } from './routes/invite/accept'
+import { Route as ApiMidtransNotificationRouteImport } from './routes/api/midtrans-notification'
 import { Route as OrgSettingsRouteRouteImport } from './routes/_org/settings/route'
 import { Route as OrgSettingsIndexRouteImport } from './routes/_org/settings/index'
 import { Route as OrgProductsIndexRouteImport } from './routes/_org/products/index'
@@ -77,6 +78,11 @@ const OrderTokenRoute = OrderTokenRouteImport.update({
 const InviteAcceptRoute = InviteAcceptRouteImport.update({
   id: '/invite/accept',
   path: '/invite/accept',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMidtransNotificationRoute = ApiMidtransNotificationRouteImport.update({
+  id: '/api/midtrans-notification',
+  path: '/api/midtrans-notification',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrgSettingsRouteRoute = OrgSettingsRouteRouteImport.update({
@@ -232,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/settings': typeof OrgSettingsRouteRouteWithChildren
+  '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
   '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
   '/customers/new': typeof OrgCustomersNewRoute
@@ -266,6 +273,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
   '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
   '/': typeof OrgIndexRoute
@@ -304,6 +312,7 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/_org/settings': typeof OrgSettingsRouteRouteWithChildren
+  '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
   '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
   '/_org/': typeof OrgIndexRoute
@@ -343,6 +352,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/settings'
+    | '/api/midtrans-notification'
     | '/invite/accept'
     | '/order/$token'
     | '/customers/new'
@@ -377,6 +387,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/sign-in'
     | '/sign-up'
+    | '/api/midtrans-notification'
     | '/invite/accept'
     | '/order/$token'
     | '/'
@@ -414,6 +425,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/_org/settings'
+    | '/api/midtrans-notification'
     | '/invite/accept'
     | '/order/$token'
     | '/_org/'
@@ -451,6 +463,7 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  ApiMidtransNotificationRoute: typeof ApiMidtransNotificationRoute
   InviteAcceptRoute: typeof InviteAcceptRoute
   OrderTokenRoute: typeof OrderTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -509,6 +522,13 @@ declare module '@tanstack/react-router' {
       path: '/invite/accept'
       fullPath: '/invite/accept'
       preLoaderRoute: typeof InviteAcceptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/midtrans-notification': {
+      id: '/api/midtrans-notification'
+      path: '/api/midtrans-notification'
+      fullPath: '/api/midtrans-notification'
+      preLoaderRoute: typeof ApiMidtransNotificationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_org/settings': {
@@ -780,6 +800,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  ApiMidtransNotificationRoute: ApiMidtransNotificationRoute,
   InviteAcceptRoute: InviteAcceptRoute,
   OrderTokenRoute: OrderTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

@@ -1,4 +1,4 @@
-import type { Messages } from "./types";
+import type { Messages } from './types'
 
 // biome-ignore format: locale message map is maintained as a dense dictionary
 const id: Messages = {
@@ -964,6 +964,11 @@ const id: Messages = {
     itemNoAttachments: "Tidak ada lampiran untuk item ini",
     itemNoEvents: "Belum ada pembaruan tahap",
     rejectedNote: "Alasan: {note}",
+    payNow: "Bayar Sekarang",
+    paymentCancelled: "Pembayaran dibatalkan. Silakan coba lagi.",
+    paymentSuccess: "Pembayaran berhasil!",
+    paymentFailed: "Pembayaran gagal. Silakan coba lagi.",
+    processingPayment: "Memproses...",
   },
   combobox: {
     searchPlaceholder: "Cari...",
@@ -990,4 +995,4 @@ const id: Messages = {
   },
 };
 
-export default id;
+export default id

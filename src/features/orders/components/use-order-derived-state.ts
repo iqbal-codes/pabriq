@@ -72,7 +72,8 @@ export function useOrderDerivedState(params: {
   const hasPaidInvoice = orderInvoices.some((inv) => inv.status === 'paid')
   const allTasksReadyForProduction =
     (tasksData?.length ?? 0) > 0 &&
-    (tasksData?.every((t) => t.task.status === READY_FOR_PRODUCTION_STATUS) ?? false)
+    (tasksData?.every((t) => t.task.status === READY_FOR_PRODUCTION_STATUS) ??
+      false)
   const canStartProduction =
     orderStatus === 'approved' && hasPaidInvoice && allTasksReadyForProduction
 

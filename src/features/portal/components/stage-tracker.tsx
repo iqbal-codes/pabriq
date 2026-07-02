@@ -66,7 +66,8 @@ export function StageTracker({
               <span
                 className={cn(
                   'flex size-4 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold tabular-nums',
-                  isCompleted && 'border-primary bg-primary text-primary-foreground',
+                  isCompleted &&
+                    'border-primary bg-primary text-primary-foreground',
                   isActive && 'border-primary text-primary',
                   isUpcoming && 'border-border text-muted-foreground/50',
                 )}
