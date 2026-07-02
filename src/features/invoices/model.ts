@@ -140,6 +140,7 @@ export type InvoiceBalance = {
 
 export type ListInvoicesParams = {
   orgId: string
+  customerId?: string
   status?: string
   q?: string
   orderId?: string
@@ -462,6 +463,10 @@ export async function listInvoices(
 
   if (params.orderId) {
     conditions.push(eq(invoicesTable.orderId, params.orderId))
+  }
+
+  if (params.customerId) {
+    conditions.push(eq(invoicesTable.customerId, params.customerId))
   }
 
   const allConditions = and(...conditions) as SQL

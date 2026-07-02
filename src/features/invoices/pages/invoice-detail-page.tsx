@@ -1,14 +1,22 @@
-import { useParams } from '@tanstack/react-router'
+import { Link, useParams } from '@tanstack/react-router'
+import { Printer } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { useTranslations } from 'use-intl'
+import { useLocale, useTranslations } from 'use-intl'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
+import { StatusBadge } from '#/components/status-badge'
+import { AvatarPhoto } from '#/components/app/avatar-photo'
+import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '#/components/ui/tooltip'
 import { InvoiceActionButtons } from '#/features/invoices/components/invoice-action-buttons'
-import { InvoiceCustomerCard } from '#/features/invoices/components/invoice-customer-card'
-import { InvoiceHeaderActions } from '#/features/invoices/components/invoice-header-actions'
 import { InvoiceLineItemsCard } from '#/features/invoices/components/invoice-line-items-card'
-import { InvoiceMetaCard } from '#/features/invoices/components/invoice-meta-card'
 import { InvoiceStatusTimeline } from '#/features/invoices/components/invoice-status-timeline'
 import { PaymentMethodInstructionsCard } from '#/features/invoices/components/payment-method-instructions-card'
 import { PendingPaymentsSection } from '#/features/invoices/components/pending-payments-section'
@@ -18,14 +26,18 @@ import {
   useInvoice,
   useInvoicePayments,
   useMarkInvoicePaid,
+  useOrderForInvoice,
   useRejectPayment,
   useVoidInvoice,
 } from '#/features/invoices/hooks'
+import { formatCurrency, formatShortDate } from '#/lib/formatters'
 
 export function InvoiceDetailPage() {
   const { id } = useParams({ from: '/_org/invoices/$id/' })
   const t = useTranslations('invoices')
   const st = useTranslations('status')
+  const ct = useTranslations('common')
+  const locale = useLocale()
 
   const { data: result } = useInvoice(id)
   const { data: payments } = useInvoicePayments(id)
@@ -46,6 +58,9 @@ export function InvoiceDetailPage() {
   }
 
   const { invoice, lineItems, paymentMethod, customer } = result
+
+  // Fetch related order if invoice has an orderId
+  const { data: orderData } = useOrderForInvoice(invoice.orderId ?? undefined)
 
   const canModify =
     invoice.status === 'unpaid' || invoice.status === 'partially_paid'
@@ -94,66 +109,181 @@ export function InvoiceDetailPage() {
 
   return (
     <PageContent>
-      <PageHeader title={`${t('viewInvoice')} — ${invoice.invoiceNumber}`} />
-
-      <InvoiceHeaderActions
-        invoiceId={invoice.id}
-        status={invoice.status}
-        percentage={invoice.percentage}
+      <PageHeader
+        title={`${t('viewInvoice')} — ${invoice.invoiceNumber}`}
+        backAction={{ label: ct('back'), href: '/invoices' }}
       />
 
-      <InvoiceMetaCard
-        issuedDate={invoice.issuedDate}
-        dueDate={invoice.dueDate}
-        total={invoice.total}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        {/* Left Pane */}
+        <div className="lg:col-span-2 space-y-6">
+          <InvoiceLineItemsCard lineItems={lineItems} total={invoice.total} />
 
-      <InvoiceCustomerCard
-        customer={customer}
-        fallbackName={invoice.customerName}
-      />
+          {paymentMethod && (
+            <PaymentMethodInstructionsCard paymentMethod={paymentMethod} />
+          )}
 
-      <InvoiceLineItemsCard lineItems={lineItems} total={invoice.total} />
+          <InvoiceStatusTimeline
+            invoiceCreatedAt={invoice.createdAt.toISOString()}
+            payments={timelinePayments}
+            invoiceStatus={invoice.status}
+          />
 
-      {paymentMethod && (
-        <PaymentMethodInstructionsCard paymentMethod={paymentMethod} />
-      )}
-
-      {invoice.notes && (
-        <div className="rounded-xl border bg-card p-6">
-          <p className="mb-3 text-sm font-semibold text-muted-foreground">
-            {t('notes')}
-          </p>
-          <p className="whitespace-pre-wrap text-sm">{invoice.notes}</p>
+          <PendingPaymentsSection
+            payments={timelinePayments}
+            onConfirmPayment={handleConfirmPayment}
+            onRejectPayment={(paymentId) => setRejectDialogId(paymentId)}
+            isConfirming={confirmPayment.isPending}
+            isRejecting={rejectPayment.isPending}
+          />
         </div>
-      )}
 
-      <div>
-        <InvoiceStatusTimeline
-          invoiceCreatedAt={invoice.createdAt.toISOString()}
-          payments={timelinePayments}
-          invoiceStatus={invoice.status}
-        />
+        {/* Right Pane */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Invoice Details Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={invoice.status} />
+                  {invoice.percentage && (
+                    <Badge variant="secondary">{invoice.percentage}%</Badge>
+                  )}
+                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon-sm" asChild>
+                      <a
+                        href={`/api/documents/invoices/${invoice.id}/pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Printer className="size-4" />
+                      </a>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{t('printInvoice')}</TooltipContent>
+                </Tooltip>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Total */}
+              <div>
+                <p className="text-sm text-muted-foreground">{t('total')}</p>
+                <p className="text-2xl font-bold font-mono">
+                  {formatCurrency(invoice.total, locale)}
+                </p>
+              </div>
+
+              {/* Metadata */}
+              <div className="grid grid-cols-2 gap-3">
+                {invoice.percentage != null && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      {t('percentage')}
+                    </p>
+                    <p className="text-sm">{invoice.percentage}%</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    {t('issuedDate')}
+                  </p>
+                  <p className="text-sm">
+                    {formatShortDate(invoice.issuedDate, locale)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    {t('dueDate')}
+                  </p>
+                  <p className="text-sm">
+                    {formatShortDate(invoice.dueDate, locale)}
+                  </p>
+                </div>
+                {invoice.status === 'paid' && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      {st('paid')}
+                    </p>
+                    <p className="text-sm">
+                      {invoice.updatedAt
+                        ? formatShortDate(
+                            invoice.updatedAt.toISOString(),
+                            locale,
+                          )
+                        : '—'}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <InvoiceActionButtons
+                canModify={canModify}
+                recordDialogOpen={recordDialogOpen}
+                onRecordDialogOpenChange={setRecordDialogOpen}
+                invoiceId={id}
+                onMarkPaid={handleMarkPaid}
+                isMarkingPaid={markPaid.isPending}
+                onVoid={handleVoid}
+                isVoiding={voidInv.isPending}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Customer Details Card */}
+          {customer && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('customer')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3 mb-4">
+                  <AvatarPhoto
+                    assetId={customer.photoAssetId}
+                    name={customer.name}
+                    className="size-10"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      to="/customers/$id"
+                      params={{ id: customer.id }}
+                      className="font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                    >
+                      {customer.name}
+                    </Link>
+                    {customer.phone && (
+                      <p className="text-sm text-muted-foreground">
+                        {customer.phone}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Related Order Card */}
+          {invoice.orderId && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('orderLabel', { orderNumber: '' })}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Link
+                  to="/orders/$id"
+                  params={{ id: invoice.orderId }}
+                  className="flex items-center gap-2 text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                >
+                  {orderData?.order.orderNumber ??
+                    t('orderLabel', { orderNumber: invoice.orderId })}
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
-
-      <PendingPaymentsSection
-        payments={timelinePayments}
-        onConfirmPayment={handleConfirmPayment}
-        onRejectPayment={(paymentId) => setRejectDialogId(paymentId)}
-        isConfirming={confirmPayment.isPending}
-        isRejecting={rejectPayment.isPending}
-      />
-
-      <InvoiceActionButtons
-        canModify={canModify}
-        recordDialogOpen={recordDialogOpen}
-        onRecordDialogOpenChange={setRecordDialogOpen}
-        invoiceId={id}
-        onMarkPaid={handleMarkPaid}
-        isMarkingPaid={markPaid.isPending}
-        onVoid={handleVoid}
-        isVoiding={voidInv.isPending}
-      />
 
       <RejectPaymentDialog
         open={!!rejectDialogId}
