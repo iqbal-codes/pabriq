@@ -1,7 +1,6 @@
 import { toast } from 'sonner'
 import { useLocale, useTranslations } from 'use-intl'
 import {
-  FormActions,
   FormGrid,
   FormRoot,
   FormSection,
@@ -9,10 +8,10 @@ import {
 } from '#/components/app/form'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
-import { cn } from '#/lib/utils'
 import { CustomerInfoCard } from '#/features/portal/components/customer-info-card'
-import { PortalContactButton } from '../components/portal-contact-button'
 import { formatCurrency } from '#/lib/formatters'
+import { cn } from '#/lib/utils'
+import { PortalContactButton } from '../components/portal-contact-button'
 import {
   useConfirmPortalOrder,
   useSavePortalAddress,
@@ -22,10 +21,7 @@ import type { PortalOrder } from '../model'
 
 type DraftStep = {
   id: 'customer' | 'shipping' | 'items'
-  titleKey:
-    | 'draftStepCustomer'
-    | 'draftStepShipping'
-    | 'draftStepItems'
+  titleKey: 'draftStepCustomer' | 'draftStepShipping' | 'draftStepItems'
   descriptionKey:
     | 'draftStepCustomerDesc'
     | 'draftStepShippingDesc'
@@ -205,106 +201,117 @@ export function DraftView({
             {t('draftSubmitHelp', { org: order.orgName })}
           </p>
           {/* Mini-stepper */}
-          <ol
-            aria-label={t('draftStepsTitle')}
-            className="mt-4 flex items-center gap-2 overflow-x-auto"
-          >
-            {DRAFT_STEPS.map((step) => {
-              const isDone =
-                (step.id === 'customer' && hasCustomer) ||
-                (step.id === 'shipping' && hasAddress) ||
-                (step.id === 'items' && itemsHaveContent)
-              return (
-                <li
+          <div className="mt-6 space-y-2">
+            <ol
+              aria-label={t('draftStepsTitle')}
+              className="flex items-center gap-2"
+            >
+              {DRAFT_STEPS.map((step) => {
+                const isDone =
+                  (step.id === 'customer' && hasCustomer) ||
+                  (step.id === 'shipping' && hasAddress) ||
+                  (step.id === 'items' && itemsHaveContent)
+                return (
+                  <li key={step.id} className="flex-1">
+                    <span
+                      className={cn(
+                        'block h-1 rounded-full transition-colors',
+                        isDone ? 'bg-primary' : 'bg-muted',
+                      )}
+                      aria-hidden
+                    />
+                  </li>
+                )
+              })}
+            </ol>
+            <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
+              {DRAFT_STEPS.map((step) => (
+                <span
                   key={step.id}
-                  className="flex flex-1 items-center gap-2"
+                  className="first:text-left last:text-right text-center flex-1"
                 >
-                  <span
-                    className={cn(
-                      'flex h-1.5 flex-1 rounded-full',
-                      isDone ? 'bg-primary' : 'bg-muted',
-                    )}
-                    aria-hidden
-                  />
-                  <span className="sr-only">{t(step.titleKey)}</span>
-                </li>
-              )
-            })}
-          </ol>
+                  {t(step.titleKey)}
+                </span>
+              ))}
+            </div>
+          </div>
         </header>
 
-        {/* Step 1 — Customer */}
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-          <StepHeader
-            index={0}
-            total={DRAFT_STEPS.length}
-            state={hasCustomer ? 'done' : 'active'}
-            title={t(DRAFT_STEPS[0].titleKey)}
-            description={t(DRAFT_STEPS[0].descriptionKey)}
-          />
-          <div className="mt-5">
-            {hasCustomer ? (
-              <CustomerInfoCard
-                name={order.customerName}
-                phone={order.customerPhone}
-                photoAssetId={order.customerPhotoAssetId}
-              />
-            ) : (
-              <FormSection title={t('customerInfo')} titleHidden>
-                <FormGrid columns={1}>
-                  <form.AppField
-                    name="guestName"
-                    validators={{
-                      onChange: ({ value }) =>
-                        value.trim() ? undefined : t('required'),
-                    }}
-                  >
-                    {(field) => (
-                      <field.TextField
-                        label={t('guestName')}
-                        placeholder={t('guestNamePlaceholder')}
-                      />
-                    )}
-                  </form.AppField>
-                  <form.AppField
-                    name="guestPhone"
-                    validators={{
-                      onChange: ({ value }) =>
-                        value.trim() ? undefined : t('required'),
-                    }}
-                  >
-                    {(field) => (
-                      <field.PhoneField
-                        label={t('guestPhone')}
-                        placeholder={t('guestPhonePlaceholder')}
-                      />
-                    )}
-                  </form.AppField>
-                </FormGrid>
-              </FormSection>
-            )}
-          </div>
-        </section>
+        {/* Contact and Shipping details side-by-side on desktop */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* Step 1 — Customer */}
+          <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+            <StepHeader
+              index={0}
+              total={DRAFT_STEPS.length}
+              state={hasCustomer ? 'done' : 'active'}
+              title={t(DRAFT_STEPS[0].titleKey)}
+              description={t(DRAFT_STEPS[0].descriptionKey)}
+            />
+            <div className="mt-5">
+              {hasCustomer ? (
+                <CustomerInfoCard
+                  name={order.customerName}
+                  phone={order.customerPhone}
+                  photoAssetId={order.customerPhotoAssetId}
+                />
+              ) : (
+                <FormSection title={t('customerInfo')} titleHidden>
+                  <FormGrid columns={1}>
+                    <form.AppField
+                      name="guestName"
+                      validators={{
+                        onChange: ({ value }) =>
+                          value.trim() ? undefined : t('required'),
+                      }}
+                    >
+                      {(field) => (
+                        <field.TextField
+                          label={t('guestName')}
+                          placeholder={t('guestNamePlaceholder')}
+                        />
+                      )}
+                    </form.AppField>
+                    <form.AppField
+                      name="guestPhone"
+                      validators={{
+                        onChange: ({ value }) =>
+                          value.trim() ? undefined : t('required'),
+                      }}
+                    >
+                      {(field) => (
+                        <field.PhoneField
+                          label={t('guestPhone')}
+                          placeholder={t('guestPhonePlaceholder')}
+                        />
+                      )}
+                    </form.AppField>
+                  </FormGrid>
+                </FormSection>
+              )}
+            </div>
+          </section>
 
-        {/* Step 2 — Shipping */}
-        <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-          <StepHeader
-            index={1}
-            total={DRAFT_STEPS.length}
-            state={hasAddress ? 'done' : 'active'}
-            title={t(DRAFT_STEPS[1].titleKey)}
-            description={t(DRAFT_STEPS[1].descriptionKey)}
-          />
-          <div className="mt-5">
-            <FormSection title={t('shippingAddress')} titleHidden>
-              <form.AppField name="address">
-                {(field) => (
-                  <field.AddressField showAreaSearch={showAreaSearch} />
-                )}
-              </form.AppField>
-            </FormSection>
-          </div>
-        </section>
+          {/* Step 2 — Shipping */}
+          <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+            <StepHeader
+              index={1}
+              total={DRAFT_STEPS.length}
+              state={hasAddress ? 'done' : 'active'}
+              title={t(DRAFT_STEPS[1].titleKey)}
+              description={t(DRAFT_STEPS[1].descriptionKey)}
+            />
+            <div className="mt-5">
+              <FormSection title={t('shippingAddress')} titleHidden>
+                <form.AppField name="address">
+                  {(field) => (
+                    <field.AddressField showAreaSearch={showAreaSearch} />
+                  )}
+                </form.AppField>
+              </FormSection>
+            </div>
+          </section>
+        </div>
 
         {/* Step 3 — Items */}
         <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
@@ -324,17 +331,14 @@ export function DraftView({
             {order.lineItems.map((item, i) => (
               <div
                 key={item.id}
-                className="space-y-3 rounded-xl border border-border bg-muted/30 p-4"
+                className="space-y-4 rounded-xl border border-border bg-muted/30 p-4 sm:p-5"
               >
-                <div className="flex items-baseline justify-between gap-3">
+                <div className="flex items-start justify-between gap-3 border-b border-border/50 pb-3">
                   <div className="min-w-0">
-                    <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                    <h3 className="text-sm font-semibold text-foreground">
                       {item.productName}
-                    </p>
-                    <p className="truncate text-sm font-medium text-foreground">
-                      {item.name || item.productName}
-                    </p>
-                    <p className="text-xs text-muted-foreground tabular-nums">
+                    </h3>
+                    <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
                       {t('quantity')}: {item.quantity} ×{' '}
                       {formatCurrency(item.unitPrice, locale)}
                     </p>
@@ -370,39 +374,44 @@ export function DraftView({
                 </form.AppField>
               </div>
             ))}
-            <div className="flex justify-end border-t border-border pt-4">
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">
-                  {t('orderTotal')}
-                </p>
-                <p className="text-lg font-semibold text-foreground tabular-nums">
-                  {formatCurrency(order.total, locale)}
-                </p>
-              </div>
-            </div>
           </div>
         </section>
 
         {/* Submit footer */}
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-          <p className="text-sm text-muted-foreground">
-            {t('draftSubmitHelp', { org: order.orgName })}
-          </p>
-          <FormActions align="stretch" className="mt-4">
-            <Button variant="outline" asChild>
-              <a href={`/order/${token}`}>{t('retry')}</a>
-            </Button>
-            <form.AppForm>
-              <form.SubmitButton className="flex-1">
-                {isSubmitting ? t('submitting') : t('submit')}
-              </form.SubmitButton>
-            </form.AppForm>
-          </FormActions>
-        </div>
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6 space-y-5">
+          <div className="flex items-center justify-between border-b border-border/50 pb-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                {t('orderTotal')}
+              </p>
+              <p className="text-2xl font-bold tracking-tight text-foreground tabular-nums">
+                {formatCurrency(order.total, locale)}
+              </p>
+            </div>
+            <p className="hidden text-right text-xs text-muted-foreground sm:block max-w-[240px]">
+              {t('draftSubmitHelp', { org: order.orgName })}
+            </p>
+          </div>
 
-        {/* Footer note */}
-        <div className="flex items-center justify-end">
-          <PortalContactButton order={order} label="chatOnWhatsApp" />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <PortalContactButton
+              order={order}
+              label="chatOnWhatsApp"
+              className="w-full sm:w-auto"
+            />
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+              <Button variant="outline" asChild className="w-full sm:w-auto">
+                <a href={`/order/${token}`}>{t('retry')}</a>
+              </Button>
+              <div className="w-full sm:w-auto">
+                <form.AppForm>
+                  <form.SubmitButton className="w-full sm:w-auto min-w-[140px]">
+                    {isSubmitting ? t('submitting') : t('submit')}
+                  </form.SubmitButton>
+                </form.AppForm>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </FormRoot>

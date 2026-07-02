@@ -77,7 +77,8 @@ const messages = {
     obligationPayBody: '{count} invoice menunggu bukti pembayaran Anda',
     obligationNextTitle: 'Selanjutnya',
     itemsSectionTitle: 'Item dalam pesanan',
-    itemsSectionDescription: 'Setiap item menampilkan timeline, catatan, dan lampiran.',
+    itemsSectionDescription:
+      'Setiap item menampilkan timeline, catatan, dan lampiran.',
     itemTaskNumber: 'Tugas',
     itemShowTimeline: 'Lihat timeline',
     itemHideTimeline: 'Sembunyikan timeline',
@@ -89,8 +90,8 @@ const messages = {
     noShippingAddress: 'Belum ada alamat pengiriman',
     customerInfo: 'Informasi Pelanggan',
     quantity: 'Jml',
-    itemName: 'Nama Item',
-    itemNamePlaceholder: 'Masukkan nama item',
+    itemName: 'Nama Desain',
+    itemNamePlaceholder: 'Masukkan nama desain',
     itemNotes: 'Catatan',
     itemNotesPlaceholder: 'Tambahkan catatan',
     invoiceShowAll: 'Lihat semua ({count})',
@@ -104,7 +105,8 @@ const messages = {
     invoiceProofPending: 'Menunggu konfirmasi',
     invoicePaymentInstructions: 'Instruksi',
     invoicesSectionTitle: 'Invoice dan pembayaran',
-    invoicesSectionDescription: 'Unduh invoice dan unggah bukti pembayaran di sini.',
+    invoicesSectionDescription:
+      'Unduh invoice dan unggah bukti pembayaran di sini.',
     stageTrackerLabel: 'Tahap produksi',
     stagesUnknown: 'Belum ada pembaruan tahap',
   },
@@ -178,7 +180,6 @@ describe('ProgressView', () => {
     renderProgressView()
     expect(screen.getAllByText(/10 Jan 2026/).length).toBeGreaterThanOrEqual(1)
   })
-
 
   it('does not render estimated completion when there are no line items', () => {
     renderProgressView(makeOrder({ lineItems: [] }))
