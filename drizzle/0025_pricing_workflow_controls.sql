@@ -4,11 +4,7 @@
 -- Extends order_line_items with repeat/manual-deadline flags
 -- Adds order_line_item_addons table to snapshot selected addons
 
--- Product pricing metadata
-ALTER TABLE products ADD COLUMN negotiate_above_quantity integer;
-ALTER TABLE products ADD COLUMN repeat_order_unit_price integer;
-ALTER TABLE products ADD COLUMN repeat_order_min_quantity integer;
-ALTER TABLE products ADD COLUMN max_production_quantity integer;
+-- (product pricing columns handled by 0026_keen_natasha_romanoff)
 
 -- Product addons
 CREATE TABLE product_addons (

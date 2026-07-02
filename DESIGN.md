@@ -442,6 +442,16 @@ At rest, surfaces sit on the same plane distinguished only by `{colors.canvas}` 
 - **Board selector:** Manual toggle using `{Button variant={active ? 'default' : 'outline'}}` side by side. Used for switching between Pre-Production and Production boards.
 - **Content tabs:** shadcn `Tabs` component with `TabsList` (surface-soft background) and `TabsTrigger` (active: canvas background with shadow). Used for switching between active/archived views and dialog content sections.
 
+### PDF / Document Templates
+
+**Character:** Clean, readable printable documents formatted for standard A4 pages. Designed to preserve clear proportions, prevent wrapping bugs on localized labels, and present clear payment metrics.
+
+- **Layout:** Standard A4 size. Top row uses a split layout: logo on the left (`35%` width) and metadata block on the right (`60%` width). Margins are 40px (`styles.page`).
+- **Metadata alignment:** Metadata label width is `150` points, value width is `120` points. Each row is top-vertical aligned (`alignItems: 'flex-start'`) to handle potential multi-line wrapping cleanly.
+- **Pricing Section:** Widened to `60%` on invoices and `50%` on quotations. Labels have `60%` width, and values have `40%` width to accommodate larger labels like "Jumlah pembayaran" without wrapping.
+- **Payment Amount:** For partial payment invoices, "Jumlah pembayaran" is shown as a pricing line right after "Subtotal" and before "Pajak".
+- **Document Footer:** Muted gray text (`#9595a8` at `9px` size) centered at the absolute bottom margin (`bottom: 30`) saying "Terima kasih atas kepercayaan Anda!".
+- **Due Date:** Excluded / commented out from default invoice metadata layout.
 ## 6. Do's and Don'ts
 
 ### Do:
@@ -455,6 +465,9 @@ At rest, surfaces sit on the same plane distinguished only by `{colors.canvas}` 
 - **Do** use i18n keys for every user-facing string. The app supports English and Bahasa Indonesia. No hardcoded text.
 - **Do** use the `StatusBadge` component for all status displays. It maps status strings to the correct badge variant automatically.
 - **Do** respect role-based visibility. Operators see production only. Customers see their portal only. Never show someone something they can't act on.
+- **Do** format PDF metadata rows using top-vertical alignment (`alignItems: 'flex-start'`) so wrapped labels align nicely with their values.
+- **Do** show "Jumlah pembayaran" before "Pajak" and after "Subtotal" for partial payment invoices.
+- **Do** use `documentFooter` style for centering the thank-you note at the absolute bottom margin of A4 document pages.
 
 ### Don't:
 
@@ -468,3 +481,4 @@ At rest, surfaces sit on the same plane distinguished only by `{colors.canvas}` 
 - **Don't** use `console.log` or code comments. The codebase uses pino for structured logging and i18n for all user-facing text.
 - **Don't** hardcode user-facing text. Use `use-intl` and update message files in `src/messages/en.ts` and `src/messages/id.ts`.
 - **Don't** guess library APIs. Check official docs, Context7, or existing project patterns first. The stack is TanStack Start + React 19 + Vite + TanStack Router + Tailwind CSS v4 + shadcn/ui.
+- **Don't** show "Jatuh Tempo" (Due Date) on invoice documents by default.

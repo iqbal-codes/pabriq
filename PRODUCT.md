@@ -47,4 +47,4 @@ Confidence comes from precision, not decoration. Clean means uncluttered, not st
 
 ## Accessibility & Inclusion
 
-WCAG AA baseline: 4.5:1 contrast ratios on text, keyboard navigation on all interactive elements, focus-visible indicators, semantic HTML structure. Bahasa Indonesia as the primary UI language alongside English. Mobile-responsive for operators on the shop floor.
+WCAG AA baseline: 4.5:1 contrast ratios on text, keyboard navigation on all interactive elements, focus-visible indicators, semantic HTML structure. Bahasa Indonesia as the primary UI language alongside English. Mobile-responsive for operators on the shop floor. Invoicing documents must be formatted in clean Indonesian style: standard IDR separators, local date and time formatting (DD Month YYYY, HH:MM), and localized Indonesian terminology (e.g. 'Jumlah pembayaran' for payment amount).
