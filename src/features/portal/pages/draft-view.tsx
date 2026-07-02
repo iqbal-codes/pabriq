@@ -1,106 +1,21 @@
 import { toast } from 'sonner'
 import { useLocale, useTranslations } from 'use-intl'
 import {
+  FormActions,
   FormGrid,
   FormRoot,
   FormSection,
   useAppForm,
 } from '#/components/app/form'
-import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
-<<<<<<< HEAD
-=======
 import { getVisibleDesignName } from '#/features/orders/line-item-display'
->>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
 import { CustomerInfoCard } from '#/features/portal/components/customer-info-card'
 import { formatCurrency } from '#/lib/formatters'
-import { cn } from '#/lib/utils'
-import { PortalContactButton } from '../components/portal-contact-button'
 import {
   useConfirmPortalOrder,
   useSavePortalAddress,
   useUpdatePortalLineItem,
 } from '../hooks'
 import type { PortalOrder } from '../model'
-
-type DraftStep = {
-  id: 'customer' | 'shipping' | 'items'
-  titleKey: 'draftStepCustomer' | 'draftStepShipping' | 'draftStepItems'
-  descriptionKey:
-    | 'draftStepCustomerDesc'
-    | 'draftStepShippingDesc'
-    | 'draftStepItemsDesc'
-}
-
-const DRAFT_STEPS: DraftStep[] = [
-  {
-    id: 'customer',
-    titleKey: 'draftStepCustomer',
-    descriptionKey: 'draftStepCustomerDesc',
-  },
-  {
-    id: 'shipping',
-    titleKey: 'draftStepShipping',
-    descriptionKey: 'draftStepShippingDesc',
-  },
-  {
-    id: 'items',
-    titleKey: 'draftStepItems',
-    descriptionKey: 'draftStepItemsDesc',
-  },
-]
-
-function StepHeader({
-  index,
-  total,
-  state,
-  title,
-  description,
-}: {
-  index: number
-  total: number
-  state: 'done' | 'active' | 'empty'
-  title: string
-  description: string
-}) {
-  const t = useTranslations('portal')
-  return (
-    <div className="flex items-start gap-3">
-      <span
-        className={cn(
-          'flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums',
-          state === 'active' &&
-            'bg-primary text-primary-foreground ring-4 ring-primary/15',
-          state === 'done' && 'bg-primary text-primary-foreground',
-          state === 'empty' && 'border border-border text-muted-foreground',
-        )}
-      >
-        {index + 1}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-baseline gap-2">
-          <h2 className="text-base font-semibold tracking-tight text-foreground">
-            {title}
-          </h2>
-          <Badge
-            variant={state === 'active' ? 'default' : 'secondary'}
-            className="capitalize"
-          >
-            {state === 'done'
-              ? t('draftStepComplete')
-              : state === 'active'
-                ? t('draftStepInProgress')
-                : t('draftStepEmpty')}
-          </Badge>
-        </div>
-        <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
-        <p className="mt-1 text-[11px] uppercase tracking-wider text-muted-foreground/70 tabular-nums">
-          {index + 1} / {total}
-        </p>
-      </div>
-    </div>
-  )
-}
 
 export function DraftView({
   order,
@@ -190,8 +105,6 @@ export function DraftView({
 
   const isSubmitting =
     confirmOrder.isPending || saveAddress.isPending || updateLineItem.isPending
-  const hasAddress = !!order.shippingAddress?.streetAddress
-  const itemsHaveContent = order.lineItems.length > 0
 
   return (
     <FormRoot form={form}>
@@ -207,81 +120,13 @@ export function DraftView({
           <p className="mt-2 text-sm text-muted-foreground">
             {t('draftSubmitHelp', { org: order.orgName })}
           </p>
-          {/* Mini-stepper */}
-<<<<<<< HEAD
-          <div className="mt-6 space-y-2">
-            <ol
-              aria-label={t('draftStepsTitle')}
-              className="flex items-center gap-2"
-            >
-              {DRAFT_STEPS.map((step) => {
-                const isDone =
-                  (step.id === 'customer' && hasCustomer) ||
-                  (step.id === 'shipping' && hasAddress) ||
-                  (step.id === 'items' && itemsHaveContent)
-                return (
-                  <li key={step.id} className="flex-1">
-                    <span
-                      className={cn(
-                        'block h-1 rounded-full transition-colors',
-                        isDone ? 'bg-primary' : 'bg-muted',
-                      )}
-                      aria-hidden
-                    />
-                  </li>
-                )
-              })}
-            </ol>
-            <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
-              {DRAFT_STEPS.map((step) => (
-                <span
-                  key={step.id}
-                  className="first:text-left last:text-right text-center flex-1"
-                >
-                  {t(step.titleKey)}
-                </span>
-              ))}
-            </div>
-          </div>
-=======
-          <ol
-            aria-label={t('draftStepsTitle')}
-            className="mt-4 flex items-center gap-2 overflow-x-auto"
-          >
-            {DRAFT_STEPS.map((step) => {
-              const isDone =
-                (step.id === 'customer' && hasCustomer) ||
-                (step.id === 'shipping' && hasAddress) ||
-                (step.id === 'items' && itemsHaveContent)
-              return (
-                <li key={step.id} className="flex flex-1 items-center gap-2">
-                  <span
-                    className={cn(
-                      'flex h-1.5 flex-1 rounded-full',
-                      isDone ? 'bg-primary' : 'bg-muted',
-                    )}
-                    aria-hidden
-                  />
-                  <span className="sr-only">{t(step.titleKey)}</span>
-                </li>
-              )
-            })}
-          </ol>
->>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
         </header>
 
         {/* Contact and Shipping details side-by-side on desktop */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {/* Step 1 — Customer */}
           <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-            <StepHeader
-              index={0}
-              total={DRAFT_STEPS.length}
-              state={hasCustomer ? 'done' : 'active'}
-              title={t(DRAFT_STEPS[0].titleKey)}
-              description={t(DRAFT_STEPS[0].descriptionKey)}
-            />
-            <div className="mt-5">
+            <div>
               {hasCustomer ? (
                 <CustomerInfoCard
                   name={order.customerName}
@@ -289,7 +134,7 @@ export function DraftView({
                   photoAssetId={order.customerPhotoAssetId}
                 />
               ) : (
-                <FormSection title={t('customerInfo')} titleHidden>
+                <FormSection title={t('customerInfo')}>
                   <FormGrid columns={1}>
                     <form.AppField
                       name="guestName"
@@ -327,14 +172,10 @@ export function DraftView({
 
           {/* Step 2 — Shipping */}
           <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-            <StepHeader
-              index={1}
-              total={DRAFT_STEPS.length}
-              state={hasAddress ? 'done' : 'active'}
-              title={t(DRAFT_STEPS[1].titleKey)}
-              description={t(DRAFT_STEPS[1].descriptionKey)}
-            />
-            <div className="mt-5">
+            <h2 className="text-base font-semibold tracking-tight text-foreground">
+              {t('shippingAddress')}
+            </h2>
+            <div className="mt-4">
               <FormSection title={t('shippingAddress')} titleHidden>
                 <form.AppField name="address">
                   {(field) => (
@@ -348,19 +189,10 @@ export function DraftView({
 
         {/* Step 3 — Items */}
         <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-          <StepHeader
-            index={2}
-            total={DRAFT_STEPS.length}
-            state={
-              itemsHaveContent &&
-              order.lineItems.every((li) => li.assetIds.length > 0)
-                ? 'done'
-                : 'active'
-            }
-            title={t(DRAFT_STEPS[2].titleKey)}
-            description={t(DRAFT_STEPS[2].descriptionKey)}
-          />
-          <div className="mt-5 space-y-4">
+          <h2 className="text-base font-semibold tracking-tight text-foreground">
+            {t('orderPillLabel')}
+          </h2>
+          <div className="mt-4 space-y-4">
             {order.lineItems.map((item, i) => (
               <div
                 key={item.id}
@@ -370,14 +202,7 @@ export function DraftView({
                   <div className="min-w-0">
                     <h3 className="text-sm font-semibold text-foreground">
                       {item.productName}
-<<<<<<< HEAD
                     </h3>
-                    <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-=======
-                    </p>
-                    <p className="truncate text-sm font-medium text-foreground">
-                      {item.productName}
-                    </p>
                     {getVisibleDesignName(
                       item.designName,
                       item.productName,
@@ -391,7 +216,6 @@ export function DraftView({
                       </p>
                     )}
                     <p className="text-xs text-muted-foreground tabular-nums">
->>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
                       {t('quantity')}: {item.quantity} ×{' '}
                       {formatCurrency(item.unitPrice, locale)}
                     </p>
@@ -431,8 +255,8 @@ export function DraftView({
         </section>
 
         {/* Submit footer */}
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6 space-y-5">
-          <div className="flex items-center justify-between border-b border-border/50 pb-4">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">
                 {t('orderTotal')}
@@ -441,29 +265,13 @@ export function DraftView({
                 {formatCurrency(order.total, locale)}
               </p>
             </div>
-            <p className="hidden text-right text-xs text-muted-foreground sm:block max-w-[240px]">
-              {t('draftSubmitHelp', { org: order.orgName })}
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <PortalContactButton
-              order={order}
-              label="chatOnWhatsApp"
-              className="w-full sm:w-auto"
-            />
-            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
-              <Button variant="outline" asChild className="w-full sm:w-auto">
-                <a href={`/order/${token}`}>{t('retry')}</a>
-              </Button>
-              <div className="w-full sm:w-auto">
-                <form.AppForm>
-                  <form.SubmitButton className="w-full sm:w-auto min-w-[140px]">
-                    {isSubmitting ? t('submitting') : t('submit')}
-                  </form.SubmitButton>
-                </form.AppForm>
-              </div>
-            </div>
+            <FormActions>
+              <form.AppForm>
+                <form.SubmitButton className="w-full sm:w-auto min-w-[140px]">
+                  {isSubmitting ? t('submitting') : t('submit')}
+                </form.SubmitButton>
+              </form.AppForm>
+            </FormActions>
           </div>
         </div>
       </div>

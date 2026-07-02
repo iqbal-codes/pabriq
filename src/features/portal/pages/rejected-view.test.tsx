@@ -12,7 +12,8 @@ const messages = {
     rejectedReasonEmpty: 'No reason provided.',
     rejectedAffectedItems: 'Affected items',
     rejectedNote: 'Reason: {note}',
-    rejectedHelp: 'Contact the seller to revise the order or confirm the next step.',
+    rejectedHelp:
+      'Contact the seller to revise the order or confirm the next step.',
     rejectedResubmitCta: 'Discuss with the seller',
     retry: 'Retry',
     contactAdmin: 'Contact Admin via WhatsApp',
@@ -45,7 +46,7 @@ const order = {
       id: 'li-1',
       taskId: 't1',
       taskNumber: 'TSK-1',
-      name: 'Custom T-Shirt',
+      designName: 'Custom T-Shirt',
       productName: 'T-Shirt',
       quantity: 10,
       unitPrice: 10000,

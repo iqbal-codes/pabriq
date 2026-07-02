@@ -54,6 +54,7 @@ const events: OrderTaskEvent[] = [
 
 const enMessages = {
   portal: {
+    timelineQueue: 'Queue',
     timelineQueued: 'Added to queue',
     timelineStarted: 'Started {stage}',
     timelineCompleted: '{stage} completed.',
@@ -71,10 +72,8 @@ describe('OrderTimeline', () => {
       </IntlProvider>,
     )
     expect(screen.getAllByText('TSK-1').length).toBe(3)
-    expect(screen.getByText('Started Design')).toBeInTheDocument()
-    expect(
-      screen.getByText('Design completed, started Production'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Queue → Design')).toBeInTheDocument()
+    expect(screen.getByText('Design → Production')).toBeInTheDocument()
     expect(screen.getByText('Requirements submitted')).toBeInTheDocument()
   })
 

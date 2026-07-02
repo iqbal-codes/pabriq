@@ -1,13 +1,10 @@
 import { AlertOctagon, CheckCircle2 } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { Button } from '#/components/ui/button'
-<<<<<<< HEAD
+import { getVisibleDesignName } from '#/features/orders/line-item-display'
 import { CustomerInfoCard } from '#/features/portal/components/customer-info-card'
 import { ShippingAddressCard } from '#/features/portal/components/shipping-address-card'
-=======
-import { getVisibleDesignName } from '#/features/orders/line-item-display'
 import { cn } from '#/lib/utils'
->>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
 import { PortalContactButton } from '../components/portal-contact-button'
 import { PortalOrderSummary } from '../components/portal-order-summary'
 import type { PortalOrder } from '../model'
@@ -51,8 +48,6 @@ export function RejectedView({ order }: { order: PortalOrder }) {
             </div>
           </div>
         </div>
-<<<<<<< HEAD
-=======
 
         <div className="px-5 py-5 sm:px-6">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -123,7 +118,6 @@ export function RejectedView({ order }: { order: PortalOrder }) {
             ) : null}
           </div>
         </div>
->>>>>>> 502307f (refactor: rename order item name to designName, resolve product name from products table)
       </section>
 
       {/* Seller Reason Card */}

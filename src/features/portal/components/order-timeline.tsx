@@ -1,8 +1,8 @@
-import { ArrowRight, CheckCircle2, Upload } from 'lucide-react'
+import { ArrowRight, CheckCircle2, File } from 'lucide-react'
 import { useLocale, useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
-import { cn } from '#/lib/utils'
 import { formatShortDate } from '#/lib/formatters'
+import { cn } from '#/lib/utils'
 import type { OrderTaskEvent } from '../model'
 
 type Props = {
@@ -37,7 +37,7 @@ function RequirementResponses({
   return (
     <div className="mt-2 space-y-2 rounded-lg bg-muted/50 p-3">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Upload className="size-3" />
+        <File className="size-3" />
         <span>{t('requirementsSubmitted')}</span>
       </div>
       {hasFiles && (
@@ -90,41 +90,26 @@ export function OrderTimeline({ events, className }: Props) {
     const fromName = event.fromStageName
     const toName = event.toStageName
 
+    const formattedFrom = fromName ?? t('timelineQueue')
+
     if (event.type === 'moved_to_stage' || event.type === 'stage_transition') {
       if (!fromName && !toName) {
         return t('timelineQueued')
       }
-      if (!fromName && toName) {
-        return t('timelineStarted', { stage: toName })
-      }
-      if (fromName && !toName) {
-        return t('timelineCompleted', { stage: fromName })
-      }
-      if (fromName && toName) {
-        return t('timelineTransition', { from: fromName, to: toName })
-      }
+      return `${formattedFrom} → ${toName ?? ''}`
     }
 
     switch (event.type) {
       case 'created':
         return t('timelineQueued')
       case 'completed':
-        return t('timelineProductionComplete')
+        return t('timelineCompleted')
       case 'approved_and_moved':
-        return toName
-          ? t('timelineTransition', {
-              from: fromName ?? t('timelineStageFallback'),
-              to: toName,
-            })
-          : t('timelineCompleted', {
-              stage: fromName ?? t('timelineStageFallback'),
-            })
       case 'board_transition':
-        return toName
-          ? t('timelineBoardTransition', { stage: toName })
-          : t('timelineStarted', {
-              stage: fromName ?? t('timelineStageFallback'),
-            })
+        if (toName) {
+          return `${formattedFrom} → ${toName}`
+        }
+        return toName ?? fromName ?? ''
       default:
         return event.type
     }

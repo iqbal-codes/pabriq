@@ -17,6 +17,7 @@ import {
   taskActivity,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
+import { normalizeDesignName } from '#/features/orders/line-item-display'
 import { addWorkingDays } from '#/lib/date-utils'
 
 export type PortalAsset = {
@@ -520,7 +521,6 @@ export async function confirmPortalOrder(
         }
       }
 
-
       await tx
         .update(orders)
         .set({
@@ -781,7 +781,7 @@ function extractActivityIndexes(activities: ActivityRow[]): ActivityIndexes {
 function buildTimelineEvents(params: {
   tasks: TimelineTaskRow[]
   stageNameMap: Map<string, string>
-  stageReqMap: Map<string, Array<{ name: string; type: string }>>
+  stageReqMap: Map<string, Array<{ id: string; label: string; type: string }>>
   activityIndexes: ActivityIndexes
   activitiesByTaskId: Map<string, ActivityRow[]>
 }): OrderTaskEvent[] {
@@ -835,22 +835,30 @@ function buildTimelineEvents(params: {
         continue
       }
 
-      const toStageId = trans.toStageId ?? ''
-      const stageReqs = stageReqMap.get(toStageId) ?? []
+      const fromStageId = trans.fromStageId ?? ''
+      // Look up requirements for the SOURCE stage (where work was done)
+      const stageReqs = stageReqMap.get(fromStageId) ?? []
       const activityData = trans.data as Record<string, unknown> | null
-      const requirementResponses = activityData?.responses as Array<{
-        requirementIndex: number
-        value?: string
-        assetIds?: string[]
-      }> | null
+      // First try activity data, then fall back to task.context for existing tasks
+      let requirementResponses = activityData?.responses as Record<
+        string,
+        { value?: string; assetIds?: string[] }
+      > | null
+      if (
+        !requirementResponses ||
+        Object.keys(requirementResponses).length === 0
+      ) {
+        const taskContext = task.context as Record<string, unknown> | null
+        requirementResponses = taskContext?.requirementResponses as Record<
+          string,
+          { value?: string; assetIds?: string[] }
+        > | null
+      }
 
-      const responseMap = new Map(
-        (requirementResponses ?? []).map((r) => [r.requirementIndex, r]),
-      )
-      const formattedResponses = stageReqs.map((req, idx) => {
-        const response = responseMap.get(idx)
+      const formattedResponses = stageReqs.map((req) => {
+        const response = requirementResponses?.[req.id]
         return {
-          requirementName: req.name,
+          requirementName: req.label,
           value: response?.value as string | undefined,
           assetIds: response?.assetIds as string[] | undefined,
         }
@@ -878,8 +886,8 @@ function buildTimelineEvents(params: {
           ? [
               {
                 stageName:
-                  stageNameMap.get(toStageId) ??
-                  trans.toStageId ??
+                  stageNameMap.get(fromStageId) ??
+                  trans.fromStageId ??
                   'Unknown Stage',
                 responses: formattedResponses,
               },
@@ -900,6 +908,38 @@ function buildTimelineEvents(params: {
       const activityData = trans.data as Record<string, unknown> | null
       const fromBoard = activityData?.fromBoard as string | undefined
       const toBoard = activityData?.toBoard as string | undefined
+      const fromStageId = trans.fromStageId ?? ''
+
+      // Look up requirements for the SOURCE stage (where work was done)
+      const stageReqs = stageReqMap.get(fromStageId) ?? []
+      // First try activity data, then fall back to task.context for existing tasks
+      let requirementResponses = activityData?.responses as Record<
+        string,
+        { value?: string; assetIds?: string[] }
+      > | null
+      if (
+        !requirementResponses ||
+        Object.keys(requirementResponses).length === 0
+      ) {
+        const taskContext = task.context as Record<string, unknown> | null
+        requirementResponses = taskContext?.requirementResponses as Record<
+          string,
+          { value?: string; assetIds?: string[] }
+        > | null
+      }
+
+      const formattedResponses = stageReqs.map((req) => {
+        const response = requirementResponses?.[req.id]
+        return {
+          requirementName: req.label,
+          value: response?.value as string | undefined,
+          assetIds: response?.assetIds as string[] | undefined,
+        }
+      })
+
+      const hasResponses = formattedResponses.some(
+        (r) => r.value || (r.assetIds && r.assetIds.length > 0),
+      )
 
       events.push({
         id: trans.id,
@@ -915,6 +955,17 @@ function buildTimelineEvents(params: {
           ? (stageNameMap.get(trans.toStageId) ?? null)
           : null,
         createdAt: trans.createdAt,
+        requirementResponses: hasResponses
+          ? [
+              {
+                stageName:
+                  stageNameMap.get(fromStageId) ??
+                  trans.fromStageId ??
+                  'Unknown Stage',
+                responses: formattedResponses,
+              },
+            ]
+          : undefined,
         metadata: {
           fromBoard: fromBoard ?? null,
           toBoard: toBoard ?? null,
@@ -922,7 +973,67 @@ function buildTimelineEvents(params: {
       })
     }
     // Add completed event if task is completed
+    // Add completed event if task is completed
     if (task.status === 'completed') {
+      let requirementResponsesData:
+        | Array<{
+            stageName: string
+            responses: Array<{
+              requirementName: string
+              value?: string
+              assetIds?: string[]
+            }>
+          }>
+        | undefined
+
+      if (lastTransition) {
+        const fromStageId = lastTransition.fromStageId ?? ''
+        const stageReqs = stageReqMap.get(fromStageId) ?? []
+        const activityData = lastTransition.data as Record<
+          string,
+          unknown
+        > | null
+        let requirementResponses = activityData?.responses as Record<
+          string,
+          { value?: string; assetIds?: string[] }
+        > | null
+        if (
+          !requirementResponses ||
+          Object.keys(requirementResponses).length === 0
+        ) {
+          const taskContext = task.context as Record<string, unknown> | null
+          requirementResponses = taskContext?.requirementResponses as Record<
+            string,
+            { value?: string; assetIds?: string[] }
+          > | null
+        }
+
+        const formattedResponses = stageReqs.map((req) => {
+          const response = requirementResponses?.[req.id]
+          return {
+            requirementName: req.label,
+            value: response?.value as string | undefined,
+            assetIds: response?.assetIds as string[] | undefined,
+          }
+        })
+
+        const hasResponses = formattedResponses.some(
+          (r) => r.value || (r.assetIds && r.assetIds.length > 0),
+        )
+
+        if (hasResponses) {
+          requirementResponsesData = [
+            {
+              stageName: lastTransition.fromStageId
+                ? (stageNameMap.get(lastTransition.fromStageId) ??
+                  'Unknown Stage')
+                : 'Unknown Stage',
+              responses: formattedResponses,
+            },
+          ]
+        }
+      }
+
       events.push({
         id: lastTransition
           ? `completed-${lastTransition.id}`
@@ -932,9 +1043,12 @@ function buildTimelineEvents(params: {
         taskNumber: task.taskNumber ?? null,
         productName,
         type: 'completed',
-        fromStageName: null,
+        fromStageName: lastTransition?.fromStageId
+          ? (stageNameMap.get(lastTransition.fromStageId) ?? null)
+          : null,
         toStageName: null,
         createdAt: lastTransition?.createdAt ?? new Date(),
+        requirementResponses: requirementResponsesData,
       })
     } else if (completedActivity) {
       events.push({
@@ -970,10 +1084,14 @@ export async function getOrderTasksTimeline(
     .from(productionStages)
     .where(eq(productionStages.orgId, orderResult.order.orgId))
   const stageNameMap = new Map(allStages.map((s) => [s.id, s.name]))
-  const stageReqMap = new Map<string, Array<{ name: string; type: string }>>()
+  const stageReqMap = new Map<
+    string,
+    Array<{ id: string; label: string; type: string }>
+  >()
   for (const stage of allStages) {
     const requirements = stage.requirements as unknown as Array<{
-      name: string
+      id: string
+      label: string
       type: string
     }> | null
     if (requirements && requirements.length > 0) {

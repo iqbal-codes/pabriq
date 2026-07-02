@@ -613,8 +613,8 @@ describe('getOrderTasksTimeline', () => {
       orderIndex: 0,
       active: true,
       requirements: [
-        { name: 'Design File', type: 'file' },
-        { name: 'Color Code', type: 'text' },
+        { id: 'req-design', label: 'Design File', type: 'upload', required: false },
+        { id: 'req-color', label: 'Color Code', type: 'text', required: false },
       ],
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -658,10 +658,10 @@ describe('getOrderTasksTimeline', () => {
         fromStageId: null,
         toStageId: stage1Id,
         data: {
-          responses: [
-            { requirementIndex: 0, assetIds: ['asset-abc'] },
-            { requirementIndex: 1, value: '#FF0000' },
-          ],
+          responses: {
+            'req-design': { assetIds: ['asset-abc'] },
+            'req-color': { value: '#FF0000' },
+          },
         },
         actorId: 'system',
         createdAt: new Date('2026-01-15T08:01:00Z'),
