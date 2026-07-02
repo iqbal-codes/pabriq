@@ -796,6 +796,10 @@ export type Messages = {
     nextStepDelivery: string;
     nextStepCompleted: string;
     estimatedCompletionLabel: string;
+    completedOnLabel: string;
+    orderInfoName: string;
+    orderInfoPhone: string;
+    orderInfoAddress: string;
     estimatedCompletionUnavailable: string;
     paymentSummary: string;
     paymentSummaryNoInvoice: string;
