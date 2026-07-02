@@ -55,7 +55,9 @@ export function useOrderDerivedState(params: {
   const allTasksCompleted =
     tasksData?.every((t) => t.task.status === 'completed') ?? true
   const canCompleteProduction =
-    orderStatus === 'in_progress' && allTasksCompleted && !hasFinalInvoice
+    (orderStatus === 'in_progress' || orderStatus === 'approved') &&
+    allTasksCompleted &&
+    !hasFinalInvoice
 
   // Check if all non-void invoices are paid
   const activeInvoices = orderInvoices.filter((inv) => inv.status !== 'void')

@@ -2,12 +2,17 @@ import { useEffect, useMemo } from 'react'
 import { useTranslations } from 'use-intl'
 import { FormGrid, withForm } from '#/components/app/form'
 import { formatNumber } from '#/components/app/form/form-utils'
-import { Switch } from '#/components/ui/switch'
 import { Skeleton } from '#/components/ui/skeleton'
-import { useCalculateProductPrice, useProductAddons } from '#/features/products/hooks'
+import { Switch } from '#/components/ui/switch'
+import {
+  useCalculateProductPrice,
+  useProductAddons,
+} from '#/features/products/hooks'
 import type { ProductRow } from '#/features/products/model'
 import type { OrderFormValues } from './order-form-types'
 import { defaultOrderValues } from './order-form-types'
+
+const PRICE_RECALCULATION_DEBOUNCE_MS = 300
 
 export const OrderLineItemRow = withForm({
   defaultValues: defaultOrderValues(),
@@ -18,7 +23,8 @@ export const OrderLineItemRow = withForm({
   },
   render: function Render({ form, index, item, products }) {
     const t = useTranslations('orders')
-    const calculateProductPrice = useCalculateProductPrice()
+    const { isPending: isCalculatingPrice, mutateAsync: calculatePrice } =
+      useCalculateProductPrice()
 
     const product = useMemo(
       () => products.find((p) => p.id === item.productId),
@@ -37,6 +43,7 @@ export const OrderLineItemRow = withForm({
     )
 
     const isNegotiated =
+      !item.isRepeatOrder &&
       product?.negotiateAboveQuantity != null &&
       parseInt(item.quantity, 10) > product.negotiateAboveQuantity
 
@@ -50,32 +57,52 @@ export const OrderLineItemRow = withForm({
     const qtyNum = parseInt(item.quantity, 10) || 0
     const priceNum = parseFloat(item.unitPrice) || 0
     const subtotal = qtyNum * priceNum
+    const addonIdsKey = item.addonIds.join(',')
+    const selectedAddonIds = useMemo(
+      () => (addonIdsKey ? addonIdsKey.split(',') : undefined),
+      [addonIdsKey],
+    )
 
-    const recalculatePrice = async (quantity: number) => {
-      if (!item.productId || quantity <= 0) return
-      const result = await calculateProductPrice.mutateAsync({
-        productId: item.productId,
-        quantity,
-        pricingMode: product?.pricingMode,
-        isRepeatOrder: item.isRepeatOrder,
-        addonIds: item.addonIds.length > 0 ? item.addonIds : undefined,
-      })
-      if (result.ok && String(result.unitPrice) !== item.unitPrice) {
-        form.setFieldValue(
-          `lineItems[${index}].unitPrice`,
-          String(result.unitPrice),
-        )
-      }
-    }
-    // Recalculate price when addons change
     useEffect(() => {
-      const qty = parseInt(item.quantity, 10) || 0
-      if (item.productId && qty > 0 && addonOptions.length > 0) {
-        recalculatePrice(qty)
+      let isCurrent = true
+
+      const timer = window.setTimeout(() => {
+        async function updatePrice(): Promise<void> {
+          if (!item.productId || qtyNum <= 0) return
+
+          const result = await calculatePrice({
+            productId: item.productId,
+            quantity: qtyNum,
+            pricingMode: product?.pricingMode,
+            isRepeatOrder: item.isRepeatOrder,
+            addonIds: selectedAddonIds,
+          })
+
+          if (isCurrent && result.ok) {
+            form.setFieldValue(
+              `lineItems[${index}].unitPrice`,
+              String(result.unitPrice),
+            )
+          }
+        }
+
+        updatePrice()
+      }, PRICE_RECALCULATION_DEBOUNCE_MS)
+
+      return () => {
+        isCurrent = false
+        window.clearTimeout(timer)
       }
-      // Only trigger on addonIds changes
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [item.addonIds.join(',')])
+    }, [
+      calculatePrice,
+      form,
+      index,
+      item.isRepeatOrder,
+      item.productId,
+      product?.pricingMode,
+      qtyNum,
+      selectedAddonIds,
+    ])
 
     return (
       <div className="space-y-3 rounded-lg border p-4">
@@ -118,7 +145,7 @@ export const OrderLineItemRow = withForm({
               {(field) => (
                 <field.NumberField
                   label={t('quantity')}
-                  onBlurValue={async ({ rawValue }) => {
+                  onBlurValue={({ rawValue }) => {
                     const quantity = rawValue ? Number(rawValue) : 0
                     if (item.productId && quantity > 0) {
                       // Handle manual deadline
@@ -140,12 +167,8 @@ export const OrderLineItemRow = withForm({
                           `lineItems[${index}].manualDeadline`,
                           false,
                         )
-                        form.setFieldValue(
-                          `lineItems[${index}].deadline`,
-                          '',
-                        )
+                        form.setFieldValue(`lineItems[${index}].deadline`, '')
                       }
-                      await recalculatePrice(quantity)
                     }
                   }}
                 />
@@ -165,7 +188,7 @@ export const OrderLineItemRow = withForm({
             ) : (
               <div className="flex flex-col flex-1 mt-1">
                 <span className="text-sm font-medium">{t('unitPrice')}</span>
-                {calculateProductPrice.isPending ? (
+                {isCalculatingPrice ? (
                   <Skeleton className="mt-1 h-9 w-full" />
                 ) : (
                   <p className="mt-1 rounded-md border bg-muted px-3 py-2 text-sm h-9">
@@ -184,15 +207,8 @@ export const OrderLineItemRow = withForm({
           </div>
           <Switch
             checked={item.isRepeatOrder}
-            onCheckedChange={async (checked) => {
-              form.setFieldValue(
-                `lineItems[${index}].isRepeatOrder`,
-                checked,
-              )
-              const quantity = parseInt(item.quantity, 10) || 0
-              if (quantity > 0) {
-                await recalculatePrice(quantity)
-              }
+            onCheckedChange={(checked) => {
+              form.setFieldValue(`lineItems[${index}].isRepeatOrder`, checked)
             }}
           />
         </div>

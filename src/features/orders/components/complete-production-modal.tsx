@@ -1,5 +1,4 @@
 import { Truck } from 'lucide-react'
-import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import {
@@ -49,9 +48,6 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
   const completeProduction = useCompleteProduction()
   const { data: paymentMethods } = usePaymentMethods()
 
-  const [showShippingDesc, setShowShippingDesc] = useState(false)
-  const [shippingFeeRaw, setShippingFeeRaw] = useState('')
-
   const paymentMethodOptions = (paymentMethods ?? []).map((pm) => ({
     value: pm.id,
     label: pm.name,
@@ -61,7 +57,7 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
     defaultValues: {
       courier: '',
       trackingNumber: '',
-      shippingFee: '',
+      shippingFee: 0,
       shippingFeeDescription: 'Shipping Fee',
       paymentMethodId: '',
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
@@ -75,7 +71,7 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
         return
       }
 
-      const shippingAmount = Number.parseFloat(value.shippingFee) || 0
+      const shippingAmount = value.shippingFee || 0
       const invoiceTotal = order.remainingAmount + shippingAmount
 
       if (invoiceTotal <= 0) {
@@ -104,9 +100,6 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
     },
   })
 
-  const shippingAmount = Number.parseFloat(shippingFeeRaw) || 0
-  const invoiceTotal = order.remainingAmount + shippingAmount
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
@@ -128,75 +121,81 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
         </div>
 
         <FormRoot form={form}>
-          <ShipmentDetailsSection
-            form={form as unknown as CompleteProductionForm}
-            order={order}
-            labels={{
-              title: t('shipmentDetails'),
-              address: t('shipmentAddress'),
-              courier: t('courier'),
-              courierPlaceholder: t('courierPlaceholder'),
-              trackingNumber: t('trackingNumber'),
-              trackingNumberPlaceholder: t('trackingNumberPlaceholder'),
-              shippingFee: t('shipmentFee'),
-              optional: t('optional'),
-              shippingFeeDescription: t('shippingFeeDescription'),
-              shippingFeeDescriptionPlaceholder: t(
-                'shippingFeeDescriptionPlaceholder',
-              ),
-            }}
-            shippingFeeRaw={shippingFeeRaw}
-            setShippingFeeRaw={setShippingFeeRaw}
-            showShippingDescription={showShippingDesc}
-            setShowShippingDescription={setShowShippingDesc}
-          />
+          <form.Subscribe selector={(state) => state.values.shippingFee}>
+            {(shippingFee) => {
+              const shippingAmount = shippingFee || 0
+              const invoiceTotal = order.remainingAmount + shippingAmount
 
-          {/* Payment Details */}
-          <FormSection title={t('payment')}>
-            <FormGrid columns={1}>
-              <form.AppField name="paymentMethodId">
-                {(field) => (
-                  <field.SelectField
-                    label={it('paymentMethod')}
-                    options={paymentMethodOptions}
-                    placeholder={it('paymentMethod')}
+              return (
+                <>
+                  <ShipmentDetailsSection
+                    form={form as unknown as CompleteProductionForm}
+                    order={order}
+                    labels={{
+                      title: t('shipmentDetails'),
+                      address: t('shipmentAddress'),
+                      courier: t('courier'),
+                      courierPlaceholder: t('courierPlaceholder'),
+                      trackingNumber: t('trackingNumber'),
+                      trackingNumberPlaceholder: t('trackingNumberPlaceholder'),
+                      shippingFee: t('shipmentFee'),
+                      optional: t('optional'),
+                      shippingFeeDescription: t('shippingFeeDescription'),
+                      shippingFeeDescriptionPlaceholder: t(
+                        'shippingFeeDescriptionPlaceholder',
+                      ),
+                    }}
+                    shippingAmount={shippingAmount}
                   />
-                )}
-              </form.AppField>
 
-              <form.AppField name="dueDate">
-                {(field) => <field.TextField label={it('dueDate')} />}
-              </form.AppField>
+                  {/* Payment Details */}
+                  <FormSection title={t('payment')}>
+                    <FormGrid columns={1}>
+                      <form.AppField name="paymentMethodId">
+                        {(field) => (
+                          <field.SelectField
+                            label={it('paymentMethod')}
+                            options={paymentMethodOptions}
+                            placeholder={it('paymentMethod')}
+                          />
+                        )}
+                      </form.AppField>
 
-              <form.AppField name="notes">
-                {(field) => <field.TextareaField label={it('notes')} />}
-              </form.AppField>
-            </FormGrid>
-          </FormSection>
+                      <form.AppField name="notes">
+                        {(field) => <field.TextareaField label={it('notes')} />}
+                      </form.AppField>
+                    </FormGrid>
+                  </FormSection>
 
-          <FinalInvoicePreview
-            order={order}
-            shippingAmount={shippingAmount}
-            invoiceTotal={invoiceTotal}
-            labels={{
-              title: t('finalInvoice'),
-              orderTotal: t('orderTotal'),
-              alreadyPaid: t('alreadyPaid'),
-              remainingPayment: t('remainingPayment'),
-              shippingFee: t('shipmentFee'),
-              total: t('total'),
+                  <FinalInvoicePreview
+                    order={order}
+                    shippingAmount={shippingAmount}
+                    invoiceTotal={invoiceTotal}
+                    labels={{
+                      title: t('finalInvoice'),
+                      orderTotal: t('orderTotal'),
+                      alreadyPaid: t('alreadyPaid'),
+                      remainingPayment: t('remainingPayment'),
+                      shippingFee: t('shipmentFee'),
+                      total: t('total'),
+                    }}
+                  />
+
+                  <FormActions>
+                    <form.AppForm>
+                      <form.SubmitButton
+                        disabled={
+                          completeProduction.isPending || invoiceTotal <= 0
+                        }
+                      >
+                        {t('createInvoiceAndShip')}
+                      </form.SubmitButton>
+                    </form.AppForm>
+                  </FormActions>
+                </>
+              )
             }}
-          />
-
-          <FormActions>
-            <form.AppForm>
-              <form.SubmitButton
-                disabled={completeProduction.isPending || invoiceTotal <= 0}
-              >
-                {t('createInvoiceAndShip')}
-              </form.SubmitButton>
-            </form.AppForm>
-          </FormActions>
+          </form.Subscribe>
         </FormRoot>
       </DialogContent>
     </Dialog>

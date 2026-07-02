@@ -152,3 +152,41 @@ describe('useOrderDerivedState.canCompleteOrder', () => {
     expect(state.canCompleteOrder).toBe(true)
   })
 })
+
+describe('useOrderDerivedState.canCompleteProduction', () => {
+  it('is true for in_progress order with all tasks completed', () => {
+    const state = derive(
+      makeOrder('in_progress'),
+      [],
+      [{ task: { status: 'completed' } }],
+    )
+    expect(state.canCompleteProduction).toBe(true)
+  })
+
+  it('is true for approved order with all tasks completed (non-linear flow)', () => {
+    const state = derive(
+      makeOrder('approved'),
+      [],
+      [{ task: { status: 'completed' } }],
+    )
+    expect(state.canCompleteProduction).toBe(true)
+  })
+
+  it('is false for approved order with incomplete tasks', () => {
+    const state = derive(
+      makeOrder('approved'),
+      [],
+      [{ task: { status: 'in_progress' } }],
+    )
+    expect(state.canCompleteProduction).toBe(false)
+  })
+
+  it('is false when a final invoice already exists', () => {
+    const state = derive(
+      makeOrder('in_progress'),
+      [makeInvoice('i1', 'paid', 100, 1_000_000)],
+      [{ task: { status: 'completed' } }],
+    )
+    expect(state.canCompleteProduction).toBe(false)
+  })
+})

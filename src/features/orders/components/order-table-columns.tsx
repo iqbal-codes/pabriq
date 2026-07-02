@@ -4,8 +4,11 @@ import type {
   AppColumnDef,
   DataTableFiltersConfig,
 } from '#/components/app/data-table'
-import { StatusBadge } from '#/components/status-badge'
 import { Badge } from '#/components/ui/badge'
+import {
+  getOrderStatusLabel,
+  OrderStatusBadge,
+} from '#/features/orders/components/order-status-badge'
 import type { OrderRow } from '#/features/orders/model'
 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
@@ -80,7 +83,7 @@ export function getOrderColumns(t: TranslationFn): AppColumnDef<OrderRow>[] {
       accessorKey: 'status',
       header: t('status'),
       meta: { label: t('status'), mobileRole: 'badge' },
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      cell: ({ row }) => <OrderStatusBadge status={row.original.status} />,
     },
     {
       accessorKey: 'total',
@@ -185,15 +188,15 @@ export function getOrderColumns(t: TranslationFn): AppColumnDef<OrderRow>[] {
 
 export function getOrderStatusOptions(st: TranslationFn) {
   return [
-    { value: 'draft', label: st('draft') },
-    { value: 'pending', label: st('pending') },
-    { value: 'approved', label: st('approved') },
-    { value: 'in_progress', label: st('in_progress') },
-    { value: 'production', label: st('production') },
-    { value: 'in_delivery', label: st('in_delivery') },
-    { value: 'completed', label: st('completed') },
-    { value: 'cancelled', label: st('cancelled') },
-    { value: 'rejected', label: st('rejected') },
+    { value: 'draft', label: getOrderStatusLabel(st, 'draft') },
+    { value: 'pending', label: getOrderStatusLabel(st, 'pending') },
+    { value: 'approved', label: getOrderStatusLabel(st, 'approved') },
+    { value: 'in_progress', label: getOrderStatusLabel(st, 'in_progress') },
+    { value: 'production', label: getOrderStatusLabel(st, 'production') },
+    { value: 'in_delivery', label: getOrderStatusLabel(st, 'in_delivery') },
+    { value: 'completed', label: getOrderStatusLabel(st, 'completed') },
+    { value: 'cancelled', label: getOrderStatusLabel(st, 'cancelled') },
+    { value: 'rejected', label: getOrderStatusLabel(st, 'rejected') },
   ]
 }
 

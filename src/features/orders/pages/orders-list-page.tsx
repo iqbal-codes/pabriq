@@ -26,7 +26,6 @@ export function OrdersListPage() {
   }
   const t = useTranslations('orders')
   const dt = useTranslations('dataTable')
-  const st = useTranslations('status')
 
   const {
     search,
@@ -81,8 +80,8 @@ export function OrdersListPage() {
   }, [setSearch, setStatusFilter, resetPage])
 
   const statusOptions = useMemo(
-    () => getOrderStatusOptions(st as TranslationFn),
-    [st],
+    () => getOrderStatusOptions(t as TranslationFn),
+    [t],
   )
 
   const filtersConfig = useMemo(

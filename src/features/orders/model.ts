@@ -140,6 +140,7 @@ export type OrderRow = {
 
 export type ListOrdersParams = {
   orgId: string
+  customerId?: string
   search?: string
   status?: string
   sort?: SortState | null
@@ -321,6 +322,10 @@ export async function listOrders(
 
   if (params.status) {
     conditions.push(eq(ordersTable.status, params.status))
+  }
+
+  if (params.customerId) {
+    conditions.push(eq(ordersTable.customerId, params.customerId))
   }
 
   const allConditions = and(...conditions) as SQL

@@ -1,8 +1,6 @@
 import { Truck } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { FormGrid, FormSection } from '#/components/app/form'
-import { Input } from '#/components/ui/input'
-import { Label } from '#/components/ui/label'
 import type { ShippingAddress } from '#/features/address/model'
 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
@@ -23,9 +21,14 @@ export interface CompleteProductionForm {
         label: string
         placeholder?: string
       }>
+      NumberField: React.ComponentType<{
+        label: string
+        placeholder?: string
+        optional?: boolean
+        optionalLabel?: string
+      }>
     }) => ReactNode
   }>
-  setFieldValue: (name: string, value: string) => void
 }
 
 type ShipmentDetailsSectionProps = {
@@ -43,20 +46,14 @@ type ShipmentDetailsSectionProps = {
     shippingFeeDescription: string
     shippingFeeDescriptionPlaceholder: string
   }
-  shippingFeeRaw: string
-  setShippingFeeRaw: (value: string) => void
-  showShippingDescription: boolean
-  setShowShippingDescription: (value: boolean) => void
+  shippingAmount: number
 }
 
 export function ShipmentDetailsSection({
   form,
   order,
   labels,
-  shippingFeeRaw,
-  setShippingFeeRaw,
-  showShippingDescription,
-  setShowShippingDescription,
+  shippingAmount,
 }: ShipmentDetailsSectionProps) {
   return (
     <FormSection title={labels.title}>
@@ -91,29 +88,18 @@ export function ShipmentDetailsSection({
           )}
         </form.AppField>
 
-        <div>
-          <Label htmlFor="shippingFee" className="text-sm font-medium">
-            {labels.shippingFee}{' '}
-            <span className="text-muted-foreground font-normal">
-              {labels.optional}
-            </span>
-          </Label>
-          <Input
-            id="shippingFee"
-            type="number"
-            value={shippingFeeRaw}
-            onChange={(e) => {
-              setShippingFeeRaw(e.target.value)
-              form.setFieldValue('shippingFee', e.target.value)
-              setShowShippingDescription(Number.parseFloat(e.target.value) > 0)
-            }}
-            placeholder="0"
-            min={0}
-            className="mt-1"
-          />
-        </div>
+        <form.AppField name="shippingFee">
+          {(field) => (
+            <field.NumberField
+              label={labels.shippingFee}
+              optional
+              optionalLabel={` ${labels.optional}`}
+              placeholder="0"
+            />
+          )}
+        </form.AppField>
 
-        {showShippingDescription && (
+        {shippingAmount > 0 && (
           <form.AppField name="shippingFeeDescription">
             {(field) => (
               <field.TextField

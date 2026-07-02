@@ -27,31 +27,22 @@ function LineItemRow({
   orderId: string
 }) {
   const { data: assets } = useQuery({
-    queryKey: ['order-assets', item.id],
-    queryFn: () =>
-      getAssetsForLineItemFn({ data: { lineItemId: item.id, orgId } }),
+    queryKey: ['line-item-assets', item.id],
+    queryFn: () => getAssetsForLineItemFn({ data: { lineItemId: item.id, orgId } }),
   })
   const t = useTranslations('production')
   const task = useTaskByLineItemId(item.id, orderId)
 
+  const visibleDesign = getVisibleDesignName(item.designName, item.productName)
+
   return (
-    <div className="rounded-lg border p-4 space-y-2">
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          <p className="font-medium">{item.productName}</p>
-          {getVisibleDesignName(item.designName, item.productName) && (
-            <p className="text-xs text-muted-foreground">
-              Design: {getVisibleDesignName(item.designName, item.productName)}
-            </p>
-          )}
-          <p className="text-sm text-muted-foreground">
-            {item.quantity} × {currencyFormatter.format(item.unitPrice)}
-          </p>
-        </div>
+    <div className="group flex items-start gap-4 px-4 py-3 transition-colors hover:bg-muted/30">
+      {/* Left: product info */}
+      <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="font-medium">{currencyFormatter.format(item.total)}</p>
+          <p className="truncate font-medium text-sm">{item.productName}</p>
           {task && (
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="shrink-0 text-[11px]">
               {task.stage?.name ??
                 t(
                   task.task.status === 'queued'
@@ -63,24 +54,37 @@ function LineItemRow({
             </Badge>
           )}
         </div>
-      </div>
-      {item.notes && (
-        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-          {item.notes}
+        {visibleDesign && (
+          <p className="mt-0.5 text-xs text-muted-foreground truncate">
+            {visibleDesign}
+          </p>
+        )}
+        <p className="mt-1 text-xs tabular-nums text-muted-foreground">
+          {item.quantity} &times; {currencyFormatter.format(item.unitPrice)}
         </p>
-      )}
-      {assets && assets.length > 0 && (
-        <div className="flex gap-2 mt-2">
-          {assets.map((asset: { id: string }) => (
-            <AssetImage
-              key={asset.id}
-              assetId={asset.id}
-              assetKind="image"
-              className="size-16 rounded object-cover"
-            />
-          ))}
-        </div>
-      )}
+        {item.notes && (
+          <p className="mt-1.5 text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">
+            {item.notes}
+          </p>
+        )}
+        {assets && assets.length > 0 && (
+          <div className="mt-2 flex gap-1.5">
+            {assets.map((asset: { id: string }) => (
+              <AssetImage
+                key={asset.id}
+                assetId={asset.id}
+                assetKind="image"
+                className="size-12 rounded-md object-cover ring-1 ring-border"
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Right: total */}
+      <p className="shrink-0 font-semibold text-sm tabular-nums">
+        {currencyFormatter.format(item.total)}
+      </p>
     </div>
   )
 }
@@ -105,21 +109,37 @@ export function OrderLineItemsCard({
 }) {
   const t = useTranslations('orders')
 
+  const grandTotal = lineItems.reduce((sum, item) => sum + item.total, 0)
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{t('lineItems')}</CardTitle>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">{t('lineItems')}</CardTitle>
+          <span className="text-xs text-muted-foreground">
+            {lineItems.length} {lineItems.length === 1 ? 'item' : 'items'}
+          </span>
+        </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {lineItems.map((item) => (
-            <LineItemRow
-              key={item.id}
-              item={item}
-              orgId={orgId}
-              orderId={orderId}
-            />
-          ))}
+      <CardContent className="p-0 pb-4">
+        <div className="mx-4 rounded-xl border bg-muted/50 p-1.5">
+          <div className="rounded-lg border bg-background overflow-hidden divide-y divide-border">
+            {lineItems.map((item) => (
+              <LineItemRow
+                key={item.id}
+                item={item}
+                orgId={orgId}
+                orderId={orderId}
+              />
+            ))}
+          </div>
+        </div>
+        {/* Grand total */}
+        <div className="mx-4 mt-3 flex items-center justify-end gap-4">
+          <p className="text-sm text-muted-foreground">{t('total')}</p>
+          <p className="text-lg font-bold tabular-nums">
+            {currencyFormatter.format(grandTotal)}
+          </p>
         </div>
       </CardContent>
     </Card>

@@ -246,8 +246,14 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
     if (orderRows.length === 0) throw new Error('Order not found')
     const order = orderRows[0]
 
-    if (order.status !== 'in_progress') {
+    if (order.status !== 'in_progress' && order.status !== 'approved') {
       return { ok: false, error: 'Order is not in progress' }
+    }
+
+    // Auto-advance from approved → in_progress if all tasks are already done
+    if (order.status === 'approved') {
+      const { advanceOrderStatus } = await import('./model')
+      await advanceOrderStatus(data.id, orgId, 'system')
     }
 
     // Get customer info
