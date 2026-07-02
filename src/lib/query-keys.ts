@@ -51,6 +51,7 @@ export const queryKeys = {
       orgId: string
       status?: string
       q?: string
+      sort?: { field: string; direction: 'asc' | 'desc' } | null
       page?: number
       perPage?: number
     }) => [...queryKeys.invoices.lists(), filters] as const,
@@ -94,6 +95,7 @@ export const queryKeys = {
       orgId: string
       board?: string
       search?: string
+      sort?: { field: string; direction: 'asc' | 'desc' } | null
       page?: number
       perPage?: number
     }) => [...queryKeys.production.all, 'archived', filters] as const,

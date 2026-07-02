@@ -461,6 +461,101 @@ describe('listInvoices', () => {
     const byInv = await listInvoices({ orgId: org1Id, q: 'INV-' })
     expect(byInv.rows).toHaveLength(1)
   })
+
+  it('sorts invoices by due date', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values([
+      {
+        id: 'inv-sort-cust',
+        orgId: org1Id,
+        name: 'Sort Customer',
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(paymentMethodsTable).values([
+      {
+        id: 'inv-sort-pm',
+        orgId: org1Id,
+        name: 'BCA',
+        type: 'bank_transfer',
+        isDefault: true,
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    // Create 3 invoices with distinct due dates and reversed creation order
+    // Due dates: Jan, Mar, Feb; createdAt: newest→oldest (Feb, Mar, Jan)
+    // So default order (createdAt DESC) would give Feb, Mar, Jan
+    await db.insert(invoicesTable).values([
+      {
+        id: 'inv-feb',
+        orgId: org1Id,
+        invoiceNumber: 'INV-2026-FEB',
+        customerId: 'inv-sort-cust',
+        customerName: 'Sort Customer',
+        status: 'unpaid',
+        subtotal: 100,
+        total: 100,
+        dueDate: '2026-02-10',
+        createdAt: new Date('2026-06-03'),
+        updatedAt: now,
+      },
+      {
+        id: 'inv-mar',
+        orgId: org1Id,
+        invoiceNumber: 'INV-2026-MAR',
+        customerId: 'inv-sort-cust',
+        customerName: 'Sort Customer',
+        status: 'unpaid',
+        subtotal: 100,
+        total: 100,
+        dueDate: '2026-03-10',
+        createdAt: new Date('2026-06-02'),
+        updatedAt: now,
+      },
+      {
+        id: 'inv-jan',
+        orgId: org1Id,
+        invoiceNumber: 'INV-2026-JAN',
+        customerId: 'inv-sort-cust',
+        customerName: 'Sort Customer',
+        status: 'unpaid',
+        subtotal: 100,
+        total: 100,
+        dueDate: '2026-01-10',
+        createdAt: new Date('2026-06-01'),
+        updatedAt: now,
+      },
+    ])
+
+    // dueDate ASC should return Jan, Feb, Mar
+    const ascResult = await listInvoices({
+      orgId: org1Id,
+      sort: { field: 'dueDate', direction: 'asc' },
+      perPage: 10,
+    })
+    expect(ascResult.rows.map((r) => r.id)).toEqual([
+      'inv-jan',
+      'inv-feb',
+      'inv-mar',
+    ])
+
+    // dueDate DESC should return Mar, Feb, Jan
+    const descResult = await listInvoices({
+      orgId: org1Id,
+      sort: { field: 'dueDate', direction: 'desc' },
+      perPage: 10,
+    })
+    expect(descResult.rows.map((r) => r.id)).toEqual([
+      'inv-mar',
+      'inv-feb',
+      'inv-jan',
+    ])
+  })
 })
 
 describe('markInvoicePaid', () => {

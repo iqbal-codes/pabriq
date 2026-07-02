@@ -295,6 +295,7 @@ export const listArchivedTasksFn = createServerFn({ method: 'GET' })
     (input: {
       board?: string
       search?: string
+      sort?: { field: string; direction: 'asc' | 'desc' } | null
       page?: number
       perPage?: number
     }) => input,
@@ -307,6 +308,7 @@ export const listArchivedTasksFn = createServerFn({ method: 'GET' })
     return listArchivedTasks(orgId, {
       board: data.board,
       search: data.search,
+      sort: data.sort,
       page: data.page,
       perPage: data.perPage,
     })

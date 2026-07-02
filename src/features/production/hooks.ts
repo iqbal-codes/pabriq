@@ -158,6 +158,7 @@ export function useArchivedTasks(filters: {
   orgId: string
   board?: string
   search?: string
+  sort?: { field: string; direction: 'asc' | 'desc' } | null
   page?: number
   perPage?: number
 }) {

@@ -1,18 +1,20 @@
-import { Archive } from 'lucide-react'
-import { parseAsInteger, parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { useTranslations } from 'use-intl'
+import { Archive } from 'lucide-react'
 import type { AppColumnDef, DataTableLabels } from '#/components/app/data-table'
+import {
+  DataTable,
+  DataTableSearch,
+  useListPageState,
+} from '#/components/app/data-table'
+import { PageContent } from '#/components/app/page-shell/page-content'
+import { useArchivedTasks } from '../hooks'
+import type { ArchivedTaskRow } from '../model'
 
 const dateTimeFormatter = new Intl.DateTimeFormat('id-ID', {
   dateStyle: 'medium',
   timeStyle: 'short',
 })
-
-import { DataTable, DataTableSearch } from '#/components/app/data-table'
-import { PageContent } from '#/components/app/page-shell/page-content'
-import { useArchivedTasks } from '../hooks'
-import type { ArchivedTaskRow } from '../model'
 
 type Props = {
   orgId: string
@@ -22,34 +24,31 @@ export function ArchivedTasksPage({ orgId }: Props) {
   const t = useTranslations('production')
   const dt = useTranslations('dataTable')
 
-  const [search, setSearch] = useQueryState('q', parseAsString.withDefault(''))
-  const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
-  const [perPage, setPerPage] = useQueryState(
-    'perPage',
-    parseAsInteger.withDefault(25),
-  )
+  const {
+    search,
+    setSearch,
+    page,
+    setPage,
+    perPage,
+    sort,
+    handleSortChange,
+    handlePerPageChange,
+  } = useListPageState()
 
   const queryFilters = useMemo(
     () => ({
       orgId,
       search: search || undefined,
+      sort,
       page,
       perPage,
     }),
-    [orgId, search, page, perPage],
+    [orgId, search, sort, page, perPage],
   )
 
   const { data, isFetching } = useArchivedTasks(queryFilters)
   const rows = data?.rows ?? []
   const totalRows = data?.totalRows ?? 0
-
-  const handlePerPageChange = useCallback(
-    (pp: number) => {
-      setPerPage(pp)
-      setPage(1)
-    },
-    [setPerPage, setPage],
-  )
 
   const handleClearAllFilters = useCallback(() => {
     setSearch(null)
@@ -130,6 +129,8 @@ export function ArchivedTasksPage({ orgId }: Props) {
         perPage={perPage}
         tableId="archived-tasks"
         totalRows={totalRows}
+        sort={sort}
+        onSortChange={handleSortChange}
         toolbarStart={
           <DataTableSearch
             placeholder={t('tabArchive')}

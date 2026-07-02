@@ -1,14 +1,4 @@
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  ilike,
-  inArray,
-  or,
-  type SQL,
-  sql,
-} from 'drizzle-orm'
+import { and, desc, eq, ilike, inArray, or, type SQL, sql } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   assets as assetsTable,
@@ -24,6 +14,7 @@ import { spawnQueuedPreProductionTasksForOrder } from '#/features/production/tas
 import { listBreakpoints } from '#/features/products/model'
 import { addWorkingDays } from '#/lib/date-utils'
 import { normalizeDesignName } from '#/features/orders/line-item-display'
+import { buildOrderBy, type SortColumnMap, type SortState } from '#/lib/sorting'
 
 export type Order = {
   id: string
@@ -138,7 +129,7 @@ export type ListOrdersParams = {
   orgId: string
   search?: string
   status?: string
-  sort?: { field: string; direction: 'asc' | 'desc' } | null
+  sort?: SortState | null
   page?: number
   perPage?: number
 }
@@ -199,14 +190,6 @@ async function computeLineItemPricing(
   }
 }
 
-const ALLOWED_SORT_FIELDS = new Set([
-  'orderNumber',
-  'customerName',
-  'status',
-  'total',
-  'createdAt',
-])
-
 export async function listOrders(
   params: ListOrdersParams,
 ): Promise<ListOrdersResult> {
@@ -231,25 +214,32 @@ export async function listOrders(
   const page = params.page ?? 1
   const perPage = params.perPage ?? 25
 
-  const sortCol =
-    params.sort && ALLOWED_SORT_FIELDS.has(params.sort.field)
-      ? params.sort.field === 'orderNumber'
-        ? ordersTable.orderNumber
-        : params.sort.field === 'customerName'
-          ? customersTable.name
-          : params.sort.field === 'status'
-            ? ordersTable.status
-            : params.sort.field === 'total'
-              ? ordersTable.total
-              : ordersTable.createdAt
-      : ordersTable.createdAt
+  const deadlineAggs = db
+    .select({
+      orderId: lineItemsTable.orderId,
+      maxDeadline: sql<Date>`MAX(${lineItemsTable.deadline})`.as(
+        'max_deadline',
+      ),
+    })
+    .from(lineItemsTable)
+    .where(eq(lineItemsTable.orgId, params.orgId))
+    .groupBy(lineItemsTable.orderId)
+    .as('deadline_aggs')
 
-  const sortDir =
-    params.sort && ALLOWED_SORT_FIELDS.has(params.sort.field)
-      ? params.sort.direction === 'asc'
-        ? asc(sortCol)
-        : desc(sortCol)
-      : desc(ordersTable.createdAt)
+  const ORDER_SORT_COLUMNS = {
+    orderNumber: ordersTable.orderNumber,
+    customerName: customersTable.name,
+    status: ordersTable.status,
+    total: ordersTable.total,
+    createdAt: ordersTable.createdAt,
+    shippedAt: { expression: ordersTable.shippedAt, nulls: 'last' },
+    maxDeadline: { expression: deadlineAggs.maxDeadline, nulls: 'last' },
+  } satisfies SortColumnMap
+  const sortDir = buildOrderBy(
+    params.sort,
+    ORDER_SORT_COLUMNS,
+    desc(ordersTable.createdAt),
+  )
 
   const [rows, countResult] = await Promise.all([
     db
@@ -264,9 +254,11 @@ export async function listOrders(
         createdAt: ordersTable.createdAt,
         deliveredAt: ordersTable.deliveredAt,
         shippedAt: ordersTable.shippedAt,
+        maxDeadline: deadlineAggs.maxDeadline,
       })
       .from(ordersTable)
       .leftJoin(customersTable, eq(ordersTable.customerId, customersTable.id))
+      .leftJoin(deadlineAggs, eq(ordersTable.id, deadlineAggs.orderId))
       .where(allConditions)
       .orderBy(sortDir)
       .limit(perPage)
@@ -284,48 +276,30 @@ export async function listOrders(
     { paymentStatus: string; dueDate: string | null }
   >()
 
-  // Fetch max deadline from line items for displayed orders
-  const deadlineMap = new Map<string, Date>()
-
   if (rows.length > 0) {
     const orderIds = rows.map((r) => r.id)
 
-    const [invoiceAggs, deadlineAggs] = await Promise.all([
-      db
-        .select({
-          orderId: invoicesTable.orderId,
-          paymentStatus: sql<string>`CASE
-            WHEN bool_and(${invoicesTable.status} IN ('paid', 'void')) AND bool_or(${invoicesTable.status} = 'paid') THEN 'paid'
-            WHEN bool_and(${invoicesTable.status} = 'void') THEN 'void'
-            WHEN bool_or(${invoicesTable.status} = 'partially_paid') THEN 'partially_paid'
-            ELSE 'unpaid'
-          END`,
-          dueDate: sql<string | null>`
-            MIN(CASE WHEN ${invoicesTable.status} NOT IN ('paid', 'void') THEN ${invoicesTable.dueDate} END)
-          `,
-        })
-        .from(invoicesTable)
-        .where(
-          and(
-            eq(invoicesTable.orgId, params.orgId),
-            inArray(invoicesTable.orderId, orderIds),
-          ),
-        )
-        .groupBy(invoicesTable.orderId),
-      db
-        .select({
-          orderId: lineItemsTable.orderId,
-          maxDeadline: sql<Date>`MAX(${lineItemsTable.deadline})`,
-        })
-        .from(lineItemsTable)
-        .where(
-          and(
-            eq(lineItemsTable.orgId, params.orgId),
-            inArray(lineItemsTable.orderId, orderIds),
-          ),
-        )
-        .groupBy(lineItemsTable.orderId),
-    ])
+    const invoiceAggs = await db
+      .select({
+        orderId: invoicesTable.orderId,
+        paymentStatus: sql<string>`CASE
+          WHEN bool_and(${invoicesTable.status} IN ('paid', 'void')) AND bool_or(${invoicesTable.status} = 'paid') THEN 'paid'
+          WHEN bool_and(${invoicesTable.status} = 'void') THEN 'void'
+          WHEN bool_or(${invoicesTable.status} = 'partially_paid') THEN 'partially_paid'
+          ELSE 'unpaid'
+        END`,
+        dueDate: sql<string | null>`
+          MIN(CASE WHEN ${invoicesTable.status} NOT IN ('paid', 'void') THEN ${invoicesTable.dueDate} END)
+        `,
+      })
+      .from(invoicesTable)
+      .where(
+        and(
+          eq(invoicesTable.orgId, params.orgId),
+          inArray(invoicesTable.orderId, orderIds),
+        ),
+      )
+      .groupBy(invoicesTable.orderId)
 
     for (const agg of invoiceAggs) {
       if (agg.orderId) {
@@ -335,19 +309,13 @@ export async function listOrders(
         })
       }
     }
-
-    for (const agg of deadlineAggs) {
-      if (agg.orderId && agg.maxDeadline) {
-        deadlineMap.set(agg.orderId, agg.maxDeadline as Date)
-      }
-    }
   }
 
   const enrichedRows = rows.map((row) => ({
     ...row,
     paymentStatus: invoiceMap.get(row.id)?.paymentStatus ?? 'no_invoice',
     dueDate: invoiceMap.get(row.id)?.dueDate ?? null,
-    maxDeadline: deadlineMap.get(row.id) ?? null,
+    maxDeadline: row.maxDeadline ?? null,
   }))
 
   return {

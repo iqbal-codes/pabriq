@@ -290,9 +290,9 @@ describe('DataTable - inline filters', () => {
     })
     const user = userEvent.setup({ pointerEventsCheck: 0 })
     // Click the filter trigger button (inside the popover trigger), not the column header
-    const filterButton = screen.getAllByText('Status').find((el) =>
-      el.closest('[data-slot="popover-trigger"]'),
-    )
+    const filterButton = screen
+      .getAllByText('Status')
+      .find((el) => el.closest('[data-slot="popover-trigger"]'))
     expect(filterButton).toBeDefined()
     await user.click(filterButton!)
     const allOption = await screen.findByText('All', {}, { timeout: 2000 })
@@ -306,7 +306,9 @@ describe('DataTable - inline filters', () => {
         values: { status: 'active' },
       },
     })
-    expect(screen.getAllByText('Clear filters').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Clear filters').length).toBeGreaterThanOrEqual(
+      1,
+    )
   })
 
   it('does not show Clear all button when no filters active', () => {

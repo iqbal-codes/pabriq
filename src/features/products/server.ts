@@ -1,20 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
-import {
-  type AnyColumn,
-  and,
-  asc,
-  desc,
-  eq,
-  ilike,
-  type SQL,
-  sql,
-} from 'drizzle-orm'
+import { and, desc, eq, ilike, type SQL, sql } from 'drizzle-orm'
 import {
   pricingBreakpoints as breakpointsTable,
   productAddons as productAddonsTable,
   products as productsTable,
 } from '#/db/schema'
 import { resolveOrgId } from '#/lib/auth-session'
+import { buildOrderBy, type SortColumnMap } from '#/lib/sorting'
 import type { MutationResult } from '#/lib/server-results'
 import type {
   CreateProductInput,
@@ -26,20 +18,13 @@ import type {
 
 export type { ProductRow } from './model'
 
-const ALLOWED_SORT_FIELDS = new Set([
-  'name',
-  'basePrice',
-  'productionDays',
-  'createdAt',
-  'active',
-])
-const SORT_COLUMNS: Record<string, AnyColumn> = {
+const PRODUCT_SORT_COLUMNS = {
   name: productsTable.name,
   basePrice: productsTable.basePrice,
   productionDays: productsTable.productionDays,
   createdAt: productsTable.createdAt,
   active: productsTable.active,
-}
+} satisfies SortColumnMap
 
 export const listProductsFn = createServerFn({ method: 'GET' })
   .inputValidator((data: ListProductsParams) => data)
@@ -60,12 +45,11 @@ export const listProductsFn = createServerFn({ method: 'GET' })
 
     const allConditions = and(...conditions) as SQL
 
-    const orderBy =
-      data.sort && ALLOWED_SORT_FIELDS.has(data.sort.field)
-        ? data.sort.direction === 'asc'
-          ? asc(SORT_COLUMNS[data.sort.field])
-          : desc(SORT_COLUMNS[data.sort.field])
-        : desc(productsTable.createdAt)
+    const orderBy = buildOrderBy(
+      data.sort,
+      PRODUCT_SORT_COLUMNS,
+      desc(productsTable.createdAt),
+    )
 
     const page = data.page ?? 1
     const perPage = data.perPage ?? 25

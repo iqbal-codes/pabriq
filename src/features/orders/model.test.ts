@@ -1,9 +1,11 @@
-import { sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '#/db/index'
 import {
   pricingBreakpoints as breakpointsTable,
   customers as customersTable,
+  orderLineItems as lineItemsTable,
+  orders as ordersTable,
   organization,
   products as productsTable,
 } from '#/db/schema'
@@ -513,5 +515,197 @@ describe('createDraftOrder', () => {
         lineItems: [{ productId: 'prod-3', quantity: 0 }],
       }),
     ).rejects.toThrow('Quantity must be greater than zero')
+  })
+})
+
+describe('listOrders sorting', () => {
+  it('sorts orders by shippedAt with null dates last', async () => {
+    const now = new Date()
+
+    await db.insert(customersTable).values([
+      {
+        id: 'sort-cust-1',
+        orgId: org1Id,
+        name: 'Test Customer',
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(productsTable).values([
+      {
+        id: 'sort-prod-1',
+        orgId: org1Id,
+        name: 'Test Product',
+        active: true,
+        basePrice: 10000,
+        productionDays: 1,
+        minQuantity: 1,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(breakpointsTable).values([
+      {
+        id: 'sort-bp-1',
+        orgId: org1Id,
+        productId: 'sort-prod-1',
+        minQuantity: 1,
+        unitPrice: 5000,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    // createDraftOrder generates its own id — capture returned ids
+    const shipLateResult = await createDraftOrder(org1Id, {
+      customerId: 'sort-cust-1',
+      lineItems: [{ productId: 'sort-prod-1', quantity: 1 }],
+    })
+    const shipEarlyResult = await createDraftOrder(org1Id, {
+      customerId: 'sort-cust-1',
+      lineItems: [{ productId: 'sort-prod-1', quantity: 1 }],
+    })
+    const shipNoneResult = await createDraftOrder(org1Id, {
+      customerId: 'sort-cust-1',
+      lineItems: [{ productId: 'sort-prod-1', quantity: 1 }],
+    })
+
+    const shipLateId = shipLateResult.order.id
+    const shipEarlyId = shipEarlyResult.order.id
+    const shipNoneId = shipNoneResult.order.id
+
+    // Set shippedAt after creation (createDraftOrder creates order with no shippedAt)
+    await db
+      .update(ordersTable)
+      .set({ shippedAt: new Date('2026-03-01') })
+      .where(eq(ordersTable.id, shipLateId))
+    await db
+      .update(ordersTable)
+      .set({ shippedAt: new Date('2026-01-15') })
+      .where(eq(ordersTable.id, shipEarlyId))
+
+    // shippedAt ASC: nulls last
+    const ascResult = await listOrders({
+      orgId: org1Id,
+      sort: { field: 'shippedAt', direction: 'asc' },
+      perPage: 10,
+    })
+    expect(ascResult.rows.map((r) => r.id)).toEqual([
+      shipEarlyId,
+      shipLateId,
+      shipNoneId,
+    ])
+
+    // shippedAt DESC: nulls last
+    const descResult = await listOrders({
+      orgId: org1Id,
+      sort: { field: 'shippedAt', direction: 'desc' },
+      perPage: 10,
+    })
+    expect(descResult.rows.map((r) => r.id)).toEqual([
+      shipLateId,
+      shipEarlyId,
+      shipNoneId,
+    ])
+  })
+
+  it('sorts orders by maxDeadline before pagination', async () => {
+    const now = new Date()
+
+    await db.insert(customersTable).values([
+      {
+        id: 'sort-cust-2',
+        orgId: org1Id,
+        name: 'DL Customer',
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(productsTable).values([
+      {
+        id: 'sort-prod-2',
+        orgId: org1Id,
+        name: 'DL Product',
+        active: true,
+        basePrice: 10000,
+        productionDays: 1,
+        minQuantity: 1,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(breakpointsTable).values([
+      {
+        id: 'sort-bp-2',
+        orgId: org1Id,
+        productId: 'sort-prod-2',
+        minQuantity: 1,
+        unitPrice: 5000,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    const lateResult = await createDraftOrder(org1Id, {
+      customerId: 'sort-cust-2',
+      lineItems: [{ productId: 'sort-prod-2', quantity: 1 }],
+    })
+    const earlyResult = await createDraftOrder(org1Id, {
+      customerId: 'sort-cust-2',
+      lineItems: [{ productId: 'sort-prod-2', quantity: 1 }],
+    })
+    const noneResult = await createDraftOrder(org1Id, {
+      customerId: 'sort-cust-2',
+      lineItems: [{ productId: 'sort-prod-2', quantity: 1 }],
+    })
+
+    const lateId = lateResult.order.id
+    const earlyId = earlyResult.order.id
+    const noneId = noneResult.order.id
+
+    // Insert deadline values into line items
+    // Each order has one line item from createDraftOrder — update its deadline
+    const lineItemsForLate = await db
+      .select()
+      .from(lineItemsTable)
+      .where(eq(lineItemsTable.orderId, lateId))
+      .limit(1)
+    if (lineItemsForLate[0]) {
+      await db
+        .update(lineItemsTable)
+        .set({ deadline: new Date('2026-04-01') })
+        .where(eq(lineItemsTable.id, lineItemsForLate[0].id))
+    }
+
+    const lineItemsForEarly = await db
+      .select()
+      .from(lineItemsTable)
+      .where(eq(lineItemsTable.orderId, earlyId))
+      .limit(1)
+    if (lineItemsForEarly[0]) {
+      await db
+        .update(lineItemsTable)
+        .set({ deadline: new Date('2026-01-15') })
+        .where(eq(lineItemsTable.id, lineItemsForEarly[0].id))
+    }
+
+    // maxDeadline ASC with perPage smaller than total
+    const ascResult = await listOrders({
+      orgId: org1Id,
+      sort: { field: 'maxDeadline', direction: 'asc' },
+      perPage: 2,
+    })
+    expect(ascResult.rows.map((r) => r.id)).toEqual([earlyId, lateId])
+    expect(ascResult.totalRows).toBe(3)
+
+    // maxDeadline DESC: nulls last
+    const descResult = await listOrders({
+      orgId: org1Id,
+      sort: { field: 'maxDeadline', direction: 'desc' },
+      perPage: 10,
+    })
+    expect(descResult.rows.map((r) => r.id)).toEqual([lateId, earlyId, noneId])
   })
 })

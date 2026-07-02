@@ -13,6 +13,7 @@ import {
 import { approveOrder, rejectOrder } from '#/features/orders/model'
 import {
   advanceTask,
+  listArchivedTasks,
   approveTaskAdvance,
   createStage,
   deleteStage,
@@ -462,7 +463,9 @@ describe('order approval and task spawning', () => {
 
     await expect(
       startProductionForOrder(orderId, org1Id, 'user-1'),
-    ).rejects.toThrow('At least one paid invoice is required to start production')
+    ).rejects.toThrow(
+      'At least one paid invoice is required to start production',
+    )
   })
 
   it('does not duplicate tasks on repeated spawnTasksForApprovedOrder calls', async () => {
@@ -1062,5 +1065,93 @@ describe('task advancement', () => {
     expect(responses).toBeDefined()
     expect(responses.notes).toEqual({ value: 'Looks good' })
     expect(responses.qty).toEqual({ value: '100' })
+  })
+})
+
+describe('listArchivedTasks sorting', () => {
+  it('sorts archived tasks by archivedAt', async () => {
+    const { orderId } = await seedOrder(org1Id, 'approved')
+
+    const now = new Date()
+
+    // Direct-insert 3 archived tasks with distinct archivedAt values
+    await db.insert(tasksTable).values([
+      {
+        id: 'arch-sort-old',
+        orgId: org1Id,
+        orderId,
+        taskNumber: 'TASK-003',
+        context: {
+          productName: 'Product C',
+          orderNumber: 'ORD-003',
+          customerName: 'Customer C',
+          requirements: null,
+        },
+        status: 'completed',
+        board: 'production',
+        stageId: null,
+        archivedAt: new Date('2026-01-01'),
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: 'arch-sort-mid',
+        orgId: org1Id,
+        orderId,
+        taskNumber: 'TASK-002',
+        context: {
+          productName: 'Product B',
+          orderNumber: 'ORD-002',
+          customerName: 'Customer B',
+          requirements: null,
+        },
+        status: 'completed',
+        board: 'production',
+        stageId: null,
+        archivedAt: new Date('2026-03-15'),
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: 'arch-sort-new',
+        orgId: org1Id,
+        orderId,
+        taskNumber: 'TASK-001',
+        context: {
+          productName: 'Product A',
+          orderNumber: 'ORD-001',
+          customerName: 'Customer A',
+          requirements: null,
+        },
+        status: 'completed',
+        board: 'production',
+        stageId: null,
+        archivedAt: new Date('2026-06-01'),
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    // archivedAt ASC: oldest first
+    const ascResult = await listArchivedTasks(org1Id, {
+      sort: { field: 'archivedAt', direction: 'asc' },
+      perPage: 10,
+    })
+    expect(ascResult.rows.map((r) => r.id)).toEqual([
+      'arch-sort-old',
+      'arch-sort-mid',
+      'arch-sort-new',
+    ])
+
+    // archivedAt DESC: newest first
+    const descResult = await listArchivedTasks(org1Id, {
+      sort: { field: 'archivedAt', direction: 'desc' },
+      perPage: 10,
+    })
+    expect(descResult.rows.map((r) => r.id)).toEqual([
+      'arch-sort-new',
+      'arch-sort-mid',
+      'arch-sort-old',
+    ])
   })
 })
