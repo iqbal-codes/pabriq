@@ -5,15 +5,11 @@ import { OrderInvoicesCard } from '#/features/orders/components/order-invoices-c
 type OrderInvoicesSectionProps = {
   orderInvoices: InvoiceRow[]
   invoicePayments: Record<string, Array<{ id: string; proofAssetId: string }>>
-  onMarkInvoicePaid: (invoiceId: string) => void
-  isMarkingPaid: boolean
 }
 
 export function OrderInvoicesSection({
   orderInvoices,
   invoicePayments,
-  onMarkInvoicePaid,
-  isMarkingPaid,
 }: OrderInvoicesSectionProps): React.ReactElement {
   const it = useTranslations('invoices')
 
@@ -25,8 +21,6 @@ export function OrderInvoicesSection({
       <OrderInvoicesCard
         orderInvoices={orderInvoices}
         invoicePayments={invoicePayments}
-        onMarkInvoicePaid={onMarkInvoicePaid}
-        isMarkingPaid={isMarkingPaid}
       />
     </div>
   )

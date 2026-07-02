@@ -46,6 +46,7 @@ const invoice: InvoiceRow = {
   total: 100000,
   percentage: 50,
   dueDate: '2026-06-30',
+  paymentMethodId: null,
   createdAt: new Date('2026-06-01T00:00:00Z'),
   overdue: false,
 }
@@ -59,8 +60,6 @@ function renderCard(
         <OrderInvoicesCard
           orderInvoices={[invoice]}
           invoicePayments={invoicePayments}
-          onMarkInvoicePaid={vi.fn()}
-          isMarkingPaid={false}
         />
       </TooltipProvider>
     </IntlProvider>,

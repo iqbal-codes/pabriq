@@ -52,6 +52,7 @@ function makeInvoice(
     total,
     percentage,
     dueDate: '2026-12-31',
+    paymentMethodId: null,
     createdAt: new Date(),
     overdue: false,
   }

@@ -1281,4 +1281,43 @@ describe('createMidtransTransaction', () => {
       createMidtransTransaction(invoiceId, midtransOrgId),
     ).rejects.toThrow('Invoice is already fully paid')
   })
+
+  it('omits email and phone if they are invalid or empty', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'midtrans-cust-invalid',
+      orgId: midtransOrgId,
+      name: 'Invalid Email/Phone Customer',
+      email: 'invalid-email',
+      phone: '12',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    const result = await createInvoice(midtransOrgId, {
+      customerId: 'midtrans-cust-invalid',
+      customerName: 'Invalid Email/Phone Customer',
+      dueDate: '2026-06-30',
+      paymentMethodId: null,
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoiceId = result.invoice.id
+    mockCreateTransaction.mockResolvedValue({
+      token: 'mock-snap-token-2',
+      redirect_url: 'https://mock-redirect-url-2',
+    })
+
+    const { token } = await createMidtransTransaction(
+      invoiceId,
+      midtransOrgId,
+    )
+
+    expect(token).toBe('mock-snap-token-2')
+    expect(mockCreateTransaction).toHaveBeenCalled()
+    const callArgs = mockCreateTransaction.mock.calls[0][0]
+    expect(callArgs.customer_details.first_name).toBe('Invalid Email/Phone Customer')
+    expect(callArgs.customer_details.email).toBeUndefined()
+    expect(callArgs.customer_details.phone).toBeUndefined()
+  })
 })

@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { CheckCircle2, Eye, Printer } from 'lucide-react'
+import { Eye, Printer } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
 import { StatusBadge } from '#/components/status-badge'
@@ -16,13 +16,9 @@ import { currencyFormatter } from './view-order-utils'
 export function OrderInvoicesCard({
   orderInvoices,
   invoicePayments,
-  onMarkInvoicePaid,
-  isMarkingPaid,
 }: {
   orderInvoices: InvoiceRow[]
   invoicePayments: Record<string, Array<{ id: string; proofAssetId: string }>>
-  onMarkInvoicePaid: (invoiceId: string) => void
-  isMarkingPaid: boolean
 }) {
   const it = useTranslations('invoices')
 
@@ -48,8 +44,6 @@ export function OrderInvoicesCard({
               {orderInvoices.map((inv) => {
                 const payments = invoicePayments?.[inv.id] ?? []
                 const proofPayments = payments.filter((p) => p.proofAssetId)
-                const canMarkPaid =
-                  inv.status === 'unpaid' || inv.status === 'partially_paid'
 
                 return (
                   <div
@@ -110,20 +104,6 @@ export function OrderInvoicesCard({
                       </div>
                     </div>
 
-                    {/* Mark as paid action */}
-                    {canMarkPaid && (
-                      <div className="mt-2">
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => onMarkInvoicePaid(inv.id)}
-                          disabled={isMarkingPaid}
-                        >
-                          <CheckCircle2 className="mr-1 size-3" />
-                          {it('markAsPaid')}
-                        </Button>
-                      </div>
-                    )}
 
                     {/* Payment proof images */}
                     {proofPayments.length > 0 && (

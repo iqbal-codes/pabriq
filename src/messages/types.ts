@@ -266,6 +266,7 @@ export type Messages = {
     createdAt: string;
     downloadQuotation: string;
     sendDpInvoice: string;
+    confirmDpPayment: string;
     loadOrdersFailed: string;
     loadOrdersFailedDesc: string;
     copyLinkFailed: string;

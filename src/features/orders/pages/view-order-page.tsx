@@ -23,6 +23,7 @@ import { CreateInvoiceModal } from '#/features/invoices/components/create-invoic
 import {
   useInvoicePaymentProofs,
   useInvoicesList,
+  usePaymentMethods,
 } from '#/features/invoices/hooks'
 import { CompleteProductionModal } from '#/features/orders/components/complete-production-modal'
 import { OrderInvoicesSection } from '#/features/orders/components/order-invoices-section'
@@ -75,6 +76,7 @@ export function ViewOrderPage() {
     perPage: 50,
   })
   const { data: tasksData } = useTasksByOrderId(id)
+  const { data: paymentMethods } = usePaymentMethods()
   const orderInvoices = invoicesData?.rows ?? []
 
   const derived = useOrderDerivedState({
@@ -118,6 +120,19 @@ export function ViewOrderPage() {
       ? `${t('validUntil')}: ${dateFormatter.format(order.validUntil)}`
       : undefined
 
+  // ── Payment state for DP flow ─────────────────────────────────
+  const unpaidInvoice = orderInvoices.find(
+    (inv) => inv.status === 'unpaid' || inv.status === 'partially_paid',
+  )
+  const unpaidPaymentMethod = unpaidInvoice?.paymentMethodId
+    ? (paymentMethods?.find((pm) => pm.id === unpaidInvoice.paymentMethodId) ??
+      null)
+    : null
+  const isManualTransfer =
+    unpaidPaymentMethod?.type === 'bank_transfer' ||
+    unpaidPaymentMethod?.type === 'cash' ||
+    !unpaidPaymentMethod
+
   // ── Header actions ────────────────────────────────────────────
 
   const primaryAction: PageAction | undefined =
@@ -136,27 +151,34 @@ export function ViewOrderPage() {
               icon: FileText,
               onClick: () => setInvoiceModalOpen(true),
             }
-          : derived.canStartProduction
+          : unpaidInvoice && isManualTransfer
             ? {
-                label: prt('startOrderProduction'),
-                icon: Factory,
-                onClick: mutations.handleStartProduction,
-                isLoading: mutations.isStartingProduction,
+                label: t('confirmDpPayment'),
+                icon: CheckCircle2,
+                onClick: () => mutations.handleMarkInvoicePaid(unpaidInvoice.id),
+                isLoading: mutations.isMarkingPaid,
               }
-            : derived.canCompleteProduction
+            : derived.canStartProduction
               ? {
-                  label: prt('markAsShipped'),
-                  icon: Truck,
-                  onClick: () => setCompleteProductionModalOpen(true),
+                  label: prt('startOrderProduction'),
+                  icon: Factory,
+                  onClick: mutations.handleStartProduction,
+                  isLoading: mutations.isStartingProduction,
                 }
-              : derived.canCompleteOrder
+              : derived.canCompleteProduction
                 ? {
-                    label: t('completeOrder'),
-                    icon: CheckCircle2,
-                    onClick: mutations.handleCompleteOrder,
-                    isLoading: mutations.isCompletingOrder,
+                    label: prt('markAsShipped'),
+                    icon: Truck,
+                    onClick: () => setCompleteProductionModalOpen(true),
                   }
-                : undefined
+                : derived.canCompleteOrder
+                  ? {
+                      label: t('completeOrder'),
+                      icon: CheckCircle2,
+                      onClick: mutations.handleCompleteOrder,
+                      isLoading: mutations.isCompletingOrder,
+                    }
+                  : undefined
 
   const secondaryActions: PageAction[] = [
     {
@@ -213,8 +235,6 @@ export function ViewOrderPage() {
             <OrderInvoicesSection
               orderInvoices={orderInvoices}
               invoicePayments={invoicePayments ?? {}}
-              onMarkInvoicePaid={mutations.handleMarkInvoicePaid}
-              isMarkingPaid={mutations.isMarkingPaid}
             />
           )}
         </div>

@@ -97,6 +97,7 @@ export type InvoiceRow = {
   total: number
   percentage: number | null
   dueDate: string
+  paymentMethodId: string | null
   createdAt: Date
   overdue: boolean
 }
@@ -488,6 +489,7 @@ export async function listInvoices(
         total: invoicesTable.total,
         percentage: invoicesTable.percentage,
         dueDate: invoicesTable.dueDate,
+        paymentMethodId: invoicesTable.paymentMethodId,
         createdAt: invoicesTable.createdAt,
         overdue: sql<boolean>`(${invoicesTable.status} IN ('unpaid') AND ${invoicesTable.dueDate} < ${today}::date)`,
       })
@@ -1015,6 +1017,17 @@ export async function updateInvoice(
   return updated as Invoice
 }
 
+function isValidEmail(email: string | null | undefined): email is string {
+  if (!email) return false
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+function isValidPhone(phone: string | null | undefined): phone is string {
+  if (!phone) return false
+  const cleaned = phone.replace(/[^0-9+]/g, '')
+  return cleaned.length >= 5 && cleaned.length <= 19
+}
+
 export async function createMidtransTransaction(
   invoiceId: string,
   orgId: string,
@@ -1066,8 +1079,10 @@ export async function createMidtransTransaction(
     customer_details: customer
       ? {
           first_name: customer.name,
-          email: customer.email ?? undefined,
-          phone: customer.phone ?? undefined,
+          email: isValidEmail(customer.email) ? customer.email : undefined,
+          phone: isValidPhone(customer.phone)
+            ? customer.phone.replace(/[^0-9+]/g, '')
+            : undefined,
         }
       : undefined,
     enabled_payments: ['qris', 'bca_va', 'bni_va', 'bri_va'],
