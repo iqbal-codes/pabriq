@@ -1,4 +1,4 @@
-import type { Messages } from './types'
+import type { Messages } from "./types";
 
 // biome-ignore format: locale message map is maintained as a dense dictionary
 const en: Messages = {
@@ -161,6 +161,15 @@ const en: Messages = {
     orderApproved: "Order approved",
     orderRejected: "Order rejected",
     orderCompleted: "Order completed",
+    statusDraft: "Draft",
+    statusPending: "Pending",
+    statusApproved: "Approved",
+    statusInProgress: "In Progress",
+    statusProduction: "In Production",
+    statusInDelivery: "In Delivery",
+    statusCompleted: "Completed",
+    statusCancelled: "Cancelled",
+    statusRejected: "Rejected",
     completeOrder: "Complete Order",
     guestCustomer: "Guest",
     paymentStatus: "Payment Status",
@@ -185,8 +194,10 @@ const en: Messages = {
     repeatOrder: "Repeat Order",
     addons: "Addons",
     manualDeadline: "Manual Deadline",
-    manualDeadlineRequired: "Manual deadline is required for quantities exceeding production capacity",
-    quantityExceedsProductionCap: "Quantity exceeds production capacity. A manual deadline is required.",
+    manualDeadlineRequired:
+      "Manual deadline is required for quantities exceeding production capacity",
+    quantityExceedsProductionCap:
+      "Quantity exceeds production capacity. A manual deadline is required.",
   },
   breadcrumb: {
     dashboard: "Dashboard",
@@ -379,6 +390,15 @@ const en: Messages = {
     uploadPhoto: "Upload Photo",
     removePhoto: "Remove Photo",
     createdAt: "Created At",
+    recentOrders: "Recent Orders",
+    recentInvoices: "Invoices",
+    financialSummary: "Financial Summary",
+    totalOrders: "Total Orders",
+    totalSpent: "Total Spent",
+    outstandingBalance: "Outstanding Balance",
+    citizenship: "Citizenship",
+    address: "Address",
+    noShippingAddress: "No shipping address provided",
   },
   dashboard: {
     title: "Dashboard",
@@ -413,8 +433,8 @@ const en: Messages = {
       pendingApprovalsDesc: "Orders waiting for admin approval",
     },
     period: {
-      '7d': "7 Days",
-      '30d': "30 Days",
+      "7d": "7 Days",
+      "30d": "30 Days",
       thisMonth: "This Month",
       lastMonth: "Last Month",
     },
@@ -442,7 +462,8 @@ const en: Messages = {
     productionNotes: "Production Notes",
     productionNotesPlaceholder: "Special instructions for production",
     priority: "Priority product",
-    priorityDescription: "Tasks spawned from this product will be marked priority.",
+    priorityDescription:
+      "Tasks spawned from this product will be marked priority.",
     active: "Active",
     inactive: "Inactive",
     searchPlaceholder: "Search products...",
@@ -560,7 +581,8 @@ const en: Messages = {
     paymentNotePlaceholder: "e.g. BCA transfer at 11:30 AM",
     submitProofSuccess: "Payment proof submitted. Pending admin confirmation.",
     submitProofFailed: "Failed to submit payment proof. Please try again.",
-    uploadFilesFirst: "Please upload at least one proof file before submitting.",
+    uploadFilesFirst:
+      "Please upload at least one proof file before submitting.",
     failed: "Failed",
     orderLabel: "Order #{orderNumber}",
     alreadyInvoiced: "Already invoiced: {percentage}% ({amount})",
@@ -678,7 +700,8 @@ const en: Messages = {
     deadlineToday: "Due today",
     deadlineTomorrow: "Due tomorrow",
     deadlineDaysLeft: "{days, plural, one {# day left} other {# days left}}",
-    deadlineDaysOverdue: "{days, plural, one {# day overdue} other {# days overdue}}",
+    deadlineDaysOverdue:
+      "{days, plural, one {# day overdue} other {# days overdue}}",
     deadlineLabel: "Deadline {date}",
     taskCreated: "Task created",
     noActivity: "No activity yet",
@@ -739,7 +762,8 @@ const en: Messages = {
     unitPrice: "Unit Price",
     lineTotal: "Total",
     designName: "Design Name",
-    designNamePlaceholder: "Enter design name, artwork name, or reference label",
+    designNamePlaceholder:
+      "Enter design name, artwork name, or reference label",
     itemNotes: "Notes / Specification",
     itemNotesPlaceholder: "Add notes or specifications for this item",
     attachment: "Attachment",
@@ -785,12 +809,15 @@ const en: Messages = {
     rejectedTitle: "Order Rejected",
     loadingOrder: "Loading order...",
     loadFailed: "Could not load order",
-    loadFailedDesc: "Refresh this page or contact the seller if the problem continues.",
+    loadFailedDesc:
+      "Refresh this page or contact the seller if the problem continues.",
     notFoundHelp: "Check the link or ask the seller for a new portal link.",
     retry: "Retry",
     whatsappOrderMessage: "Hi, regarding order {order}",
-    pendingHelp: "We received your order details. The seller will review them before production starts.",
-    rejectedHelp: "Contact the seller to revise the order or confirm the next step.",
+    pendingHelp:
+      "We received your order details. We will review them before production starts.",
+    rejectedHelp:
+      "Contact the seller to revise the order or confirm the next step.",
     requirementsSubmitted: "Attachments",
     noStageTransitions: "No stage transitions yet",
     timelineQueue: "Queue",
@@ -806,14 +833,21 @@ const en: Messages = {
     timelineStatusWaitingApproval: "Awaiting approval",
 
     progressOverview: "At a glance",
-    progressStatusApprovedHelp: "Your order is approved. The seller is preparing it for production.",
-    progressStatusProductionHelp: "Your order is in production. Open each item to see its stage timeline, notes, and attachments.",
-    progressStatusDeliveryHelp: "Your order is being delivered or prepared for handoff.",
-    progressStatusCompletedHelp: "Your order is complete. Contact the seller if you still need help.",
-    progressStatusFallbackHelp: "Track the latest order details and production updates here.",
+    progressStatusApprovedHelp:
+      "Your order is approved. The seller is preparing it for production.",
+    progressStatusProductionHelp:
+      "Your order is in production. Open each item to see its stage timeline, notes, and attachments.",
+    progressStatusDeliveryHelp:
+      "Your order is being delivered or prepared for handoff.",
+    progressStatusCompletedHelp:
+      "Your order is complete. Contact the seller if you still need help.",
+    progressStatusFallbackHelp:
+      "Track the latest order details and production updates here.",
     nextStep: "Next step",
-    nextStepPayment: "Complete the unpaid invoice so the seller can keep the order moving.",
-    nextStepProduction: "Watch the item cards below for stage updates from the production team.",
+    nextStepPayment:
+      "Complete the unpaid invoice so the seller can keep the order moving.",
+    nextStepProduction:
+      "Watch the item cards below for stage updates from the production team.",
     nextStepDelivery: "Wait for delivery handoff details from the seller.",
     nextStepCompleted: "Keep this page as your order record.",
     estimatedCompletionLabel: "Estimated completion",
@@ -824,10 +858,12 @@ const en: Messages = {
     estimatedCompletionUnavailable: "No completion estimate yet",
     paymentSummary: "Payment",
     paymentSummaryNoInvoice: "No invoice issued yet",
-    paymentSummaryUnpaid: "{count, plural, one {# unpaid invoice} other {# unpaid invoices}} · {amount}",
+    paymentSummaryUnpaid:
+      "{count, plural, one {# unpaid invoice} other {# unpaid invoices}} · {amount}",
     paymentSummaryAllPaid: "All invoices paid",
     lineItemsHelp: "Open an item to see its timeline, notes, and attachments.",
-    productionDaysLabel: "{days, plural, one {# production day} other {# production days}}",
+    productionDaysLabel:
+      "{days, plural, one {# production day} other {# production days}}",
     invoiceDialogTitle: "Invoices",
     invoiceDialogEmpty: "No invoices yet",
     invoiceShipmentFee: "Shipment fee",
@@ -864,7 +900,8 @@ const en: Messages = {
     rejectedHeroTitle: "This order needs revision",
     rejectedHeroSubtitle: "Use the seller's note below to fix and resubmit.",
     rejectedReasonTitle: "Reason from the seller",
-    rejectedReasonEmpty: "No reason provided. Reach out via WhatsApp for details.",
+    rejectedReasonEmpty:
+      "No reason provided. Reach out via WhatsApp for details.",
     rejectedAffectedItems: "Affected items",
     rejectedResubmitCta: "Discuss with the seller",
 
@@ -875,8 +912,10 @@ const en: Messages = {
     draftStepShipping: "Where should we ship it?",
     draftStepItems: "Review each item",
     draftStepCustomerDesc: "Used so the seller can confirm the order with you.",
-    draftStepShippingDesc: "We'll prefill what we know — correct anything that's off.",
-    draftStepItemsDesc: "Rename, add notes, or attach reference files per item.",
+    draftStepShippingDesc:
+      "We'll prefill what we know — correct anything that's off.",
+    draftStepItemsDesc:
+      "Rename, add notes, or attach reference files per item.",
     draftStepComplete: "Done",
     draftStepEmpty: "Needs your input",
     draftStepInProgress: "In progress",
@@ -886,15 +925,20 @@ const en: Messages = {
     progressHeroLabel: "Order status",
     progressChecklistTitle: "What needs your attention",
     obligationPayTitle: "Settle unpaid invoices",
-    obligationPayBody: "{count, plural, one {# invoice is waiting for your payment proof} other {# invoices are waiting for your payment proof}}.",
+    obligationPayBody:
+      "{count, plural, one {# invoice is waiting for your payment proof} other {# invoices are waiting for your payment proof}}.",
     obligationNextTitle: "Up next",
-    obligationNextProduction: "Production continues. We'll update this page as each item moves through its stages.",
-    obligationNextDelivery: "Delivery is in motion. Watch for the courier handoff note.",
+    obligationNextProduction:
+      "Production continues. We'll update this page as each item moves through its stages.",
+    obligationNextDelivery:
+      "Delivery is in motion. Watch for the courier handoff note.",
     obligationNextCompleted: "Order complete. Keep this page as your record.",
     itemsSectionTitle: "Items in this order",
-    itemsSectionDescription: "Each item shows its own stage timeline, notes, and attachments.",
+    itemsSectionDescription:
+      "Each item shows its own stage timeline, notes, and attachments.",
     invoicesSectionTitle: "Invoices and payments",
-    invoicesSectionDescription: "Download invoices and upload payment proof here.",
+    invoicesSectionDescription:
+      "Download invoices and upload payment proof here.",
     invoicePaidOn: "Paid",
     invoiceUnpaidNoDue: "Unpaid",
     invoiceDueLabel: "Due {date}",
@@ -923,9 +967,10 @@ const en: Messages = {
   assistant: {
     trigger: "Open assistant",
     title: "Pabriq Assistant",
-    description: "Ask about orders, customers, products, invoices, or production tasks you can access.",
+    description:
+      "Ask about orders, customers, products, invoices, or production tasks you can access.",
     emptyTitle: "Ask about your workspace",
-    emptyDescription: "Try \"Which orders are still open?\" or \"Find Acme\".",
+    emptyDescription: 'Try "Which orders are still open?" or "Find Acme".',
     loadingHistory: "Loading conversation...",
     messageLabel: "Message",
     messagePlaceholder: "Ask a business question...",
@@ -936,6 +981,6 @@ const en: Messages = {
     notConfigured: "AI assistant is not configured.",
     genericError: "The assistant could not answer. Try again.",
   },
-}
+};
 
-export default en
+export default en;

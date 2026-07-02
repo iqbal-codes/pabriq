@@ -244,6 +244,15 @@ export type Messages = {
     orderApproved: string;
     orderRejected: string;
     orderCompleted: string;
+    statusDraft: string;
+    statusPending: string;
+    statusApproved: string;
+    statusInProgress: string;
+    statusProduction: string;
+    statusInDelivery: string;
+    statusCompleted: string;
+    statusCancelled: string;
+    statusRejected: string;
     completeOrder: string;
     guestCustomer: string;
     paymentStatus: string;
@@ -380,6 +389,15 @@ export type Messages = {
     uploadPhoto: string;
     removePhoto: string;
     createdAt: string;
+    recentOrders: string;
+    recentInvoices: string;
+    financialSummary: string;
+    totalOrders: string;
+    totalSpent: string;
+    outstandingBalance: string;
+    citizenship: string;
+    address: string;
+    noShippingAddress: string;
   };
   dashboard: {
     title: string;

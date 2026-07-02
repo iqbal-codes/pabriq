@@ -1,4 +1,4 @@
-import type { Messages } from './types'
+import type { Messages } from "./types";
 
 // biome-ignore format: locale message map is maintained as a dense dictionary
 const id: Messages = {
@@ -161,6 +161,15 @@ const id: Messages = {
     orderApproved: "Pesanan disetujui",
     orderRejected: "Pesanan ditolak",
     orderCompleted: "Pesanan selesai",
+    statusDraft: "Draf",
+    statusPending: "Tertunda",
+    statusApproved: "Disetujui",
+    statusInProgress: "Sedang Diproses",
+    statusProduction: "Dalam Produksi",
+    statusInDelivery: "Dalam Pengiriman",
+    statusCompleted: "Selesai",
+    statusCancelled: "Dibatalkan",
+    statusRejected: "Ditolak",
     completeOrder: "Selesaikan Pesanan",
     guestCustomer: "Tamu",
     paymentStatus: "Status Pembayaran",
@@ -185,8 +194,10 @@ const id: Messages = {
     repeatOrder: "Pesanan Ulang",
     addons: "Addon",
     manualDeadline: "Tenggat Manual",
-    manualDeadlineRequired: "Tenggat manual diperlukan untuk kuantitas yang melebihi kapasitas produksi",
-    quantityExceedsProductionCap: "Kuantitas melebihi kapasitas produksi. Tenggat manual diperlukan.",
+    manualDeadlineRequired:
+      "Tenggat manual diperlukan untuk kuantitas yang melebihi kapasitas produksi",
+    quantityExceedsProductionCap:
+      "Kuantitas melebihi kapasitas produksi. Tenggat manual diperlukan.",
   },
   breadcrumb: {
     dashboard: "Dasbor",
@@ -380,10 +391,20 @@ const id: Messages = {
     uploadPhoto: "Unggah Foto",
     removePhoto: "Hapus Foto",
     createdAt: "Dibuat Pada",
+    recentOrders: "Pesanan Terbaru",
+    recentInvoices: "Tagihan",
+    financialSummary: "Ringkasan Keuangan",
+    totalOrders: "Total Pesanan",
+    totalSpent: "Total Belanja",
+    outstandingBalance: "Saldo Tertunggak",
+    citizenship: "Kewarganegaraan",
+    address: "Alamat",
+    noShippingAddress: "Belum ada alamat pengiriman",
   },
   dashboard: {
     title: "Dasbor",
-    description: "Pantau pendapatan, alur tugas, dan aktivitas terbaru secara ringkas.",
+    description:
+      "Pantau pendapatan, alur tugas, dan aktivitas terbaru secara ringkas.",
     welcome: "Selamat datang di ruang kerja Pabriq Anda",
     activeOrders: "Pesanan Aktif",
     activeOrdersDesc: "Pesanan yang sedang diproduksi",
@@ -414,8 +435,8 @@ const id: Messages = {
       pendingApprovalsDesc: "Pesanan yang sedang menunggu persetujuan admin",
     },
     period: {
-      '7d': "7 Hari",
-      '30d': "30 Hari",
+      "7d": "7 Hari",
+      "30d": "30 Hari",
       thisMonth: "Bulan Ini",
       lastMonth: "Bulan Lalu",
     },
@@ -683,7 +704,8 @@ const id: Messages = {
     deadlineToday: "Jatuh tempo hari ini",
     deadlineTomorrow: "Jatuh tempo besok",
     deadlineDaysLeft: "{days, plural, one {# hari lagi} other {# hari lagi}}",
-    deadlineDaysOverdue: "{days, plural, one {# hari terlambat} other {# hari terlambat}}",
+    deadlineDaysOverdue:
+      "{days, plural, one {# hari terlambat} other {# hari terlambat}}",
     deadlineLabel: "Tenggat {date}",
     taskCreated: "Tugas dibuat",
     noActivity: "Belum ada aktivitas",
@@ -743,7 +765,8 @@ const id: Messages = {
     unitPrice: "Harga Satuan",
     lineTotal: "Total",
     designName: "Nama Desain",
-    designNamePlaceholder: "Masukkan nama desain, nama artwork, atau label referensi",
+    designNamePlaceholder:
+      "Masukkan nama desain, nama artwork, atau label referensi",
     itemNotes: "Catatan / Spesifikasi",
     itemNotesPlaceholder: "Tambahkan catatan atau spesifikasi untuk item ini",
     attachment: "Lampiran",
@@ -789,12 +812,15 @@ const id: Messages = {
     rejectedTitle: "Pesanan Ditolak",
     loadingOrder: "Memuat pesanan...",
     loadFailed: "Pesanan tidak dapat dimuat",
-    loadFailedDesc: "Muat ulang halaman ini atau hubungi penjual jika masalah berlanjut.",
+    loadFailedDesc:
+      "Muat ulang halaman ini atau hubungi penjual jika masalah berlanjut.",
     notFoundHelp: "Periksa tautan atau minta tautan portal baru ke penjual.",
     retry: "Coba lagi",
     whatsappOrderMessage: "Halo, terkait pesanan {order}",
-    pendingHelp: "Detail pesanan Anda sudah diterima. Penjual akan meninjaunya sebelum produksi dimulai.",
-    rejectedHelp: "Hubungi penjual untuk merevisi pesanan atau memastikan langkah berikutnya.",
+    pendingHelp:
+      "Detail pesanan Anda sudah diterima. Kami akan meninjaunya sebelum produksi dimulai.",
+    rejectedHelp:
+      "Hubungi penjual untuk merevisi pesanan atau memastikan langkah berikutnya.",
     requirementsSubmitted: "Lampiran",
     noStageTransitions: "Belum ada perpindahan tahap",
     timelineQueue: "Antrian",
@@ -810,14 +836,21 @@ const id: Messages = {
     timelineStatusWaitingApproval: "Menunggu persetujuan",
 
     progressOverview: "Ringkasan cepat",
-    progressStatusApprovedHelp: "Pesanan Anda sudah disetujui. Penjual sedang menyiapkannya untuk produksi.",
-    progressStatusProductionHelp: "Pesanan Anda sedang diproduksi. Buka setiap item untuk melihat timeline tahap, catatan, dan lampiran.",
-    progressStatusDeliveryHelp: "Pesanan Anda sedang dikirim atau disiapkan untuk serah terima.",
-    progressStatusCompletedHelp: "Pesanan Anda selesai. Hubungi penjual jika masih perlu bantuan.",
-    progressStatusFallbackHelp: "Pantau detail pesanan dan pembaruan produksi terbaru di sini.",
+    progressStatusApprovedHelp:
+      "Pesanan Anda sudah disetujui. Penjual sedang menyiapkannya untuk produksi.",
+    progressStatusProductionHelp:
+      "Pesanan Anda sedang diproduksi. Buka setiap item untuk melihat timeline tahap, catatan, dan lampiran.",
+    progressStatusDeliveryHelp:
+      "Pesanan Anda sedang dikirim atau disiapkan untuk serah terima.",
+    progressStatusCompletedHelp:
+      "Pesanan Anda selesai. Hubungi penjual jika masih perlu bantuan.",
+    progressStatusFallbackHelp:
+      "Pantau detail pesanan dan pembaruan produksi terbaru di sini.",
     nextStep: "Langkah berikutnya",
-    nextStepPayment: "Selesaikan invoice yang belum dibayar agar penjual dapat melanjutkan pesanan.",
-    nextStepProduction: "Pantau kartu item di bawah untuk melihat pembaruan tahap dari tim produksi.",
+    nextStepPayment:
+      "Selesaikan invoice yang belum dibayar agar penjual dapat melanjutkan pesanan.",
+    nextStepProduction:
+      "Pantau kartu item di bawah untuk melihat pembaruan tahap dari tim produksi.",
     nextStepDelivery: "Tunggu informasi serah terima pengiriman dari penjual.",
     nextStepCompleted: "Simpan halaman ini sebagai catatan pesanan Anda.",
     estimatedCompletionLabel: "Estimasi selesai",
@@ -828,10 +861,12 @@ const id: Messages = {
     estimatedCompletionUnavailable: "Belum ada estimasi selesai",
     paymentSummary: "Pembayaran",
     paymentSummaryNoInvoice: "Belum ada invoice",
-    paymentSummaryUnpaid: "{count, plural, one {# invoice belum dibayar} other {# invoice belum dibayar}} · {amount}",
+    paymentSummaryUnpaid:
+      "{count, plural, one {# invoice belum dibayar} other {# invoice belum dibayar}} · {amount}",
     paymentSummaryAllPaid: "Semua invoice telah dibayar",
     lineItemsHelp: "Buka item untuk melihat timeline, catatan, dan lampiran.",
-    productionDaysLabel: "{days, plural, one {# hari produksi} other {# hari produksi}}",
+    productionDaysLabel:
+      "{days, plural, one {# hari produksi} other {# hari produksi}}",
     invoiceDialogTitle: "Invoice",
     invoiceDialogEmpty: "Belum ada invoice",
     invoiceShipmentFee: "Biaya pengiriman",
@@ -865,9 +900,11 @@ const id: Messages = {
 
     // Rejected view
     rejectedHeroTitle: "Pesanan perlu direvisi",
-    rejectedHeroSubtitle: "Gunakan catatan penjual di bawah untuk memperbaiki dan mengirim ulang.",
+    rejectedHeroSubtitle:
+      "Gunakan catatan penjual di bawah untuk memperbaiki dan mengirim ulang.",
     rejectedReasonTitle: "Alasan dari penjual",
-    rejectedReasonEmpty: "Tidak ada alasan diberikan. Hubungi via WhatsApp untuk detail.",
+    rejectedReasonEmpty:
+      "Tidak ada alasan diberikan. Hubungi via WhatsApp untuk detail.",
     rejectedAffectedItems: "Item terpengaruh",
     rejectedResubmitCta: "Diskusikan dengan penjual",
 
@@ -877,9 +914,11 @@ const id: Messages = {
     draftStepCustomer: "Beri tahu siapa Anda",
     draftStepShipping: "Mau dikirim ke mana?",
     draftStepItems: "Tinjau setiap item",
-    draftStepCustomerDesc: "Digunakan agar penjual dapat mengonfirmasi pesanan dengan Anda.",
+    draftStepCustomerDesc:
+      "Digunakan agar penjual dapat mengonfirmasi pesanan dengan Anda.",
     draftStepShippingDesc: "Kami isi otomatis — koreksi yang belum tepat.",
-    draftStepItemsDesc: "Ubah nama, tambahkan catatan, atau lampirkan referensi per item.",
+    draftStepItemsDesc:
+      "Ubah nama, tambahkan catatan, atau lampirkan referensi per item.",
     draftStepComplete: "Selesai",
     draftStepEmpty: "Belum diisi",
     draftStepInProgress: "Sedang diisi",
@@ -889,15 +928,21 @@ const id: Messages = {
     progressHeroLabel: "Status pesanan",
     progressChecklistTitle: "Yang perlu Anda perhatikan",
     obligationPayTitle: "Selesaikan invoice yang belum dibayar",
-    obligationPayBody: "{count, plural, one {# invoice menunggu bukti pembayaran Anda} other {# invoice menunggu bukti pembayaran Anda}}.",
+    obligationPayBody:
+      "{count, plural, one {# invoice menunggu bukti pembayaran Anda} other {# invoice menunggu bukti pembayaran Anda}}.",
     obligationNextTitle: "Selanjutnya",
-    obligationNextProduction: "Produksi berlanjut. Halaman ini diperbarui saat item melewati tahap.",
-    obligationNextDelivery: "Pengiriman sedang berjalan. Tunggu info serah terima kurir.",
-    obligationNextCompleted: "Pesanan selesai. Simpan halaman ini sebagai catatan Anda.",
+    obligationNextProduction:
+      "Produksi berlanjut. Halaman ini diperbarui saat item melewati tahap.",
+    obligationNextDelivery:
+      "Pengiriman sedang berjalan. Tunggu info serah terima kurir.",
+    obligationNextCompleted:
+      "Pesanan selesai. Simpan halaman ini sebagai catatan Anda.",
     itemsSectionTitle: "Item dalam pesanan",
-    itemsSectionDescription: "Setiap item menampilkan timeline, catatan, dan lampiran.",
+    itemsSectionDescription:
+      "Setiap item menampilkan timeline, catatan, dan lampiran.",
     invoicesSectionTitle: "Invoice dan pembayaran",
-    invoicesSectionDescription: "Unduh invoice dan unggah bukti pembayaran di sini.",
+    invoicesSectionDescription:
+      "Unduh invoice dan unggah bukti pembayaran di sini.",
     invoicePaidOn: "Lunas",
     invoiceUnpaidNoDue: "Belum dibayar",
     invoiceDueLabel: "Jatuh tempo {date}",
@@ -926,9 +971,11 @@ const id: Messages = {
   assistant: {
     trigger: "Buka asisten",
     title: "Asisten Pabriq",
-    description: "Tanyakan pesanan, pelanggan, produk, invoice, atau tugas produksi yang bisa Anda akses.",
+    description:
+      "Tanyakan pesanan, pelanggan, produk, invoice, atau tugas produksi yang bisa Anda akses.",
     emptyTitle: "Tanyakan tentang workspace Anda",
-    emptyDescription: "Coba \"Pesanan mana yang masih terbuka?\" atau \"Cari Acme\".",
+    emptyDescription:
+      'Coba "Pesanan mana yang masih terbuka?" atau "Cari Acme".',
     loadingHistory: "Memuat percakapan...",
     messageLabel: "Pesan",
     messagePlaceholder: "Tanyakan hal bisnis...",
@@ -941,4 +988,4 @@ const id: Messages = {
   },
 };
 
-export default id
+export default id;
