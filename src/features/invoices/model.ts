@@ -1,8 +1,7 @@
 import { and, desc, eq, ilike, inArray, or, type SQL, sql } from 'drizzle-orm'
-import { buildOrderBy, type SortColumnMap } from '#/lib/sorting'
-import type { SortState } from '#/lib/sorting'
 import { db } from '#/db/index'
 import {
+  assets as assetsTable,
   customers as customersTable,
   invoices as invoicesTable,
   invoiceLineItems as lineItemsTable,
@@ -13,6 +12,8 @@ import {
   products as productsTable,
 } from '#/db/schema'
 import { formatProductDesignLabel } from '#/features/orders/line-item-display'
+import type { SortState } from '#/lib/sorting'
+import { buildOrderBy, type SortColumnMap } from '#/lib/sorting'
 
 export type Invoice = {
   id: string
@@ -120,6 +121,13 @@ export type CreatePaymentInput = {
   reference?: string
   proofAssetId?: string
   receivedAt?: Date
+}
+
+export type InvoicePaymentProof = {
+  id: string
+  invoiceId: string
+  proofAssetId: string
+  createdAt: Date
 }
 
 export type InvoiceBalance = {
@@ -845,6 +853,87 @@ export async function getPaymentsForInvoices(
   // Ensure every requested invoice has an entry
   for (const invId of invoiceIds) {
     if (!grouped[invId]) grouped[invId] = []
+  }
+
+  return grouped
+}
+
+export async function getPaymentProofsForInvoices(
+  orgId: string,
+  invoiceIds: string[],
+): Promise<Record<string, InvoicePaymentProof[]>> {
+  if (invoiceIds.length === 0) return {}
+
+  const [paymentRows, assetRows] = await Promise.all([
+    db
+      .select({
+        id: paymentsTable.id,
+        invoiceId: paymentsTable.invoiceId,
+        proofAssetId: paymentsTable.proofAssetId,
+        createdAt: paymentsTable.createdAt,
+      })
+      .from(paymentsTable)
+      .where(
+        and(
+          inArray(paymentsTable.invoiceId, invoiceIds),
+          eq(paymentsTable.orgId, orgId),
+        ),
+      ),
+    db
+      .select({
+        id: assetsTable.id,
+        invoiceId: assetsTable.ownerId,
+        proofAssetId: assetsTable.id,
+        createdAt: assetsTable.createdAt,
+      })
+      .from(assetsTable)
+      .where(
+        and(
+          eq(assetsTable.orgId, orgId),
+          eq(assetsTable.ownerType, 'invoice'),
+          eq(assetsTable.usage, 'payment_proof'),
+          eq(assetsTable.status, 'active'),
+          inArray(assetsTable.ownerId, invoiceIds),
+        ),
+      ),
+  ])
+
+  const grouped: Record<string, InvoicePaymentProof[]> = {}
+  const seen = new Set<string>()
+
+  for (const invId of invoiceIds) {
+    grouped[invId] = []
+  }
+
+  const addProof = (proof: InvoicePaymentProof): void => {
+    const key = `${proof.invoiceId}:${proof.proofAssetId}`
+    if (seen.has(key)) return
+    seen.add(key)
+    grouped[proof.invoiceId]?.push(proof)
+  }
+
+  for (const payment of paymentRows) {
+    if (!payment.proofAssetId) continue
+    addProof({
+      id: payment.id,
+      invoiceId: payment.invoiceId,
+      proofAssetId: payment.proofAssetId,
+      createdAt: payment.createdAt,
+    })
+  }
+
+  for (const asset of assetRows) {
+    if (!asset.invoiceId) continue
+    addProof({
+      id: asset.id,
+      invoiceId: asset.invoiceId,
+      proofAssetId: asset.proofAssetId,
+      createdAt: asset.createdAt,
+    })
+  }
+
+  for (const proofs of Object.values(grouped)) {
+    proofs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
   }
 
   return grouped

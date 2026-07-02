@@ -5,10 +5,7 @@ import { OrderInvoicesCard } from '#/features/orders/components/order-invoices-c
 
 type OrderInvoicesSectionProps = {
   orderInvoices: InvoiceRow[]
-  invoicePayments: Record<
-    string,
-    Array<{ id: string; proofAssetId: string | null }>
-  >
+  invoicePayments: Record<string, Array<{ id: string; proofAssetId: string }>>
   canCreateInvoice: boolean
   onCreateInvoice: () => void
   onMarkInvoicePaid: (invoiceId: string) => void

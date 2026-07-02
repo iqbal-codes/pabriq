@@ -20,10 +20,7 @@ export function OrderInvoicesCard({
   isMarkingPaid,
 }: {
   orderInvoices: InvoiceRow[]
-  invoicePayments: Record<
-    string,
-    Array<{ id: string; proofAssetId: string | null }>
-  >
+  invoicePayments: Record<string, Array<{ id: string; proofAssetId: string }>>
   onMarkInvoicePaid: (invoiceId: string) => void
   isMarkingPaid: boolean
 }) {
@@ -119,23 +116,18 @@ export function OrderInvoicesCard({
                         {it('paymentProof')}
                       </p>
                       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-                        {proofPayments.map((p) =>
-                          p.proofAssetId ? (
-                            <a
-                              key={p.id}
-                              href={`/api/assets/${p.proofAssetId}/download`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="group relative aspect-square overflow-hidden rounded-lg border"
-                            >
-                              <AssetImage
-                                assetId={p.proofAssetId}
-                                assetKind="image"
-                                className="size-full object-cover transition-opacity group-hover:opacity-80"
-                              />
-                            </a>
-                          ) : null,
-                        )}
+                        {proofPayments.map((p) => (
+                          <div
+                            key={p.id}
+                            className="relative aspect-square overflow-hidden rounded-lg border"
+                          >
+                            <AssetImage
+                              assetId={p.proofAssetId}
+                              assetKind="image"
+                              className="size-full object-cover"
+                            />
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}

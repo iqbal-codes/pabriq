@@ -17,8 +17,8 @@ import {
   createPaymentMethodFn,
   deletePaymentMethodFn,
   getInvoiceFn,
+  getInvoicePaymentProofsForInvoicesFn,
   getInvoicePaymentsFn,
-  getInvoicePaymentsForInvoicesFn,
   getOrderForInvoiceFn,
   listInvoicesFn,
   listPaymentMethodsFn,
@@ -114,7 +114,8 @@ export function useInvoicePayments(invoiceId: string) {
 export function useInvoicePaymentProofs(invoiceIds: string[]) {
   return useQuery({
     queryKey: [...queryKeys.invoices.all, 'payment-proofs', ...invoiceIds],
-    queryFn: () => getInvoicePaymentsForInvoicesFn({ data: { invoiceIds } }),
+    queryFn: () =>
+      getInvoicePaymentProofsForInvoicesFn({ data: { invoiceIds } }),
     enabled: invoiceIds.length > 0,
   })
 }

@@ -7,6 +7,7 @@ import type {
   CreateInvoiceInput,
   GetInvoiceResult,
   InvoiceBalance,
+  InvoicePaymentProof,
   ListInvoicesParams,
   ListInvoicesResult,
   OrderForInvoice,
@@ -264,14 +265,16 @@ export const rejectPaymentFn = createServerFn({ method: 'POST' })
     }
   })
 
-export const getInvoicePaymentsForInvoicesFn = createServerFn({ method: 'GET' })
+export const getInvoicePaymentProofsForInvoicesFn = createServerFn({
+  method: 'GET',
+})
   .inputValidator((input: { invoiceIds: string[] }) => input)
-  .handler(async ({ data }): Promise<Record<string, Payment[]>> => {
-    const [orgId, { getPaymentsForInvoices }] = await Promise.all([
+  .handler(async ({ data }): Promise<Record<string, InvoicePaymentProof[]>> => {
+    const [orgId, { getPaymentProofsForInvoices }] = await Promise.all([
       resolveOrgId(),
       import('./model'),
     ])
-    return getPaymentsForInvoices(orgId, data.invoiceIds)
+    return getPaymentProofsForInvoices(orgId, data.invoiceIds)
   })
 
 export const getInvoicePaymentsFn = createServerFn({ method: 'GET' })
