@@ -4,13 +4,21 @@ import { AssetImage } from '#/components/app/asset-image'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { StatusBadge } from '#/components/status-badge'
-import { useProduct, useProductAddons, useProductBreakpoints } from '#/features/products/hooks'
-
-const currencyFormatter = new Intl.NumberFormat('id-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  minimumFractionDigits: 0,
-})
+import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '#/components/ui/table'
+import {
+  useProduct,
+  useProductAddons,
+  useProductBreakpoints,
+} from '#/features/products/hooks'
+import { currencyFormatter } from '#/features/orders/components/view-order-utils'
 
 export function ViewProductPage() {
   const { id } = useParams({ from: '/_org/products/$id/' })
@@ -39,201 +47,254 @@ export function ViewProductPage() {
         }}
       />
 
-      {/* Product Header */}
-      <div className="flex items-center gap-4 rounded-xl border bg-card p-6">
-        <AssetImage
-          assetId={product.primaryImageAssetId}
-          assetKind="image"
-          className="size-16 rounded-lg"
-        />
-        <div>
-          <h1 className="text-2xl font-semibold">{product.name}</h1>
-          <div className="mt-1">
-            <StatusBadge status={product.active ? 'active' : 'inactive'} />
-          </div>
-        </div>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        {/* Left Pane */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Pricing Breakpoints */}
+          {breakpoints.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">
+                    {t('pricing.breakpoints')}
+                  </CardTitle>
+                  <span className="text-xs text-muted-foreground">
+                    {breakpoints.length}{' '}
+                    {breakpoints.length === 1 ? 'tier' : 'tiers'}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0 pb-4">
+                <div className="mx-4 rounded-xl border bg-muted/50 p-1.5">
+                  <div className="rounded-lg border bg-background overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('pricing.minQuantity')}</TableHead>
+                          <TableHead className="text-right">
+                            {t('pricing.unitPrice')}
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {breakpoints.map((bp) => (
+                          <TableRow key={`bp-${bp.minQuantity}`}>
+                            <TableCell className="font-medium">
+                              {bp.minQuantity.toLocaleString()} pcs
+                            </TableCell>
+                            <TableCell className="text-right font-semibold tabular-nums">
+                              {currencyFormatter.format(bp.unitPrice)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-      {/* Product Info */}
-      <div className="rounded-xl border bg-card p-6">
-        <p className="text-sm font-semibold text-muted-foreground mb-4">
-          {t('productInfo')}
-        </p>
-        <div className="space-y-4">
-          <div>
-            <p className="text-[13px] font-medium text-muted-foreground">
-              {t('description')}
-            </p>
-            <p className="font-medium whitespace-pre-wrap">
-              {product.description ?? '\u2014'}
-            </p>
-          </div>
-          <div>
-            <p className="text-[13px] font-medium text-muted-foreground">
-              {t('productionNotes')}
-            </p>
-            <p className="font-medium whitespace-pre-wrap">
-              {product.productionNotes ?? '\u2014'}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Pricing & Orders */}
-      <div className="rounded-xl border bg-card p-6">
-        <p className="text-sm font-semibold text-muted-foreground mb-4">
-          {t('pricingAndOrders')}
-        </p>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <div>
-            <p className="text-[13px] font-medium text-muted-foreground">
-              {t('basePrice')}
-            </p>
-            <p className="font-semibold text-lg">
-              {currencyFormatter.format(product.basePrice)}
-            </p>
-          </div>
-          <div>
-            <p className="text-[13px] font-medium text-muted-foreground">
-              {t('productionDays')}
-            </p>
-            <p className="font-semibold">{product.productionDays}</p>
-          </div>
-          <div>
-            <p className="text-[13px] font-medium text-muted-foreground">
-              {t('minQuantity')}
-            </p>
-            <p className="font-semibold">{product.minQuantity}</p>
-          </div>
-          <div>
-            <p className="text-[13px] font-medium text-muted-foreground">
-              {t('maxQuantity')}
-            </p>
-            <p className="font-semibold">{product.maxQuantity ?? '\u2014'}</p>
-          </div>
-          <div>
-            <p className="text-[13px] font-medium text-muted-foreground">
-              {t('pricing.interpolate')}
-            </p>
-            <p className="font-semibold">
-              {product.pricingMode === 'interpolated'
-                ? t('pricing.interpolateOn')
-                : t('pricing.interpolateOff')}
-            </p>
-          </div>
-          <div>
-            <p className="text-[13px] font-medium text-muted-foreground">
-              {t('negotiateAboveQuantity')}
-            </p>
-            <p className="font-semibold">
-              {product.negotiateAboveQuantity != null
-                ? product.negotiateAboveQuantity
-                : '\u2014'}
-            </p>
-          </div>
-          <div>
-            <p className="text-[13px] font-medium text-muted-foreground">
-              {t('repeatOrderUnitPrice')}
-            </p>
-            <p className="font-semibold">
-              {product.repeatOrderUnitPrice != null
-                ? currencyFormatter.format(product.repeatOrderUnitPrice)
-                : '\u2014'}
-            </p>
-          </div>
-          <div>
-            <p className="text-[13px] font-medium text-muted-foreground">
-              {t('repeatOrderMinQuantity')}
-            </p>
-            <p className="font-semibold">
-              {product.repeatOrderMinQuantity != null
-                ? product.repeatOrderMinQuantity
-                : '\u2014'}
-            </p>
-          </div>
-          <div>
-            <p className="text-[13px] font-medium text-muted-foreground">
-              {t('maxProductionQuantity')}
-            </p>
-            <p className="font-semibold">
-              {product.maxProductionQuantity != null
-                ? product.maxProductionQuantity
-                : '\u2014'}
-            </p>
-          </div>
+          {/* Addons */}
+          {addons.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">
+                    {t('addons.title')}
+                  </CardTitle>
+                  <span className="text-xs text-muted-foreground">
+                    {addons.length}{' '}
+                    {addons.length === 1 ? 'addon' : 'addons'}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0 pb-4">
+                <div className="mx-4 rounded-xl border bg-muted/50 p-1.5">
+                  <div className="rounded-lg border bg-background overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('addons.name')}</TableHead>
+                          <TableHead className="text-right">
+                            {t('addons.unitSurcharge')}
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {addons.map((addon) => (
+                          <TableRow key={addon.id}>
+                            <TableCell className="font-medium">
+                              {addon.name}
+                            </TableCell>
+                            <TableCell className="text-right font-semibold tabular-nums">
+                              {currencyFormatter.format(addon.unitSurcharge)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
-        {breakpoints.length > 0 && (
-          <div className="mt-6 pt-4 border-t">
-            <p className="text-[13px] font-medium text-muted-foreground mb-3">
-              {t('pricing.breakpoints')}
-            </p>
-            <div className="rounded-lg border border-hairline bg-card">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-hairline">
-                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">
-                      {t('pricing.minQuantity')}
-                    </th>
-                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">
-                      {t('pricing.unitPrice')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {breakpoints.map((bp) => (
-                    <tr
-                      key={`bp-${bp.minQuantity}`}
-                      className="border-b border-hairline last:border-0"
-                    >
-                      <td className="py-2 px-3 font-medium">
-                        {bp.minQuantity}
-                      </td>
-                      <td className="py-2 px-3 font-semibold tabular-nums">
-                        {currencyFormatter.format(bp.unitPrice)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+        {/* Right Pane */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Product Profile Card */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center text-center mb-6">
+                {product.primaryImageAssetId ? (
+                  <AssetImage
+                    assetId={product.primaryImageAssetId}
+                    assetKind="image"
+                    className="size-24 rounded-xl object-cover ring-1 ring-border mb-3"
+                  />
+                ) : (
+                  <div className="flex size-24 items-center justify-center rounded-xl bg-muted ring-1 ring-border mb-3">
+                    <span className="text-2xl text-muted-foreground">
+                      {product.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <h2 className="text-lg font-semibold">{product.name}</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <StatusBadge
+                    status={product.active ? 'active' : 'inactive'}
+                  />
+                  {product.priority && (
+                    <StatusBadge status="pending_approval" />
+                  )}
+                </div>
+              </div>
 
-        {addons.length > 0 && (
-          <div className="mt-6 pt-4 border-t">
-            <p className="text-[13px] font-medium text-muted-foreground mb-3">
-              {t('addons.title')}
-            </p>
-            <div className="rounded-lg border border-hairline bg-card">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-hairline">
-                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">
-                      {t('addons.name')}
-                    </th>
-                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">
-                      {t('addons.unitSurcharge')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {addons.map((addon) => (
-                    <tr
-                      key={addon.id}
-                      className="border-b border-hairline last:border-0"
-                    >
-                      <td className="py-2 px-3 font-medium">{addon.name}</td>
-                      <td className="py-2 px-3 font-semibold tabular-nums">
-                        {currencyFormatter.format(addon.unitSurcharge)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+              {/* Base Price */}
+              <div className="rounded-lg border p-4 text-center">
+                <p className="text-xs text-muted-foreground mb-1">
+                  {t('basePrice')}
+                </p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {currencyFormatter.format(product.basePrice)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Product Info Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('productInfo')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {t('description')}
+                </p>
+                <p className="whitespace-pre-wrap text-sm">
+                  {product.description ?? '\u2014'}
+                </p>
+              </div>
+              {product.productionNotes && (
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    {t('productionNotes')}
+                  </p>
+                  <p className="whitespace-pre-wrap text-sm">
+                    {product.productionNotes}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Pricing Metadata Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('pricingAndOrders')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {t('productionDays')}
+                </p>
+                <p className="font-semibold">
+                  {product.productionDays} days
+                </p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {t('minQuantity')}
+                </p>
+                <p className="font-semibold">
+                  {product.minQuantity.toLocaleString()} pcs
+                </p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {t('maxQuantity')}
+                </p>
+                <p className="font-semibold">
+                  {product.maxQuantity != null
+                    ? `${product.maxQuantity.toLocaleString()} pcs`
+                    : '\u2014'}
+                </p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {t('pricing.interpolate')}
+                </p>
+                <p className="font-semibold text-sm">
+                  {product.pricingMode === 'interpolated'
+                    ? t('pricing.interpolateOn')
+                    : t('pricing.interpolateOff')}
+                </p>
+              </div>
+              {product.negotiateAboveQuantity != null && (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    {t('negotiateAboveQuantity')}
+                  </p>
+                  <p className="font-semibold">
+                    {product.negotiateAboveQuantity.toLocaleString()}
+                  </p>
+                </div>
+              )}
+              {product.repeatOrderUnitPrice != null && (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    {t('repeatOrderUnitPrice')}
+                  </p>
+                  <p className="font-semibold tabular-nums">
+                    {currencyFormatter.format(product.repeatOrderUnitPrice)}
+                  </p>
+                </div>
+              )}
+              {product.repeatOrderMinQuantity != null && (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    {t('repeatOrderMinQuantity')}
+                  </p>
+                  <p className="font-semibold">
+                    {product.repeatOrderMinQuantity.toLocaleString()}
+                  </p>
+                </div>
+              )}
+              {product.maxProductionQuantity != null && (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    {t('maxProductionQuantity')}
+                  </p>
+                  <p className="font-semibold">
+                    {product.maxProductionQuantity.toLocaleString()}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </PageContent>
   )
