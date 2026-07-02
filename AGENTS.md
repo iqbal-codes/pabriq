@@ -159,7 +159,14 @@ Single-context: `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain
 - Continuous small refactoring compounds into a healthier codebase over time
 - Readability over conciseness — code is read far more often than it's written
 
-## 8. Non-Negotiable Project Rules
+## 8. Database & Environment Safety
+
+- **NEVER** access Infisical or any secrets manager directly. Agents do not have permission to retrieve, inject, or override environment variables from Infisical or similar services.
+- **NEVER** run test runners (`vitest`, `jest`, `playwright`, etc.) directly (e.g. `npx vitest run`). Always use the project scripts: `bun run test`, `bun run test:e2e`, etc. These scripts load the correct environment (staging/test) via `load-env-test` and prevent tests from hitting production databases.
+- **NEVER** source `.env.local` or `.env` manually to run commands. Use `bun run load-env -- <command>` for dev, `bun run load-env-test -- <command>` for tests.
+- Tests that touch the database (`TRUNCATE`, `INSERT`, `DELETE`) are **destructive**. If the wrong environment is loaded, they will destroy production data. Always verify which `DATABASE_URL` a test command will use before executing.
+
+## 9. Non-Negotiable Project Rules (Legacy)
 
 - Use Bun only: `bun install`, `bun run dev`, `bun run build`, `bun run check`, `bun run typecheck`.
 - `bun.lock` is authoritative. Do not add npm, pnpm, or yarn lockfiles.
