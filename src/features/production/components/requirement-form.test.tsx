@@ -68,14 +68,14 @@ describe('RequirementForm', () => {
 
   it('shows required/optional labels', () => {
     renderForm(requirements)
-    expect(screen.getByText('Required')).toBeInTheDocument()
-    expect(screen.getByText('Optional')).toBeInTheDocument()
+    expect(screen.getByText(/Required/)).toBeInTheDocument()
+    expect(screen.getByText(/Optional/)).toBeInTheDocument()
   })
 
   it('calls onSubmit with responses', async () => {
     const onSubmit = vi.fn()
     renderForm(requirements, onSubmit)
-    await userEvent.type(screen.getByLabelText('Notes'), 'Test notes')
+    await userEvent.type(screen.getByLabelText(/Notes/), 'Test notes')
     await userEvent.click(screen.getByText('Confirm'))
     expect(onSubmit).toHaveBeenCalledWith({
       notes: { value: 'Test notes' },
@@ -85,6 +85,6 @@ describe('RequirementForm', () => {
   it('renders file upload field for upload requirements', () => {
     renderForm(uploadRequirements)
     expect(screen.getByText('Reference File')).toBeInTheDocument()
-    expect(screen.getByText('Upload File')).toBeInTheDocument()
+    expect(screen.getByText('Upload files')).toBeInTheDocument()
   })
 })

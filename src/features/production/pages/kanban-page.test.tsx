@@ -181,7 +181,9 @@ vi.mock('../hooks', () => {
               result = res
             },
           })
-          return result as { ok: true; pendingApproval: boolean } | { ok: false; error: string }
+          return result as
+            | { ok: true; pendingApproval: boolean }
+            | { ok: false; error: string }
         },
       },
       rejectAdvance: {

@@ -88,7 +88,9 @@ export function RequirementForm({
               {(field) => (
                 <field.TextareaField
                   label={req.label}
-                  optional={req.required}
+                  optional={!req.required}
+                  optionalLabel={` (${t('requirementOptional')})`}
+                  requiredLabel={` (${t('requirementRequired')})`}
                 />
               )}
             </form.AppField>
@@ -96,7 +98,12 @@ export function RequirementForm({
           {req.type === 'number' && (
             <form.AppField name={`requirements[${index}].numberValue`}>
               {(field) => (
-                <field.NumberField label={req.label} optional={req.required} />
+                <field.NumberField
+                  label={req.label}
+                  optional={!req.required}
+                  optionalLabel={` (${t('requirementOptional')})`}
+                  requiredLabel={` (${t('requirementRequired')})`}
+                />
               )}
             </form.AppField>
           )}
@@ -108,7 +115,9 @@ export function RequirementForm({
                   ownerId={taskId}
                   usage="attachment"
                   maxFiles={1}
-                  optional={req.required}
+                  optional={!req.required}
+                  optionalLabel={` (${t('requirementOptional')})`}
+                  requiredLabel={` (${t('requirementRequired')})`}
                   label={req.label}
                 />
               )}
