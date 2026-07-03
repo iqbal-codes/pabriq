@@ -102,6 +102,7 @@ export type InvoiceRow = {
   paymentMethodId: string | null
   createdAt: Date
   overdue: boolean
+  shippingFee?: number
 }
 
 export type Payment = {
@@ -487,6 +488,15 @@ export async function listInvoices(
   const page = params.page ?? 1
   const perPage = params.perPage ?? 25
   const today = new Date().toISOString().split('T')[0]
+  const shippingFeeByInvoice = db
+    .select({
+      invoiceId: lineItemsTable.invoiceId,
+      shippingFee: sql<number>`sum(${lineItemsTable.total})`.as('shipping_fee'),
+    })
+    .from(lineItemsTable)
+    .where(eq(lineItemsTable.lineType, 'shipping'))
+    .groupBy(lineItemsTable.invoiceId)
+    .as('shipping_fee_by_invoice')
 
   const [rows, countResult] = await Promise.all([
     db
@@ -501,8 +511,13 @@ export async function listInvoices(
         paymentMethodId: invoicesTable.paymentMethodId,
         createdAt: invoicesTable.createdAt,
         overdue: sql<boolean>`(${invoicesTable.status} IN ('unpaid') AND ${invoicesTable.dueDate} < ${today}::date)`,
+        shippingFee: sql<number>`coalesce(${shippingFeeByInvoice.shippingFee}, 0)`,
       })
       .from(invoicesTable)
+      .leftJoin(
+        shippingFeeByInvoice,
+        eq(shippingFeeByInvoice.invoiceId, invoicesTable.id),
+      )
       .where(allConditions)
       .orderBy(
         buildOrderBy(

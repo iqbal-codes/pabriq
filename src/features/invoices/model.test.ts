@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from '#/db/index'
 import {
   customers as customersTable,
+  invoiceLineItems as invoiceLineItemsTable,
   invoices as invoicesTable,
   orderLineItems as orderLineItemsTable,
   orders as ordersTable,
@@ -572,6 +573,95 @@ describe('listInvoices', () => {
       'inv-feb',
       'inv-jan',
     ])
+  })
+  it('includes shippingFee from shipping line items', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values([
+      {
+        id: 'cust-ship',
+        orgId: org1Id,
+        name: 'Ship Customer',
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(paymentMethodsTable).values([
+      {
+        id: 'pm-ship',
+        orgId: org1Id,
+        name: 'BCA',
+        type: 'bank_transfer',
+        isDefault: true,
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'cust-ship',
+      customerName: 'Ship Customer',
+      paymentMethodId: 'pm-ship',
+      dueDate: '2026-06-01',
+      lineItems: [{ description: 'Product', quantity: 1, unitPrice: 100 }],
+    })
+
+    // Insert a shipping line item directly to simulate order-based creation
+    await db.insert(invoiceLineItemsTable).values({
+      id: `li-ship-${invoice.id}`,
+      invoiceId: invoice.id,
+      lineType: 'shipping',
+      description: 'Shipping Fee',
+      quantity: 1,
+      unitPrice: 50,
+      total: 50,
+      createdAt: now,
+    })
+
+    const result = await listInvoices({ orgId: org1Id })
+    const row = result.rows.find((r) => r.id === invoice.id)
+    expect(row).toBeDefined()
+    expect(row!.shippingFee).toBe(50)
+  })
+
+  it('returns shippingFee as 0 when no shipping line items exist', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values([
+      {
+        id: 'cust-noship',
+        orgId: org1Id,
+        name: 'No Ship Customer',
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(paymentMethodsTable).values([
+      {
+        id: 'pm-noship',
+        orgId: org1Id,
+        name: 'BCA',
+        type: 'bank_transfer',
+        isDefault: true,
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'cust-noship',
+      customerName: 'No Ship Customer',
+      paymentMethodId: 'pm-noship',
+      dueDate: '2026-06-01',
+      lineItems: [{ description: 'Item', quantity: 2, unitPrice: 25 }],
+    })
+
+    const result = await listInvoices({ orgId: org1Id })
+    const row = result.rows.find((r) => r.id === invoice.id)
+    expect(row).toBeDefined()
+    expect(row!.shippingFee).toBe(0)
   })
 })
 
