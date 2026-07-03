@@ -4,8 +4,8 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
-import { queryKeys } from '#/lib/query-keys'
 import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
+import { queryKeys } from '#/lib/query-keys'
 import type {
   CreateDraftOrderInput,
   ListOrdersParams,
@@ -97,6 +97,7 @@ export function useCompleteProduction() {
         { queryKey: queryKeys.orders.lists() },
         { queryKey: queryKeys.orders.detail(variables.id) },
         { queryKey: queryKeys.invoices.all },
+        { queryKey: queryKeys.production.all },
       ]),
   })
 }

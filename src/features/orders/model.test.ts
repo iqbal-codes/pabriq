@@ -5,6 +5,7 @@ import {
   addresses as addressesTable,
   pricingBreakpoints as breakpointsTable,
   customers as customersTable,
+  invoices as invoicesTable,
   orderLineItems as lineItemsTable,
   orders as ordersTable,
   organization,
@@ -12,12 +13,14 @@ import {
   paymentMethods as paymentMethodsTable,
   products as productsTable,
   productionStages as stagesTable,
+  productionTasks as tasksTable,
 } from '#/db/schema'
 import {
   createDraftOrder,
   getOrder,
   getOrderCreationReadiness,
   listOrders,
+  markShipped,
   updateDraftOrder,
 } from './model'
 
@@ -523,6 +526,127 @@ describe('createDraftOrder', () => {
   })
 })
 
+describe('markShipped', () => {
+  it('archives completed production tasks for the shipped order only', async () => {
+    const now = new Date()
+
+    // Seed two in_progress orders
+    const targetOrderId = 'order-target'
+    const otherOrderId = 'order-other'
+
+    await db.insert(ordersTable).values([
+      {
+        id: targetOrderId,
+        orgId: org1Id,
+        status: 'in_progress',
+        notes: null,
+        total: 0,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: otherOrderId,
+        orgId: org2Id,
+        status: 'in_progress',
+        notes: null,
+        total: 0,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    // Seed three production tasks
+    const taskTargetCompleted = 'task-target-completed'
+    const taskTargetInProgress = 'task-target-in-progress'
+    const taskOtherCompleted = 'task-other-completed'
+
+    await db.insert(tasksTable).values([
+      {
+        id: taskTargetCompleted,
+        orgId: org1Id,
+        orderId: targetOrderId,
+        board: 'production',
+        status: 'completed',
+        archivedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: taskTargetInProgress,
+        orgId: org1Id,
+        orderId: targetOrderId,
+        board: 'production',
+        status: 'in_progress',
+        archivedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: taskOtherCompleted,
+        orgId: org2Id,
+        orderId: otherOrderId,
+        board: 'production',
+        status: 'completed',
+        archivedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    await markShipped(targetOrderId, org1Id, {
+      courier: 'JNE',
+      trackingNumber: 'TRACK-1',
+    })
+
+    // Verify target order moved to in_delivery
+    const [targetOrder] = await db
+      .select()
+      .from(ordersTable)
+      .where(eq(ordersTable.id, targetOrderId))
+      .limit(1)
+
+    expect(targetOrder.status).toBe('in_delivery')
+    expect(targetOrder.courier).toBe('JNE')
+    expect(targetOrder.trackingNumber).toBe('TRACK-1')
+    expect(targetOrder.shippedAt).not.toBeNull()
+
+    // Verify unrelated order stays in_progress
+    const [otherOrder] = await db
+      .select()
+      .from(ordersTable)
+      .where(eq(ordersTable.id, otherOrderId))
+      .limit(1)
+
+    expect(otherOrder.status).toBe('in_progress')
+    expect(otherOrder.courier).toBeNull()
+    expect(otherOrder.trackingNumber).toBeNull()
+
+    // Verify only the target completed task was archived
+    const [archivedTask] = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.id, taskTargetCompleted))
+      .limit(1)
+    expect(archivedTask.archivedAt).not.toBeNull()
+
+    // Verify in-progress task was NOT archived
+    const [inProgressTask] = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.id, taskTargetInProgress))
+      .limit(1)
+    expect(inProgressTask.archivedAt).toBeNull()
+
+    // Verify unrelated completed task was NOT archived
+    const [otherTask] = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.id, taskOtherCompleted))
+      .limit(1)
+    expect(otherTask.archivedAt).toBeNull()
+  })
+})
+
 describe('listOrders sorting', () => {
   it('sorts orders by shippedAt with null dates last', async () => {
     const now = new Date()
@@ -695,6 +819,9 @@ describe('listOrders sorting', () => {
         .set({ deadline: new Date('2026-01-15') })
         .where(eq(lineItemsTable.id, lineItemsForEarly[0].id))
     }
+
+    // Delete line items for noneId so that its maxDeadline is null
+    await db.delete(lineItemsTable).where(eq(lineItemsTable.orderId, noneId))
 
     // maxDeadline ASC with perPage smaller than total
     const ascResult = await listOrders({
@@ -901,5 +1028,151 @@ describe('getOrderCreationReadiness', () => {
     expect(result.paymentMethodCount).toBe(1)
     expect(result.completedCount).toBe(4)
     expect(result.totalCount).toBe(4)
+  })
+})
+
+describe('listOrders payment status aggregation', () => {
+  it('aggregates paymentStatus correctly for single/multiple invoices', async () => {
+    const now = new Date()
+
+    // 1. Seed customer
+    await db.insert(customersTable).values([
+      {
+        id: 'pay-cust-1',
+        orgId: org1Id,
+        name: 'Pay Customer',
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    // 2. Seed product
+    await db.insert(productsTable).values([
+      {
+        id: 'pay-prod-1',
+        orgId: org1Id,
+        name: 'Pay Product',
+        active: true,
+        basePrice: 10000,
+        productionDays: 1,
+        minQuantity: 1,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    // Helper to create an order
+    const createOrderWithInvoices = async (
+      orderId: string,
+      orderNumber: string,
+      invoices: Array<{
+        status: 'unpaid' | 'partially_paid' | 'paid' | 'void'
+        total: number
+        percentage: number | null
+      }>,
+    ) => {
+      // Create order
+      await db.insert(ordersTable).values({
+        id: orderId,
+        orgId: org1Id,
+        orderNumber,
+        customerId: 'pay-cust-1',
+        status: 'draft',
+        total: 10000,
+        createdAt: now,
+        updatedAt: now,
+      })
+
+      // Insert invoices
+      if (invoices.length > 0) {
+        await db.insert(invoicesTable).values(
+          invoices.map((inv, index) => ({
+            id: `inv-${orderId}-${index}`,
+            orgId: org1Id,
+            orderId,
+            customerId: 'pay-cust-1',
+            customerName: 'Pay Customer',
+            invoiceNumber: `INV-${orderNumber}-${index}`,
+            status: inv.status,
+            subtotal: inv.total,
+            total: inv.total,
+            percentage: inv.percentage,
+            dueDate: '2026-08-01',
+            issuedDate: '2026-07-01',
+            createdAt: now,
+            updatedAt: now,
+          })),
+        )
+      }
+    }
+
+    // A. Order with no invoices
+    await createOrderWithInvoices('order-no-inv', 'ORD-NO-INV', [])
+
+    // B. Order with single unpaid invoice
+    await createOrderWithInvoices('order-unpaid', 'ORD-UNPAID', [
+      { status: 'unpaid', total: 10000, percentage: 100 },
+    ])
+
+    // C. Order with single partially paid invoice
+    await createOrderWithInvoices('order-part-paid', 'ORD-PART-PAID', [
+      { status: 'partially_paid', total: 10000, percentage: 100 },
+    ])
+
+    // D. Order with single paid invoice
+    await createOrderWithInvoices('order-paid', 'ORD-PAID', [
+      { status: 'paid', total: 10000, percentage: 100 },
+    ])
+
+    // E. Order with single void invoice
+    await createOrderWithInvoices('order-void', 'ORD-VOID', [
+      { status: 'void', total: 10000, percentage: 100 },
+    ])
+
+    // F. Split payment: paid (50%) + unpaid (50%) -> partially_paid
+    await createOrderWithInvoices('order-split-1', 'ORD-SPLIT-1', [
+      { status: 'paid', total: 5000, percentage: 50 },
+      { status: 'unpaid', total: 5000, percentage: 50 },
+    ])
+
+    // G. Split payment: paid (50%) + partially_paid (50%) -> partially_paid
+    await createOrderWithInvoices('order-split-2', 'ORD-SPLIT-2', [
+      { status: 'paid', total: 5000, percentage: 50 },
+      { status: 'partially_paid', total: 5000, percentage: 50 },
+    ])
+
+    // H. Split payment: void (50%) + paid (100%) -> paid
+    await createOrderWithInvoices('order-split-3', 'ORD-SPLIT-3', [
+      { status: 'void', total: 5000, percentage: 50 },
+      { status: 'paid', total: 10000, percentage: 100 },
+    ])
+
+    // I. Split payment: void (50%) + unpaid (100%) -> unpaid
+    await createOrderWithInvoices('order-split-4', 'ORD-SPLIT-4', [
+      { status: 'void', total: 5000, percentage: 50 },
+      { status: 'unpaid', total: 10000, percentage: 100 },
+    ])
+
+    // J. Split payment: void (50%) + void (50%) -> void
+    await createOrderWithInvoices('order-split-5', 'ORD-SPLIT-5', [
+      { status: 'void', total: 5000, percentage: 50 },
+      { status: 'void', total: 5000, percentage: 50 },
+    ])
+
+    // Call listOrders
+    const result = await listOrders({ orgId: org1Id, perPage: 100 })
+    const rowsMap = new Map(result.rows.map((r) => [r.id, r]))
+
+    expect(rowsMap.get('order-no-inv')?.paymentStatus).toBe('no_invoice')
+    expect(rowsMap.get('order-unpaid')?.paymentStatus).toBe('unpaid')
+    expect(rowsMap.get('order-part-paid')?.paymentStatus).toBe('partially_paid')
+    expect(rowsMap.get('order-paid')?.paymentStatus).toBe('paid')
+    expect(rowsMap.get('order-void')?.paymentStatus).toBe('void')
+    expect(rowsMap.get('order-split-1')?.paymentStatus).toBe('partially_paid')
+    expect(rowsMap.get('order-split-2')?.paymentStatus).toBe('partially_paid')
+    expect(rowsMap.get('order-split-3')?.paymentStatus).toBe('paid')
+    expect(rowsMap.get('order-split-4')?.paymentStatus).toBe('unpaid')
+    expect(rowsMap.get('order-split-5')?.paymentStatus).toBe('void')
   })
 })

@@ -1,4 +1,14 @@
-import { and, desc, eq, ilike, inArray, or, type SQL, sql } from 'drizzle-orm'
+import {
+  and,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNull,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   addresses as addressesTable,
@@ -12,6 +22,7 @@ import {
   paymentMethods as paymentMethodsTable,
   productAddons as productAddonsTable,
   productionStages as productionStagesTable,
+  productionTasks as productionTasksTable,
   products as productsTable,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
@@ -379,6 +390,7 @@ async function computeLineItemPricing(input: {
     const result = calculateUnitPrice({
       quantity: input.quantity,
       breakpoints,
+      manualUnitPrice: input.manualUnitPrice,
       mode: product.pricingMode as 'interpolated' | 'step',
     })
     if ('code' in result) {
@@ -482,7 +494,13 @@ export async function listOrders(
   // Fetch aggregated invoice data for displayed orders
   const invoiceMap = new Map<
     string,
-    { paymentStatus: string; dueDate: string | null }
+    {
+      totalPaidAmount: number
+      totalPaidPercentage: number
+      anyPartiallyPaid: boolean
+      allVoid: boolean
+      dueDate: string | null
+    }
   >()
 
   if (rows.length > 0) {
@@ -491,12 +509,10 @@ export async function listOrders(
     const invoiceAggs = await db
       .select({
         orderId: invoicesTable.orderId,
-        paymentStatus: sql<string>`CASE
-          WHEN bool_and(${invoicesTable.status} IN ('paid', 'void')) AND bool_or(${invoicesTable.status} = 'paid') THEN 'paid'
-          WHEN bool_and(${invoicesTable.status} = 'void') THEN 'void'
-          WHEN bool_or(${invoicesTable.status} = 'partially_paid') THEN 'partially_paid'
-          ELSE 'unpaid'
-        END`,
+        totalPaidAmount: sql<number>`SUM(CASE WHEN ${invoicesTable.status} = 'paid' THEN ${invoicesTable.total} ELSE 0 END)`,
+        totalPaidPercentage: sql<number>`SUM(CASE WHEN ${invoicesTable.status} = 'paid' THEN COALESCE(${invoicesTable.percentage}, 0) ELSE 0 END)`,
+        anyPartiallyPaid: sql<boolean>`BOOL_OR(${invoicesTable.status} = 'partially_paid')`,
+        allVoid: sql<boolean>`BOOL_AND(${invoicesTable.status} = 'void')`,
         dueDate: sql<string | null>`
           MIN(CASE WHEN ${invoicesTable.status} NOT IN ('paid', 'void') THEN ${invoicesTable.dueDate} END)
         `,
@@ -513,19 +529,53 @@ export async function listOrders(
     for (const agg of invoiceAggs) {
       if (agg.orderId) {
         invoiceMap.set(agg.orderId, {
-          paymentStatus: agg.paymentStatus,
+          totalPaidAmount: Number(agg.totalPaidAmount || 0),
+          totalPaidPercentage: Number(agg.totalPaidPercentage || 0),
+          anyPartiallyPaid: Boolean(agg.anyPartiallyPaid),
+          allVoid: Boolean(agg.allVoid),
           dueDate: agg.dueDate as string | null,
         })
       }
     }
   }
 
-  const enrichedRows = rows.map((row) => ({
-    ...row,
-    paymentStatus: invoiceMap.get(row.id)?.paymentStatus ?? 'no_invoice',
-    dueDate: invoiceMap.get(row.id)?.dueDate ?? null,
-    maxDeadline: row.maxDeadline ?? null,
-  }))
+  const enrichedRows = rows.map((row) => {
+    const agg = invoiceMap.get(row.id)
+    let paymentStatus = 'no_invoice'
+    let dueDate = null
+
+    if (agg) {
+      dueDate = agg.dueDate
+      if (agg.allVoid) {
+        paymentStatus = 'void'
+      } else {
+        const isFullyPaid =
+          agg.totalPaidAmount >= row.total || agg.totalPaidPercentage >= 100
+
+        if (isFullyPaid) {
+          paymentStatus = 'paid'
+        } else {
+          const hasPayments =
+            agg.totalPaidAmount > 0 ||
+            agg.totalPaidPercentage > 0 ||
+            agg.anyPartiallyPaid
+
+          if (hasPayments) {
+            paymentStatus = 'partially_paid'
+          } else {
+            paymentStatus = 'unpaid'
+          }
+        }
+      }
+    }
+
+    return {
+      ...row,
+      paymentStatus,
+      dueDate,
+      maxDeadline: row.maxDeadline ?? null,
+    }
+  })
 
   return {
     rows: enrichedRows,
@@ -736,6 +786,10 @@ export async function createDraftOrder(
     if (!product.active) throw new Error('Product is not active')
 
     // Validate minimum quantity
+    if (li.quantity <= 0) {
+      throw new Error('Quantity must be greater than zero')
+    }
+
     if (li.isRepeatOrder) {
       const minQty = product.repeatOrderMinQuantity ?? product.minQuantity
       if (li.quantity < minQty) {
@@ -947,6 +1001,10 @@ export async function updateDraftOrder(
     productNames.set(li.productId, productRows[0].name)
 
     // Validate minimum quantity
+    if (li.quantity <= 0) {
+      throw new Error('Quantity must be greater than zero')
+    }
+
     if (li.isRepeatOrder) {
       const minQty = product.repeatOrderMinQuantity ?? product.minQuantity
       if (li.quantity < minQty) {
@@ -1224,11 +1282,30 @@ export async function markShipped(
     throw new Error('Only in_progress orders can be shipped')
 
   const now = new Date()
-  await db.update(ordersTable).set({
-    status: 'in_delivery',
-    ...(delivery.courier !== undefined ? { courier: delivery.courier } : {}),
-    trackingNumber: delivery.trackingNumber ?? null,
-    shippedAt: now,
-    updatedAt: now,
+  await db.transaction(async (tx) => {
+    await tx
+      .update(ordersTable)
+      .set({
+        status: 'in_delivery',
+        ...(delivery.courier !== undefined
+          ? { courier: delivery.courier }
+          : {}),
+        trackingNumber: delivery.trackingNumber ?? null,
+        shippedAt: now,
+        updatedAt: now,
+      })
+      .where(and(eq(ordersTable.id, id), eq(ordersTable.orgId, orgId)))
+
+    await tx
+      .update(productionTasksTable)
+      .set({ archivedAt: now, updatedAt: now })
+      .where(
+        and(
+          eq(productionTasksTable.orderId, id),
+          eq(productionTasksTable.orgId, orgId),
+          eq(productionTasksTable.status, 'completed'),
+          isNull(productionTasksTable.archivedAt),
+        ),
+      )
   })
 }
