@@ -1,6 +1,7 @@
 import { Input } from '#/components/ui/input'
 import { useFieldContext } from './form-context-base'
 import type { FieldProps } from './form-fields-shared'
+import { FormLabel } from './form-label'
 import { firstError } from './form-utils'
 
 export function DateField({
@@ -8,6 +9,7 @@ export function DateField({
   placeholder,
   optional,
   optionalLabel,
+  requiredLabel,
   disabled,
 }: FieldProps) {
   const field = useFieldContext<string>()
@@ -15,16 +17,14 @@ export function DateField({
 
   return (
     <div data-invalid={!!error}>
-      {label && (
-        <label htmlFor={field.name} className="text-sm font-medium">
-          {label}
-          {optional && optionalLabel && (
-            <span className="text-muted-foreground font-normal">
-              {optionalLabel}
-            </span>
-          )}
-        </label>
-      )}
+      <FormLabel
+        htmlFor={field.name}
+        label={label}
+        optional={optional}
+        optionalLabel={optionalLabel}
+        requiredLabel={requiredLabel}
+        field={field}
+      />
       <div className="mt-1">
         <Input
           id={field.name}

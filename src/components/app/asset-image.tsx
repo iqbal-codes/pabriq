@@ -23,7 +23,12 @@ interface AssetImageProps {
 
 const previewableKinds: readonly AssetKind[] = ['image', 'video']
 
-export function AssetImage({ assetId, assetKind, className, interactive = true }: AssetImageProps) {
+export function AssetImage({
+  assetId,
+  assetKind,
+  className,
+  interactive = true,
+}: AssetImageProps) {
   const common = useTranslations('common')
   const [open, setOpen] = useState(false)
   const isPreviewable = assetKind ? previewableKinds.includes(assetKind) : false
@@ -83,11 +88,7 @@ export function AssetImage({ assetId, assetKind, className, interactive = true }
 
   if (!interactive) {
     return (
-      <img
-        src={thumbnailUrl}
-        alt=""
-        className={cn('shrink-0', className)}
-      />
+      <img src={thumbnailUrl} alt="" className={cn('shrink-0', className)} />
     )
   }
 

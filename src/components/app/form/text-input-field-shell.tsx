@@ -1,6 +1,7 @@
 import type { ChangeEvent, ReactElement, ReactNode } from 'react'
 import { useFieldContext } from './form-context-base'
 import type { FieldProps } from './form-fields-shared'
+import { FormLabel } from './form-label'
 import { firstError } from './form-utils'
 
 export type TextInputFieldShellProps = FieldProps & {
@@ -21,6 +22,7 @@ export function TextInputFieldShell({
   placeholder,
   optional,
   optionalLabel,
+  requiredLabel,
   disabled,
   autoComplete,
   children,
@@ -30,16 +32,14 @@ export function TextInputFieldShell({
 
   return (
     <div data-invalid={!!error}>
-      {label && (
-        <label htmlFor={field.name} className="text-sm font-medium">
-          {label}
-          {optional && optionalLabel && (
-            <span className="text-muted-foreground font-normal">
-              {optionalLabel}
-            </span>
-          )}
-        </label>
-      )}
+      <FormLabel
+        htmlFor={field.name}
+        label={label}
+        optional={optional}
+        optionalLabel={optionalLabel}
+        requiredLabel={requiredLabel}
+        field={field}
+      />
       <div className="mt-1">
         {children({
           id: field.name,

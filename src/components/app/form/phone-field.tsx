@@ -5,6 +5,7 @@ import {
 } from '#/components/ui/input-group'
 import { useFieldContext } from './form-context-base'
 import type { FieldProps, NumberFieldCallbacks } from './form-fields-shared'
+import { FormLabel } from './form-label'
 import { firstError, formatPhone, stripNonDigits } from './form-utils'
 
 export function PhoneField({
@@ -12,6 +13,7 @@ export function PhoneField({
   placeholder,
   optional,
   optionalLabel,
+  requiredLabel,
   disabled,
   autoComplete = 'tel',
   onValueChange,
@@ -25,16 +27,14 @@ export function PhoneField({
 
   return (
     <div data-invalid={!!error}>
-      {label && (
-        <label htmlFor={field.name} className="text-sm font-medium">
-          {label}
-          {optional && optionalLabel && (
-            <span className="text-muted-foreground font-normal">
-              {optionalLabel}
-            </span>
-          )}
-        </label>
-      )}
+      <FormLabel
+        htmlFor={field.name}
+        label={label}
+        optional={optional}
+        optionalLabel={optionalLabel}
+        requiredLabel={requiredLabel}
+        field={field}
+      />
       <div className="mt-1">
         <InputGroup>
           <InputGroupAddon>+62</InputGroupAddon>

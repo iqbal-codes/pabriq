@@ -3,12 +3,14 @@ import { RadioGroupItem } from '#/components/ui/radio-group'
 import { cn } from '#/lib/utils'
 import { useFieldContext } from './form-context-base'
 import type { FieldProps, SelectOption } from './form-fields-shared'
+import { FormLabel } from './form-label'
 import { firstError } from './form-utils'
 
 function RadioGroupField({
   label,
   optional,
   optionalLabel,
+  requiredLabel,
   disabled,
   options,
   layout = 'vertical',
@@ -21,16 +23,13 @@ function RadioGroupField({
 
   return (
     <div data-invalid={!!error}>
-      {label && (
-        <span className="text-sm font-medium">
-          {label}
-          {optional && optionalLabel && (
-            <span className="text-muted-foreground font-normal">
-              {optionalLabel}
-            </span>
-          )}
-        </span>
-      )}
+      <FormLabel
+        label={label}
+        optional={optional}
+        optionalLabel={optionalLabel}
+        requiredLabel={requiredLabel}
+        field={field}
+      />
       <RadioGroupPrimitive.Root
         className={cn(
           'mt-1',
@@ -65,6 +64,7 @@ function RadioCardField({
   label,
   optional,
   optionalLabel,
+  requiredLabel,
   disabled,
   options,
   cols = 3,
@@ -74,16 +74,13 @@ function RadioCardField({
 
   return (
     <div data-invalid={!!error}>
-      {label && (
-        <span className="text-sm font-medium">
-          {label}
-          {optional && optionalLabel && (
-            <span className="text-muted-foreground font-normal">
-              {optionalLabel}
-            </span>
-          )}
-        </span>
-      )}
+      <FormLabel
+        label={label}
+        optional={optional}
+        optionalLabel={optionalLabel}
+        requiredLabel={requiredLabel}
+        field={field}
+      />
       <RadioGroupPrimitive.Root
         className="mt-1 grid gap-3"
         style={{

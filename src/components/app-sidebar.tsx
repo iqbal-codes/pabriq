@@ -1,6 +1,6 @@
-"use client";
+'use client'
 
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from '@tanstack/react-router'
 import {
   FileText,
   GalleryVerticalEnd,
@@ -10,10 +10,10 @@ import {
   Settings2,
   ShoppingCart,
   Users,
-} from "lucide-react";
-import { useTranslations } from "use-intl";
-import { AssetImage } from "#/components/app/asset-image";
-import { NavUser } from "#/components/nav-user";
+} from 'lucide-react'
+import { useTranslations } from 'use-intl'
+import { AssetImage } from '#/components/app/asset-image'
+import { NavUser } from '#/components/nav-user'
 import {
   Sidebar,
   SidebarContent,
@@ -23,72 +23,73 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from "#/components/ui/sidebar";
-import type { Role } from "#/features/permissions/model";
-import { canViewProduction } from "#/features/permissions/model";
+} from '#/components/ui/sidebar'
+import type { Role } from '#/features/permissions/model'
+import { canViewProduction } from '#/features/permissions/model'
 
 type NavItem = {
   key:
-    | "dashboard"
-    | "orders"
-    | "customers"
-    | "products"
-    | "invoices"
-    | "production"
-    | "settings";
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-};
+    | 'dashboard'
+    | 'orders'
+    | 'customers'
+    | 'products'
+    | 'invoices'
+    | 'production'
+    | 'settings'
+  href: string
+  icon: React.ComponentType<{ className?: string }>
+}
 
 const allNavItems: NavItem[] = [
-  { key: "dashboard", href: "/", icon: LayoutDashboard },
-  { key: "orders", href: "/orders", icon: ShoppingCart },
-  { key: "customers", href: "/customers", icon: Users },
-  { key: "products", href: "/products", icon: Package },
-  { key: "invoices", href: "/invoices", icon: FileText },
-  { key: "production", href: "/production", icon: KanbanSquare },
-  { key: "settings", href: "/settings/general", icon: Settings2 },
-];
+  { key: 'dashboard', href: '/', icon: LayoutDashboard },
+  { key: 'orders', href: '/orders', icon: ShoppingCart },
+  { key: 'customers', href: '/customers', icon: Users },
+  { key: 'products', href: '/products', icon: Package },
+  { key: 'invoices', href: '/invoices', icon: FileText },
+  { key: 'production', href: '/production', icon: KanbanSquare },
+  { key: 'settings', href: '/settings/general', icon: Settings2 },
+]
 
 function getVisibleNavItems(role: Role): NavItem[] {
   return allNavItems.filter((item) => {
-    if (item.key === "production") return canViewProduction(role);
+    if (item.key === 'production') return canViewProduction(role)
     if (
       [
-        "customers",
-        "products",
-        "invoices",
-        "settings",
-        "dashboard",
-        "orders",
+        'customers',
+        'products',
+        'invoices',
+        'settings',
+        'dashboard',
+        'orders',
       ].includes(item.key)
     ) {
-      return role === "owner" || role === "admin";
+      return role === 'owner' || role === 'admin'
     }
-    return true;
-  });
+    return true
+  })
 }
 
 export function AppSidebar({
   user,
   org,
-  role = "member",
+  role = 'member',
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   user: {
-    name: string;
-    email: string;
-    avatar: string;
-  };
+    name: string
+    email: string
+    avatar: string
+  }
   org: {
-    name: string;
-    slug: string;
-    logo?: string | null;
-  };
-  role?: Role;
+    name: string
+    slug: string
+    logo?: string | null
+  }
+  role?: Role
 }) {
-  const t = useTranslations("sidebar");
-  const navItems = getVisibleNavItems(role);
+  const t = useTranslations('sidebar')
+  const navItems = getVisibleNavItems(role)
+  const { pathname } = useLocation()
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -118,20 +119,35 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu className="px-2">
-          {navItems.map((item) => (
-            <SidebarMenuItem key={item.key}>
-              <SidebarMenuButton asChild tooltip={t(item.key)}>
-                <Link
-                  to={item.href}
-                  activeProps={{ "data-active": true }}
-                  activeOptions={{ exact: item.href === "/" }}
+          {navItems.map((item) => {
+            const isActive =
+              item.href === '/'
+                ? pathname === '/'
+                : item.key === 'settings'
+                  ? pathname === '/settings' ||
+                    pathname.startsWith('/settings/')
+                  : (() => {
+                      const itemSegments = item.href.split('/').filter(Boolean)
+                      const pathSegments = pathname.split('/').filter(Boolean)
+                      return itemSegments.every(
+                        (segment, index) => pathSegments[index] === segment,
+                      )
+                    })()
+            return (
+              <SidebarMenuItem key={item.key}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive}
+                  tooltip={t(item.key)}
                 >
-                  {item.icon && <item.icon />}
-                  <span>{t(item.key)}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+                  <Link to={item.href}>
+                    {item.icon && <item.icon />}
+                    <span>{t(item.key)}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          })}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
@@ -139,5 +155,5 @@ export function AppSidebar({
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  );
+  )
 }

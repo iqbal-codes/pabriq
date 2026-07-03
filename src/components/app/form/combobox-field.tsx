@@ -1,4 +1,6 @@
-'use client'
+import { FormLabel } from './form-label'
+
+;('use client')
 
 import { CheckIcon, ChevronsUpDownIcon, XIcon } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -62,6 +64,7 @@ function ComboboxFieldSingle({
   placeholder,
   optional,
   optionalLabel,
+  requiredLabel,
   options: staticOptions,
   search,
   searchDelay = 300,
@@ -131,16 +134,14 @@ function ComboboxFieldSingle({
 
   return (
     <div data-invalid={!!error}>
-      {label && (
-        <label htmlFor={field.name} className="text-sm font-medium">
-          {label}
-          {optional && optionalLabel && (
-            <span className="text-muted-foreground font-normal">
-              {optionalLabel}
-            </span>
-          )}
-        </label>
-      )}
+      <FormLabel
+        htmlFor={field.name}
+        label={label}
+        optional={optional}
+        optionalLabel={optionalLabel}
+        requiredLabel={requiredLabel}
+        field={field}
+      />
       <div className="mt-1">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
@@ -234,6 +235,7 @@ function ComboboxFieldMulti({
   placeholder,
   optional,
   optionalLabel,
+  requiredLabel,
   options: staticOptions,
   search,
   searchDelay = 300,
@@ -308,16 +310,14 @@ function ComboboxFieldMulti({
 
   return (
     <div data-invalid={!!error}>
-      {label && (
-        <label htmlFor={field.name} className="text-sm font-medium">
-          {label}
-          {optional && optionalLabel && (
-            <span className="text-muted-foreground font-normal">
-              {optionalLabel}
-            </span>
-          )}
-        </label>
-      )}
+      <FormLabel
+        htmlFor={field.name}
+        label={label}
+        optional={optional}
+        optionalLabel={optionalLabel}
+        requiredLabel={requiredLabel}
+        field={field}
+      />
       <div className="mt-1">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>

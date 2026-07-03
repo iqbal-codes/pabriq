@@ -27,6 +27,7 @@ import type { BiteshipArea } from '#/features/address/model'
 import { cn } from '#/lib/utils'
 import { useFieldContext } from './form-context-base'
 import type { FieldProps } from './form-fields-shared'
+import { FormLabel } from './form-label'
 import { firstError } from './form-utils'
 
 export type AddressValue = {
@@ -39,6 +40,7 @@ export function AddressField({
   label,
   optional,
   optionalLabel,
+  requiredLabel,
   disabled,
   showAreaSearch = true,
 }: FieldProps & { showAreaSearch?: boolean }) {
@@ -97,16 +99,13 @@ export function AddressField({
 
   return (
     <div data-invalid={!!error}>
-      {label && (
-        <span className="text-sm font-medium">
-          {label}
-          {optional && optionalLabel && (
-            <span className="text-muted-foreground font-normal">
-              {optionalLabel}
-            </span>
-          )}
-        </span>
-      )}
+      <FormLabel
+        label={label}
+        optional={optional}
+        optionalLabel={optionalLabel}
+        requiredLabel={requiredLabel}
+        field={field}
+      />
       <div className="space-y-3 mt-1">
         {showAreaSearch && (
           <Popover open={open} onOpenChange={setOpen}>

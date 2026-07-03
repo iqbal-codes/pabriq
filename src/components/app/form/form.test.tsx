@@ -1,8 +1,28 @@
-import { render, screen } from '@testing-library/react'
+import { screen, render as tlRender } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderToString } from 'react-dom/server'
 import { IntlProvider } from 'use-intl'
 import { describe, expect, it } from 'vitest'
+
+const testMessages = {
+  common: {
+    optional: 'Optional',
+    required: 'Required',
+  },
+  combobox: {
+    searchPlaceholder: 'Search...',
+    noResults: 'No results',
+  },
+}
+
+function render(ui: React.ReactNode) {
+  return tlRender(
+    <IntlProvider locale="en" messages={testMessages}>
+      {ui}
+    </IntlProvider>,
+  )
+}
+
 import { useAppForm } from './form-context'
 import { FormActions, FormGrid, FormRoot, FormSection } from './form-layout'
 import {
@@ -90,7 +110,7 @@ describe('Form components', () => {
     expect(screen.queryByText('cust-1')).toBeNull()
   })
 
-  it('renders a SelectField with options', () => {
+  it('renders a SelectField with options', async () => {
     function TestForm() {
       const form = useAppForm({
         defaultValues: { status: '' },
@@ -114,6 +134,11 @@ describe('Form components', () => {
 
     render(<TestForm />)
     expect(screen.getByText('Status')).toBeDefined()
+
+    // Click trigger to open portal select options
+    const trigger = screen.getByRole('combobox')
+    await userEvent.click(trigger)
+
     expect(screen.getByText('Active')).toBeDefined()
     expect(screen.getByText('Inactive')).toBeDefined()
   })
@@ -151,7 +176,13 @@ describe('Form components', () => {
       )
     }
 
-    expect(renderToString(<TestForm />)).toContain('value="5.000"')
+    expect(
+      renderToString(
+        <IntlProvider locale="en" messages={testMessages}>
+          <TestForm />
+        </IntlProvider>,
+      ),
+    ).toContain('value="5.000"')
   })
 
   it('PhoneField stores raw digits and displays grouped formatting', async () => {

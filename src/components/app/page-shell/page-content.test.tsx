@@ -14,7 +14,7 @@ describe('PageContent', () => {
     render(<PageContent>c</PageContent>)
     const main = screen.getByRole('main')
     expect(main.className).toContain('mx-auto')
-    expect(main.className).toContain('max-w-5xl')
+    expect(main.className).toContain('max-w-6xl')
     expect(main.className).toContain('px-4')
     expect(main.className).toContain('py-6')
     expect(main.className).toContain('space-y-6')

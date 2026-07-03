@@ -13,6 +13,7 @@ import type { OwnerType, Usage } from '#/features/assets/model'
 import type { UploadItem } from '#/features/assets/upload-machine'
 import { useFieldContext } from './form-context-base'
 import type { FieldProps } from './form-fields-shared'
+import { FormLabel } from './form-label'
 import { firstError } from './form-utils'
 
 function PhotoPreviewTile({
@@ -53,12 +54,18 @@ export type PhotoUploadFieldProps = FieldProps & {
 
 function PhotoUploadFieldSingle({
   label,
+  optional,
+  optionalLabel,
+  requiredLabel,
   disabled,
   ownerType,
   usage,
   maxFiles,
 }: {
   label?: string
+  optional?: boolean
+  optionalLabel?: string
+  requiredLabel?: string
   disabled?: boolean
   ownerType: OwnerType
   usage: Usage
@@ -85,7 +92,13 @@ function PhotoUploadFieldSingle({
 
   return (
     <div className="col-span-full" data-invalid={!!error}>
-      {label && <span className="text-sm font-medium">{label}</span>}
+      <FormLabel
+        label={label}
+        optional={optional}
+        optionalLabel={optionalLabel}
+        requiredLabel={requiredLabel}
+        field={field}
+      />
       <div className="mt-1">
         {field.state.value ? (
           <PhotoPreviewTile
@@ -114,12 +127,18 @@ function PhotoUploadFieldSingle({
 
 function PhotoUploadFieldMultiple({
   label,
+  optional,
+  optionalLabel,
+  requiredLabel,
   disabled,
   ownerType,
   usage,
   maxFiles,
 }: {
   label?: string
+  optional?: boolean
+  optionalLabel?: string
+  requiredLabel?: string
   disabled?: boolean
   ownerType: OwnerType
   usage: Usage
@@ -145,7 +164,13 @@ function PhotoUploadFieldMultiple({
 
   return (
     <div className="col-span-full" data-invalid={!!error}>
-      {label && <span className="text-sm font-medium">{label}</span>}
+      <FormLabel
+        label={label}
+        optional={optional}
+        optionalLabel={optionalLabel}
+        requiredLabel={requiredLabel}
+        field={field}
+      />
       <div className="mt-1 space-y-3">
         {assetIds.length > 0 && (
           <div className="flex flex-wrap gap-2">
@@ -180,6 +205,9 @@ function PhotoUploadFieldMultiple({
 
 export function PhotoUploadField({
   label,
+  optional,
+  optionalLabel,
+  requiredLabel,
   disabled,
   ownerType = 'customer',
   usage = 'profile',
@@ -190,6 +218,9 @@ export function PhotoUploadField({
     return (
       <PhotoUploadFieldMultiple
         label={label}
+        optional={optional}
+        optionalLabel={optionalLabel}
+        requiredLabel={requiredLabel}
         disabled={disabled}
         ownerType={ownerType}
         usage={usage}
@@ -201,6 +232,9 @@ export function PhotoUploadField({
   return (
     <PhotoUploadFieldSingle
       label={label}
+      optional={optional}
+      optionalLabel={optionalLabel}
+      requiredLabel={requiredLabel}
       disabled={disabled}
       ownerType={ownerType}
       usage={usage}

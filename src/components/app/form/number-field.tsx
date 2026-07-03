@@ -1,6 +1,7 @@
 import { Input } from '#/components/ui/input'
 import { useFieldContext } from './form-context-base'
 import type { FieldProps, NumberFieldCallbacks } from './form-fields-shared'
+import { FormLabel } from './form-label'
 import { firstError, formatNumber, stripNumberFormatting } from './form-utils'
 
 export function NumberField({
@@ -8,6 +9,7 @@ export function NumberField({
   placeholder,
   optional,
   optionalLabel,
+  requiredLabel,
   disabled,
   autoComplete,
   onValueChange,
@@ -20,16 +22,14 @@ export function NumberField({
 
   return (
     <div data-invalid={!!error}>
-      {label && (
-        <label htmlFor={field.name} className="text-sm font-medium">
-          {label}
-          {optional && optionalLabel && (
-            <span className="text-muted-foreground font-normal">
-              {optionalLabel}
-            </span>
-          )}
-        </label>
-      )}
+      <FormLabel
+        htmlFor={field.name}
+        label={label}
+        optional={optional}
+        optionalLabel={optionalLabel}
+        requiredLabel={requiredLabel}
+        field={field}
+      />
       <div className="mt-1">
         <Input
           id={field.name}

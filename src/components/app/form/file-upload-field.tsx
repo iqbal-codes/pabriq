@@ -19,6 +19,7 @@ import { getAssetsMetadata } from '#/features/assets/server'
 import type { UploadItem } from '#/features/assets/upload-machine'
 import { useFieldContext } from './form-context-base'
 import type { FieldProps } from './form-fields-shared'
+import { FormLabel } from './form-label'
 import { firstError } from './form-utils'
 
 export type FileUploadFieldProps = FieldProps & {
@@ -95,6 +96,9 @@ type FileUploadFieldBaseProps = FieldProps & {
 
 function FileUploadFieldBase({
   label,
+  optional,
+  optionalLabel,
+  requiredLabel,
   disabled,
   adapter,
   queryKey,
@@ -170,7 +174,13 @@ function FileUploadFieldBase({
 
   return (
     <div className="col-span-full" data-invalid={!!error}>
-      {label && <span className="text-sm font-medium">{label}</span>}
+      <FormLabel
+        label={label}
+        optional={optional}
+        optionalLabel={optionalLabel}
+        requiredLabel={requiredLabel}
+        field={field}
+      />
       <div className="mt-1 space-y-3">
         <FileListUpload
           items={uploadItems}
@@ -210,6 +220,9 @@ export function FileUploadField({
   maxFiles = 50,
   acceptedMimeTypes,
   label,
+  optional,
+  optionalLabel,
+  requiredLabel,
   disabled,
 }: FileUploadFieldProps) {
   const adapter = useMemo(
@@ -220,6 +233,9 @@ export function FileUploadField({
   return (
     <FileUploadFieldBase
       label={label}
+      optional={optional}
+      optionalLabel={optionalLabel}
+      requiredLabel={requiredLabel}
       disabled={disabled}
       adapter={adapter}
       queryKey={['assets-metadata']}
@@ -239,6 +255,9 @@ export function PortalFileUploadField({
   maxFiles = 50,
   acceptedMimeTypes,
   label,
+  optional,
+  optionalLabel,
+  requiredLabel,
   disabled,
 }: PortalFileUploadFieldProps) {
   const adapter = useMemo(
@@ -255,6 +274,9 @@ export function PortalFileUploadField({
   return (
     <FileUploadFieldBase
       label={label}
+      optional={optional}
+      optionalLabel={optionalLabel}
+      requiredLabel={requiredLabel}
       disabled={disabled}
       adapter={adapter}
       queryKey={['portal-assets-metadata']}

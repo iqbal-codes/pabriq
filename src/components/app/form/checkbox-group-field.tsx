@@ -2,12 +2,14 @@ import { Checkbox } from '#/components/ui/checkbox'
 import { cn } from '#/lib/utils'
 import { useFieldContext } from './form-context-base'
 import type { FieldProps, SelectOption } from './form-fields-shared'
+import { FormLabel } from './form-label'
 import { firstError } from './form-utils'
 
 function CheckboxGroupField({
   label,
   optional,
   optionalLabel,
+  requiredLabel,
   disabled,
   options,
   layout = 'vertical',
@@ -28,17 +30,14 @@ function CheckboxGroupField({
 
   return (
     <div data-invalid={!!error}>
-      {label && (
-        <span className="text-sm font-medium">
-          {label}
-          {optional && optionalLabel && (
-            <span className="text-muted-foreground font-normal">
-              {optionalLabel}
-            </span>
-          )}
-        </span>
-      )}
-      <div
+      <FormLabel
+        label={label}
+        optional={optional}
+        optionalLabel={optionalLabel}
+        requiredLabel={requiredLabel}
+        field={field}
+      />
+      <fieldset
         className={cn(
           'mt-1',
           layout === 'horizontal' ? 'flex gap-6' : 'grid gap-3',
@@ -61,7 +60,7 @@ function CheckboxGroupField({
             </label>
           </div>
         ))}
-      </div>
+      </fieldset>
       {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
     </div>
   )

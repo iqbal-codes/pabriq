@@ -1,8 +1,23 @@
-import { render, screen } from '@testing-library/react'
+import { screen, render as tlRender } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { IntlProvider } from 'use-intl'
 import { describe, expect, it } from 'vitest'
 import { useAppForm } from './form-context'
 
+const testMessages = {
+  common: {
+    optional: 'Optional',
+    required: 'Required',
+  },
+}
+
+function render(ui: React.ReactNode) {
+  return tlRender(
+    <IntlProvider locale="en" messages={testMessages}>
+      {ui}
+    </IntlProvider>,
+  )
+}
 const options = [
   { value: 'option-a', label: 'Option A' },
   { value: 'option-b', label: 'Option B' },

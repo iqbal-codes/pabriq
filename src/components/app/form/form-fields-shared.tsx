@@ -5,6 +5,7 @@ export type FieldProps = {
   placeholder?: string
   optional?: boolean
   optionalLabel?: string
+  requiredLabel?: string
   disabled?: boolean
   autoComplete?: string
 }
