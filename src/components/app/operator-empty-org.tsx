@@ -10,7 +10,7 @@ export function OperatorEmptyOrg() {
   const router = useRouter()
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex flex-1 items-center justify-center">
       <div className="flex flex-col items-center gap-4 text-center max-w-sm">
         <h1 className="text-2xl font-semibold">{t('noOrgTitle')}</h1>
         <p className="text-muted-foreground">{t('noOrgDescription')}</p>

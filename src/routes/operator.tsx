@@ -76,10 +76,10 @@ function OperatorLayout() {
       avatar: ctx.session.user.image || '',
     }
     return (
-      <>
+      <div className="flex flex-col h-dvh">
         <OperatorHeader org={null} user={user} />
         <OperatorEmptyOrg />
-      </>
+      </div>
     )
   }
 
@@ -94,9 +94,11 @@ function OperatorLayout() {
   }
 
   return (
-    <>
+    <div className="flex flex-col h-dvh">
       <OperatorHeader org={ctx.org} user={user} />
-      <Outlet />
-    </>
+      <div className="flex-1 overflow-auto min-w-0">
+        <Outlet />
+      </div>
+    </div>
   )
 }

@@ -67,7 +67,8 @@ export function OperatorHeader({
               <AssetImage
                 assetId={org.logo}
                 assetKind="image"
-                className="size-8 rounded-md object-cover"
+                interactive={false}
+                className="w-8 h-auto rounded-md object-contain"
               />
             ) : (
               <div className="flex size-8 items-center justify-center rounded-md bg-muted">
