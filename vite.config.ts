@@ -1,3 +1,5 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import { devtools } from '@tanstack/devtools-vite'
 
@@ -7,34 +9,36 @@ import viteReact from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 import neon from './neon-vite-plugin.ts'
 
-const config = defineConfig(({ mode, ssrBuild }) => {
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+const browserPolyfills = () => ({
+  name: 'browser-polyfills',
+  enforce: 'pre' as const,
+  resolveId(source: string, importer: string | undefined, options: { ssr?: boolean }) {
+    if (options?.ssr) {
+      return null
+    }
+    if (
+      source === 'node:stream' ||
+      source === 'node:stream/web' ||
+      source === 'node:async_hooks'
+    ) {
+      return path.resolve(__dirname, 'src/lib/node-polyfills-stub.ts')
+    }
+    return null
+  },
+})
+
+const config = defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const neonLaunchpad =
     env.NEON_LAUNCHPAD_DISABLED === 'true' || !env.DATABASE_URL
       ? { name: 'neon-launchpad-disabled' }
       : neon
-
-  const alias = !ssrBuild
-    ? [
-        {
-          find: /^node:stream$/,
-          replacement: './src/lib/node-polyfills-stub.ts',
-        },
-        {
-          find: /^node:stream\/web$/,
-          replacement: './src/lib/node-polyfills-stub.ts',
-        },
-        {
-          find: /^node:async_hooks$/,
-          replacement: './src/lib/node-polyfills-stub.ts',
-        },
-      ]
-    : []
-
   return {
     resolve: {
       tsconfigPaths: true,
-      alias,
     },
     build: {
       target: 'es2022',
@@ -43,6 +47,7 @@ const config = defineConfig(({ mode, ssrBuild }) => {
       allowedHosts: true,
     },
     plugins: [
+      browserPolyfills(),
       devtools(),
       neonLaunchpad,
       tailwindcss(),
