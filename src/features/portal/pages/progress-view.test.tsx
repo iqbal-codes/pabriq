@@ -25,7 +25,7 @@ const messages = {
     noStageTransitions: 'Belum ada perpindahan tahap',
     taskTimeline: 'Timeline Tugas',
     notes: 'Catatan',
-    attachment: 'Lampiran',
+    attachment: 'Masukkan File PDF / Corel',
     currentStage: 'Tahap Saat Ini',
     progressOverview: 'Ringkasan cepat',
     progressStatusApprovedHelp:

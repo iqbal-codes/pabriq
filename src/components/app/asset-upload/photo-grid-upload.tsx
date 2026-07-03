@@ -121,7 +121,8 @@ export function PhotoGridUpload(props: PhotoGridUploadProps) {
       const validFiles = acceptedFiles.filter(
         (file) =>
           file.size <= props.maxBytes &&
-          props.acceptedMimeTypes.includes(file.type),
+          (props.acceptedMimeTypes.length === 0 ||
+            props.acceptedMimeTypes.includes(file.type)),
       )
       if (validFiles.length > 0) {
         addFiles(validFiles)
@@ -132,9 +133,10 @@ export function PhotoGridUpload(props: PhotoGridUploadProps) {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: Object.fromEntries(
-      props.acceptedMimeTypes.map((mime) => [mime, []]),
-    ),
+    accept:
+      props.acceptedMimeTypes.length > 0
+        ? Object.fromEntries(props.acceptedMimeTypes.map((mime) => [mime, []]))
+        : undefined,
     disabled: props.disabled,
     multiple: true,
   })

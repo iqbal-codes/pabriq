@@ -849,7 +849,7 @@ const id: Messages = {
       "Masukkan nama desain, nama artwork, atau label referensi",
     itemNotes: "Catatan / Spesifikasi",
     itemNotesPlaceholder: "Ukuran tinggi dan lebar logo",
-    attachment: "Lampiran",
+    attachment: "Masukkan File PDF / Corel",
     addAttachment: "Tambah lampiran",
     shippingAddress: "Alamat Pengiriman",
     orderNumber: "Nomor Pesanan",

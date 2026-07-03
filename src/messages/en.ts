@@ -847,7 +847,7 @@ const en: Messages = {
       "Enter design name, artwork name, or reference label",
     itemNotes: "Notes / Specification",
     itemNotesPlaceholder: "Logo height and width dimensions",
-    attachment: "Attachment",
+    attachment: "Upload PDF / Corel File",
     addAttachment: "Add attachment",
     shippingAddress: "Shipping Address",
     orderNumber: "Order Number",
