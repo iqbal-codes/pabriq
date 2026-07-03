@@ -9,6 +9,7 @@ type PortalShellProps = {
   children: React.ReactNode
   footer?: React.ReactNode
   contentClassName?: string
+  token?: string
 }
 
 export function PortalShell({
@@ -16,6 +17,7 @@ export function PortalShell({
   children,
   footer,
   contentClassName,
+  token,
 }: PortalShellProps) {
   const t = useTranslations('portal')
   const [scrolled, setScrolled] = useState(false)
@@ -40,6 +42,7 @@ export function PortalShell({
         orgLogoAssetId={order.orgLogoAssetId}
         orderNumber={order.orderNumber}
         elevated={scrolled}
+        token={token}
       />
 
       <main

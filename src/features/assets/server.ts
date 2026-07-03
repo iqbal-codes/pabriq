@@ -261,9 +261,20 @@ export const getUploadUrl = createServerFn({ method: 'POST' })
   )
 
 export const getAssetSignedUrl = createServerFn({ method: 'GET' })
-  .inputValidator((input: { assetId: string; variantKey: VariantKey }) => input)
+  .inputValidator(
+    (input: { assetId: string; variantKey: VariantKey; token?: string }) =>
+      input,
+  )
   .handler(async ({ data }): Promise<{ url: string; expiresAt: number }> => {
-    const [, { db }] = await Promise.all([resolveOrgId(), import('#/db/index')])
+    const token = data.token
+    const [, { db }] = await Promise.all([
+      token
+        ? import('#/features/portal/server').then((m) =>
+            m.getOrgIdFromToken(token),
+          )
+        : resolveOrgId(),
+      import('#/db/index'),
+    ])
 
     const requestedVariant = await db
       .select()
@@ -316,10 +327,15 @@ export type AssetMetadata = {
 }
 
 export const getAssetsMetadata = createServerFn({ method: 'GET' })
-  .inputValidator((input: { assetIds: string[] }) => input)
+  .inputValidator((input: { assetIds: string[]; token?: string }) => input)
   .handler(async ({ data }): Promise<AssetMetadata[]> => {
+    const token = data.token
     const [orgId, { db }] = await Promise.all([
-      resolveOrgId(),
+      token
+        ? import('#/features/portal/server').then((m) =>
+            m.getOrgIdFromToken(token),
+          )
+        : resolveOrgId(),
       import('#/db/index'),
     ])
 

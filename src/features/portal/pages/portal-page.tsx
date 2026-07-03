@@ -119,7 +119,7 @@ export function PortalPage({ token }: PortalPageProps) {
     : null
 
   return (
-    <PortalShell order={order}>
+    <PortalShell order={order} token={token}>
       {order.status === 'pending' && <PendingView order={order} />}
       {order.status === 'draft' && <DraftView order={order} token={token} />}
       {order.status === 'rejected' && <RejectedView order={order} />}

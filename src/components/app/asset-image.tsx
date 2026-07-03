@@ -19,6 +19,7 @@ interface AssetImageProps {
   className?: string
   /** When false, renders a plain image without the click-to-preview dialog. */
   interactive?: boolean
+  token?: string
 }
 
 const previewableKinds: readonly AssetKind[] = ['image', 'video']
@@ -28,6 +29,7 @@ export function AssetImage({
   assetKind,
   className,
   interactive = true,
+  token,
 }: AssetImageProps) {
   const common = useTranslations('common')
   const [open, setOpen] = useState(false)
@@ -38,20 +40,24 @@ export function AssetImage({
     isError: previewIsError,
     isLoading: previewIsLoading,
   } = useQuery({
-    queryKey: ['asset-signed-url', assetId, 'preview'],
+    queryKey: ['asset-signed-url', assetId, 'preview', token].filter(Boolean),
     queryFn: () => {
       if (!assetId) throw new Error('assetId is required')
-      return getAssetSignedUrl({ data: { assetId, variantKey: 'preview' } })
+      return getAssetSignedUrl({
+        data: { assetId, variantKey: 'preview', token },
+      })
     },
     enabled: !!assetId && isPreviewable,
     staleTime: 15 * 60 * 1000,
   })
 
   const { data: originalData } = useQuery({
-    queryKey: ['asset-signed-url', assetId, 'original'],
+    queryKey: ['asset-signed-url', assetId, 'original', token].filter(Boolean),
     queryFn: () => {
       if (!assetId) throw new Error('assetId is required')
-      return getAssetSignedUrl({ data: { assetId, variantKey: 'original' } })
+      return getAssetSignedUrl({
+        data: { assetId, variantKey: 'original', token },
+      })
     },
     enabled: !!assetId && isPreviewable && open,
     staleTime: 15 * 60 * 1000,

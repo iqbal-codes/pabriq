@@ -165,6 +165,7 @@ export function ProgressView({
               key={item.id}
               item={item}
               events={safeTimelineEvents}
+              token={token}
             />
           ))}
         </div>

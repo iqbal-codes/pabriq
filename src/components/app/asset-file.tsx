@@ -74,20 +74,24 @@ function AssetFileRow({
   metadata,
   showSize = true,
   className,
+  token,
 }: {
   metadata: AssetMetadata
   showSize?: boolean
   className?: string
+  token?: string
 }) {
   const isImage = metadata.assetKind === 'image'
   const isVideo = metadata.assetKind === 'video'
   const isPreviewable = isImage || isVideo
   const ext = getExtension(metadata.originalFilename)
   const { data: signedUrlData } = useQuery({
-    queryKey: ['asset-signed-url', metadata.id, 'original'],
+    queryKey: ['asset-signed-url', metadata.id, 'original', token].filter(
+      Boolean,
+    ),
     queryFn: () =>
       getAssetSignedUrl({
-        data: { assetId: metadata.id, variantKey: 'original' },
+        data: { assetId: metadata.id, variantKey: 'original', token },
       }),
     enabled: !isPreviewable,
     staleTime: 5 * 60 * 1000,
@@ -105,6 +109,7 @@ function AssetFileRow({
           assetId={metadata.id}
           assetKind={metadata.assetKind as AssetKind}
           className="rounded-lg shrink-0"
+          token={token}
         />
       ) : (
         <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
@@ -150,9 +155,11 @@ function AssetFileRow({
 function AssetFileGridCard({
   metadata,
   showSize = true,
+  token,
 }: {
   metadata: AssetMetadata
   showSize?: boolean
+  token?: string
 }) {
   const isImage = metadata.assetKind === 'image'
   const isVideo = metadata.assetKind === 'video'
@@ -160,10 +167,12 @@ function AssetFileGridCard({
   const ext = getExtension(metadata.originalFilename)
 
   const { data: signedUrlData } = useQuery({
-    queryKey: ['asset-signed-url', metadata.id, 'original'],
+    queryKey: ['asset-signed-url', metadata.id, 'original', token].filter(
+      Boolean,
+    ),
     queryFn: () =>
       getAssetSignedUrl({
-        data: { assetId: metadata.id, variantKey: 'original' },
+        data: { assetId: metadata.id, variantKey: 'original', token },
       }),
     enabled: !isPreviewable,
     staleTime: 5 * 60 * 1000,
@@ -177,6 +186,7 @@ function AssetFileGridCard({
             assetId={metadata.id}
             assetKind={metadata.assetKind as AssetKind}
             className="size-full rounded-lg object-cover"
+            token={token}
           />
         ) : (
           <div className="flex items-center justify-center">
@@ -232,6 +242,7 @@ type AssetFileListProps = {
   showSize?: boolean
   maxVisible?: number
   className?: string
+  token?: string
 }
 
 export function AssetFileList({
@@ -240,10 +251,11 @@ export function AssetFileList({
   showSize = true,
   maxVisible,
   className,
+  token,
 }: AssetFileListProps) {
   const { data: assets } = useQuery({
-    queryKey: ['asset-file-meta', assetIds],
-    queryFn: () => getAssetsMetadata({ data: { assetIds } }),
+    queryKey: ['asset-file-meta', assetIds, token].filter(Boolean),
+    queryFn: () => getAssetsMetadata({ data: { assetIds, token } }),
     enabled: assetIds.length > 0,
     staleTime: 60 * 1000,
   })
@@ -273,6 +285,7 @@ export function AssetFileList({
             key={asset.id}
             metadata={asset}
             showSize={showSize}
+            token={token}
           />
         ))}
         {remaining > 0 && (
@@ -287,7 +300,12 @@ export function AssetFileList({
   return (
     <div className={cn('space-y-2', className)}>
       {visible.map((asset) => (
-        <AssetFileRow key={asset.id} metadata={asset} showSize={showSize} />
+        <AssetFileRow
+          key={asset.id}
+          metadata={asset}
+          showSize={showSize}
+          token={token}
+        />
       ))}
       {remaining > 0 && (
         <p className="text-xs text-center text-muted-foreground">

@@ -53,9 +53,11 @@ function getAssetKindFromMimeType(mimeType: string): string {
 function ExistingFileRow({
   metadata,
   onRemove,
+  token,
 }: {
   metadata: AssetMetadata
   onRemove: () => Promise<void>
+  token?: string
 }) {
   const t = useTranslations('assetUpload')
 
@@ -65,6 +67,7 @@ function ExistingFileRow({
         assetId={metadata.id}
         assetKind={metadata.assetKind as AssetKind}
         className="rounded-lg"
+        token={token}
       />
       <div className="flex-1 min-w-0">
         <p className="truncate text-sm font-medium">
@@ -92,6 +95,7 @@ type FileUploadFieldBaseProps = FieldProps & {
   usage?: Usage
   maxFiles?: number
   acceptedMimeTypes?: readonly string[]
+  token?: string
 }
 
 function FileUploadFieldBase({
@@ -107,6 +111,7 @@ function FileUploadFieldBase({
   usage = 'attachment',
   maxFiles = 50,
   acceptedMimeTypes,
+  token,
 }: FileUploadFieldBaseProps) {
   const field = useFieldContext<string[]>()
   const error = firstError(field.state.meta.errors)
@@ -118,8 +123,8 @@ function FileUploadFieldBase({
   const maxBytes = getMaxBytes(usage)
 
   const { data: existingAssets } = useQuery({
-    queryKey: [...queryKey, assetIds],
-    queryFn: () => getAssetsMetadata({ data: { assetIds } }),
+    queryKey: [...queryKey, assetIds, token].filter(Boolean),
+    queryFn: () => getAssetsMetadata({ data: { assetIds, token } }),
     enabled: assetIds.length > 0,
     placeholderData: (previousData) => previousData,
   })
@@ -202,6 +207,7 @@ function FileUploadFieldBase({
                   key={asset.id}
                   metadata={asset}
                   onRemove={() => handleRemoveAsset(asset.id, index)}
+                  token={token}
                 />
               )
             })}
@@ -284,6 +290,7 @@ export function PortalFileUploadField({
       usage={usage}
       maxFiles={maxFiles}
       acceptedMimeTypes={acceptedMimeTypes}
+      token={token}
     />
   )
 }

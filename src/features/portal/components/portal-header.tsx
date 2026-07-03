@@ -8,6 +8,7 @@ interface PortalHeaderProps {
   title?: string
   orderNumber?: string | null
   elevated?: boolean
+  token?: string
 }
 
 export function PortalHeader({
@@ -15,6 +16,7 @@ export function PortalHeader({
   title,
   orderNumber,
   elevated,
+  token,
 }: PortalHeaderProps) {
   const t = useTranslations('portal')
   const resolvedTitle = title ?? t('orderPillLabel')
@@ -33,6 +35,7 @@ export function PortalHeader({
             assetId={orgLogoAssetId}
             assetKind="image"
             className="size-8 rounded-lg object-cover"
+            token={token}
           />
         ) : (
           <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">

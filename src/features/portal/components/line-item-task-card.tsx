@@ -37,12 +37,14 @@ type LineItemTaskCardProps = {
   item: PortalLineItem
   events: OrderTaskEvent[]
   defaultExpanded?: boolean
+  token?: string
 }
 
 export function LineItemTaskCard({
   item,
   events,
   defaultExpanded = false,
+  token,
 }: LineItemTaskCardProps) {
   const t = useTranslations('portal')
   const locale = useLocale()
@@ -151,7 +153,11 @@ export function LineItemTaskCard({
               {t('itemAttachmentsLabel')}
             </p>
             <div className="mt-2">
-              <AssetFileList assetIds={item.assetIds} layout="list" />
+              <AssetFileList
+                assetIds={item.assetIds}
+                layout="list"
+                token={token}
+              />
             </div>
           </div>
         ) : null}
@@ -182,7 +188,7 @@ export function LineItemTaskCard({
             showTimeline ? 'block' : 'hidden',
           )}
         >
-          <OrderTimeline events={itemEvents} />
+          <OrderTimeline events={itemEvents} token={token} />
         </div>
       </div>
     </article>

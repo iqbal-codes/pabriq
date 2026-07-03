@@ -8,6 +8,7 @@ import type { OrderTaskEvent } from '../model'
 type Props = {
   events: OrderTaskEvent[]
   className?: string
+  token?: string
 }
 
 function getIcon(event: OrderTaskEvent): React.ReactNode {
@@ -21,12 +22,14 @@ function getIcon(event: OrderTaskEvent): React.ReactNode {
 
 function RequirementResponses({
   responses,
+  token,
 }: {
   responses: Array<{
     requirementName: string
     value?: string
     assetIds?: string[]
   }>
+  token?: string
 }) {
   const t = useTranslations('portal')
   const hasFiles = responses.some((r) => r.assetIds && r.assetIds.length > 0)
@@ -50,6 +53,7 @@ function RequirementResponses({
                     assetId={assetId}
                     assetKind="image"
                     className="size-12 rounded-md object-cover"
+                    token={token}
                   />
                 ))
               : [],
@@ -79,7 +83,7 @@ function RequirementResponses({
   )
 }
 
-export function OrderTimeline({ events, className }: Props) {
+export function OrderTimeline({ events, className, token }: Props) {
   const t = useTranslations('portal')
   const locale = useLocale()
   const sortedEvents = [...events].sort(
@@ -175,6 +179,7 @@ export function OrderTimeline({ events, className }: Props) {
             event.requirementResponses.length > 0 ? (
               <RequirementResponses
                 responses={event.requirementResponses[0].responses}
+                token={token}
               />
             ) : null}
           </div>
