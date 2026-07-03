@@ -1,21 +1,21 @@
-import { CheckCircle2 } from "lucide-react";
-import { useLocale, useTranslations } from "use-intl";
-import { Badge } from "#/components/ui/badge";
-import { CustomerInfoCard } from "#/features/portal/components/customer-info-card";
-import { ShippingAddressCard } from "#/features/portal/components/shipping-address-card";
-import { formatLongDate } from "#/lib/formatters";
-import { PortalContactButton } from "../components/portal-contact-button";
-import { PortalOrderSummary } from "../components/portal-order-summary";
-import type { PortalOrder } from "../model";
+import { CheckCircle2 } from 'lucide-react'
+import { useLocale, useTranslations } from 'use-intl'
+import { Badge } from '#/components/ui/badge'
+import { CustomerInfoCard } from '#/features/portal/components/customer-info-card'
+import { ShippingAddressCard } from '#/features/portal/components/shipping-address-card'
+import { formatLongDate } from '#/lib/formatters'
+import { PortalContactButton } from '../components/portal-contact-button'
+import { PortalOrderSummary } from '../components/portal-order-summary'
+import type { PortalOrder } from '../model'
 
 export function PendingView({ order }: { order: PortalOrder }) {
-  const t = useTranslations("portal");
-  const locale = useLocale();
+  const t = useTranslations('portal')
+  const locale = useLocale()
 
   const receivedAt = formatLongDate(
     String(order.createdAt ?? new Date()),
     locale,
-  );
+  )
 
   return (
     <div className="space-y-6">
@@ -24,17 +24,17 @@ export function PendingView({ order }: { order: PortalOrder }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {t("progressHeroLabel")}
+              {t('progressHeroLabel')}
             </p>
             <Badge variant="secondary" className="capitalize">
-              {t("statusPending")}
+              {t('statusPending')}
             </Badge>
           </div>
           <h1 className="mt-1.5 text-balance text-2xl font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
-            {t("pendingHeroTitle")}
+            {t('pendingHeroTitle')}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {t("pendingHelp")}
+            {t('pendingHelp')}
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-medium text-muted-foreground">
             {order.orderNumber ? (
@@ -50,7 +50,7 @@ export function PendingView({ order }: { order: PortalOrder }) {
               </>
             ) : null}
             {order.createdAt ? (
-              <span>{t("pendingReceivedAt", { date: receivedAt })}</span>
+              <span>{t('pendingReceivedAt', { date: receivedAt })}</span>
             ) : null}
           </div>
         </div>
@@ -72,5 +72,5 @@ export function PendingView({ order }: { order: PortalOrder }) {
         className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"
       />
     </div>
-  );
+  )
 }

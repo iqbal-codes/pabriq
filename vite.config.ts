@@ -15,7 +15,11 @@ const __dirname = path.dirname(__filename)
 const browserPolyfills = () => ({
   name: 'browser-polyfills',
   enforce: 'pre' as const,
-  resolveId(source: string, importer: string | undefined, options: { ssr?: boolean }) {
+  resolveId(
+    source: string,
+    importer: string | undefined,
+    options: { ssr?: boolean },
+  ) {
     if (options?.ssr) {
       return null
     }
