@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 import type { UpdateOrgSettingsInput } from './server'
 import { getOrgSettingsFn, updateOrgSettingsFn } from './server'
 
@@ -15,7 +16,7 @@ export function useUpdateOrgSettings() {
     mutationFn: (input: UpdateOrgSettingsInput) =>
       updateOrgSettingsFn({ data: input }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings', 'org'] })
+      return invalidateMutationQueries(queryClient, [{ queryKey: ['settings', 'org'] }])
     },
   })
 }

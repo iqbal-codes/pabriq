@@ -14,10 +14,12 @@ export function CancelInvitationDialog({
   open,
   onOpenChange,
   onConfirm,
+  isCancelling = false,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   onConfirm: () => void
+  isCancelling?: boolean
 }) {
   const t = useTranslations('members')
   const ct = useTranslations('common')
@@ -30,8 +32,12 @@ export function CancelInvitationDialog({
           <AlertDialogDescription>{t('cancelConfirm')}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{ct('cancel')}</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>
+          <AlertDialogCancel disabled={isCancelling}>{ct('cancel')}</AlertDialogCancel>
+          <AlertDialogAction
+            isLoading={isCancelling}
+            disabled={isCancelling}
+            onClick={onConfirm}
+          >
             {t('cancelInvite')}
           </AlertDialogAction>
         </AlertDialogFooter>

@@ -1,3 +1,5 @@
+import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
+import { queryKeys } from '#/lib/query-keys'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
@@ -31,11 +33,11 @@ export function useOrderMutations({
   const approveOrder = useMutation({
     mutationFn: (input: { id: string }) => approveOrderFn({ data: input }),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['orders', 'lists'] })
-      queryClient.invalidateQueries({
-        queryKey: ['orders', 'detail', variables.id],
-      })
-      queryClient.invalidateQueries({ queryKey: ['production'] })
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.orders.lists() },
+        { queryKey: queryKeys.orders.detail(variables.id) },
+        { queryKey: queryKeys.production.all },
+      ])
     },
   })
 
@@ -43,11 +45,10 @@ export function useOrderMutations({
     mutationFn: (input: { id: string; reason: string }) =>
       rejectOrderFn({ data: input }),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['orders', 'lists'] })
-      queryClient.invalidateQueries({
-        queryKey: ['orders', 'detail', variables.id],
-      })
-      onRejectSuccess()
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.orders.lists() },
+        { queryKey: queryKeys.orders.detail(variables.id) },
+      ]).then(() => onRejectSuccess())
     },
   })
 
@@ -58,11 +59,11 @@ export function useOrderMutations({
   const startProduction = useMutation({
     mutationFn: (input: { id: string }) => startProductionFn({ data: input }),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['orders', 'lists'] })
-      queryClient.invalidateQueries({
-        queryKey: ['orders', 'detail', variables.id],
-      })
-      queryClient.invalidateQueries({ queryKey: ['production'] })
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.orders.lists() },
+        { queryKey: queryKeys.orders.detail(variables.id) },
+        { queryKey: queryKeys.production.all },
+      ])
     },
   })
 

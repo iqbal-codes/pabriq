@@ -20,6 +20,7 @@ type Props = {
   requirements: Requirement[]
   onCancel: () => void
   onSubmit: (responses: Responses) => void
+  isSubmitting?: boolean
 }
 
 export function RequirementForm({
@@ -27,6 +28,7 @@ export function RequirementForm({
   requirements,
   onCancel,
   onSubmit,
+  isSubmitting = false,
 }: Props) {
   const t = useTranslations('production')
   const ct = useTranslations('common')
@@ -115,11 +117,11 @@ export function RequirementForm({
         </div>
       ))}
       <FormActions>
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
           {ct('cancel')}
         </Button>
         <form.AppForm>
-          <form.SubmitButton>{ct('confirm')}</form.SubmitButton>
+          <form.SubmitButton isPending={isSubmitting}>{ct('confirm')}</form.SubmitButton>
         </form.AppForm>
       </FormActions>
     </FormRoot>

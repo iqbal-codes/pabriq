@@ -35,10 +35,10 @@ export function InvoiceActionButtons({
         invoiceId={invoiceId}
       />
 
-      <Button variant="default" onClick={onMarkPaid} disabled={isMarkingPaid}>
+      <Button variant="default" onClick={onMarkPaid} isLoading={isMarkingPaid}>
         {t('markAsPaid')}
       </Button>
-      <Button variant="outline" onClick={onVoid} disabled={isVoiding}>
+      <Button variant="outline" onClick={onVoid} isLoading={isVoiding}>
         {t('voidInvoice')}
       </Button>
     </div>

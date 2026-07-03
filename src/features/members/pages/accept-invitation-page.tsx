@@ -18,6 +18,7 @@ import {
   getInvitationFn,
   rejectInvitationFn,
 } from '#/features/members/server'
+import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 
 export function AcceptInvitationPage({
   invitationId,
@@ -35,10 +36,10 @@ export function AcceptInvitationPage({
 
   const acceptMutation = useMutation({
     mutationFn: () => acceptInvitationFn({ data: { invitationId } }),
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       if (result.ok) {
         toast.success(t('accepted'))
-        queryClient.invalidateQueries({ queryKey: ['members'] })
+        await invalidateMutationQueries(queryClient, [{ queryKey: ['members'] }])
         navigate({ to: '/' })
       } else {
         toast.error(result.error)
@@ -48,10 +49,10 @@ export function AcceptInvitationPage({
 
   const rejectMutation = useMutation({
     mutationFn: () => rejectInvitationFn({ data: { invitationId } }),
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       if (result.ok) {
         toast.success(t('rejected'))
-        queryClient.invalidateQueries({ queryKey: ['members'] })
+        await invalidateMutationQueries(queryClient, [{ queryKey: ['members'] }])
         navigate({ to: '/' })
       } else {
         toast.error(result.error)
@@ -103,8 +104,9 @@ export function AcceptInvitationPage({
         <CardFooter className="flex gap-2">
           <Button
             className="flex-1"
+            isLoading={acceptMutation.isPending}
+            disabled={acceptMutation.isPending || rejectMutation.isPending}
             onClick={() => acceptMutation.mutate()}
-            disabled={acceptMutation.isPending}
           >
             <Check className="mr-2 size-4" />
             {t('accept')}
@@ -112,8 +114,9 @@ export function AcceptInvitationPage({
           <Button
             variant="outline"
             className="flex-1"
+            isLoading={rejectMutation.isPending}
+            disabled={acceptMutation.isPending || rejectMutation.isPending}
             onClick={() => rejectMutation.mutate()}
-            disabled={rejectMutation.isPending}
           >
             <X className="mr-2 size-4" />
             {t('reject')}

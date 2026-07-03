@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import { generateOrderTokenFn } from '#/features/portal/server'
+import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 import { queryKeys } from '#/lib/query-keys'
 
 export type CopyOrderPortalLinkInput = {
@@ -20,12 +21,10 @@ export function useCopyOrderPortalLink(): {
     mutationFn: (orderId: string) =>
       generateOrderTokenFn({ data: { orderId } }),
     onSuccess: (_result, orderId) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.orders.lists(),
-      })
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.orders.detail(orderId),
-      })
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.orders.lists() },
+        { queryKey: queryKeys.orders.detail(orderId) },
+      ])
     },
   })
 

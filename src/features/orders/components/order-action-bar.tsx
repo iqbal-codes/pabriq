@@ -57,7 +57,7 @@ export function OrderActionBar({
         variant="outline"
         size="sm"
         onClick={onCopyPortalLink}
-        disabled={isGeneratingLink}
+        isLoading={isGeneratingLink}
       >
         <Link2 className="size-4" />
         {order.orderToken ? t('copyPortalLink') : t('generateLink')}
@@ -88,7 +88,7 @@ export function OrderActionBar({
             type="button"
             size="sm"
             onClick={onApprove}
-            disabled={isApproving}
+            isLoading={isApproving}
           >
             <CheckCircle2 className="size-4" />
             {t('approve')}
@@ -98,7 +98,7 @@ export function OrderActionBar({
             variant="destructive"
             size="sm"
             onClick={onReject}
-            disabled={isRejecting}
+            isLoading={isRejecting}
           >
             <XCircle className="size-4" />
             {t('reject')}
@@ -111,7 +111,7 @@ export function OrderActionBar({
           type="button"
           size="sm"
           onClick={onStartProduction}
-          disabled={isStartingProduction}
+          isLoading={isStartingProduction}
         >
           <Factory className="size-4" />
           {pt('startOrderProduction')}
@@ -130,7 +130,7 @@ export function OrderActionBar({
           type="button"
           size="sm"
           onClick={onCompleteOrder}
-          disabled={isCompletingOrder}
+          isLoading={isCompletingOrder}
         >
           <CheckCircle2 className="size-4" />
           {t('completeOrder')}

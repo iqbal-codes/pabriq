@@ -112,39 +112,33 @@ export function TaskDetailModal({
     }
   }
   1
-  function handleAdvance(
+  async function handleAdvance(
     responses: Record<string, { value?: string; assetIds?: string[] }>,
   ) {
-    advanceTask.mutate(
-      { taskId, requirementResponses: responses },
-      {
-        onSuccess: (result) => {
-          if ('error' in result) return
-          if (
-            'pendingApproval' in result &&
-            result.pendingApproval &&
-            canApprove &&
-            onReview
-          ) {
-            onReview(taskId)
-            return
-          }
-          onOpenChange(false)
-        },
-      },
-    )
+    const result = await advanceTask.mutateAsync({
+      taskId,
+      requirementResponses: responses,
+    })
+    if ('error' in result) return
+    if (
+      'pendingApproval' in result &&
+      result.pendingApproval &&
+      canApprove &&
+      onReview
+    ) {
+      onReview(taskId)
+      return
+    }
+    onOpenChange(false)
   }
-  function handleSendComment() {
+  async function handleSendComment() {
     if (!commentText.trim()) return
-    saveComment.mutate(
-      { taskId, text: commentText.trim() },
-      {
-        onSuccess: (result) => {
-          if ('error' in result) return
-          setCommentText('')
-        },
-      },
-    )
+    const result = await saveComment.mutateAsync({
+      taskId,
+      text: commentText.trim(),
+    })
+    if ('error' in result) return
+    setCommentText('')
   }
 
   return (
@@ -159,6 +153,7 @@ export function TaskDetailModal({
               requirements={currentStage.requirements}
               onCancel={() => setShowRequirementForm(false)}
               onSubmit={handleAdvance}
+              isSubmitting={advanceTask.isPending}
             />
           </div>
         ) : (
@@ -189,6 +184,8 @@ export function TaskDetailModal({
                   <Button
                     className="bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95 font-semibold text-sm transition-colors cursor-pointer"
                     onClick={handleAdvanceClick}
+                    isLoading={advanceTask.isPending}
+                    disabled={advanceTask.isPending}
                   >
                     {t('advanceTo', { stage: nextStage.name })}
                   </Button>
@@ -198,6 +195,8 @@ export function TaskDetailModal({
                     <Button
                       className="bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95 font-semibold text-sm transition-colors cursor-pointer"
                       onClick={handleAdvanceClick}
+                      isLoading={advanceTask.isPending}
+                      disabled={advanceTask.isPending}
                     >
                       {currentStage?.needApproval
                         ? t('requestReview')
@@ -214,6 +213,7 @@ export function TaskDetailModal({
                     <Button
                       className="bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95 font-semibold text-sm transition-colors cursor-pointer"
                       onClick={() => onReview(taskId)}
+                      disabled={advanceTask.isPending}
                     >
                       {t('reviewAdvancement')}
                     </Button>
@@ -334,7 +334,8 @@ export function TaskDetailModal({
                         size="sm"
                         className="h-8 px-4 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95 transition-colors shrink-0 cursor-pointer"
                         onClick={handleSendComment}
-                        disabled={!commentText.trim()}
+                        isLoading={saveComment.isPending}
+                        disabled={!commentText.trim() || saveComment.isPending}
                       >
                         {t('send')}
                       </Button>

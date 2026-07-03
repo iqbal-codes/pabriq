@@ -5,6 +5,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
+import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 import { queryKeys } from '#/lib/query-keys'
 import type { CustomerInput, ListCustomersParams } from './model'
 import {
@@ -34,7 +35,7 @@ export function useCreateCustomer() {
   return useMutation({
     mutationFn: (input: CustomerInput) => createCustomerFn({ data: input }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.customers.lists() })
+      return invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.customers.lists() }])
     },
   })
 }
@@ -45,10 +46,10 @@ export function useUpdateCustomer() {
     mutationFn: (input: CustomerInput & { id: string }) =>
       updateCustomerFn({ data: input }),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.customers.lists() })
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.customers.detail(variables.id),
-      })
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.customers.lists() },
+        { queryKey: queryKeys.customers.detail(variables.id) },
+      ])
     },
   })
 }

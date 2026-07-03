@@ -63,6 +63,7 @@ export function PaymentMethodFormContent({
   const ct = useTranslations('common')
   const createPaymentMethod = useCreatePaymentMethod()
   const updatePaymentMethod = useUpdatePaymentMethod()
+  const isSavingPaymentMethod = createPaymentMethod.isPending || updatePaymentMethod.isPending
 
   const form = useAppForm({
     defaultValues: getPaymentMethodDefaults(editingMethod),
@@ -177,11 +178,11 @@ export function PaymentMethodFormContent({
       </FormGrid>
 
       <div className="mt-4 flex justify-end gap-2">
-        <Button variant="outline" onClick={() => handleClose(false)}>
+        <Button variant="outline" onClick={() => handleClose(false)} disabled={isSavingPaymentMethod}>
           {ct('cancel')}
         </Button>
         <form.AppForm>
-          <form.SubmitButton>
+          <form.SubmitButton isPending={isSavingPaymentMethod}>
             {editingMethod ? t('editPaymentMethod') : t('addPaymentMethod')}
           </form.SubmitButton>
         </form.AppForm>

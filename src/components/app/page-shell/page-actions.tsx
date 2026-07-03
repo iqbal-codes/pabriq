@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { MoreHorizontal } from 'lucide-react'
 import { Button } from '#/components/ui/button'
+import { Spinner } from '#/components/ui/spinner'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +28,7 @@ export function PageActions({
       ) : primaryAction?.onClick ? (
         <Button
           onClick={primaryAction.onClick}
+          disabled={primaryAction.disabled}
           isLoading={primaryAction.isLoading}
         >
           {primaryAction.label}
@@ -56,9 +58,13 @@ export function PageActions({
                 <DropdownMenuItem
                   key={action.label}
                   onClick={action.onClick}
-                  disabled={action.isLoading}
+                  disabled={action.disabled || action.isLoading}
                 >
-                  {action.icon && <action.icon className="size-4" />}
+                  {action.isLoading ? (
+                    <Spinner className="mr-2 size-4" />
+                  ) : (
+                    action.icon && <action.icon className="size-4" />
+                  )}
                   {action.label}
                 </DropdownMenuItem>
               ),

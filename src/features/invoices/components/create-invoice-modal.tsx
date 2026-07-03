@@ -265,7 +265,8 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                   <FormActions>
                     <form.AppForm>
                       <form.SubmitButton
-                        disabled={createInvoice.isPending || invoiceTotal <= 0}
+                        isPending={createInvoice.isPending}
+                        disabled={invoiceTotal <= 0}
                       >
                         {`${t('createInvoice')} — ${currencyFormatter.format(invoiceTotal)}`}
                       </form.SubmitButton>

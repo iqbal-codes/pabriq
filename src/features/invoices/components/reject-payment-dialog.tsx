@@ -10,7 +10,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '#/components/ui/alert-dialog'
-import { Button } from '#/components/ui/button'
 
 export function RejectPaymentDialog({
   open,
@@ -83,15 +82,11 @@ export function RejectPaymentDialog({
               <AlertDialogAction
                 type="submit"
                 onClick={form.handleSubmit}
+                variant="destructive"
+                isLoading={isPending}
                 disabled={!form.state.values.reason.trim() || isPending}
-                asChild
               >
-                <Button
-                  variant="default"
-                  disabled={!form.state.values.reason.trim() || isPending}
-                >
-                  {t('rejectSimple')}
-                </Button>
+                {t('rejectSimple')}
               </AlertDialogAction>
             </form.AppForm>
           </AlertDialogFooter>

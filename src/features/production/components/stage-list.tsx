@@ -19,6 +19,8 @@ export function StageList({ stages, loading }: Props) {
   const dt = useTranslations('dataTable')
   const { deleteStage, reorderStages } = useStageMutations()
   const [editStage, setEditStage] = useState<Stage | undefined>()
+  const isReordering = reorderStages.isPending
+  const deletingStageId = deleteStage.isPending ? deleteStage.variables?.id : null
 
   async function handleMoveUp(index: number) {
     if (index === 0) return
@@ -52,7 +54,8 @@ export function StageList({ stages, loading }: Props) {
               variant="ghost"
               size="icon"
               onClick={() => handleMoveUp(i)}
-              disabled={i === 0}
+              isLoading={isReordering}
+              disabled={isReordering || deleteStage.isPending || i === 0}
             >
               <ArrowUp className="size-4" />
             </Button>
@@ -60,7 +63,8 @@ export function StageList({ stages, loading }: Props) {
               variant="ghost"
               size="icon"
               onClick={() => handleMoveDown(i)}
-              disabled={i === stages.length - 1}
+              isLoading={isReordering}
+              disabled={isReordering || deleteStage.isPending || i === stages.length - 1}
             >
               <ArrowDown className="size-4" />
             </Button>
@@ -141,7 +145,7 @@ export function StageList({ stages, loading }: Props) {
         columns={columns}
         data={stages}
         getRowId={(row) => row.id}
-        isLoading={loading || deleteStage.isPending}
+        isLoading={loading}
         labels={labels}
         onPageChange={() => {}}
         onPerPageChange={() => {}}
@@ -161,6 +165,7 @@ export function StageList({ stages, loading }: Props) {
               size="icon"
               tooltip={t('editStage')}
               onClick={() => setEditStage(stage)}
+              disabled={isReordering || deleteStage.isPending}
             >
               <Edit className="size-4" />
             </Button>
@@ -169,6 +174,8 @@ export function StageList({ stages, loading }: Props) {
               size="icon"
               tooltip={t('deleteStage')}
               onClick={() => handleDelete(stage.id)}
+              isLoading={deletingStageId === stage.id}
+              disabled={isReordering || deleteStage.isPending}
             >
               <Trash className="size-4 text-destructive" />
             </Button>

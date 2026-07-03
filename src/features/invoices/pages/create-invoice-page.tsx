@@ -115,7 +115,7 @@ export function CreateInvoicePage() {
 
         <FormActions>
           <form.AppForm>
-            <form.SubmitButton>
+            <form.SubmitButton isPending={createInvoice.isPending}>
               {orderData
                 ? `${t('createInvoice')} — ${formatCurrency(invoicesTotal, locale)}`
                 : t('createInvoice')}

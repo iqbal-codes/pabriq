@@ -249,7 +249,7 @@ export function DraftView({
             </div>
             <FormActions>
               <form.AppForm>
-                <form.SubmitButton className="w-full sm:w-auto min-w-[140px]">
+                <form.SubmitButton className="w-full sm:w-auto min-w-[140px]" isPending={isSubmitting}>
                   {isSubmitting ? t('submitting') : t('submit')}
                 </form.SubmitButton>
               </form.AppForm>

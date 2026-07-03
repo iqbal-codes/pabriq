@@ -53,6 +53,7 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
           requirements: value.requirements as Requirement[],
         })
       }
+      form.reset()
       onOpenChange(false)
     },
   })
@@ -238,7 +239,7 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
               {ct('cancel')}
             </Button>
             <form.AppForm>
-              <form.SubmitButton disabled={!canSubmit}>
+              <form.SubmitButton isPending={createStage.isPending || updateStage.isPending} disabled={!canSubmit}>
                 {stage ? t('editStage') : t('addStage')}
               </form.SubmitButton>
             </form.AppForm>

@@ -1,5 +1,6 @@
 import { Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import type { AppColumnDef, DataTableLabels } from '#/components/app/data-table'
 import { DataTable } from '#/components/app/data-table'
@@ -171,11 +172,15 @@ export function PaymentMethodsPage() {
       <PaymentMethodDeleteDialog
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
-        onConfirm={() => {
-          if (deleteTarget) {
-            deletePaymentMethod.mutate(deleteTarget.id)
+        isDeleting={deletePaymentMethod.isPending}
+        onConfirm={async () => {
+          if (!deleteTarget) return
+          const result = await deletePaymentMethod.mutateAsync(deleteTarget.id)
+          if (result.ok) {
+            setDeleteTarget(null)
+          } else {
+            toast.error(result.error ?? t('deletePaymentMethod'))
           }
-          setDeleteTarget(null)
         }}
       />
     </>

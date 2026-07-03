@@ -5,6 +5,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { queryKeys } from '#/lib/query-keys'
+import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 import type {
   CreateDraftOrderInput,
   ListOrdersParams,
@@ -46,9 +47,10 @@ export function useCreateDraftOrder() {
     mutationFn: (
       input: Omit<CreateDraftOrderInput, 'orgId'> & { orgId: string },
     ) => createDraftOrderFn({ data: input }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders.lists() })
-    },
+    onSuccess: () =>
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.orders.lists() },
+      ]),
   })
 }
 
@@ -69,12 +71,11 @@ export function useUpdateDraftOrder() {
         notes?: string
       }>
     }) => updateDraftOrderFn({ data: input }),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders.lists() })
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.orders.detail(variables.id),
-      })
-    },
+    onSuccess: (_data, variables) =>
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.orders.lists() },
+        { queryKey: queryKeys.orders.detail(variables.id) },
+      ]),
   })
 }
 
@@ -91,13 +92,12 @@ export function useCompleteProduction() {
       invoicePaymentMethodId?: string
       invoiceNotes?: string
     }) => completeProductionFn({ data: input }),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders.lists() })
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.orders.detail(variables.id),
-      })
-      queryClient.invalidateQueries({ queryKey: ['invoices'] })
-    },
+    onSuccess: (_data, variables) =>
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.orders.lists() },
+        { queryKey: queryKeys.orders.detail(variables.id) },
+        { queryKey: queryKeys.invoices.all },
+      ]),
   })
 }
 
@@ -106,11 +106,10 @@ export function useAdvanceOrderStatus() {
   return useMutation({
     mutationFn: (input: { id: string }) =>
       advanceOrderStatusFn({ data: input }),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders.lists() })
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.orders.detail(variables.id),
-      })
-    },
+    onSuccess: (_data, variables) =>
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.orders.lists() },
+        { queryKey: queryKeys.orders.detail(variables.id) },
+      ]),
   })
 }

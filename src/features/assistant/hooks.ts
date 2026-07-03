@@ -4,6 +4,7 @@ import {
   sendAssistantMessageFn,
 } from '#/features/assistant/server'
 import { queryKeys } from '#/lib/query-keys'
+import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 
 export type { AssistantChatMessage } from '#/features/assistant/model'
 
@@ -23,9 +24,9 @@ export function useSendAssistantMessage(scope: AssistantChatScope) {
     mutationFn: (message: string) =>
       sendAssistantMessageFn({ data: { message } }),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.assistant.chat(scope),
-      })
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.assistant.chat(scope) },
+      ])
     },
   })
 }

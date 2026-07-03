@@ -52,6 +52,8 @@ export function RejectReasonDialog({
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={onReject}
+            variant="destructive"
+            isLoading={isRejecting}
             disabled={!rejectReason.trim() || isRejecting}
           >
             {t('reject')}

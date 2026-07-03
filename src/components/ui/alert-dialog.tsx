@@ -148,17 +148,29 @@ function AlertDialogAction({
   className,
   variant = "default",
   size = "default",
+  isLoading,
+  loadingPosition,
+  disabled,
+  children,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Action> &
-  Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {
+  Pick<
+    React.ComponentProps<typeof Button>,
+    "variant" | "size" | "isLoading" | "loadingPosition"
+  >) {
   return (
-    <Button variant={variant} size={size} asChild>
-      <AlertDialogPrimitive.Action
-        data-slot="alert-dialog-action"
+    <AlertDialogPrimitive.Action asChild data-slot="alert-dialog-action" {...props}>
+      <Button
         className={cn(className)}
-        {...props}
-      />
-    </Button>
+        variant={variant}
+        size={size}
+        disabled={disabled || isLoading}
+        isLoading={isLoading}
+        loadingPosition={loadingPosition}
+      >
+        {children}
+      </Button>
+    </AlertDialogPrimitive.Action>
   )
 }
 

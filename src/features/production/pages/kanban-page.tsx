@@ -169,27 +169,23 @@ export function KanbanPage({ orgId }: Props) {
           onOpenChange={(open) => {
             if (!open) setReviewTaskId(null)
           }}
-          onApprove={(id, notes) => {
-            approveAdvance.mutate(
-              { taskId: id, reviewNotes: notes },
-              {
-                onSuccess: (result) => {
-                  if ('error' in result) return
-                  setReviewTaskId(null)
-                },
-              },
-            )
+          isApproving={approveAdvance.isPending}
+          isRejecting={rejectAdvance.isPending}
+          onApprove={async (id, notes) => {
+            const result = await approveAdvance.mutateAsync({
+              taskId: id,
+              reviewNotes: notes,
+            })
+            if ('error' in result) return
+            setReviewTaskId(null)
           }}
-          onReject={(id, notes) => {
-            rejectAdvance.mutate(
-              { taskId: id, reviewNotes: notes },
-              {
-                onSuccess: (result) => {
-                  if ('error' in result) return
-                  setReviewTaskId(null)
-                },
-              },
-            )
+          onReject={async (id, notes) => {
+            const result = await rejectAdvance.mutateAsync({
+              taskId: id,
+              reviewNotes: notes,
+            })
+            if ('error' in result) return
+            setReviewTaskId(null)
           }}
         />
       )}

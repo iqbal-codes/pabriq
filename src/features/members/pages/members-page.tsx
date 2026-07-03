@@ -140,24 +140,30 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
       <RemoveMemberDialog
         open={!!removeTarget}
         onOpenChange={(open) => !open && setRemoveTarget(null)}
-        onConfirm={() => {
-          if (removeTarget) {
-            removeMember.mutate({
-              memberIdOrEmail: removeTarget.user.email,
-            })
+        isRemoving={removeMember.isPending}
+        onConfirm={async () => {
+          if (!removeTarget) return
+          const result = await removeMember.mutateAsync({
+            memberIdOrEmail: removeTarget.user.email,
+          })
+          if (result.ok) {
+            setRemoveTarget(null)
           }
-          setRemoveTarget(null)
         }}
       />
 
       <CancelInvitationDialog
         open={!!cancelTarget}
         onOpenChange={(open) => !open && setCancelTarget(null)}
-        onConfirm={() => {
-          if (cancelTarget) {
-            cancelInvitation.mutate({ invitationId: cancelTarget })
+        isCancelling={cancelInvitation.isPending}
+        onConfirm={async () => {
+          if (!cancelTarget) return
+          const result = await cancelInvitation.mutateAsync({
+            invitationId: cancelTarget,
+          })
+          if (result.ok) {
+            setCancelTarget(null)
           }
-          setCancelTarget(null)
         }}
       />
     </>

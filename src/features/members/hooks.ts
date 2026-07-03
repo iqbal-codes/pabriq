@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 import {
   cancelInvitationFn,
   inviteMemberFn,
@@ -28,7 +29,7 @@ export function useInviteMember() {
     mutationFn: (input: { email: string; role: string }) =>
       inviteMemberFn({ data: input }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['members', 'invitations'] })
+      return invalidateMutationQueries(queryClient, [{ queryKey: ['members', 'invitations'] }])
     },
   })
 }
@@ -39,7 +40,7 @@ export function useUpdateMemberRole() {
     mutationFn: (input: { memberId: string; role: string }) =>
       updateMemberRoleFn({ data: input }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['members'] })
+      return invalidateMutationQueries(queryClient, [{ queryKey: ['members'] }])
     },
   })
 }
@@ -50,7 +51,7 @@ export function useRemoveMember() {
     mutationFn: (input: { memberIdOrEmail: string }) =>
       removeMemberFn({ data: input }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['members'] })
+      return invalidateMutationQueries(queryClient, [{ queryKey: ['members'] }])
     },
   })
 }
@@ -61,7 +62,7 @@ export function useCancelInvitation() {
     mutationFn: (input: { invitationId: string }) =>
       cancelInvitationFn({ data: input }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['members', 'invitations'] })
+      return invalidateMutationQueries(queryClient, [{ queryKey: ['members', 'invitations'] }])
     },
   })
 }

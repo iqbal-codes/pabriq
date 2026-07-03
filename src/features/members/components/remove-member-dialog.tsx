@@ -14,10 +14,12 @@ export function RemoveMemberDialog({
   open,
   onOpenChange,
   onConfirm,
+  isRemoving = false,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   onConfirm: () => void
+  isRemoving?: boolean
 }) {
   const t = useTranslations('members')
   const ct = useTranslations('common')
@@ -30,8 +32,13 @@ export function RemoveMemberDialog({
           <AlertDialogDescription>{t('removeConfirm')}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{ct('cancel')}</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>
+          <AlertDialogCancel disabled={isRemoving}>{ct('cancel')}</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            isLoading={isRemoving}
+            disabled={isRemoving}
+            onClick={onConfirm}
+          >
             {t('remove')}
           </AlertDialogAction>
         </AlertDialogFooter>

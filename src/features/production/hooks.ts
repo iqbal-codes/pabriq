@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import { queryKeys } from '#/lib/query-keys'
+import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 import type { MutationResult } from '#/lib/server-results'
 import type { CreateStageInput, UpdateStageInput } from './model'
 import {
@@ -35,7 +36,7 @@ export function useStageMutations() {
   const t = useTranslations('production')
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['production', 'stages'] })
+    return invalidateMutationQueries(queryClient, [{ queryKey: ['production', 'stages'] }])
   }
 
   const createStage = useMutation<
@@ -50,7 +51,7 @@ export function useStageMutations() {
         return
       }
       toast.success(t('stageManagement'))
-      invalidate()
+      return invalidate()
     },
   })
 
@@ -66,7 +67,7 @@ export function useStageMutations() {
         return
       }
       toast.success(t('stageManagement'))
-      invalidate()
+      return invalidate()
     },
   })
 
@@ -77,7 +78,7 @@ export function useStageMutations() {
         toast.error(result.error)
         return
       }
-      invalidate()
+      return invalidate()
     },
   })
 
@@ -92,7 +93,7 @@ export function useStageMutations() {
         toast.error(result.error)
         return
       }
-      invalidate()
+      return invalidate()
     },
   })
 
@@ -107,7 +108,7 @@ export function useStageMutations() {
         toast.error(result.error)
         return
       }
-      invalidate()
+      return invalidate()
     },
   })
 
@@ -210,11 +211,6 @@ export function useTaskMutations() {
     toast.error(error.message)
   }
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({
-      queryKey: [queryKeys.production.all[0], 'board'],
-    })
-  }
 
   const advanceTask = useMutation<
     { ok: true; pendingApproval: boolean } | { ok: false; error: string },
@@ -239,13 +235,11 @@ export function useTaskMutations() {
       } else {
         toast.success(t('movedToStage'))
       }
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.production.task(vars.taskId),
-      })
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.production.activities(vars.taskId),
-      })
-      invalidate()
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.production.task(vars.taskId) },
+        { queryKey: queryKeys.production.activities(vars.taskId) },
+        { queryKey: [queryKeys.production.all[0], 'board'] },
+      ])
     },
   })
 
@@ -262,13 +256,11 @@ export function useTaskMutations() {
         return
       }
       toast.success(t('approved'))
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.production.task(vars.taskId),
-      })
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.production.activities(vars.taskId),
-      })
-      invalidate()
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.production.task(vars.taskId) },
+        { queryKey: queryKeys.production.activities(vars.taskId) },
+        { queryKey: [queryKeys.production.all[0], 'board'] },
+      ])
     },
   })
 
@@ -285,13 +277,11 @@ export function useTaskMutations() {
         return
       }
       toast.success(t('rejected'))
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.production.task(vars.taskId),
-      })
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.production.activities(vars.taskId),
-      })
-      invalidate()
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.production.task(vars.taskId) },
+        { queryKey: queryKeys.production.activities(vars.taskId) },
+        { queryKey: [queryKeys.production.all[0], 'board'] },
+      ])
     },
   })
 
@@ -307,12 +297,14 @@ export function useTaskMutations() {
         toast.error(result.error)
         return
       }
-      queryClient.invalidateQueries({
-        predicate: (query: { queryKey: ReadonlyArray<unknown> }) =>
-          query.queryKey[0] === 'production' &&
-          query.queryKey[1] === 'activities',
-      })
-      invalidate()
+      return invalidateMutationQueries(queryClient, [
+        {
+          predicate: (query: { queryKey: ReadonlyArray<unknown> }) =>
+            query.queryKey[0] === 'production' &&
+            query.queryKey[1] === 'activities',
+        },
+        { queryKey: [queryKeys.production.all[0], 'board'] },
+      ])
     },
   })
 

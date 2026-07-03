@@ -36,9 +36,11 @@ export function SubmitPaymentProofDialog({
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([])
   const [reference, setReference] = useState('')
   const uploadedAssetIds = useRef<string[]>([])
+  const [isSubmittingProof, setIsSubmittingProof] = useState(false)
 
   // Reset state when dialog closes
   const handleOpenChange = (next: boolean) => {
+    if (!next && isSubmittingProof) return
     if (!next) {
       setUploadItems([])
       setReference('')
@@ -119,15 +121,17 @@ export function SubmitPaymentProofDialog({
   )
 
   const handleSubmit = async () => {
-    if (!hasUploads) {
-      toast.error(t('uploadFilesFirst'))
-      return
-    }
+    if (isSubmittingProof || !hasUploads) return
     // The adapter already called submitPaymentProofFn per-asset during upload.
     // Invalidate the route so the parent re-fetches with updated invoice state.
-    handleOpenChange(false)
-    toast.success(t('submitProofSuccess'))
-    await router.invalidate()
+    setIsSubmittingProof(true)
+    try {
+      await router.invalidate()
+      toast.success(t('submitProofSuccess'))
+      handleOpenChange(false)
+    } finally {
+      setIsSubmittingProof(false)
+    }
   }
 
   return (
@@ -189,11 +193,15 @@ export function SubmitPaymentProofDialog({
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}
-            disabled={false}
+            disabled={isUploading || isSubmittingProof}
           >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!hasUploads || isUploading}>
+          <Button
+            onClick={handleSubmit}
+            isLoading={isSubmittingProof}
+            disabled={!hasUploads || isUploading || isSubmittingProof}
+          >
             {t('submitPaymentProof')}
           </Button>
         </DialogFooter>

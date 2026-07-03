@@ -14,16 +14,16 @@ type PendingPaymentsSectionProps = {
   payments: Payment[]
   onConfirmPayment: (paymentId: string) => void
   onRejectPayment: (paymentId: string) => void
-  isConfirming: boolean
-  isRejecting: boolean
+  confirmingPaymentId: string | null
+  rejectingPaymentId: string | null
 }
 
 export function PendingPaymentsSection({
   payments,
   onConfirmPayment,
   onRejectPayment,
-  isConfirming,
-  isRejecting,
+  confirmingPaymentId,
+  rejectingPaymentId,
 }: PendingPaymentsSectionProps) {
   const t = useTranslations('invoices')
   const locale = useLocale()
@@ -79,7 +79,8 @@ export function PendingPaymentsSection({
                 variant="default"
                 size="sm"
                 onClick={() => onConfirmPayment(pm.id)}
-                disabled={isConfirming}
+                isLoading={confirmingPaymentId === pm.id}
+                disabled={rejectingPaymentId === pm.id}
               >
                 {t('confirmSimple')}
               </Button>
@@ -87,7 +88,8 @@ export function PendingPaymentsSection({
                 variant="outline"
                 size="sm"
                 onClick={() => onRejectPayment(pm.id)}
-                disabled={isRejecting}
+                isLoading={rejectingPaymentId === pm.id}
+                disabled={confirmingPaymentId === pm.id}
               >
                 {t('rejectSimple')}
               </Button>

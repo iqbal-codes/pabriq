@@ -133,8 +133,14 @@ export function InvoiceDetailPage() {
             payments={timelinePayments}
             onConfirmPayment={handleConfirmPayment}
             onRejectPayment={(paymentId) => setRejectDialogId(paymentId)}
-            isConfirming={confirmPayment.isPending}
-            isRejecting={rejectPayment.isPending}
+            confirmingPaymentId={
+              confirmPayment.isPending ? confirmPayment.variables : null
+            }
+            rejectingPaymentId={
+              rejectPayment.isPending
+                ? rejectPayment.variables?.paymentId ?? null
+                : null
+            }
           />
         </div>
 

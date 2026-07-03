@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
 import type { InvitationItem, MemberItem } from '#/features/members/server'
+import { Spinner } from '#/components/ui/spinner'
 
 const ROLE_LABEL_KEYS: Record<
   string,
@@ -37,6 +38,8 @@ export function useMemberColumns({
   canManage: boolean
   updateMemberRole: {
     mutate: (opts: { memberId: string; role: string }) => void
+    isPending: boolean
+    variables?: { memberId: string; role: string }
   }
 }): AppColumnDef<MemberItem>[] {
   const t = useTranslations('members')
@@ -93,19 +96,27 @@ export function useMemberColumns({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {(['admin', 'member'] as const).map((r) => (
-                <DropdownMenuItem
-                  key={r}
-                  onClick={() =>
-                    updateMemberRole.mutate({
-                      memberId: member.id,
-                      role: r,
-                    })
-                  }
-                >
-                  {t(ROLE_LABEL_KEYS[r])}
-                </DropdownMenuItem>
-              ))}
+              {(['admin', 'member'] as const).map((r) => {
+                const isUpdatingThisRole =
+                  updateMemberRole.isPending &&
+                  updateMemberRole.variables?.memberId === member.id &&
+                  updateMemberRole.variables?.role === r
+                return (
+                  <DropdownMenuItem
+                    key={r}
+                    disabled={updateMemberRole.isPending}
+                    onClick={() =>
+                      updateMemberRole.mutate({
+                        memberId: member.id,
+                        role: r,
+                      })
+                    }
+                  >
+                    {isUpdatingThisRole && <Spinner className="mr-2 size-3" />}
+                    {t(ROLE_LABEL_KEYS[r])}
+                  </DropdownMenuItem>
+                )
+              })}
             </DropdownMenuContent>
           </DropdownMenu>
         )

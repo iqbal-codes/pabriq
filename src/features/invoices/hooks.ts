@@ -5,6 +5,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { queryKeys } from '#/lib/query-keys'
+import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 import type {
   CreatePaymentInput,
   ListInvoicesParams,
@@ -47,9 +48,8 @@ export function useCreateInvoice() {
   return useMutation({
     mutationFn: (input: Parameters<typeof createInvoiceFn>[0]['data']) =>
       createInvoiceFn({ data: input }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all })
-    },
+    onSuccess: () =>
+      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.all }]),
   })
 }
 
@@ -66,11 +66,8 @@ export function useCreatePaymentMethod() {
     mutationFn: (
       input: Omit<PaymentMethod, 'id' | 'orgId' | 'createdAt' | 'updatedAt'>,
     ) => createPaymentMethodFn({ data: input }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.invoices.paymentMethods(),
-      })
-    },
+    onSuccess: () =>
+      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.paymentMethods() }]),
   })
 }
 
@@ -82,11 +79,8 @@ export function useUpdatePaymentMethod() {
         Omit<PaymentMethod, 'id' | 'orgId' | 'createdAt' | 'updatedAt'>
       >,
     ) => updatePaymentMethodFn({ data: input }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.invoices.paymentMethods(),
-      })
-    },
+    onSuccess: () =>
+      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.paymentMethods() }]),
   })
 }
 
@@ -94,11 +88,8 @@ export function useDeletePaymentMethod() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deletePaymentMethodFn({ data: { id } }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.invoices.paymentMethods(),
-      })
-    },
+    onSuccess: () =>
+      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.paymentMethods() }]),
   })
 }
 
@@ -124,9 +115,8 @@ export function useCreatePayment() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: CreatePaymentInput) => createPaymentFn({ data: input }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all })
-    },
+    onSuccess: () =>
+      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.all }]),
   })
 }
 
@@ -135,9 +125,8 @@ export function useConfirmPayment() {
   return useMutation({
     mutationFn: (paymentId: string) =>
       confirmPaymentFn({ data: { paymentId } }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all })
-    },
+    onSuccess: () =>
+      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.all }]),
   })
 }
 
@@ -146,9 +135,8 @@ export function useRejectPayment() {
   return useMutation({
     mutationFn: (input: { paymentId: string; reason: string }) =>
       rejectPaymentFn({ data: input }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all })
-    },
+    onSuccess: () =>
+      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.all }]),
   })
 }
 
@@ -156,9 +144,8 @@ export function useMarkInvoicePaid() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => markInvoicePaidFn({ data: { id } }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all })
-    },
+    onSuccess: () =>
+      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.all }]),
   })
 }
 
@@ -166,9 +153,8 @@ export function useVoidInvoice() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => voidInvoiceFn({ data: { id } }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all })
-    },
+    onSuccess: () =>
+      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.all }]),
   })
 }
 

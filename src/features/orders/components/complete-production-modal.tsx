@@ -197,9 +197,9 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
                   <FormActions>
                     <form.AppForm>
                       <form.SubmitButton
+                        isPending={completeProduction.isPending}
                         disabled={
-                          completeProduction.isPending ||
-                          (order.remainingAmount > 0 && invoiceTotal <= 0)
+                          order.remainingAmount > 0 && invoiceTotal <= 0
                         }
                       >
                         {order.remainingAmount > 0

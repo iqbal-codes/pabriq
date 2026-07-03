@@ -25,6 +25,8 @@ type Props = {
   onOpenChange: (open: boolean) => void
   onApprove: (taskId: string, notes?: string) => void
   onReject: (taskId: string, notes?: string) => void
+  isApproving?: boolean
+  isRejecting?: boolean
 }
 
 export function ReviewModal({
@@ -38,6 +40,8 @@ export function ReviewModal({
   onOpenChange,
   onApprove,
   onReject,
+  isApproving = false,
+  isRejecting = false,
 }: Props) {
   const t = useTranslations('production')
   const [notes, setNotes] = useState('')
@@ -132,12 +136,16 @@ export function ReviewModal({
           <Button
             variant="destructive"
             onClick={() => onReject(taskId, notes || undefined)}
+            isLoading={isRejecting}
+            disabled={isApproving || isRejecting}
             aria-describedby="review-action-description"
           >
             {t('reject')}
           </Button>
           <Button
             onClick={() => onApprove(taskId, notes || undefined)}
+            isLoading={isApproving}
+            disabled={isApproving || isRejecting}
             aria-describedby="review-action-description"
           >
             {t('approve')}

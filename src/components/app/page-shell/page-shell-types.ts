@@ -6,4 +6,5 @@ export type PageAction = {
   href?: string
   onClick?: () => void
   isLoading?: boolean
+  disabled?: boolean
 }

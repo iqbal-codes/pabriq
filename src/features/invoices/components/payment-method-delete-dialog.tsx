@@ -14,10 +14,12 @@ export function PaymentMethodDeleteDialog({
   open,
   onOpenChange,
   onConfirm,
+  isDeleting,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   onConfirm: () => void
+  isDeleting: boolean
 }) {
   const t = useTranslations('settings')
   const ct = useTranslations('common')
@@ -32,8 +34,8 @@ export function PaymentMethodDeleteDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{ct('cancel')}</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>
+          <AlertDialogCancel disabled={isDeleting}>{ct('cancel')}</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" isLoading={isDeleting} disabled={isDeleting} onClick={onConfirm}>
             {t('deletePaymentMethod')}
           </AlertDialogAction>
         </AlertDialogFooter>

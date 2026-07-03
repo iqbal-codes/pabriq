@@ -60,8 +60,9 @@ export function useOrderDerivedState(params: {
     activeInvoices.every((inv) => inv.status === 'paid')
 
   // Check if all production tasks are completed
-  const allTasksCompleted =
-    tasksData?.every((t) => t.task.status === 'completed') ?? true
+  const allTasksCompleted = tasksData
+    ? tasksData.every((t) => t.task.status === 'completed')
+    : false
   const canCompleteProduction =
     orderStatus === 'in_progress' &&
     allTasksCompleted &&

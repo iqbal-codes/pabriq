@@ -5,6 +5,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
+import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 import { queryKeys } from '#/lib/query-keys'
 import type {
   CreateProductInput,
@@ -42,7 +43,7 @@ export function useCreateProduct() {
     mutationFn: (input: Omit<CreateProductInput, 'orgId'>) =>
       createProductFn({ data: input }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() })
+      return invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.products.lists() }])
     },
   })
 }
@@ -100,10 +101,10 @@ export function useUpdateProduct() {
     mutationFn: (input: Omit<UpdateProductInput, 'orgId'>) =>
       updateProductFn({ data: input }),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() })
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.products.detail(variables.id),
-      })
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.products.lists() },
+        { queryKey: queryKeys.products.detail(variables.id) },
+      ])
     },
   })
 }
