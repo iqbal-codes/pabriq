@@ -154,9 +154,6 @@ export function DraftView({
       <div className="space-y-6">
         {/* Checklist header */}
         <header className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {t('draftStepsTitle')}
-          </p>
           <h1 className="mt-1 text-balance text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
             {t('title')}
           </h1>

@@ -953,7 +953,6 @@ export type Messages = {
     rejectedResubmitCta: string;
 
     // Draft view (multi-step)
-    draftStepsTitle: string;
     draftSubmitHelp: string;
     draftStepCustomer: string;
     draftStepShipping: string;

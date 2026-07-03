@@ -990,7 +990,6 @@ const id: Messages = {
     rejectedResubmitCta: "Diskusikan dengan penjual",
 
     // Draft view (multi-step)
-    draftStepsTitle: "Checklist pesanan",
     draftSubmitHelp: "Pesanan dikirim ke {org} setelah Anda konfirmasi.",
     draftStepCustomer: "Beri tahu siapa Anda",
     draftStepShipping: "Mau dikirim ke mana?",

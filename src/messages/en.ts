@@ -988,7 +988,6 @@ const en: Messages = {
     rejectedResubmitCta: "Discuss with the seller",
 
     // Draft view (multi-step)
-    draftStepsTitle: "Order checklist",
     draftSubmitHelp: "We send this order to {org} for review once you confirm.",
     draftStepCustomer: "Tell us who you are",
     draftStepShipping: "Where should we ship it?",
