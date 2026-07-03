@@ -1,7 +1,8 @@
 import { Link, useRouteContext } from '@tanstack/react-router'
-import { Eye, Pencil, Users } from 'lucide-react'
+import { Eye, Pencil, Trash2, Users } from 'lucide-react'
 import { parseAsString, useQueryState } from 'nuqs'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import { AvatarPhoto } from '#/components/app/avatar-photo'
 import type {
@@ -16,9 +17,10 @@ import {
 } from '#/components/app/data-table'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
+import { ConfirmDialog } from '#/components/confirm-dialog'
 import { StatusBadge } from '#/components/status-badge'
 import { Button } from '#/components/ui/button'
-import { useCustomersList } from '#/features/customers/hooks'
+import { useCustomersList, useDeleteCustomer } from '#/features/customers/hooks'
 import type { CustomerRow } from '#/features/customers/model'
 
 export function CustomersListPage() {
@@ -60,6 +62,8 @@ export function CustomersListPage() {
   const { data, isFetching } = useCustomersList(queryFilters)
   const rows = data?.rows ?? []
   const totalRows = data?.totalRows ?? 0
+  const deleteCustomer = useDeleteCustomer()
+  const [deleteTarget, setDeleteTarget] = useState<CustomerRow | null>(null)
 
   const handleApplyFilters = useCallback(
     (values: Record<string, unknown>) => {
@@ -79,6 +83,17 @@ export function CustomersListPage() {
     setStatusFilter(null)
     resetPage()
   }, [setSearch, setStatusFilter, resetPage])
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return
+    const result = await deleteCustomer.mutateAsync(deleteTarget.id)
+    if (result.ok) {
+      toast.success(t('deleted'))
+      setDeleteTarget(null)
+      return
+    }
+    toast.error(result.error)
+  }, [deleteCustomer, deleteTarget, t])
 
   const filtersConfig = useMemo<DataTableFiltersConfig>(
     () => ({
@@ -233,8 +248,25 @@ export function CustomersListPage() {
                 <Pencil className="size-4" />
               </Link>
             </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              tooltip={t('delete')}
+              onClick={() => setDeleteTarget(row)}
+            >
+              <Trash2 className="size-4" />
+            </Button>
           </div>
         )}
+      />
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={t('delete')}
+        description={t('deleteConfirm')}
+        confirmLabel={t('delete')}
+        variant="destructive"
+        onConfirm={handleConfirmDelete}
       />
     </PageContent>
   )

@@ -40,7 +40,7 @@ export const CustomerFormFields = withForm({
               {(field) => <field.PhoneField label={t('phone')} />}
             </form.AppField>
             <form.AppField name="notes">
-              {(field) => <field.TextareaField label={t('notes')} />}
+              {(field) => <field.TextareaField label={t('notes')} optional />}
             </form.AppField>
           </FormGrid>
         </FormSection>

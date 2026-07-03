@@ -10,6 +10,7 @@ import { queryKeys } from '#/lib/query-keys'
 import type { CustomerInput, ListCustomersParams } from './model'
 import {
   createCustomerFn,
+  deleteCustomerFn,
   getCustomerFn,
   listCustomersFn,
   updateCustomerFn,
@@ -51,6 +52,18 @@ export function useUpdateCustomer() {
       return invalidateMutationQueries(queryClient, [
         { queryKey: queryKeys.customers.lists() },
         { queryKey: queryKeys.customers.detail(variables.id) },
+      ])
+    },
+  })
+}
+
+export function useDeleteCustomer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteCustomerFn({ data: { id } }),
+    onSuccess: () => {
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.customers.lists() },
       ])
     },
   })

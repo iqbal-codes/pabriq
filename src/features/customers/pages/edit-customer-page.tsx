@@ -34,6 +34,7 @@ export function EditCustomerPage() {
     },
     validators: {
       onChange: customerFormSchema,
+      onSubmit: customerFormSchema,
     },
     onSubmit: async ({ value, formApi }) => {
       if (!formApi.state.isValid) return

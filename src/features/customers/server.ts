@@ -8,6 +8,7 @@ import type {
 } from './model'
 import {
   createCustomer,
+  deleteCustomer,
   getCustomer,
   listCustomers,
   updateCustomer,
@@ -61,3 +62,20 @@ export const getCustomerFn = createServerFn({ method: 'GET' })
     const orgId = await resolveOrgId()
     return getCustomer(data.id, orgId)
   })
+
+export const deleteCustomerFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: { id: string }) => input)
+  .handler(
+    async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
+      const orgId = await resolveOrgId()
+      try {
+        await deleteCustomer(data.id, orgId)
+        return { ok: true }
+      } catch (e) {
+        return {
+          ok: false,
+          error: e instanceof Error ? e.message : 'Unknown error',
+        }
+      }
+    },
+  )

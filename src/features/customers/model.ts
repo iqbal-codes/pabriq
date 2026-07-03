@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, or, type SQL, sql } from 'drizzle-orm'
+import { and, desc, eq, ilike, isNull, or, type SQL, sql } from 'drizzle-orm'
 import { customers as customersTable } from '#/db/schema'
 import {
   createAddressFn,
@@ -138,7 +138,10 @@ export async function listCustomers(
   params: ListCustomersParams,
 ): Promise<ListCustomersResult> {
   const db = await getDb()
-  const conditions: SQL[] = [eq(customersTable.orgId, params.orgId)]
+  const conditions: SQL[] = [
+    eq(customersTable.orgId, params.orgId),
+    isNull(customersTable.deletedAt),
+  ]
 
   if (params.search?.trim()) {
     const pattern = `%${params.search.trim()}%`
@@ -246,7 +249,13 @@ export async function updateCustomer(
   const existing = await db
     .select({ addressId: customersTable.addressId })
     .from(customersTable)
-    .where(and(eq(customersTable.id, id), eq(customersTable.orgId, orgId)))
+    .where(
+      and(
+        eq(customersTable.id, id),
+        eq(customersTable.orgId, orgId),
+        isNull(customersTable.deletedAt),
+      ),
+    )
     .limit(1)
 
   if (existing.length === 0) {
@@ -286,7 +295,13 @@ export async function getCustomer(
   const rows = await db
     .select()
     .from(customersTable)
-    .where(and(eq(customersTable.id, id), eq(customersTable.orgId, orgId)))
+    .where(
+      and(
+        eq(customersTable.id, id),
+        eq(customersTable.orgId, orgId),
+        isNull(customersTable.deletedAt),
+      ),
+    )
     .limit(1)
 
   const customer = rows[0]
@@ -316,4 +331,12 @@ export async function getCustomer(
     createdAt: customer.createdAt,
     updatedAt: customer.updatedAt,
   }
+}
+
+export async function deleteCustomer(id: string, orgId: string): Promise<void> {
+  const db = await getDb()
+  await db
+    .update(customersTable)
+    .set({ active: false, deletedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(customersTable.id, id), eq(customersTable.orgId, orgId)))
 }

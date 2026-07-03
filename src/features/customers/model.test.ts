@@ -5,6 +5,7 @@ import { addresses, biteshipAreas, customers, organization } from '#/db/schema'
 import {
   type CustomerInput,
   createCustomer,
+  deleteCustomer,
   getCustomer,
   listCustomers,
   updateCustomer,
@@ -229,6 +230,30 @@ describe('customer address persistence', () => {
       areaName: 'Kebayoran Baru',
       streetAddress: 'Jl. Baru No. 456',
     })
+  })
+})
+
+describe('deleteCustomer', () => {
+  it('soft deletes a customer', async () => {
+    await createCustomer({ orgId: org1Id, name: 'Delete Me' })
+    const [created] = await db
+      .select({ id: customers.id })
+      .from(customers)
+      .where(eq(customers.orgId, org1Id))
+      .limit(1)
+
+    await deleteCustomer(created?.id ?? '', org1Id)
+
+    const fetched = await getCustomer(created?.id ?? '', org1Id)
+    expect(fetched).toBeNull()
+
+    const [deleted] = await db
+      .select({ active: customers.active, deletedAt: customers.deletedAt })
+      .from(customers)
+      .where(eq(customers.id, created?.id ?? ''))
+      .limit(1)
+    expect(deleted?.active).toBe(false)
+    expect(deleted?.deletedAt).toBeInstanceOf(Date)
   })
 })
 
