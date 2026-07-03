@@ -26,6 +26,7 @@ import {
   products as productsTable,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
+import { getCustomerAddress } from '#/features/address/model'
 import { normalizeDesignName } from '#/features/orders/line-item-display'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
 import { spawnQueuedPreProductionTasksForOrder } from '#/features/production/task-spawn-helpers'
@@ -734,6 +735,7 @@ export async function createDraftOrder(
   orgId: string,
   input: CreateDraftOrderInput,
 ): Promise<CreateDraftOrderResult> {
+  let shippingAddress: ShippingAddress | null = null
   const customerId = input.customerId?.trim() || null
   if (customerId) {
     const customerRows = await db
@@ -744,6 +746,15 @@ export async function createDraftOrder(
       )
       .limit(1)
     if (customerRows.length === 0) throw new Error('Customer not found')
+
+    const custAddr = await getCustomerAddress(customerId, orgId)
+    if (custAddr) {
+      shippingAddress = {
+        areaId: custAddr.areaId ?? '',
+        areaName: custAddr.areaName ?? '',
+        streetAddress: custAddr.streetAddress ?? '',
+      }
+    }
   }
 
   const now = new Date()
@@ -882,6 +893,7 @@ export async function createDraftOrder(
     orderNumber,
     orderToken,
     validUntil,
+    shippingAddress,
     createdAt: now,
     updatedAt: now,
   })
@@ -915,7 +927,7 @@ export async function createDraftOrder(
       trackingNumber: null,
       shippedAt: null,
       deliveredAt: null,
-      shippingAddress: null,
+      shippingAddress,
       createdAt: now,
       updatedAt: now,
     },

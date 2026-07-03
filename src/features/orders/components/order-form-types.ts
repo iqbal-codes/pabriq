@@ -1,6 +1,9 @@
+import type { ShippingAddress } from '#/features/address/model'
+
 export type OrderFormValues = {
   customerId: string
   notes: string
+  address: ShippingAddress
   lineItems: Array<{
     id: string
     productId: string
@@ -19,5 +22,10 @@ export type OrderFormValues = {
 export const defaultOrderValues = (): OrderFormValues => ({
   customerId: '',
   notes: '',
+  address: {
+    areaId: '',
+    areaName: '',
+    streetAddress: '',
+  },
   lineItems: [],
 })

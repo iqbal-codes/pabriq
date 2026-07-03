@@ -88,6 +88,11 @@ function TestOrderLineItemRow() {
     defaultValues: {
       customerId: '',
       notes: '',
+      address: {
+        areaId: '',
+        areaName: '',
+        streetAddress: '',
+      },
       lineItems: [lineItem],
     },
     onSubmit: vi.fn(),
@@ -160,7 +165,7 @@ describe('OrderLineItemRow', () => {
     renderLineItemRow()
     await waitForInitialPriceCalculation()
 
-    const quantityInput = screen.getByLabelText('Quantity')
+    const quantityInput = screen.getByLabelText('Quantity', { exact: false })
     fireEvent.change(quantityInput, { target: { value: '' } })
     fireEvent.change(quantityInput, { target: { value: '1' } })
     fireEvent.change(quantityInput, { target: { value: '12' } })
@@ -185,7 +190,7 @@ describe('OrderLineItemRow', () => {
     renderLineItemRow()
     await waitForInitialPriceCalculation()
 
-    const quantityInput = screen.getByLabelText('Quantity')
+    const quantityInput = screen.getByLabelText('Quantity', { exact: false })
     await user.clear(quantityInput)
     await user.type(quantityInput, '12')
 

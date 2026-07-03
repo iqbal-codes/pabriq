@@ -283,7 +283,6 @@ describe('ViewOrderPage – shipping card', () => {
 
     expect(screen.getByText('Shipment Fee')).toBeInTheDocument()
     expect(screen.getByText(/50\.000/)).toBeInTheDocument()
-
   })
 
   it('does not show shipment fee when invoice has no shipping fee', () => {
@@ -304,6 +303,5 @@ describe('ViewOrderPage – shipping card', () => {
     renderPage()
 
     expect(screen.queryByText('Shipment Fee')).not.toBeInTheDocument()
-
   })
 })

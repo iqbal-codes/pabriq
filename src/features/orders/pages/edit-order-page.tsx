@@ -29,6 +29,11 @@ export function EditOrderPage() {
     defaultValues: {
       customerId: data?.order.customerId ?? '',
       notes: data?.order.notes ?? '',
+      address: {
+        areaId: data?.order.shippingAddress?.areaId ?? '',
+        areaName: data?.order.shippingAddress?.areaName ?? '',
+        streetAddress: data?.order.shippingAddress?.streetAddress ?? '',
+      },
       lineItems:
         data?.lineItems.map((li) => ({
           id: li.id,

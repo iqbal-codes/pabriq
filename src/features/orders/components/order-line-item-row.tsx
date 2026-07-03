@@ -121,6 +121,7 @@ export const OrderLineItemRow = withForm({
                 <field.TextField
                   label={t('designName')}
                   placeholder={t('designNamePlaceholder')}
+                  optional
                 />
               )}
             </form.AppField>
@@ -179,6 +180,7 @@ export const OrderLineItemRow = withForm({
                 {(field) => (
                   <field.NumberField
                     label={t('hargaNego')}
+                    optional
                     onValueChange={async () => {
                       // Price changed manually, no recalc needed
                     }}
@@ -220,6 +222,7 @@ export const OrderLineItemRow = withForm({
               <field.CheckboxGroupField
                 label={t('addons')}
                 options={addonOptions}
+                optional
               />
             )}
           </form.AppField>
@@ -228,17 +231,7 @@ export const OrderLineItemRow = withForm({
         {/* Manual Deadline */}
         {exceedsProductionCap && (
           <div className="space-y-1">
-            <form.AppField
-              name={`lineItems[${index}].deadline`}
-              validators={{
-                onChange: ({ value }) => {
-                  if (!value) {
-                    return t('manualDeadlineRequired')
-                  }
-                  return undefined
-                },
-              }}
-            >
+            <form.AppField name={`lineItems[${index}].deadline`}>
               {(field) => <field.DateField label={t('manualDeadline')} />}
             </form.AppField>
             <p className="text-xs text-muted-foreground">
@@ -248,10 +241,12 @@ export const OrderLineItemRow = withForm({
         )}
 
         <form.AppField name={`lineItems[${index}].notes`}>
-          {(field) => <field.TextareaField label={t('specification')} />}
+          {(field) => <field.TextareaField label={t('specification')} optional />}
         </form.AppField>
         <form.AppField name={`lineItems[${index}].attachments`}>
-          {(field) => <field.FileUploadField label={t('attachments')} />}
+          {(field) => (
+            <field.FileUploadField label={t('attachments')} ownerId={item.id} optional />
+          )}
         </form.AppField>
 
         <div className="text-right text-sm text-muted-foreground">

@@ -27,6 +27,7 @@ import {
 } from '#/features/orders/hooks'
 import type { CreateDraftOrderResult } from '#/features/orders/model'
 import { useProductsList } from '#/features/products/hooks'
+import { orderFormSchema } from '#/lib/validation-schemas'
 
 const currencyFormatter = new Intl.NumberFormat('en-ID', {
   style: 'currency',
@@ -77,19 +78,15 @@ function CreateOrderForm() {
     total: number
   } | null>(null)
   const [portalUrl, setPortalUrl] = useState<string | null>(null)
-
   const form = useAppForm({
     defaultValues: defaultOrderValues(),
-    onSubmit: async ({ value }) => {
+    validators: {
+      onChange: orderFormSchema,
+      onSubmit: orderFormSchema,
+    },
+    onSubmit: async ({ value, formApi }) => {
+      if (!formApi.state.isValid) return
       const validItems = value.lineItems.filter((i) => i.productId)
-      if (validItems.length === 0) return
-
-      for (const i of validItems) {
-        if (i.manualDeadline && !i.deadline) {
-          toast.error(t('manualDeadlineRequired'))
-          return
-        }
-      }
 
       let result: CreateDraftOrderResult
       try {

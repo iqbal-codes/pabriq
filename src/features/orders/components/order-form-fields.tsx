@@ -1,10 +1,14 @@
+import { useStore } from '@tanstack/react-form'
+import { useQuery } from '@tanstack/react-query'
 import { Plus, UserPlus } from 'lucide-react'
+import { useEffect } from 'react'
 import { useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
 import { FormGrid, FormSection, withForm } from '#/components/app/form'
-import { formatNumber } from '#/components/app/form/form-utils'
+import { formatNumber, firstError } from '#/components/app/form/form-utils'
 import { Button } from '#/components/ui/button'
 import type { CustomerRow } from '#/features/customers/model'
+import { getCustomerFn } from '#/features/customers/server'
 import type { ProductRow } from '#/features/products/model'
 import { CreateCustomerDialog } from './create-customer-dialog'
 import { defaultOrderValues } from './order-form-types'
@@ -19,7 +23,7 @@ export const OrderFormFields = withForm({
   },
   render: function Render({ form, customers, products }) {
     const t = useTranslations('orders')
-
+    const pt = useTranslations('portal')
     function handleAddProduct(product: ProductRow, unitPrice: string) {
       form.setFieldValue('lineItems', [
         ...form.state.values.lineItems,
@@ -42,6 +46,19 @@ export const OrderFormFields = withForm({
     function handleCustomerSelect(customerId: string) {
       form.setFieldValue('customerId', customerId)
     }
+    const customerId = useStore(form.store, (state) => state.values.customerId)
+
+    const { data: customer } = useQuery({
+      queryKey: ['customer', customerId],
+      queryFn: () => getCustomerFn({ data: { id: customerId } }),
+      enabled: !!customerId,
+    })
+
+    useEffect(() => {
+      if (customer?.address) {
+        form.setFieldValue('address', customer.address)
+      }
+    }, [customer, form])
 
     return (
       <form.Subscribe
@@ -119,7 +136,12 @@ export const OrderFormFields = withForm({
                     />
                   </div>
                   <form.AppField name="notes">
-                    {(field) => <field.TextareaField label={t('notes')} />}
+                    {(field) => <field.TextareaField label={t('notes')} optional />}
+                  </form.AppField>
+                  <form.AppField name="address">
+                    {(field) => (
+                      <field.AddressField label={pt('shippingAddress')} optional />
+                    )}
                   </form.AppField>
                 </FormGrid>
               </FormSection>
@@ -140,32 +162,41 @@ export const OrderFormFields = withForm({
                 }
               >
                 <form.AppField name="lineItems" mode="array">
-                  {() => (
-                    <>
-                      {lineItems.map((item, i) => (
-                        <OrderLineItemRow
-                          key={item.id}
-                          form={form}
-                          index={i}
-                          item={item}
-                          products={products}
-                        />
-                      ))}
+                  {(field) => {
+                    const error = firstError(field.state.meta.errors)
+                    return (
+                      <>
+                        {lineItems.map((item, i) => (
+                          <OrderLineItemRow
+                            key={item.id}
+                            form={form}
+                            index={i}
+                            item={item}
+                            products={products}
+                          />
+                        ))}
 
-                      {lineItems.length > 0 && (
-                        <div className="flex justify-end border-t pt-4">
-                          <div className="text-right">
-                            <span className="text-sm text-muted-foreground">
-                              {t('orderTotal')}
-                            </span>
-                            <p className="text-xl font-semibold">
-                              Rp {formatNumber(total)}
-                            </p>
+                        {error && (
+                          <p className="mt-2 text-sm text-destructive font-medium">
+                            {error}
+                          </p>
+                        )}
+
+                        {lineItems.length > 0 && (
+                          <div className="flex justify-end border-t pt-4">
+                            <div className="text-right">
+                              <span className="text-sm text-muted-foreground">
+                                {t('orderTotal')}
+                              </span>
+                              <p className="text-xl font-semibold">
+                                Rp {formatNumber(total)}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </>
-                  )}
+                        )}
+                      </>
+                    )
+                  }}
                 </form.AppField>
               </FormSection>
             </>
