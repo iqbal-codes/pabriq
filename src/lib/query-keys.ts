@@ -117,6 +117,8 @@ export const queryKeys = {
       [...queryKeys.production.all, 'counts', board ?? 'all'] as const,
     tasksByOrder: (orderId: string) =>
       [...queryKeys.production.all, 'tasks-by-order', orderId] as const,
+    timeline: (orderId: string) =>
+      [...queryKeys.production.all, 'timeline', orderId] as const,
   },
   assistant: {
     all: ['assistant'] as const,

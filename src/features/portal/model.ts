@@ -752,7 +752,7 @@ export type OrderTaskEvent = {
     readyForProduction?: boolean
   }
 }
-type ActivityRow = {
+export type ActivityRow = {
   id: string
   taskId: string
   type: string
@@ -762,12 +762,12 @@ type ActivityRow = {
   createdAt: Date
 }
 
-type ActivityIndexes = {
+export type ActivityIndexes = {
   createdByTaskId: Map<string, ActivityRow>
   completedByTaskId: Map<string, ActivityRow>
 }
 
-type TimelineTaskRow = {
+export type TimelineTaskRow = {
   id: string
   taskNumber: string | null
   lineItemId: string | null
@@ -776,7 +776,9 @@ type TimelineTaskRow = {
   status: string
 }
 
-function extractActivityIndexes(activities: ActivityRow[]): ActivityIndexes {
+export function extractActivityIndexes(
+  activities: ActivityRow[],
+): ActivityIndexes {
   const createdByTaskId = new Map<string, ActivityRow>()
   const completedByTaskId = new Map<string, ActivityRow>()
   for (const activity of activities) {
@@ -789,7 +791,7 @@ function extractActivityIndexes(activities: ActivityRow[]): ActivityIndexes {
   return { createdByTaskId, completedByTaskId }
 }
 
-function buildTimelineEvents(params: {
+export function buildTimelineEvents(params: {
   tasks: TimelineTaskRow[]
   stageNameMap: Map<string, string>
   stageReqMap: Map<string, Array<{ id: string; label: string; type: string }>>
