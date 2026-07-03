@@ -16,6 +16,25 @@ vi.mock('#/features/invoices/hooks', () => ({
   usePaymentMethods: () => ({ data: [{ id: 'pm-1', name: 'Bank Transfer' }] }),
 }))
 
+vi.mock('#/features/settings/hooks', () => ({
+  useOrgSettings: () => ({
+    data: {
+      address: {
+        areaId: 'area-origin',
+        areaName: 'Jakarta',
+        streetAddress: 'Jl. Test',
+      },
+    },
+  }),
+}))
+
+vi.mock('#/features/address/hooks', () => ({
+  useCalculateShippingRates: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+}))
+
 const messages = {
   invoices: {
     title: 'Invoices',
@@ -34,11 +53,31 @@ const messages = {
     paymentMethod: 'Payment Method',
     notes: 'Notes',
     failed: 'Failed',
+    shipmentMethod: 'Shipment Method',
+    shipmentMethodBiteship: 'Calculate with Biteship',
+    shipmentMethodManual: 'Manual / Outside Biteship',
+    shipmentMethodPickup: 'Customer Pickup / No Shipping',
+    packageWeightKg: 'Package Weight (kg)',
+    calculateShipmentFee: 'Calculate Shipping Fee',
+    shipmentRate: 'Shipment Rate',
+    selectShipmentRateRequired: 'Select a rate',
+    noShipmentRatesFound: 'No rates found',
+    biteshipApiKeyMissing: 'API key missing',
+    biteshipRateCalculationFailed: 'Calculation failed',
+    shippingAreaRequired: 'Area required',
+    packageWeightRequired: 'Weight required',
+    customerPickupNoShipping: 'No shipping',
   },
   production: {
     courier: 'Courier',
     courierPlaceholder: 'Courier Placeholder',
     shipmentFee: 'Shipment Fee',
+    shippingFeeDescription: 'Description',
+    shippingFeeDescriptionPlaceholder: 'e.g. Shipping Fee',
+  },
+  address: {
+    orgAddressRequired: 'Org address required',
+    areaNotSupported: 'Area not supported',
   },
 }
 
@@ -52,6 +91,7 @@ const defaultOrder = {
   remainingAmount: 250000,
   customerId: 'cust-1',
   customerName: 'Acme Corp',
+  shippingAddress: null,
 }
 
 const dpOrder = {
@@ -78,7 +118,7 @@ function renderModal(order = defaultOrder) {
 }
 
 describe('CreateInvoiceModal', () => {
-  it('renders translated order label, total, remaining, payment method, courier, and shipment fee in Pelunasan mode', () => {
+  it('renders translated order label, total, remaining, payment method, and shipment method in Pelunasan mode', () => {
     renderModal()
 
     expect(screen.getByText('Order #ORD-001')).toBeInTheDocument()
@@ -91,9 +131,14 @@ describe('CreateInvoiceModal', () => {
     expect(screen.getByText(/Already invoiced: 50%/)).toBeInTheDocument()
     expect(screen.getAllByText(/250\.000/).length).toBeGreaterThanOrEqual(1)
 
-    // Courier and shipment fee should be visible in Pelunasan mode
-    expect(screen.getByLabelText('Courier')).toBeInTheDocument()
-    expect(screen.getByLabelText('Shipment Fee')).toBeInTheDocument()
+    // Shipment method selector should be visible in Pelunasan mode
+    expect(screen.getByText('Shipment Method')).toBeInTheDocument()
+    expect(
+      screen.getByText('Manual / Outside Biteship'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Customer Pickup / No Shipping'),
+    ).toBeInTheDocument()
   })
 
   it('renders invoice amount, full, and custom selectors in DP mode', () => {
@@ -102,8 +147,8 @@ describe('CreateInvoiceModal', () => {
     expect(screen.getByText('Order #ORD-001')).toBeInTheDocument()
     expect(screen.getByText('Invoice amount')).toBeInTheDocument()
     expect(screen.getByText('Custom')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Courier')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Shipment Fee')).not.toBeInTheDocument()
+    // Shipment method should NOT be visible in DP mode
+    expect(screen.queryByText('Shipment Method')).not.toBeInTheDocument()
   })
 
   it('clicking Custom then Increase percentage changes displayed percentage and submit amount in DP mode', async () => {

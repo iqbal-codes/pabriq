@@ -16,7 +16,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
+import { useCalculateShippingRates } from '#/features/address/hooks'
+import type { ShippingAddress, ShippingRate } from '#/features/address/model'
 import { useCreateInvoice, usePaymentMethods } from '#/features/invoices/hooks'
+import { useOrgSettings } from '#/features/settings/hooks'
 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
   style: 'currency',
@@ -34,6 +37,7 @@ type OrderSummary = {
   remainingAmount: number
   customerId: string | null
   customerName: string | null
+  shippingAddress: ShippingAddress | null
 }
 
 type Props = {
@@ -42,11 +46,24 @@ type Props = {
   order: OrderSummary
 }
 
+function rateKey(rate: ShippingRate): string {
+  return `${rate.courierCode}-${rate.serviceCode}`
+}
+
+function rateLabel(rate: ShippingRate): string {
+  const price = currencyFormatter.format(rate.price)
+  const etd = rate.estimatedDays ? ` - ETD: ${rate.estimatedDays}` : ''
+  return `${rate.courierName} - ${rate.serviceName} (${price})${etd}`
+}
+
 export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
   const t = useTranslations('invoices')
   const pt = useTranslations('production')
+  const at = useTranslations('address')
   const createInvoice = useCreateInvoice()
   const { data: paymentMethods } = usePaymentMethods()
+  const { data: orgSettings } = useOrgSettings()
+  const calculateRates = useCalculateShippingRates()
 
   const hasPaidInvoices = order.invoicedPercentage > 0
 
@@ -54,6 +71,11 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
     hasPaidInvoices ? 'remaining' : 'full',
   )
   const [customPct, setCustomPct] = useState(50)
+  const [rates, setRates] = useState<ShippingRate[]>([])
+
+  const originAreaId = orgSettings?.address?.areaId ?? null
+  const destinationAreaId = order.shippingAddress?.areaId ?? null
+  const canCalculateBiteship = Boolean(originAreaId && destinationAreaId)
 
   const effectivePct = hasPaidInvoices
     ? order.remainingPercentage
@@ -72,11 +94,44 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
     defaultValues: {
       paymentMethodId: '',
       notes: '',
-      shippingFee: 0,
-      shippingFeeDescription: 'Shipping Fee',
-      courier: '',
+      shipmentMethod: 'manual' as 'biteship' | 'manual' | 'pickup',
+      packageWeightKg: 1,
+      selectedRateKey: '',
+      manualShippingFee: 0,
+      manualShippingDescription: 'Shipping Fee',
     },
     onSubmit: async ({ value }) => {
+      let shippingFee: number | undefined
+      let shippingFeeDescription: string | undefined
+      let courier: string | undefined
+
+      if (hasPaidInvoices) {
+        const method = value.shipmentMethod as
+          | 'biteship'
+          | 'manual'
+          | 'pickup'
+
+        if (method === 'biteship') {
+          const selectedRate = rates.find(
+            (r) => rateKey(r) === value.selectedRateKey,
+          )
+          if (!selectedRate) {
+            toast.error(t('selectShipmentRateRequired'))
+            return
+          }
+          shippingFee = selectedRate.price
+          shippingFeeDescription = `${selectedRate.courierName} ${selectedRate.serviceName}`
+          courier = selectedRate.courierName
+        } else if (method === 'manual') {
+          if (value.manualShippingFee > 0) {
+            shippingFee = value.manualShippingFee
+            shippingFeeDescription =
+              value.manualShippingDescription || 'Shipping Fee'
+          }
+        }
+        // pickup: no shipping fields
+      }
+
       const result = await createInvoice.mutateAsync({
         orderId: order.id,
         percentage: effectivePct,
@@ -88,15 +143,9 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
         paymentMethodId: value.paymentMethodId,
         notes: value.notes || undefined,
         lineItems: [],
-        shippingFee:
-          hasPaidInvoices && value.shippingFee
-            ? Number(value.shippingFee)
-            : undefined,
-        shippingFeeDescription:
-          hasPaidInvoices && value.shippingFee
-            ? value.shippingFeeDescription
-            : undefined,
-        courier: hasPaidInvoices && value.courier ? value.courier : undefined,
+        shippingFee,
+        shippingFeeDescription,
+        courier,
       })
       if (result.ok) {
         toast.success(t('title'))
@@ -106,6 +155,22 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
       }
     },
   })
+
+  function computeDisplayShippingFee(
+    shipmentMethod: string,
+    selectedRateKey: string,
+    manualShippingFee: number,
+  ): number {
+    if (!hasPaidInvoices) return 0
+    if (shipmentMethod === 'pickup') return 0
+    if (shipmentMethod === 'biteship') {
+      const rate = rates.find((r) => rateKey(r) === selectedRateKey)
+      return rate?.price ?? 0
+    }
+    if (shipmentMethod === 'manual') return manualShippingFee
+    return 0
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -117,19 +182,28 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
         </DialogHeader>
 
         <FormRoot form={form}>
-          <form.Subscribe selector={(state) => state.values.shippingFee}>
-            {(shippingFee) => {
-              const shippingAmount = hasPaidInvoices
-                ? Number(shippingFee) || 0
-                : 0
-              const invoiceTotal = hasPaidInvoices
-                ? order.remainingAmount + shippingAmount
+          <form.Subscribe
+            selector={(state) => ({
+              shipmentMethod: state.values.shipmentMethod,
+              selectedRateKey: state.values.selectedRateKey,
+              manualShippingFee: state.values.manualShippingFee,
+            })}
+          >
+            {({ shipmentMethod, selectedRateKey, manualShippingFee }) => {
+              const shippingFee = computeDisplayShippingFee(
+                shipmentMethod,
+                selectedRateKey,
+                manualShippingFee,
+              )
+              const baseTotal = hasPaidInvoices
+                ? order.remainingAmount
                 : mode === 'remaining'
                   ? order.remainingAmount
                   : mode === 'custom'
                     ? Math.round(((order.total * effectivePct) / 100) * 100) /
                       100
                     : order.total
+              const invoiceTotal = baseTotal + shippingFee
 
               return (
                 <>
@@ -160,7 +234,9 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                           </Button>
                           <Button
                             type="button"
-                            variant={mode === 'custom' ? 'default' : 'outline'}
+                            variant={
+                              mode === 'custom' ? 'default' : 'outline'
+                            }
                             size="sm"
                             onClick={() => setMode('custom')}
                           >
@@ -224,26 +300,148 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                       </div>
                     )}
 
+                    {/* ── Shipment method section (settlement invoices only) ── */}
                     {hasPaidInvoices && (
                       <>
-                        <form.AppField name="courier">
+                        <form.AppField name="shipmentMethod">
                           {(field) => (
-                            <field.TextField
-                              label={pt('courier')}
-                              placeholder={pt('courierPlaceholder')}
+                            <field.RadioCardField
+                              label={t('shipmentMethod')}
+                              cols={3}
+                              options={[
+                                {
+                                  value: 'biteship',
+                                  label: t('shipmentMethodBiteship'),
+                                },
+                                {
+                                  value: 'manual',
+                                  label: t('shipmentMethodManual'),
+                                },
+                                {
+                                  value: 'pickup',
+                                  label: t('shipmentMethodPickup'),
+                                },
+                              ]}
                             />
                           )}
                         </form.AppField>
 
-                        <form.AppField name="shippingFee">
-                          {(field) => (
-                            <field.NumberField
-                              label={pt('shipmentFee')}
-                              placeholder="0"
-                              optional
-                            />
-                          )}
-                        </form.AppField>
+                        {/* Biteship method UI */}
+                        {shipmentMethod === 'biteship' && (
+                          <>
+                            {!originAreaId && (
+                              <p className="text-sm text-destructive">
+                                {at('orgAddressRequired')}
+                              </p>
+                            )}
+                            {!destinationAreaId && (
+                              <p className="text-sm text-destructive">
+                                {at('areaNotSupported')}
+                              </p>
+                            )}
+                            {canCalculateBiteship && (
+                              <>
+                                <form.AppField name="packageWeightKg">
+                                  {(field) => (
+                                    <field.NumberField
+                                      label={t('packageWeightKg')}
+                                    />
+                                  )}
+                                </form.AppField>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    const weightKg =
+                                      form.getFieldValue('packageWeightKg')
+                                    const result =
+                                      await calculateRates.mutateAsync({
+                                        originAreaId: originAreaId!,
+                                        destinationAreaId: destinationAreaId!,
+                                        weightGrams: Math.round(
+                                          (weightKg || 1) * 1000,
+                                        ),
+                                        orderValue: order.remainingAmount,
+                                      })
+                                    if (result.ok) {
+                                      setRates(result.rates)
+                                    } else {
+                                      toast.error(
+                                        t(result.error as 'biteshipRateCalculationFailed') ??
+                                          t('biteshipRateCalculationFailed'),
+                                      )
+                                    }
+                                  }}
+                                  disabled={
+                                    calculateRates.isPending ||
+                                    !canCalculateBiteship
+                                  }
+                                >
+                                  {calculateRates.isPending
+                                    ? '...'
+                                    : t('calculateShipmentFee')}
+                                </Button>
+                              </>
+                            )}
+                            {calculateRates.isPending && rates.length === 0 && (
+                              <p className="text-sm text-muted-foreground">
+                                Loading rates...
+                              </p>
+                            )}
+                            {!calculateRates.isPending &&
+                              rates.length === 0 &&
+                              canCalculateBiteship && (
+                                <p className="text-sm text-muted-foreground">
+                                  {t('noShipmentRatesFound')}
+                                </p>
+                              )}
+                            {rates.length > 0 && (
+                              <form.AppField name="selectedRateKey">
+                                {(field) => (
+                                  <field.SelectField
+                                    label={t('shipmentRate')}
+                                    options={rates.map((r) => ({
+                                      value: rateKey(r),
+                                      label: rateLabel(r),
+                                    }))}
+                                    placeholder={t('shipmentRate')}
+                                  />
+                                )}
+                              </form.AppField>
+                            )}
+                          </>
+                        )}
+
+                        {/* Manual method UI */}
+                        {shipmentMethod === 'manual' && (
+                          <>
+                            <form.AppField name="manualShippingFee">
+                              {(field) => (
+                                <field.NumberField
+                                  label={pt('shipmentFee')}
+                                  placeholder="0"
+                                />
+                              )}
+                            </form.AppField>
+                            <form.AppField name="manualShippingDescription">
+                              {(field) => (
+                                <field.TextField
+                                  label={pt('shippingFeeDescription')}
+                                  placeholder={pt(
+                                    'shippingFeeDescriptionPlaceholder',
+                                  )}
+                                />
+                              )}
+                            </form.AppField>
+                          </>
+                        )}
+
+                        {/* Pickup method UI */}
+                        {shipmentMethod === 'pickup' && (
+                          <p className="text-sm text-muted-foreground">
+                            {t('customerPickupNoShipping')}
+                          </p>
+                        )}
                       </>
                     )}
 

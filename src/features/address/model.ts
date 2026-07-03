@@ -185,6 +185,147 @@ export const searchAreasFn = createServerFn({ method: 'GET' })
     return searchAreas(data.query)
   })
 
+export type ShippingRateInput = {
+  originAreaId: string
+  destinationAreaId: string
+  weightGrams: number
+  orderValue: number
+}
+
+export type ShippingRate = {
+  courierCode: string
+  courierName: string
+  serviceCode: string
+  serviceName: string
+  description: string | null
+  price: number
+  estimatedDays: string | null
+}
+
+export type ShippingRatesResult =
+  | { ok: true; rates: ShippingRate[] }
+  | { ok: false; error: string }
+
+export async function calculateShippingRates(
+  input: ShippingRateInput,
+): Promise<ShippingRatesResult> {
+  const apiKey = process.env.BITESHIP_API_KEY
+  if (!apiKey) {
+    return { ok: false, error: 'biteshipApiKeyMissing' }
+  }
+
+  if (!input.originAreaId || !input.destinationAreaId) {
+    return { ok: false, error: 'shippingAreaRequired' }
+  }
+
+  if (input.weightGrams <= 0) {
+    return { ok: false, error: 'packageWeightRequired' }
+  }
+
+  try {
+    const res = await fetch(
+      'https://api.biteship.com/v1/rates/couriers',
+      {
+        method: 'POST',
+        headers: {
+          authorization: apiKey,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          origin_area_id: input.originAreaId,
+          destination_area_id: input.destinationAreaId,
+          couriers: 'jne,sicepat,jnt,anteraja,tiki',
+          items: [
+            {
+              name: 'Order Shipment',
+              value: Math.max(1, Math.round(input.orderValue)),
+              quantity: 1,
+              weight: Math.round(input.weightGrams),
+            },
+          ],
+        }),
+      },
+    )
+
+    if (!res.ok) {
+      return { ok: false, error: 'biteshipRateCalculationFailed' }
+    }
+
+    const body = (await res.json()) as {
+      success: boolean
+      pricing?: Array<{
+        courier_code?: string
+        courier_name?: string
+        courier_service_code?: string
+        courier_service_name?: string
+        description?: string
+        price?: number
+        shipping_fee?: number
+        estimated_days?: string
+      }>
+      pricings?: Array<{
+        courier_code?: string
+        courier_name?: string
+        courier_service_code?: string
+        courier_service_name?: string
+        description?: string
+        price?: number
+        shipping_fee?: number
+        estimated_days?: string
+      }>
+      couriers?: Array<{
+        courier_code?: string
+        courier_name?: string
+        courier_service_code?: string
+        courier_service_name?: string
+        description?: string
+        price?: number
+        shipping_fee?: number
+        estimated_days?: string
+      }>
+    }
+
+    if (!body.success) {
+      return { ok: false, error: 'biteshipRateCalculationFailed' }
+    }
+
+    const rawRates = body.pricing ?? body.pricings ?? body.couriers ?? []
+
+    const rates: ShippingRate[] = rawRates
+      .filter(
+        (r) =>
+          r.courier_code &&
+          r.courier_service_code &&
+          (r.price ?? 0) > 0,
+      )
+      .map((r) => ({
+        courierCode: r.courier_code!,
+        courierName: r.courier_name ?? r.courier_code!,
+        serviceCode: r.courier_service_code!,
+        serviceName: r.courier_service_name ?? r.courier_service_code!,
+        description: r.description ?? null,
+        price: r.price ?? r.shipping_fee ?? 0,
+        estimatedDays: r.estimated_days ?? null,
+      }))
+      .sort((a, b) => a.price - b.price)
+
+    return { ok: true, rates }
+  } catch {
+    return { ok: false, error: 'biteshipRateCalculationFailed' }
+  }
+}
+
+export const calculateShippingRatesFn = createServerFn({
+  method: 'POST',
+})
+  .inputValidator(
+    (input: unknown) =>
+      input as ShippingRateInput,
+  )
+  .handler(async ({ data }): Promise<ShippingRatesResult> => {
+    return calculateShippingRates(data)
+  })
+
 export async function getCustomerAddress(
   customerId: string,
   orgId: string,

@@ -20,6 +20,7 @@ export function ProgressView({
   token: string
 }) {
   const t = useTranslations('portal')
+  const pt = useTranslations('production')
   const locale = useLocale()
   const shouldFetchTimeline =
     token &&
@@ -146,7 +147,7 @@ export function ProgressView({
               {order.courier && (
                 <div>
                   <p className="text-xs text-muted-foreground">
-                    {t('orderInfoName')}
+                    {pt('courier')}
                   </p>
                   <p className="font-medium">{order.courier}</p>
                 </div>
@@ -154,7 +155,7 @@ export function ProgressView({
               {order.trackingNumber && (
                 <div>
                   <p className="text-xs text-muted-foreground">
-                    {t('orderNumber')}
+                    {pt('trackingNumber')}
                   </p>
                   <div className="flex items-center gap-2">
                     <p className="font-mono">{order.trackingNumber}</p>
@@ -162,6 +163,7 @@ export function ProgressView({
                       variant="ghost"
                       size="icon"
                       className="size-6"
+                      aria-label={t('copyTrackingNumber')}
                       onClick={() =>
                         navigator.clipboard.writeText(
                           order.trackingNumber ?? '',

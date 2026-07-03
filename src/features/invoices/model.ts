@@ -329,7 +329,12 @@ export async function createInvoice(
       await db
         .update(ordersTable)
         .set({ courier: input.courier, updatedAt: now })
-        .where(eq(ordersTable.id, input.orderId))
+        .where(
+          and(
+            eq(ordersTable.id, input.orderId),
+            eq(ordersTable.orgId, orgId),
+          ),
+        )
     }
   } else {
     for (const li of input.lineItems) {
