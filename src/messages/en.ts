@@ -833,7 +833,7 @@ const en: Messages = {
     markReadyForProduction: "Mark DP Payment",
   },
   portal: {
-    title: "Order Confirmation",
+    title: "Complete Order Data",
     waitApproval:
       "Your order has been submitted. Please wait for admin approval.",
     orderSummary: "Order Summary",
@@ -988,7 +988,7 @@ const en: Messages = {
     rejectedResubmitCta: "Discuss with the seller",
 
     // Draft view (multi-step)
-    draftSubmitHelp: "We send this order to {org} for review once you confirm.",
+    draftSubmitHelp: "Please fill in your personal data and order information. The {org} team will process the order as soon as the data is complete.",
     draftStepCustomer: "Tell us who you are",
     draftStepShipping: "Where should we ship it?",
     draftStepItems: "Review each item",

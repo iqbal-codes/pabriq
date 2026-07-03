@@ -836,7 +836,7 @@ const id: Messages = {
     markReadyForProduction: "Tandai Pembayaran DP",
   },
   portal: {
-    title: "Konfirmasi Pesanan",
+    title: "Lengkapi Data Pesanan",
     waitApproval: "Pesanan Anda telah dikirim. Mohon tunggu persetujuan admin.",
     orderSummary: "Ringkasan Pesanan",
     lineItems: "Item Pesanan",
@@ -990,7 +990,7 @@ const id: Messages = {
     rejectedResubmitCta: "Diskusikan dengan penjual",
 
     // Draft view (multi-step)
-    draftSubmitHelp: "Pesanan dikirim ke {org} setelah Anda konfirmasi.",
+    draftSubmitHelp: "Silakan isi data diri dan informasi pesanan Anda. Tim {org} akan segera memproses pesanan setelah data lengkap.",
     draftStepCustomer: "Beri tahu siapa Anda",
     draftStepShipping: "Mau dikirim ke mana?",
     draftStepItems: "Tinjau setiap item",
