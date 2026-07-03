@@ -76,6 +76,8 @@ export type Messages = {
     phone: string;
     workspaces: string;
     status: string;
+    optional: string;
+    required: string;
   };
   settings: {
     general: string;
@@ -415,6 +417,7 @@ export type Messages = {
     save: string;
     saving: string;
     delete: string;
+    deleted: string;
     deleteConfirm: string;
     customerCreated: string;
     customerUpdated: string;
@@ -510,6 +513,7 @@ export type Messages = {
     created: string;
     updated: string;
     deleted: string;
+    deleteProduct: string;
     deleteConfirm: string;
     price: string;
     basePrice: string;
@@ -555,6 +559,8 @@ export type Messages = {
   invoices: {
     title: string;
     listDescription: string;
+    loadInvoicesFailed: string;
+    loadInvoicesFailedDesc: string;
     createInvoice: string;
     viewInvoice: string;
     invoiceNumber: string;

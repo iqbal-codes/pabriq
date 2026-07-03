@@ -1,4 +1,4 @@
-import type { Messages } from "./types";
+import type { Messages } from './types'
 
 // biome-ignore format: locale message map is maintained as a dense dictionary
 const id: Messages = {
@@ -79,6 +79,8 @@ const id: Messages = {
     phone: "Telepon",
     workspaces: "Ruang Kerja",
     status: "Status",
+    optional: "Opsional",
+    required: "Wajib",
   },
   dataTable: {
     clearFilters: "Hapus filter",
@@ -428,6 +430,7 @@ const id: Messages = {
     save: "Simpan",
     saving: "Menyimpan...",
     delete: "Hapus",
+    deleted: "Pelanggan dihapus",
     deleteConfirm: "Apakah Anda yakin ingin menghapus pelanggan ini?",
     customerCreated: "Pelanggan berhasil dibuat",
     customerUpdated: "Pelanggan berhasil diperbarui",
@@ -522,6 +525,7 @@ const id: Messages = {
     created: "Produk berhasil dibuat",
     updated: "Produk berhasil diperbarui",
     deleted: "Produk dihapus",
+    deleteProduct: "Hapus Produk",
     deleteConfirm: "Anda yakin ingin menghapus produk ini?",
     createdAt: "Dibuat Pada",
     price: "Harga",
@@ -574,6 +578,8 @@ const id: Messages = {
   invoices: {
     title: "Invoice",
     listDescription: "Lihat dan kelola semua invoice dan pembayaran",
+    loadInvoicesFailed: "Gagal memuat invoice",
+    loadInvoicesFailedDesc: "Periksa koneksi Anda dan coba lagi.",
     createInvoice: "Buat Invoice",
     viewInvoice: "Lihat Invoice",
     invoiceNumber: "No. Invoice",
@@ -1082,4 +1088,4 @@ const id: Messages = {
   },
 };
 
-export default id;
+export default id

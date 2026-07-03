@@ -1,4 +1,4 @@
-import type { Messages } from "./types";
+import type { Messages } from './types'
 
 // biome-ignore format: locale message map is maintained as a dense dictionary
 const en: Messages = {
@@ -79,6 +79,8 @@ const en: Messages = {
     phone: "Phone",
     workspaces: "Workspaces",
     status: "Status",
+    optional: "Optional",
+    required: "Required",
   },
   dataTable: {
     clearFilters: "Clear filters",
@@ -428,6 +430,7 @@ const en: Messages = {
     save: "Save",
     saving: "Saving...",
     delete: "Delete",
+    deleted: "Customer deleted",
     deleteConfirm: "Are you sure you want to delete this customer?",
     customerCreated: "Customer created successfully",
     customerUpdated: "Customer updated successfully",
@@ -521,6 +524,7 @@ const en: Messages = {
     created: "Product created successfully",
     updated: "Product updated successfully",
     deleted: "Product deleted",
+    deleteProduct: "Delete Product",
     deleteConfirm: "Are you sure you want to delete this product?",
     price: "Price",
     basePrice: "Base Price",
@@ -572,6 +576,8 @@ const en: Messages = {
   invoices: {
     title: "Invoices",
     listDescription: "View and manage all invoices and payments",
+    loadInvoicesFailed: "Could not load invoices",
+    loadInvoicesFailedDesc: "Check your connection and try again.",
     createInvoice: "Create Invoice",
     viewInvoice: "View Invoice",
     invoiceNumber: "Invoice #",
@@ -1078,4 +1084,4 @@ const en: Messages = {
   },
 };
 
-export default en;
+export default en
