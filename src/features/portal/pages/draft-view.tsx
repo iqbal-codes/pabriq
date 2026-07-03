@@ -174,6 +174,7 @@ export function DraftView({
                   label={t('guestName')}
                   placeholder={t('guestNamePlaceholder')}
                   optional={hasCustomer}
+                  disabled={hasCustomer}
                 />
               )}
             </form.AppField>
@@ -183,6 +184,7 @@ export function DraftView({
                   label={t('guestPhone')}
                   placeholder={t('guestPhonePlaceholder')}
                   optional={hasCustomer}
+                  disabled={hasCustomer}
                 />
               )}
             </form.AppField>

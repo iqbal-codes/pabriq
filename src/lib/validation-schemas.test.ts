@@ -308,17 +308,11 @@ describe('orderFormSchema', () => {
     expect(result.success).toBe(true)
   })
 
-  it('rejects an order without a customer', () => {
+  it('accepts an order without a customer', () => {
     const result = orderFormSchema.safeParse({
       ...validBase,
       customerId: '',
     })
-    expect(result.success).toBe(false)
-    if (!result.success) {
-      const issue = result.error.issues.find(
-        (i) => i.path.join('.') === 'customerId',
-      )
-      expect(issue?.message).toBe('Customer is required')
-    }
+    expect(result.success).toBe(true)
   })
 })

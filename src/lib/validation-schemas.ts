@@ -94,7 +94,7 @@ const orderLineItemFormSchema = z
   })
 
 export const orderFormSchema = z.object({
-  customerId: z.string().min(1, 'Customer is required'),
+  customerId: z.string(),
   notes: z.string(),
   address: z.object({
     areaId: z.string(),
