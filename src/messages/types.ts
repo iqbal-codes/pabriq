@@ -637,6 +637,20 @@ export type Messages = {
     remainingFrom: string;
     customerName: string;
     transferFallback: string;
+    shipmentMethod: string;
+    shipmentMethodBiteship: string;
+    shipmentMethodManual: string;
+    shipmentMethodPickup: string;
+    packageWeightKg: string;
+    calculateShipmentFee: string;
+    shipmentRate: string;
+    selectShipmentRateRequired: string;
+    noShipmentRatesFound: string;
+    biteshipApiKeyMissing: string;
+    biteshipRateCalculationFailed: string;
+    shippingAreaRequired: string;
+    packageWeightRequired: string;
+    customerPickupNoShipping: string;
   };
   address: {
     title: string;
@@ -985,6 +999,7 @@ export type Messages = {
     paymentVerifying: string;
     paymentConfirmTimeout: string;
     shipmentTracking: string;
+    copyTrackingNumber: string;
   };
   assistant: {
     trigger: string;
