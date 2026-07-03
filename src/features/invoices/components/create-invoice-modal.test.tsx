@@ -133,9 +133,7 @@ describe('CreateInvoiceModal', () => {
 
     // Shipment method selector should be visible in Pelunasan mode
     expect(screen.getByText('Shipment Method')).toBeInTheDocument()
-    expect(
-      screen.getByText('Manual / Outside Biteship'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Manual / Outside Biteship')).toBeInTheDocument()
     expect(
       screen.getByText('Customer Pickup / No Shipping'),
     ).toBeInTheDocument()

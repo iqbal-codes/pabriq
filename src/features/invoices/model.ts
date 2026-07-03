@@ -330,10 +330,7 @@ export async function createInvoice(
         .update(ordersTable)
         .set({ courier: input.courier, updatedAt: now })
         .where(
-          and(
-            eq(ordersTable.id, input.orderId),
-            eq(ordersTable.orgId, orgId),
-          ),
+          and(eq(ordersTable.id, input.orderId), eq(ordersTable.orgId, orgId)),
         )
     }
   } else {

@@ -30,7 +30,7 @@ import {
 } from './server'
 
 export function useInvoicesList(filters: ListInvoicesParams) {
-  return useSuspenseQuery({
+  return useQuery({
     queryKey: queryKeys.invoices.list(filters),
     queryFn: () => listInvoicesFn({ data: filters }),
   })

@@ -106,10 +106,7 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
       let courier: string | undefined
 
       if (hasPaidInvoices) {
-        const method = value.shipmentMethod as
-          | 'biteship'
-          | 'manual'
-          | 'pickup'
+        const method = value.shipmentMethod as 'biteship' | 'manual' | 'pickup'
 
         if (method === 'biteship') {
           const selectedRate = rates.find(
@@ -234,9 +231,7 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                           </Button>
                           <Button
                             type="button"
-                            variant={
-                              mode === 'custom' ? 'default' : 'outline'
-                            }
+                            variant={mode === 'custom' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setMode('custom')}
                           >
@@ -367,8 +362,9 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                                       setRates(result.rates)
                                     } else {
                                       toast.error(
-                                        t(result.error as 'biteshipRateCalculationFailed') ??
-                                          t('biteshipRateCalculationFailed'),
+                                        t(
+                                          result.error as 'biteshipRateCalculationFailed',
+                                        ) ?? t('biteshipRateCalculationFailed'),
                                       )
                                     }
                                   }}

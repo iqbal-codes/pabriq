@@ -1,45 +1,48 @@
-import { Link, useRouteContext } from '@tanstack/react-router'
-import { Eye, Printer } from 'lucide-react'
+import { useRouteContext } from '@tanstack/react-router'
+import { FileText } from 'lucide-react'
 import { parseAsString, useQueryState } from 'nuqs'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useTranslations } from 'use-intl'
-import type { AppColumnDef } from '#/components/app/data-table'
-import { DataTable, useListPageState } from '#/components/app/data-table'
+import {
+  createDataTableLabels,
+  DataTable,
+  DataTableSearch,
+  useListPageState,
+} from '#/components/app/data-table'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
-import { StatusBadge } from '#/components/status-badge'
-import { Button } from '#/components/ui/button'
+import { InvoiceRowActions } from '#/features/invoices/components/invoice-table-actions'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '#/components/ui/tooltip'
+  getInvoiceColumns,
+  getInvoiceFiltersConfig,
+  getInvoiceStatusOptions,
+  type TranslationFn,
+} from '#/features/invoices/components/invoice-table-columns'
 import { useInvoicesList } from '#/features/invoices/hooks'
-import type { InvoiceRow } from '#/features/invoices/model'
-
-const currencyFormatter = new Intl.NumberFormat('id-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  minimumFractionDigits: 0,
-})
 
 export function InvoiceListPage() {
   const ctx = useRouteContext({ from: '/_org/invoices/' }) as {
     org: { id: string }
   }
   const t = useTranslations('invoices')
+  const st = useTranslations('status')
   const dt = useTranslations('dataTable')
+
   const {
     search,
+    setSearch,
     page,
     setPage,
     perPage,
     sort,
     handleSortChange,
     handlePerPageChange,
+    resetPage,
   } = useListPageState()
-
-  const [statusFilter] = useQueryState('status', parseAsString.withDefault(''))
+  const [statusFilter, setStatusFilter] = useQueryState(
+    'status',
+    parseAsString.withDefault(''),
+  )
 
   const queryFilters = useMemo(
     () => ({
@@ -53,69 +56,57 @@ export function InvoiceListPage() {
     [ctx.org.id, search, statusFilter, sort, page, perPage],
   )
 
-  const { data, isFetching } = useInvoicesList(queryFilters)
+  const { data, error, isFetching, isLoading, refetch } =
+    useInvoicesList(queryFilters)
   const rows = data?.rows ?? []
   const totalRows = data?.totalRows ?? 0
 
-  const columns = useMemo<AppColumnDef<InvoiceRow>[]>(
-    () => [
-      {
-        accessorKey: 'invoiceNumber',
-        header: t('invoiceNumber'),
-        meta: { label: t('invoiceNumber'), mobileRole: 'title' },
-      },
-      {
-        accessorKey: 'customerName',
-        header: t('customer'),
-        meta: { label: t('customer') },
-      },
-      {
-        accessorKey: 'total',
-        header: t('total'),
-        meta: { label: t('total') },
-        cell: ({ row }: { row: { original: InvoiceRow } }) => (
-          <span>{currencyFormatter.format(row.original.total)}</span>
-        ),
-      },
-      {
-        accessorKey: 'dueDate',
-        header: t('dueDate'),
-        meta: { label: t('dueDate') },
-        cell: ({ row }: { row: { original: InvoiceRow } }) => (
-          <span>{row.original.dueDate}</span>
-        ),
-      },
-      {
-        accessorKey: 'status',
-        header: t('status'),
-        meta: { label: t('status'), mobileRole: 'badge' },
-        cell: ({ row }: { row: { original: InvoiceRow } }) => (
-          <StatusBadge status={row.original.status} />
-        ),
-      },
-      {
-        accessorKey: 'createdAt',
-        header: t('createdAt'),
-        meta: { label: t('createdAt') },
-        cell: ({ row }: { row: { original: InvoiceRow } }) => {
-          const date = row.original.createdAt
-          if (!date) return <span className="text-muted-foreground">—</span>
-          return (
-            <span>
-              {new Date(date).toLocaleString('id-ID', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </span>
-          )
-        },
-      },
-    ],
-    [t],
+  const handleApplyFilters = useCallback(
+    (values: Record<string, unknown>) => {
+      setStatusFilter((values.status as string) || null)
+      resetPage()
+    },
+    [setStatusFilter, resetPage],
   )
+
+  const handleClearStructuredFilters = useCallback(() => {
+    setStatusFilter(null)
+    resetPage()
+  }, [setStatusFilter, resetPage])
+
+  const handleClearAllFilters = useCallback(() => {
+    setSearch(null)
+    setStatusFilter(null)
+    resetPage()
+  }, [setSearch, setStatusFilter, resetPage])
+
+  const statusOptions = useMemo(
+    () => getInvoiceStatusOptions(st as TranslationFn),
+    [st],
+  )
+
+  const filtersConfig = useMemo(
+    () =>
+      getInvoiceFiltersConfig({
+        t: t as TranslationFn,
+        statusFilter,
+        statusOptions,
+        onApply: handleApplyFilters,
+        onClear: handleClearStructuredFilters,
+      }),
+    [
+      t,
+      statusFilter,
+      statusOptions,
+      handleApplyFilters,
+      handleClearStructuredFilters,
+    ],
+  )
+
+  const columns = useMemo(() => getInvoiceColumns(t as TranslationFn), [t])
+  const labels = useMemo(() => createDataTableLabels(dt as TranslationFn), [dt])
+
+  const hasActiveFilters = !!(search || statusFilter)
 
   return (
     <PageContent>
@@ -130,67 +121,39 @@ export function InvoiceListPage() {
       <DataTable
         columns={columns}
         data={rows}
+        error={error ? t('loadInvoicesFailed') : null}
+        errorMessage={error ? t('loadInvoicesFailedDesc') : undefined}
         getRowId={(row) => row.id}
-        tableId="invoices"
-        isLoading={isFetching}
-        totalRows={totalRows}
-        page={page}
-        perPage={perPage}
+        isRefetching={isFetching && !isLoading}
+        isLoading={isLoading}
+        onRefetch={() => void refetch()}
+        labels={labels}
         onPageChange={setPage}
         onPerPageChange={handlePerPageChange}
-        sort={sort}
         onSortChange={handleSortChange}
-        rowActions={(row) => (
-          <div className="flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-sm" asChild>
-                  <a
-                    href={`/api/documents/invoices/${row.id}/pdf`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Printer className="size-4" />
-                  </a>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{t('printInvoice')}</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-sm" asChild>
-                  <Link to="/invoices/$id" params={{ id: row.id }}>
-                    <Eye className="size-4" />
-                  </Link>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{t('viewInvoice')}</TooltipContent>
-            </Tooltip>
-          </div>
-        )}
-        labels={{
-          clearFilters: dt('clearFilters'),
-          columnVisibility: dt('columnVisibility'),
-          errorRetry: dt('errorRetry'),
-          errorTitle: dt('errorTitle'),
-          firstPage: dt('firstPage'),
-          lastPage: dt('lastPage'),
-          loading: dt('loading'),
-          nextPage: dt('nextPage'),
-          of: dt('of'),
-          page: dt('page'),
-          perPage: dt('perPage'),
-          previousPage: dt('previousPage'),
-          resetColumns: dt('resetColumns'),
-          rowsSelected: (selected: number, total: number) =>
-            dt('rowsSelected', { selected, total }),
-          visibleRows: (from: number, to: number, total: number) =>
-            dt('visibleRows', { from, to, total }),
-          filters: dt('filters'),
-          applyFilters: dt('applyFilters'),
-          cancelFilters: dt('cancelFilters'),
-          activeFilters: dt('activeFilters'),
-        }}
+        sort={sort}
+        page={page}
+        perPage={perPage}
+        tableId="invoices"
+        totalRows={totalRows}
+        filters={filtersConfig}
+        toolbarStart={
+          <DataTableSearch
+            placeholder={t('searchPlaceholder')}
+            value={search}
+            onChange={(v) => setSearch(v || null)}
+          />
+        }
+        emptyIcon={FileText}
+        emptyTitle={t('noInvoices')}
+        emptyDescription={t('noInvoicesDesc')}
+        emptyAction={{ label: t('createInvoice'), href: '/invoices/new' }}
+        noResultsTitle={t('noResults')}
+        noResultsDescription={t('noInvoicesDesc')}
+        noResultsAction={{ label: t('createInvoice'), href: '/invoices/new' }}
+        hasActiveFilters={hasActiveFilters}
+        onClearFilters={handleClearAllFilters}
+        rowActions={(row) => <InvoiceRowActions row={row} />}
       />
     </PageContent>
   )
