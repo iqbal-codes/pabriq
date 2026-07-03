@@ -95,7 +95,18 @@ export function getAcceptedMimeTypes(
         'video/webm',
       ]
     case 'attachment':
-      return []
+      return [
+        'application/pdf',
+        '.pdf',
+        '.cdr',
+        '.ai',
+        '.zip',
+        '.rar',
+        '.png',
+        '.jpg',
+        '.jpeg',
+        '.webp',
+      ]
     case 'payment_proof':
       return ['image/png', 'image/jpeg', 'image/webp']
   }

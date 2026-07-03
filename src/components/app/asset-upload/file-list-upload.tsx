@@ -118,12 +118,15 @@ export function FileListUpload(props: FileListUploadProps) {
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      const validFiles = acceptedFiles.filter(
-        (file) =>
+      const validFiles = acceptedFiles.filter((file) => {
+        const ext = '.' + file.name.split('.').pop()?.toLowerCase()
+        return (
           file.size <= props.maxBytes &&
           (props.acceptedMimeTypes.length === 0 ||
-            props.acceptedMimeTypes.includes(file.type)),
-      )
+            props.acceptedMimeTypes.includes(file.type) ||
+            props.acceptedMimeTypes.includes(ext))
+        )
+      })
       if (validFiles.length > 0) {
         addFiles(validFiles)
       }
