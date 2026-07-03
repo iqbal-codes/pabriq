@@ -1,6 +1,42 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
+import { eq } from 'drizzle-orm'
+import { z } from 'zod'
+import { db } from '#/db/index'
+import { member } from '#/db/schema'
+import {
+  type InviteMemberResult,
+  inviteOrganizationMember,
+} from '#/features/members/model'
+import type { Role } from '#/features/permissions/model'
+import { canManageMembers } from '#/features/permissions/model'
 import { resolveOrgId } from '#/lib/auth-session'
+
+async function resolveManageMembersOrgId(): Promise<string> {
+  // Dynamic import keeps #/lib/auth out of the client bundle (project-wide
+  // convention for server functions).
+  const { auth } = await import('#/lib/auth')
+  const headers = getRequestHeaders()
+  const session = await auth.api.getSession({ headers })
+  if (!session) throw new Error('Not authenticated')
+
+  const memberships = await db
+    .select({ orgId: member.organizationId, role: member.role })
+    .from(member)
+    .where(eq(member.userId, session.user.id))
+    .limit(1)
+
+  if (memberships.length === 0) throw new Error('No organization')
+  if (!canManageMembers(memberships[0].role as Role)) {
+    throw new Error('Not authorized')
+  }
+  return memberships[0].orgId
+}
+
+const inviteMemberSchema = z.object({
+  email: z.email(),
+  role: z.enum(['admin', 'member']),
+})
 
 type MemberUser = {
   id: string
@@ -110,34 +146,27 @@ export const removeMemberFn = createServerFn({ method: 'POST' })
   )
 
 export const inviteMemberFn = createServerFn({ method: 'POST' })
-  .inputValidator((input: { email: string; role: string }) => input)
-  .handler(
-    async ({
-      data,
-    }): Promise<
-      { ok: true; invitationId: string } | { ok: false; error: string }
-    > => {
-      const [orgId, { auth }] = await Promise.all([
-        resolveOrgId(),
-        import('#/lib/auth'),
-      ])
+  .inputValidator((data) => inviteMemberSchema.parse(data))
+  .handler(async ({ data }): Promise<InviteMemberResult> => {
+    try {
+      // Dynamic import keeps #/lib/auth out of the client bundle (project-wide
+      // convention for server functions).
+      const { auth } = await import('#/lib/auth')
       const headers = getRequestHeaders()
-      try {
-        const invitation = await auth.api.createInvitation({
-          headers,
-          body: {
-            email: data.email,
-            role: data.role as 'admin' | 'member',
-            organizationId: orgId,
-          },
-        })
-        return { ok: true, invitationId: invitation.id }
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Unknown error'
-        return { ok: false, error: message }
+      const orgId = await resolveManageMembersOrgId()
+      return await inviteOrganizationMember({
+        auth,
+        headers,
+        organizationId: orgId,
+        input: data,
+      })
+    } catch (err: unknown) {
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : 'Unknown error',
       }
-    },
-  )
+    }
+  })
 
 export const listInvitationsFn = createServerFn({ method: 'GET' }).handler(
   async (): Promise<InvitationItem[]> => {

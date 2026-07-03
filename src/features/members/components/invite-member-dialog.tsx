@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog'
 import { useInviteMember } from '#/features/members/hooks'
+import type { InviteMemberRole } from '#/features/members/model'
 
 const BASE_URL =
   process.env.NODE_ENV === 'production'
@@ -33,13 +34,28 @@ export function InviteMemberDialog({
   const inviteMember = useInviteMember()
 
   const form = useAppForm({
-    defaultValues: { email: '', role: 'member' as string },
+    defaultValues: { email: '', role: 'member' as InviteMemberRole },
     onSubmit: async ({ value }) => {
       const result = await inviteMember.mutateAsync({
         email: value.email,
         role: value.role,
       })
-      if (result.ok) {
+      if (result.ok && result.mode === 'operator-account') {
+        const credentials = `${t('email')}: ${result.email}\n${t('defaultPassword')}: ${result.password}`
+        onOpenChange(false)
+        form.reset()
+        try {
+          await navigator.clipboard.writeText(credentials)
+          toast.success(t('operatorCredentialsCopied'))
+        } catch {
+          toast.success(
+            t('operatorAccountCreated', {
+              email: result.email,
+              password: result.password,
+            }),
+          )
+        }
+      } else if (result.ok) {
         const inviteUrl = `${BASE_URL}/invite/accept?id=${result.invitationId}`
         onOpenChange(false)
         form.reset()

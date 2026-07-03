@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
+import type { InviteMemberInput } from './model'
 import {
   cancelInvitationFn,
   inviteMemberFn,
@@ -26,10 +27,10 @@ export function useInvitations() {
 export function useInviteMember() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: { email: string; role: string }) =>
-      inviteMemberFn({ data: input }),
+    mutationFn: (input: InviteMemberInput) => inviteMemberFn({ data: input }),
     onSuccess: () => {
       return invalidateMutationQueries(queryClient, [
+        { queryKey: ['members'] },
         { queryKey: ['members', 'invitations'] },
       ])
     },
