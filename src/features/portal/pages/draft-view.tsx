@@ -1,14 +1,14 @@
+import { useMemo } from 'react'
 import { toast } from 'sonner'
 import { useLocale, useTranslations } from 'use-intl'
+import { z } from 'zod'
 import {
   FormActions,
   FormGrid,
   FormRoot,
-  FormSection,
   useAppForm,
 } from '#/components/app/form'
 import { getVisibleDesignName } from '#/features/orders/line-item-display'
-import { CustomerInfoCard } from '#/features/portal/components/customer-info-card'
 import { formatCurrency } from '#/lib/formatters'
 import {
   useConfirmPortalOrder,
@@ -33,7 +33,44 @@ export function DraftView({
   const hasCustomer = !!order.customerId
   const showAreaSearch = order.customerIsWni ?? true
 
-  console.log({ order })
+  const draftFormSchema = useMemo(() => {
+    return z.object({
+      guestName: hasCustomer
+        ? z.string()
+        : z.string().trim().min(1, t('required')),
+      guestPhone: hasCustomer
+        ? z.string()
+        : z.string().trim().min(1, t('required')),
+      address: z
+        .object({
+          areaId: z.string(),
+          areaName: z.string(),
+          streetAddress: z.string(),
+        })
+        .superRefine((val, ctx) => {
+          if (showAreaSearch && !val.areaId) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('areaRequired'),
+            })
+          }
+          if (!val.streetAddress.trim()) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t('required'),
+            })
+          }
+        }),
+      lineItems: z.array(
+        z.object({
+          id: z.string(),
+          designName: z.string().trim().min(1, t('required')),
+          notes: z.string(),
+          attachmentIds: z.array(z.string()),
+        }),
+      ),
+    })
+  }, [hasCustomer, showAreaSearch, t])
 
   const form = useAppForm({
     defaultValues: {
@@ -50,6 +87,10 @@ export function DraftView({
         notes: item.notes ?? '',
         attachmentIds: item.assetIds,
       })),
+    },
+    validators: {
+      onChange: draftFormSchema,
+      onSubmit: draftFormSchema,
     },
     onSubmit: async ({ value }) => {
       const addressChanged =
@@ -130,31 +171,21 @@ export function DraftView({
             {t('customerInfo')}
           </h2>
           <FormGrid columns={1}>
-            <form.AppField
-              name="guestName"
-              validators={{
-                onChange: ({ value }) =>
-                  value.trim() ? undefined : t('required'),
-              }}
-            >
+            <form.AppField name="guestName">
               {(field) => (
                 <field.TextField
                   label={t('guestName')}
                   placeholder={t('guestNamePlaceholder')}
+                  optional={hasCustomer}
                 />
               )}
             </form.AppField>
-            <form.AppField
-              name="guestPhone"
-              validators={{
-                onChange: ({ value }) =>
-                  value.trim() ? undefined : t('required'),
-              }}
-            >
+            <form.AppField name="guestPhone">
               {(field) => (
                 <field.PhoneField
                   label={t('guestPhone')}
                   placeholder={t('guestPhonePlaceholder')}
+                  optional={hasCustomer}
                 />
               )}
             </form.AppField>
@@ -219,6 +250,7 @@ export function DraftView({
                     <field.TextareaField
                       label={t('itemNotes')}
                       placeholder={t('itemNotesPlaceholder')}
+                      optional
                     />
                   )}
                 </form.AppField>
@@ -228,6 +260,7 @@ export function DraftView({
                       label={t('attachment')}
                       token={token}
                       lineItemId={item.id}
+                      optional
                     />
                   )}
                 </form.AppField>

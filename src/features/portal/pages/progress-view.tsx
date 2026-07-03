@@ -1,10 +1,8 @@
-import { Copy, Truck } from 'lucide-react'
 import { useLocale, useTranslations } from 'use-intl'
 import { StatusBadge } from '#/components/status-badge'
 import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { CustomerInfoCard } from '#/features/portal/components/customer-info-card'
+import { ShipmentTrackingCard } from '#/features/portal/components/shipment-tracking-card'
 import { ShippingAddressCard } from '#/features/portal/components/shipping-address-card'
 import { formatCurrency, formatLongDate } from '#/lib/formatters'
 import { InvoicePanel } from '../components/invoice-panel'
@@ -20,7 +18,6 @@ export function ProgressView({
   token: string
 }) {
   const t = useTranslations('portal')
-  const pt = useTranslations('production')
   const locale = useLocale()
   const shouldFetchTimeline =
     token &&
@@ -135,49 +132,10 @@ export function ProgressView({
           photoAssetId={order.customerPhotoAssetId}
         />
         <ShippingAddressCard address={order.shippingAddress} />
-        {(order.courier || order.trackingNumber) && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Truck className="size-4" />
-                <CardTitle>{t('shipmentTracking')}</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {order.courier && (
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    {pt('courier')}
-                  </p>
-                  <p className="font-medium">{order.courier}</p>
-                </div>
-              )}
-              {order.trackingNumber && (
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    {pt('trackingNumber')}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <p className="font-mono">{order.trackingNumber}</p>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-6"
-                      aria-label={t('copyTrackingNumber')}
-                      onClick={() =>
-                        navigator.clipboard.writeText(
-                          order.trackingNumber ?? '',
-                        )
-                      }
-                    >
-                      <Copy className="size-3" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        <ShipmentTrackingCard
+          courier={order.courier}
+          trackingNumber={order.trackingNumber}
+        />
       </div>
 
       {/* Invoices inline */}
