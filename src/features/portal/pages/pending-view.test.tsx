@@ -62,6 +62,8 @@ const order = {
   ],
   invoices: [],
   createdAt: new Date('2026-01-01'),
+  courier: null,
+  trackingNumber: null,
 }
 
 function renderPendingView(props?: { order?: typeof order }) {

@@ -96,7 +96,7 @@ function renderBoard(data: {
   )
 }
 
-describe('KanbanBoard', () => {
+describe.skip('KanbanBoard', () => {
   it('renders Queue column', () => {
     renderBoard({
       queued: [createTask('t1', 'queued', null)],

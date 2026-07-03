@@ -7,8 +7,8 @@ export type OrderFormValues = {
   lineItems: Array<{
     id: string
     productId: string
-    quantity: string
-    unitPrice: string
+    quantity: string | number
+    unitPrice: string | number
     designName: string
     notes: string
     attachments: string[]

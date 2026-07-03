@@ -63,6 +63,8 @@ const order = {
   invoices: [],
   createdAt: new Date('2026-01-01'),
   rejectReason: 'Artwork is blurry',
+  courier: null,
+  trackingNumber: null,
 }
 
 function renderRejectedView(o = order) {

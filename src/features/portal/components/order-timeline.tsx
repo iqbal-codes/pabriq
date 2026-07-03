@@ -103,9 +103,15 @@ export function OrderTimeline({ events, className, token }: Props) {
       }
       // Task completed last pre-production stage → show "Ready for Production"
       if (!toName && metadata?.readyForProduction) {
-        return `${fromName ?? t('timelineQueue')} → ${t('timelineReadyForProduction')}`
+        return t('timelineTransition', {
+          from: fromName ?? t('timelineQueue'),
+          to: t('timelineReadyForProduction'),
+        })
       }
-      return `${formattedFrom} → ${toName ?? ''}`
+      return t('timelineTransition', {
+        from: formattedFrom,
+        to: toName ?? '',
+      })
     }
 
     switch (event.type) {
@@ -125,7 +131,10 @@ export function OrderTimeline({ events, className, token }: Props) {
               : null
         const effectiveFrom = fromName ?? boardLabel ?? t('timelineQueue')
         if (toName) {
-          return `${effectiveFrom} → ${toName}`
+          return t('timelineTransition', {
+            from: effectiveFrom,
+            to: toName,
+          })
         }
         return toName ?? effectiveFrom ?? ''
       }

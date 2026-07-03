@@ -229,6 +229,28 @@ describe('orderFormSchema', () => {
     expect(result.success).toBe(true)
   })
 
+  it('accepts a line item with numeric quantity and unitPrice', () => {
+    const result = orderFormSchema.safeParse({
+      ...validBase,
+      lineItems: [{ ...validLineItem, quantity: 10, unitPrice: 50000 }],
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects a line item with empty quantity', () => {
+    const result = orderFormSchema.safeParse({
+      ...validBase,
+      lineItems: [{ ...validLineItem, quantity: '' }],
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const issue = result.error.issues.find(
+        (i) => i.path.join('.') === 'lineItems.0.quantity',
+      )
+      expect(issue?.message).toBe('Quantity is required')
+    }
+  })
+
   it('rejects a line item with non-positive quantity', () => {
     const result = orderFormSchema.safeParse({
       ...validBase,

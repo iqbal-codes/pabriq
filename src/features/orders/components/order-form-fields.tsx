@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 import { useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
 import { FormGrid, FormSection, withForm } from '#/components/app/form'
-import { formatNumber, firstError } from '#/components/app/form/form-utils'
+import { firstError, formatNumber } from '#/components/app/form/form-utils'
 import { Button } from '#/components/ui/button'
 import type { CustomerRow } from '#/features/customers/model'
 import { getCustomerFn } from '#/features/customers/server'
@@ -82,8 +82,8 @@ export const OrderFormFields = withForm({
           }
 
           const total = lineItems.reduce((sum, item) => {
-            const qty = parseInt(item.quantity, 10) || 0
-            const price = parseFloat(item.unitPrice) || 0
+            const qty = parseInt(String(item.quantity), 10) || 0
+            const price = parseFloat(String(item.unitPrice)) || 0
             return sum + qty * price
           }, 0)
 
@@ -136,11 +136,16 @@ export const OrderFormFields = withForm({
                     />
                   </div>
                   <form.AppField name="notes">
-                    {(field) => <field.TextareaField label={t('notes')} optional />}
+                    {(field) => (
+                      <field.TextareaField label={t('notes')} optional />
+                    )}
                   </form.AppField>
                   <form.AppField name="address">
                     {(field) => (
-                      <field.AddressField label={pt('shippingAddress')} optional />
+                      <field.AddressField
+                        label={pt('shippingAddress')}
+                        optional
+                      />
                     )}
                   </form.AppField>
                 </FormGrid>

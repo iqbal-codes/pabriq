@@ -70,13 +70,16 @@ const orderLineItemFormSchema = z
     id: z.string(),
     productId: z.string(),
     quantity: z
-      .string()
-      .min(1, 'Quantity is required')
+      .union([z.number(), z.string()])
       .refine((v) => {
-        const n = Number.parseInt(v, 10)
+        if (typeof v === 'string' && v.trim() === '') return false
+        return true
+      }, 'Quantity is required')
+      .refine((v) => {
+        const n = typeof v === 'number' ? v : Number.parseInt(v, 10)
         return Number.isFinite(n) && n > 0
       }, 'Quantity must be greater than zero'),
-    unitPrice: z.string(),
+    unitPrice: z.union([z.number(), z.string()]),
     designName: z.string(),
     notes: z.string(),
     attachments: z.array(z.string()),

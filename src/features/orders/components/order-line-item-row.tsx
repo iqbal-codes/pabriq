@@ -45,17 +45,17 @@ export const OrderLineItemRow = withForm({
     const isNegotiated =
       !item.isRepeatOrder &&
       product?.negotiateAboveQuantity != null &&
-      parseInt(item.quantity, 10) > product.negotiateAboveQuantity
+      parseInt(String(item.quantity), 10) > product.negotiateAboveQuantity
 
     const exceedsProductionCap =
       product?.maxProductionQuantity != null &&
-      parseInt(item.quantity, 10) > product.maxProductionQuantity
+      parseInt(String(item.quantity), 10) > product.maxProductionQuantity
 
     const displayPrice = item.unitPrice
-      ? `Rp ${formatNumber(item.unitPrice)}`
+      ? `Rp ${formatNumber(String(item.unitPrice))}`
       : 'Rp 0'
-    const qtyNum = parseInt(item.quantity, 10) || 0
-    const priceNum = parseFloat(item.unitPrice) || 0
+    const qtyNum = parseInt(String(item.quantity), 10) || 0
+    const priceNum = parseFloat(String(item.unitPrice)) || 0
     const subtotal = qtyNum * priceNum
     const addonIdsKey = item.addonIds.join(',')
     const selectedAddonIds = useMemo(
@@ -241,11 +241,17 @@ export const OrderLineItemRow = withForm({
         )}
 
         <form.AppField name={`lineItems[${index}].notes`}>
-          {(field) => <field.TextareaField label={t('specification')} optional />}
+          {(field) => (
+            <field.TextareaField label={t('specification')} optional />
+          )}
         </form.AppField>
         <form.AppField name={`lineItems[${index}].attachments`}>
           {(field) => (
-            <field.FileUploadField label={t('attachments')} ownerId={item.id} optional />
+            <field.FileUploadField
+              label={t('attachments')}
+              ownerId={item.id}
+              optional
+            />
           )}
         </form.AppField>
 

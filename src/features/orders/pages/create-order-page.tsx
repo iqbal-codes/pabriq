@@ -95,7 +95,7 @@ function CreateOrderForm() {
           customerId: value.customerId || null,
           notes: value.notes || undefined,
           lineItems: validItems.map((i) => {
-            const qty = parseInt(i.quantity, 10) || 1
+            const qty = parseInt(String(i.quantity), 10) || 1
             const prod = products.find((p) => p.id === i.productId)
             const isNegotiated =
               prod?.negotiateAboveQuantity != null &&
@@ -106,7 +106,7 @@ function CreateOrderForm() {
               quantity: qty,
               unitPrice:
                 isNegotiated && i.unitPrice
-                  ? Number.parseFloat(i.unitPrice)
+                  ? Number.parseFloat(String(i.unitPrice))
                   : undefined,
               designName: i.designName || undefined,
               notes: i.notes || undefined,
