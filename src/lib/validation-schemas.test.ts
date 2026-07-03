@@ -6,7 +6,6 @@ describe('productFormSchema', () => {
     const result = productFormSchema.safeParse({
       name: '',
       description: '',
-      productionNotes: '',
       priority: false,
       primaryImageAssetId: null,
       basePrice: 0,
@@ -28,7 +27,6 @@ describe('productFormSchema', () => {
     const result = productFormSchema.safeParse({
       name: 'Custom T-Shirt',
       description: 'A nice shirt',
-      productionNotes: '',
       priority: true,
       primaryImageAssetId: null,
       basePrice: 50000,
@@ -50,7 +48,6 @@ describe('productFormSchema', () => {
     const result = productFormSchema.safeParse({
       name: 'Test Product',
       description: '',
-      productionNotes: '',
       priority: false,
       primaryImageAssetId: null,
       basePrice: 0,

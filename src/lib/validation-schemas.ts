@@ -16,7 +16,6 @@ const pricingBreakpointSchema = z.object({
 export const productFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string(),
-  productionNotes: z.string(),
   priority: z.boolean(),
   primaryImageAssetId: z.string().nullable(),
   basePrice: z.number(),
