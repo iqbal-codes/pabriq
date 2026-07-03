@@ -29,7 +29,7 @@ const messages = {
     currentStage: 'Tahap Saat Ini',
     progressOverview: 'Ringkasan cepat',
     progressStatusApprovedHelp:
-      'Pesanan Anda sudah disetujui. Penjual sedang menyiapkannya untuk produksi.',
+      'Pesanan Anda sudah disetujui. tim {org_name} sedang melakukan proses {first_preproduction_stage_name}',
     progressStatusProductionHelp:
       'Pesanan Anda sedang diproduksi. Buka setiap item untuk melihat timeline tahap, catatan, dan lampiran.',
     progressStatusDeliveryHelp:

@@ -82,6 +82,7 @@ export type PortalOrder = {
   createdAt: Date
   rejectReason?: string | null
   productionFirstStageName?: string | null
+  preProductionFirstStageName?: string | null
   courier: string | null
   trackingNumber: string | null
 }
@@ -387,6 +388,23 @@ export async function getPortalOrder(
 
   const productionFirstStageName = firstProductionStageRows[0]?.name ?? null
 
+  // Get first pre-production stage name
+  const firstPreProductionStageRows = await db
+    .select({ name: productionStages.name })
+    .from(productionStages)
+    .where(
+      and(
+        eq(productionStages.orgId, order.orgId),
+        eq(productionStages.board, 'pre_production'),
+        eq(productionStages.active, true),
+      ),
+    )
+    .orderBy(asc(productionStages.orderIndex))
+    .limit(1)
+
+  const preProductionFirstStageName =
+    firstPreProductionStageRows[0]?.name ?? null
+
   return {
     ok: true,
     order: {
@@ -409,6 +427,7 @@ export async function getPortalOrder(
       createdAt: order.createdAt,
       rejectReason: order.rejectReason ?? null,
       productionFirstStageName,
+      preProductionFirstStageName,
       courier: order.courier ?? null,
       trackingNumber: order.trackingNumber ?? null,
     },

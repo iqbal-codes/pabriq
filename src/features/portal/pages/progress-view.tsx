@@ -71,7 +71,11 @@ export function ProgressView({
   const statusHelp: string = (() => {
     switch (order.status) {
       case 'approved':
-        return t('progressStatusApprovedHelp')
+        return t('progressStatusApprovedHelp', {
+          org_name: order.orgName,
+          first_preproduction_stage_name:
+            order.preProductionFirstStageName ?? 'Pre-Production',
+        })
       case 'production':
       case 'in_progress':
         return t('progressStatusProductionHelp')

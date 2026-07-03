@@ -916,7 +916,7 @@ const en: Messages = {
 
     progressOverview: "At a glance",
     progressStatusApprovedHelp:
-      "Your order is approved. The seller is preparing it for production.",
+      "Your order has been approved. The {org_name} team is currently carrying out the {first_preproduction_stage_name} process.",
     progressStatusProductionHelp:
       "Your order is in the production process, please open this page periodically to see the progress of your order.",
     progressStatusDeliveryHelp:

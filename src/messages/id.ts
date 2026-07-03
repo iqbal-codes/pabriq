@@ -918,7 +918,7 @@ const id: Messages = {
 
     progressOverview: "Ringkasan cepat",
     progressStatusApprovedHelp:
-      "Pesanan Anda sudah disetujui. Penjual sedang menyiapkannya untuk produksi.",
+      "Pesanan Anda sudah disetujui. tim {org_name} sedang melakukan proses {first_preproduction_stage_name}",
     progressStatusProductionHelp:
       "Pesanan Anda dalam proses produksi, buka halaman ini secara berkala untuk melihat perkembangan pesanan anda.",
     progressStatusDeliveryHelp:
