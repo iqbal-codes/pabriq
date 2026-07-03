@@ -139,6 +139,7 @@ export const customers = pgTable('customers', {
   photoAssetId: text('photo_asset_id').references(() => assets.id, {
     onDelete: 'set null',
   }),
+  deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
@@ -166,6 +167,7 @@ export const products = pgTable('products', {
   repeatOrderMinQuantity: integer('repeat_order_min_quantity'),
   maxProductionQuantity: integer('max_production_quantity'),
   pricingMode: text('pricing_mode').notNull().default('interpolated'),
+  deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
