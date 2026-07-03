@@ -109,11 +109,13 @@ const messages = {
       'Unduh invoice dan unggah bukti pembayaran di sini.',
     stageTrackerLabel: 'Tahap produksi',
     stagesUnknown: 'Belum ada pembaruan tahap',
+    statusCompleted: 'Selesai',
   },
   status: {
     production: 'Dalam Produksi',
     paid: 'Lunas',
     unpaid: 'Belum Dibayar',
+    completed: 'Siap Kirim',
   },
   invoices: {
     title: 'Invoice',
@@ -309,5 +311,13 @@ describe('ProgressView', () => {
 
     expect(screen.getByText('Invoice dan pembayaran')).toBeInTheDocument()
     expect(screen.getByText(/1 belum dibayar/)).toBeInTheDocument()
+  })
+
+  it('renders completed portal status as Selesai instead of Siap Kirim', () => {
+    renderProgressView(makeOrder({ status: 'completed' }))
+
+    expect(screen.getByText('Selesai')).toBeInTheDocument()
+    expect(screen.getByText('Selesai pada')).toBeInTheDocument()
+    expect(screen.queryByText('Siap Kirim')).not.toBeInTheDocument()
   })
 })

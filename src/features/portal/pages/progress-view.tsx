@@ -1,8 +1,9 @@
 import { Copy, Truck } from 'lucide-react'
 import { useLocale, useTranslations } from 'use-intl'
+import { StatusBadge } from '#/components/status-badge'
+import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
-import { StatusBadge } from '#/components/status-badge'
 import { CustomerInfoCard } from '#/features/portal/components/customer-info-card'
 import { ShippingAddressCard } from '#/features/portal/components/shipping-address-card'
 import { formatCurrency, formatLongDate } from '#/lib/formatters'
@@ -94,7 +95,11 @@ export function ProgressView({
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {t('progressHeroLabel')}
               </p>
-              {order.status ? <StatusBadge status={order.status} /> : null}
+              {order.status === 'completed' ? (
+                <Badge variant="success">{t('statusCompleted')}</Badge>
+              ) : order.status ? (
+                <StatusBadge status={order.status} />
+              ) : null}
             </div>
             <p className="mt-2 text-sm text-foreground font-medium">
               {statusHelp}
@@ -158,7 +163,9 @@ export function ProgressView({
                       size="icon"
                       className="size-6"
                       onClick={() =>
-                        navigator.clipboard.writeText(order.trackingNumber ?? '')
+                        navigator.clipboard.writeText(
+                          order.trackingNumber ?? '',
+                        )
                       }
                     >
                       <Copy className="size-3" />

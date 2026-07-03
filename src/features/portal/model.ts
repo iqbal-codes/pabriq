@@ -746,7 +746,11 @@ export type OrderTaskEvent = {
       assetIds?: string[]
     }>
   }>
-  metadata?: { fromBoard?: string | null; toBoard?: string | null }
+  metadata?: {
+    fromBoard?: string | null
+    toBoard?: string | null
+    readyForProduction?: boolean
+  }
 }
 type ActivityRow = {
   id: string
@@ -875,6 +879,7 @@ function buildTimelineEvents(params: {
         (r) => r.value || (r.assetIds && r.assetIds.length > 0),
       )
 
+      const readyForProduction = activityData?.readyForProduction === true
       events.push({
         id: trans.id,
         taskId: task.id,
@@ -900,6 +905,7 @@ function buildTimelineEvents(params: {
               },
             ]
           : undefined,
+        metadata: readyForProduction ? { readyForProduction: true } : undefined,
       })
     }
 

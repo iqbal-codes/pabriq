@@ -89,12 +89,17 @@ export function OrderTimeline({ events, className }: Props) {
   function getDescription(event: OrderTaskEvent): string {
     const fromName = event.fromStageName
     const toName = event.toStageName
+    const metadata = event.metadata
 
     const formattedFrom = fromName ?? t('timelineQueue')
 
     if (event.type === 'moved_to_stage' || event.type === 'stage_transition') {
       if (!fromName && !toName) {
         return t('timelineQueued')
+      }
+      // Task completed last pre-production stage → show "Ready for Production"
+      if (!toName && metadata?.readyForProduction) {
+        return `${fromName ?? t('timelineQueue')} → ${t('timelineReadyForProduction')}`
       }
       return `${formattedFrom} → ${toName ?? ''}`
     }
@@ -105,11 +110,21 @@ export function OrderTimeline({ events, className }: Props) {
       case 'completed':
         return t('timelineCompleted')
       case 'approved_and_moved':
-      case 'board_transition':
+      case 'board_transition': {
+        // Use board name as fallback when stage name is missing
+        const boardLabel =
+          metadata?.fromBoard === 'pre_production'
+            ? t('timelineReadyForProduction')
+            : metadata?.fromBoard
+              ? metadata.fromBoard.charAt(0).toUpperCase() +
+                metadata.fromBoard.slice(1).replace(/_/g, ' ')
+              : null
+        const effectiveFrom = fromName ?? boardLabel ?? t('timelineQueue')
         if (toName) {
-          return `${formattedFrom} → ${toName}`
+          return `${effectiveFrom} → ${toName}`
         }
-        return toName ?? fromName ?? ''
+        return toName ?? effectiveFrom ?? ''
+      }
       default:
         return event.type
     }

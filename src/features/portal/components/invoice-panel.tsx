@@ -1,6 +1,4 @@
-import { useState } from 'react'
 import { useRouter } from '@tanstack/react-router'
-import { useLocale, useTranslations } from 'use-intl'
 import {
   Clock,
   CreditCard,
@@ -9,14 +7,17 @@ import {
   Loader2,
   ReceiptText,
 } from 'lucide-react'
+import { useState } from 'react'
 import { toast } from 'sonner'
+import { useLocale, useTranslations } from 'use-intl'
 import { StatusBadge } from '#/components/status-badge'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
-import { cn } from '#/lib/utils'
-import { formatCurrency, formatLongDate } from '#/lib/formatters'
 import { createSnapTokenFn } from '#/features/invoices/server'
+import { formatCurrency, formatLongDate } from '#/lib/formatters'
+import { cn } from '#/lib/utils'
 import type { PortalInvoice } from '../model'
+import { getPortalOrderFn } from '../server'
 import { SubmitPaymentProofDialog } from './submit-payment-proof-dialog'
 
 type Props = {
@@ -213,6 +214,31 @@ export function InvoicePanel({ invoices, token, showAboveFold }: Props) {
   )
 }
 
+const POLL_INTERVAL_MS = 3000
+const POLL_MAX_ATTEMPTS = 10
+
+async function waitForInvoiceConfirmation(
+  token: string,
+  invoiceId: string,
+): Promise<boolean> {
+  for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt++) {
+    const { promise, resolve } = Promise.withResolvers<void>()
+    setTimeout(resolve, POLL_INTERVAL_MS)
+    await promise
+
+    const result = await getPortalOrderFn({ data: { token } })
+    if (!result.ok) continue
+    const invoice = result.order.invoices.find((inv) => inv.id === invoiceId)
+    if (
+      invoice &&
+      (invoice.status === 'paid' || invoice.status === 'partially_paid')
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
 function PayNowButton({
   invoiceId,
   token,
@@ -243,8 +269,15 @@ function PayNowButton({
 
       window.snap.pay(res.snapToken, {
         onSuccess: async () => {
-          toast.success(t('paymentSuccess'))
+          const verifyingToast = toast.loading(t('paymentVerifying'))
+          const confirmed = await waitForInvoiceConfirmation(token, invoiceId)
+          toast.dismiss(verifyingToast)
           await router.invalidate()
+          if (confirmed) {
+            toast.success(t('paymentSuccess'))
+          } else {
+            toast.warning(t('paymentConfirmTimeout'))
+          }
         },
         onPending: async () => {
           toast.info(t('processingPayment'))
