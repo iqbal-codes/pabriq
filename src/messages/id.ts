@@ -1,4 +1,4 @@
-import type { Messages } from './types'
+import type { Messages } from "./types";
 
 // biome-ignore format: locale message map is maintained as a dense dictionary
 const id: Messages = {
@@ -191,6 +191,7 @@ const id: Messages = {
     copyLinkFailed: "Tidak dapat menyalin tautan portal",
     openPortalLink: "Buka Tautan Portal",
     customerDueDate: "Jatuh Tempo Pelanggan",
+    shippingDetail: "Detail Pengiriman",
     internalDeadline: "Tenggat Produksi",
     overdueDeadline: "Terlambat",
     completedAt: "Selesai Pada",
@@ -202,7 +203,8 @@ const id: Messages = {
       "Tenggat manual diperlukan untuk kuantitas yang melebihi kapasitas produksi",
     quantityExceedsProductionCap:
       "Kuantitas melebihi kapasitas produksi. Tenggat manual diperlukan.",
-    createOrderFailed: "Tidak dapat membuat pesanan. Periksa setup lalu coba lagi.",
+    createOrderFailed:
+      "Tidak dapat membuat pesanan. Periksa setup lalu coba lagi.",
     setupMissionLocked: "Setup diperlukan",
     setupMissionTitle: "Selesaikan setup sebelum membuat pesanan",
     setupMissionDescription:
@@ -271,7 +273,8 @@ const id: Messages = {
     in_progress: "Sedang Diproses",
     production: "Dalam Produksi",
     in_delivery: "Dalam Pengiriman",
-    completed: "Siap Kirim",
+    completed: "Selesai",
+    readyToShip: "Siap Kirim",
     cancelled: "Dibatalkan",
     rejected: "Ditolak",
     active: "Aktif",
@@ -354,18 +357,18 @@ const id: Messages = {
     save: "Simpan",
   },
   members: {
-    title: "Anggota",
-    invite: "Undang Anggota",
-    inviteDesc: "Undang anggota baru ke organisasi Anda",
+    title: "Operator",
+    invite: "Tambah Operator",
+    inviteDesc: "Undang admin atau buat akun operator untuk organisasi Anda",
     name: "Nama",
     email: "Email",
     role: "Peran",
     ownerRole: "Pemilik",
     adminRole: "Admin",
-    memberRole: "Anggota",
+    memberRole: "Operator",
     joined: "Bergabung",
     remove: "Hapus",
-    removeConfirm: "Yakin ingin menghapus anggota ini?",
+    removeConfirm: "Yakin ingin menghapus operator ini?",
     changeRole: "Ubah Peran",
     pending: "Undangan Tertunda",
     pendingDesc: "Undangan ini belum diterima",
@@ -381,10 +384,14 @@ const id: Messages = {
     rejected: "Undangan ditolak",
     roleUpdated: "Peran diperbarui",
     roleUpdateFailed: "Gagal memperbarui peran",
-    memberRemoved: "Anggota dihapus",
+    memberRemoved: "Operator dihapus",
     copyLink: "Salin Tautan Undangan",
-    noMembers: "Belum ada anggota",
-    noMembersDesc: "Undang anggota ke organisasi Anda untuk memulai",
+    noMembers: "Belum ada operator",
+    noMembersDesc: "Buat akun operator untuk organisasi Anda untuk memulai",
+    defaultPassword: "Kata sandi default",
+    operatorAccountCreated:
+      "Akun operator dibuat. Masuk dengan {email} dan kata sandi {password}.",
+    operatorCredentialsCopied: "Kredensial operator disalin",
   },
   profile: {
     title: "Profil",
@@ -527,7 +534,8 @@ const id: Messages = {
     viewProduct: "Lihat Produk",
     editProduct: "Edit Produk",
     advancedSettings: "Harga & Konfigurasi Lanjutan",
-    advancedSettingsDescription: "Konfigurasikan pesanan ulang, tingkatan harga volume, dan addon",
+    advancedSettingsDescription:
+      "Konfigurasikan pesanan ulang, tingkatan harga volume, dan addon",
     basePricingLimits: "Harga Dasar & Batas Kuantitas",
     pricing: {
       title: "Harga",
@@ -730,7 +738,7 @@ const id: Messages = {
     required: "Wajib",
     optional: "Opsional",
     reorder: "Urutkan Ulang",
-    movedToStage: "Dipindahkan ke {stage}",
+    movedToStage: "Dipindahkan ke tahap berikutnya",
     advancedFromQueue: "Maju dari Antrian",
     advancementRequested: "Kemajuan diminta",
     approved: "Disetujui oleh {actor}",
@@ -1020,7 +1028,9 @@ const id: Messages = {
     paymentFailed: "Pembayaran gagal. Silakan coba lagi.",
     processingPayment: "Memproses...",
     paymentVerifying: "Memverifikasi pembayaran Anda...",
-    paymentConfirmTimeout: "Pembayaran diterima tetapi konfirmasi membutuhkan waktu lebih lama dari biasanya. Silakan muat ulang sebentar lagi.",
+    paymentConfirmTimeout:
+      "Pembayaran diterima tetapi konfirmasi membutuhkan waktu lebih lama dari biasanya. Silakan muat ulang sebentar lagi.",
+    shipmentTracking: "Pelacakan Pengiriman",
   },
   combobox: {
     searchPlaceholder: "Cari...",
@@ -1052,9 +1062,10 @@ const id: Messages = {
     backToDashboard: "Kembali ke dashboard",
     noOrgHeader: "Tanpa organisasi",
     noOrgTitle: "Belum tergabung organisasi",
-    noOrgDescription: "Akun Anda belum menjadi anggota organisasi mana pun. Hubungi administrator atau keluar.",
+    noOrgDescription:
+      "Akun Anda belum menjadi anggota organisasi mana pun. Hubungi administrator atau keluar.",
     theme: "Tema",
   },
 };
 
-export default id
+export default id;

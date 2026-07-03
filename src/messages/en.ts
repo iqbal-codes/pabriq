@@ -1,4 +1,4 @@
-import type { Messages } from './types'
+import type { Messages } from "./types";
 
 // biome-ignore format: locale message map is maintained as a dense dictionary
 const en: Messages = {
@@ -191,6 +191,7 @@ const en: Messages = {
     copyLinkFailed: "Could not copy the portal link",
     openPortalLink: "Open Portal Link",
     customerDueDate: "Customer Due",
+    shippingDetail: "Shipping Detail",
     internalDeadline: "Production Deadline",
     overdueDeadline: "Overdue",
     completedAt: "Completed On",
@@ -271,7 +272,8 @@ const en: Messages = {
     in_progress: "In Progress",
     production: "In Production",
     in_delivery: "In Delivery",
-    completed: "Ready to Ship",
+    completed: "Completed",
+    readyToShip: "Ready to Ship",
     cancelled: "Cancelled",
     rejected: "Rejected",
     active: "Active",
@@ -354,18 +356,19 @@ const en: Messages = {
     save: "Save",
   },
   members: {
-    title: "Members",
-    invite: "Invite Member",
-    inviteDesc: "Invite a new member to your organization",
+    title: "Operators",
+    invite: "Add Operator",
+    inviteDesc:
+      "Invite an admin or create an operator account for your organization",
     name: "Name",
     email: "Email",
     role: "Role",
     ownerRole: "Owner",
     adminRole: "Admin",
-    memberRole: "Member",
+    memberRole: "Operator",
     joined: "Joined",
     remove: "Remove",
-    removeConfirm: "Are you sure you want to remove this member?",
+    removeConfirm: "Are you sure you want to remove this operator?",
     changeRole: "Change Role",
     pending: "Pending Invitations",
     pendingDesc: "These invitations have not been accepted yet",
@@ -381,10 +384,15 @@ const en: Messages = {
     rejected: "Invitation rejected",
     roleUpdated: "Role updated",
     roleUpdateFailed: "Failed to update role",
-    memberRemoved: "Member removed",
+    memberRemoved: "Operator removed",
     copyLink: "Copy Invite Link",
-    noMembers: "No members yet",
-    noMembersDesc: "Invite members to your organization to get started",
+    noMembers: "No operators yet",
+    noMembersDesc:
+      "Create operator accounts for your organization to get started",
+    defaultPassword: "Default password",
+    operatorAccountCreated:
+      "Operator account created. Sign in with {email} and password {password}.",
+    operatorCredentialsCopied: "Operator credentials copied",
   },
   profile: {
     title: "Profile",
@@ -525,7 +533,8 @@ const en: Messages = {
     viewProduct: "View Product",
     editProduct: "Edit Product",
     advancedSettings: "Advanced Pricing & Configurations",
-    advancedSettingsDescription: "Configure repeat orders, volume pricing, and addons",
+    advancedSettingsDescription:
+      "Configure repeat orders, volume pricing, and addons",
     basePricingLimits: "Base Pricing & Limits",
     pricing: {
       title: "Pricing",
@@ -726,7 +735,7 @@ const en: Messages = {
     required: "Required",
     optional: "Optional",
     reorder: "Reorder",
-    movedToStage: "Moved to {stage}",
+    movedToStage: "Moved to next stage",
     advancedFromQueue: "Advanced from Queue",
     advancementRequested: "Advancement requested",
     approved: "Approved by {actor}",
@@ -1016,7 +1025,9 @@ const en: Messages = {
     paymentFailed: "Payment failed. Please try again.",
     processingPayment: "Processing...",
     paymentVerifying: "Verifying your payment...",
-    paymentConfirmTimeout: "Payment received but confirmation is taking longer than expected. Please refresh shortly.",
+    paymentConfirmTimeout:
+      "Payment received but confirmation is taking longer than expected. Please refresh shortly.",
+    shipmentTracking: "Shipment Tracking",
   },
   combobox: {
     searchPlaceholder: "Search...",
@@ -1047,9 +1058,10 @@ const en: Messages = {
     backToDashboard: "Back to dashboard",
     noOrgHeader: "No organization",
     noOrgTitle: "No organization assigned",
-    noOrgDescription: "Your account is not a member of any organization. Contact your administrator or sign out.",
+    noOrgDescription:
+      "Your account is not a member of any organization. Contact your administrator or sign out.",
     theme: "Theme",
   },
 };
 
-export default en
+export default en;

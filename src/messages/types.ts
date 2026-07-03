@@ -143,6 +143,9 @@ export type Messages = {
     copyLink: string;
     noMembers: string;
     noMembersDesc: string;
+    defaultPassword: string;
+    operatorAccountCreated: string;
+    operatorCredentialsCopied: string;
   };
   profile: {
     title: string;
@@ -274,6 +277,7 @@ export type Messages = {
     copyLinkFailed: string;
     openPortalLink: string;
     customerDueDate: string;
+    shippingDetail: string;
     internalDeadline: string;
     overdueDeadline: string;
     completedAt: string;
@@ -344,6 +348,7 @@ export type Messages = {
     production: string;
     in_delivery: string;
     completed: string;
+    readyToShip: string;
     cancelled: string;
     rejected: string;
     active: string;
@@ -463,8 +468,8 @@ export type Messages = {
     };
     // Period presets
     period: {
-      '7d': string;
-      '30d': string;
+      "7d": string;
+      "30d": string;
       thisMonth: string;
       lastMonth: string;
     };
@@ -979,6 +984,7 @@ export type Messages = {
     processingPayment: string;
     paymentVerifying: string;
     paymentConfirmTimeout: string;
+    shipmentTracking: string;
   };
   assistant: {
     trigger: string;
