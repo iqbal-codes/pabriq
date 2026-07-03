@@ -71,7 +71,9 @@ export function CreateCustomerDialog({
               )}
             </form.AppField>
             <form.AppForm>
-              <form.SubmitButton isPending={createCustomer.isPending}>{t('createCustomer')}</form.SubmitButton>
+              <form.SubmitButton isPending={createCustomer.isPending}>
+                {t('createCustomer')}
+              </form.SubmitButton>
             </form.AppForm>
           </div>
         </FormRoot>

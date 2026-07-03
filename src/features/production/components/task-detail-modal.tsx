@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
+import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import {
   Dialog,
@@ -20,7 +21,6 @@ import {
 } from '../hooks'
 import { ActivityRow } from './activity-row'
 import { RequirementForm } from './requirement-form'
-import { Badge } from '#/components/ui/badge'
 
 type Props = {
   taskId: string

@@ -3,8 +3,8 @@ import {
   loadAssistantChatFn,
   sendAssistantMessageFn,
 } from '#/features/assistant/server'
-import { queryKeys } from '#/lib/query-keys'
 import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
+import { queryKeys } from '#/lib/query-keys'
 
 export type { AssistantChatMessage } from '#/features/assistant/model'
 

@@ -35,7 +35,9 @@ export function useCreateCustomer() {
   return useMutation({
     mutationFn: (input: CustomerInput) => createCustomerFn({ data: input }),
     onSuccess: () => {
-      return invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.customers.lists() }])
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.customers.lists() },
+      ])
     },
   })
 }

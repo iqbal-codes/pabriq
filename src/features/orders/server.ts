@@ -36,7 +36,6 @@ export const getOrderCreationReadinessFn = createServerFn({ method: 'GET' })
     return getOrderCreationReadiness(orgId)
   })
 
-
 export const createDraftOrderFn = createServerFn({ method: 'POST' })
   .inputValidator(
     (input: Omit<CreateDraftOrderInput, 'orgId'> & { orgId: string }) => input,

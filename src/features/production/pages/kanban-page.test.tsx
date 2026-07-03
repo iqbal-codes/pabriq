@@ -10,10 +10,6 @@ const mutationMocks = vi.hoisted(() => ({
   rejectAdvanceMutate: vi.fn(),
 }))
 
-vi.mock('@tanstack/react-router', () => ({
-  useRouteContext: () => ({ org: { id: 'org-1', role: 'owner' } }),
-}))
-
 vi.mock('nuqs', () => {
   const parseAsString = {
     withDefault: (value: string) => value,
@@ -176,8 +172,30 @@ vi.mock('../hooks', () => {
     useTaskMutations: () => ({
       advanceTask: { mutate: vi.fn() },
       saveComment: { mutate: vi.fn() },
-      approveAdvance: { mutate: mutationMocks.approveAdvanceMutate },
-      rejectAdvance: { mutate: mutationMocks.rejectAdvanceMutate },
+      approveAdvance: {
+        mutate: mutationMocks.approveAdvanceMutate,
+        mutateAsync: async (vars: unknown) => {
+          let result: unknown = { ok: true, pendingApproval: false }
+          mutationMocks.approveAdvanceMutate(vars, {
+            onSuccess: (res: unknown) => {
+              result = res
+            },
+          })
+          return result as { ok: true; pendingApproval: boolean } | { ok: false; error: string }
+        },
+      },
+      rejectAdvance: {
+        mutate: mutationMocks.rejectAdvanceMutate,
+        mutateAsync: async (vars: unknown) => {
+          let result: unknown = { ok: true }
+          mutationMocks.rejectAdvanceMutate(vars, {
+            onSuccess: (res: unknown) => {
+              result = res
+            },
+          })
+          return result as { ok: true } | { ok: false; error: string }
+        },
+      },
     }),
     useTaskActivities: () => ({ data: [], isLoading: false }),
   }
@@ -350,7 +368,7 @@ function renderPage() {
   return render(
     <QueryClientProvider client={queryClient}>
       <IntlProvider locale="en" messages={enMessages}>
-        <KanbanPage orgId="org-1" />
+        <KanbanPage orgId="org-1" role="owner" />
       </IntlProvider>
     </QueryClientProvider>,
   )

@@ -239,7 +239,10 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
               {ct('cancel')}
             </Button>
             <form.AppForm>
-              <form.SubmitButton isPending={createStage.isPending || updateStage.isPending} disabled={!canSubmit}>
+              <form.SubmitButton
+                isPending={createStage.isPending || updateStage.isPending}
+                disabled={!canSubmit}
+              >
                 {stage ? t('editStage') : t('addStage')}
               </form.SubmitButton>
             </form.AppForm>

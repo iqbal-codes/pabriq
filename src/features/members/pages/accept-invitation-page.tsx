@@ -39,7 +39,9 @@ export function AcceptInvitationPage({
     onSuccess: async (result) => {
       if (result.ok) {
         toast.success(t('accepted'))
-        await invalidateMutationQueries(queryClient, [{ queryKey: ['members'] }])
+        await invalidateMutationQueries(queryClient, [
+          { queryKey: ['members'] },
+        ])
         navigate({ to: '/' })
       } else {
         toast.error(result.error)
@@ -52,7 +54,9 @@ export function AcceptInvitationPage({
     onSuccess: async (result) => {
       if (result.ok) {
         toast.success(t('rejected'))
-        await invalidateMutationQueries(queryClient, [{ queryKey: ['members'] }])
+        await invalidateMutationQueries(queryClient, [
+          { queryKey: ['members'] },
+        ])
         navigate({ to: '/' })
       } else {
         toast.error(result.error)

@@ -11,8 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as OperatorRouteImport } from './routes/operator'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as ForbiddenRouteImport } from './routes/forbidden'
 import { Route as OrgRouteImport } from './routes/_org'
+import { Route as OperatorIndexRouteImport } from './routes/operator/index'
 import { Route as OrgIndexRouteImport } from './routes/_org/index'
 import { Route as OrderTokenRouteImport } from './routes/order.$token'
 import { Route as InviteAcceptRouteImport } from './routes/invite/accept'
@@ -56,14 +59,29 @@ const SignInRoute = SignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OperatorRoute = OperatorRouteImport.update({
+  id: '/operator',
+  path: '/operator',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ForbiddenRoute = ForbiddenRouteImport.update({
+  id: '/forbidden',
+  path: '/forbidden',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrgRoute = OrgRouteImport.update({
   id: '/_org',
   getParentRoute: () => rootRouteImport,
+} as any)
+const OperatorIndexRoute = OperatorIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OperatorRoute,
 } as any)
 const OrgIndexRoute = OrgIndexRouteImport.update({
   id: '/',
@@ -234,13 +252,16 @@ const ApiDocumentsInvoicesPortalInvoiceIdTokenRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof OrgIndexRoute
+  '/forbidden': typeof ForbiddenRoute
   '/onboarding': typeof OnboardingRoute
+  '/operator': typeof OperatorRouteWithChildren
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/settings': typeof OrgSettingsRouteRouteWithChildren
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
   '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
+  '/operator/': typeof OperatorIndexRoute
   '/customers/new': typeof OrgCustomersNewRoute
   '/invoices/new': typeof OrgInvoicesNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
@@ -270,6 +291,7 @@ export interface FileRoutesByFullPath {
   '/api/documents/invoices/portal/$invoiceId/$token': typeof ApiDocumentsInvoicesPortalInvoiceIdTokenRoute
 }
 export interface FileRoutesByTo {
+  '/forbidden': typeof ForbiddenRoute
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -277,6 +299,7 @@ export interface FileRoutesByTo {
   '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
   '/': typeof OrgIndexRoute
+  '/operator': typeof OperatorIndexRoute
   '/customers/new': typeof OrgCustomersNewRoute
   '/invoices/new': typeof OrgInvoicesNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
@@ -308,7 +331,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_org': typeof OrgRouteWithChildren
+  '/forbidden': typeof ForbiddenRoute
   '/onboarding': typeof OnboardingRoute
+  '/operator': typeof OperatorRouteWithChildren
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/_org/settings': typeof OrgSettingsRouteRouteWithChildren
@@ -316,6 +341,7 @@ export interface FileRoutesById {
   '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
   '/_org/': typeof OrgIndexRoute
+  '/operator/': typeof OperatorIndexRoute
   '/_org/customers/new': typeof OrgCustomersNewRoute
   '/_org/invoices/new': typeof OrgInvoicesNewRoute
   '/_org/orders/new': typeof OrgOrdersNewRoute
@@ -348,13 +374,16 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/forbidden'
     | '/onboarding'
+    | '/operator'
     | '/sign-in'
     | '/sign-up'
     | '/settings'
     | '/api/midtrans-notification'
     | '/invite/accept'
     | '/order/$token'
+    | '/operator/'
     | '/customers/new'
     | '/invoices/new'
     | '/orders/new'
@@ -384,6 +413,7 @@ export interface FileRouteTypes {
     | '/api/documents/invoices/portal/$invoiceId/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/forbidden'
     | '/onboarding'
     | '/sign-in'
     | '/sign-up'
@@ -391,6 +421,7 @@ export interface FileRouteTypes {
     | '/invite/accept'
     | '/order/$token'
     | '/'
+    | '/operator'
     | '/customers/new'
     | '/invoices/new'
     | '/orders/new'
@@ -421,7 +452,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_org'
+    | '/forbidden'
     | '/onboarding'
+    | '/operator'
     | '/sign-in'
     | '/sign-up'
     | '/_org/settings'
@@ -429,6 +462,7 @@ export interface FileRouteTypes {
     | '/invite/accept'
     | '/order/$token'
     | '/_org/'
+    | '/operator/'
     | '/_org/customers/new'
     | '/_org/invoices/new'
     | '/_org/orders/new'
@@ -460,7 +494,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   OrgRoute: typeof OrgRouteWithChildren
+  ForbiddenRoute: typeof ForbiddenRoute
   OnboardingRoute: typeof OnboardingRoute
+  OperatorRoute: typeof OperatorRouteWithChildren
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   ApiMidtransNotificationRoute: typeof ApiMidtransNotificationRoute
@@ -489,11 +525,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignInRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/operator': {
+      id: '/operator'
+      path: '/operator'
+      fullPath: '/operator'
+      preLoaderRoute: typeof OperatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forbidden': {
+      id: '/forbidden'
+      path: '/forbidden'
+      fullPath: '/forbidden'
+      preLoaderRoute: typeof ForbiddenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_org': {
@@ -502,6 +552,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof OrgRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/operator/': {
+      id: '/operator/'
+      path: '/'
+      fullPath: '/operator/'
+      preLoaderRoute: typeof OperatorIndexRouteImport
+      parentRoute: typeof OperatorRoute
     }
     '/_org/': {
       id: '/_org/'
@@ -795,9 +852,23 @@ const OrgRouteChildren: OrgRouteChildren = {
 
 const OrgRouteWithChildren = OrgRoute._addFileChildren(OrgRouteChildren)
 
+interface OperatorRouteChildren {
+  OperatorIndexRoute: typeof OperatorIndexRoute
+}
+
+const OperatorRouteChildren: OperatorRouteChildren = {
+  OperatorIndexRoute: OperatorIndexRoute,
+}
+
+const OperatorRouteWithChildren = OperatorRoute._addFileChildren(
+  OperatorRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   OrgRoute: OrgRouteWithChildren,
+  ForbiddenRoute: ForbiddenRoute,
   OnboardingRoute: OnboardingRoute,
+  OperatorRoute: OperatorRouteWithChildren,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   ApiMidtransNotificationRoute: ApiMidtransNotificationRoute,

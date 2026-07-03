@@ -1,6 +1,4 @@
 import { and, asc, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm'
-import { READY_FOR_PRODUCTION_STATUS } from '#/features/production/constants'
-import { buildOrderBy, type SortColumnMap, type SortState } from '#/lib/sorting'
 import { db } from '#/db/index'
 import type { Requirement } from '#/db/schema'
 import {
@@ -10,6 +8,8 @@ import {
   productionTasks as tasksTable,
 } from '#/db/schema'
 import { canApproveProductionTask } from '#/features/permissions/model'
+import { READY_FOR_PRODUCTION_STATUS } from '#/features/production/constants'
+import { buildOrderBy, type SortColumnMap, type SortState } from '#/lib/sorting'
 
 export type { Requirement } from '#/db/schema'
 

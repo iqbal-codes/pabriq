@@ -16,7 +16,9 @@ export function useUpdateOrgSettings() {
     mutationFn: (input: UpdateOrgSettingsInput) =>
       updateOrgSettingsFn({ data: input }),
     onSuccess: () => {
-      return invalidateMutationQueries(queryClient, [{ queryKey: ['settings', 'org'] }])
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: ['settings', 'org'] },
+      ])
     },
   })
 }

@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
-import { beforeEach, describe, expect, it } from 'vitest'
 import { eq, sql } from 'drizzle-orm'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '#/db/index'
 import {
   customers as customersTable,

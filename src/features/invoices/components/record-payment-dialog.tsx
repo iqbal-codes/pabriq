@@ -106,7 +106,9 @@ export function RecordPaymentDialog({
               {ct('cancel')}
             </Button>
             <form.AppForm>
-              <form.SubmitButton isPending={createPayment.isPending}>{t('recordPayment')}</form.SubmitButton>
+              <form.SubmitButton isPending={createPayment.isPending}>
+                {t('recordPayment')}
+              </form.SubmitButton>
             </form.AppForm>
           </FormActions>
         </FormRoot>

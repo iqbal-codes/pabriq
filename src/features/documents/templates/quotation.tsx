@@ -7,10 +7,10 @@ import {
 import { PDF_LOCALE } from '../pdf-locale'
 import type { QuotationPdfData } from '../types'
 import {
-  PdfAddressBlock,
-  PdfPricingLine,
-  PdfMetaRow,
   createPdfStyles,
+  PdfAddressBlock,
+  PdfMetaRow,
+  PdfPricingLine,
   registerPdfFonts,
 } from './pdf-template-shared'
 

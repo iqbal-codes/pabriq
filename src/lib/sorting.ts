@@ -1,4 +1,4 @@
-import { asc, desc, sql, type SQL, type SQLWrapper } from 'drizzle-orm'
+import { asc, desc, type SQL, type SQLWrapper, sql } from 'drizzle-orm'
 
 export type SortDirection = 'asc' | 'desc'
 
@@ -39,7 +39,7 @@ export function buildOrderBy(
   columns: SortColumnMap,
   fallback: SQL,
 ): SQL {
-  if (!sort || !Object.prototype.hasOwnProperty.call(columns, sort.field)) {
+  if (!sort || !Object.hasOwn(columns, sort.field)) {
     return fallback
   }
 

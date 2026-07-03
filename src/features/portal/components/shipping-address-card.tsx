@@ -1,7 +1,7 @@
 import { MapPin } from 'lucide-react'
 import { useTranslations } from 'use-intl'
-import { cn } from '#/lib/utils'
 import type { ShippingAddress } from '#/features/address/model'
+import { cn } from '#/lib/utils'
 
 export function ShippingAddressCard({
   address,

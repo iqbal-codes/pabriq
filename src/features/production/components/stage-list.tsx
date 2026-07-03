@@ -20,7 +20,9 @@ export function StageList({ stages, loading }: Props) {
   const { deleteStage, reorderStages } = useStageMutations()
   const [editStage, setEditStage] = useState<Stage | undefined>()
   const isReordering = reorderStages.isPending
-  const deletingStageId = deleteStage.isPending ? deleteStage.variables?.id : null
+  const deletingStageId = deleteStage.isPending
+    ? deleteStage.variables?.id
+    : null
 
   async function handleMoveUp(index: number) {
     if (index === 0) return
@@ -64,7 +66,9 @@ export function StageList({ stages, loading }: Props) {
               size="icon"
               onClick={() => handleMoveDown(i)}
               isLoading={isReordering}
-              disabled={isReordering || deleteStage.isPending || i === stages.length - 1}
+              disabled={
+                isReordering || deleteStage.isPending || i === stages.length - 1
+              }
             >
               <ArrowDown className="size-4" />
             </Button>

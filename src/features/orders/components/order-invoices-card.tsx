@@ -104,7 +104,6 @@ export function OrderInvoicesCard({
                       </div>
                     </div>
 
-
                     {/* Payment proof images */}
                     {proofPayments.length > 0 && (
                       <div className="mt-2.5">

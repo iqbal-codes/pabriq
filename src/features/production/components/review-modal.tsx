@@ -1,6 +1,7 @@
 import { CheckCircle2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslations } from 'use-intl'
+import { AssetFileList } from '#/components/app/asset-file'
 import { Button } from '#/components/ui/button'
 import {
   Dialog,
@@ -11,7 +12,6 @@ import {
 } from '#/components/ui/dialog'
 import { Label } from '#/components/ui/label'
 import { Textarea } from '#/components/ui/textarea'
-import { AssetFileList } from '#/components/app/asset-file'
 import type { Requirement } from '../model'
 
 type Props = {

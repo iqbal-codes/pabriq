@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { AuthForm } from '#/features/auth/AuthForm'
-import { getCurrentSession } from '#/lib/auth-session'
+import { resolveOrgContext } from '#/lib/auth-session'
 
 function sanitizeRedirect(value: unknown) {
   if (
@@ -19,19 +19,22 @@ export const Route = createFileRoute('/sign-in')({
     redirect: sanitizeRedirect(search.redirect),
   }),
   beforeLoad: async ({ search }) => {
-    const session = await getCurrentSession()
+    const result = await resolveOrgContext()
 
-    if (session) {
-      throw redirect({ to: search.redirect ?? '/onboarding' })
+    if (result.ok) {
+      if (result.role === 'member') {
+        throw redirect({ to: '/operator' })
+      }
+      throw redirect({ to: search.redirect ?? '/' })
+    }
+
+    if (result.reason === 'no-org') {
+      throw redirect({ to: '/onboarding' })
     }
   },
   component: SignInRoute,
 })
 
 function SignInRoute() {
-  const search = Route.useSearch()
-
-  return (
-    <AuthForm mode="sign-in" redirectTo={search.redirect ?? '/onboarding'} />
-  )
+  return <AuthForm mode="sign-in" redirectTo="/" />
 }

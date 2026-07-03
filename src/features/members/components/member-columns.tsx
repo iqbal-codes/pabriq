@@ -10,8 +10,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
-import type { InvitationItem, MemberItem } from '#/features/members/server'
 import { Spinner } from '#/components/ui/spinner'
+import type { InvitationItem, MemberItem } from '#/features/members/server'
 
 const ROLE_LABEL_KEYS: Record<
   string,

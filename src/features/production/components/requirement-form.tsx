@@ -117,11 +117,18 @@ export function RequirementForm({
         </div>
       ))}
       <FormActions>
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isSubmitting}
+        >
           {ct('cancel')}
         </Button>
         <form.AppForm>
-          <form.SubmitButton isPending={isSubmitting}>{ct('confirm')}</form.SubmitButton>
+          <form.SubmitButton isPending={isSubmitting}>
+            {ct('confirm')}
+          </form.SubmitButton>
         </form.AppForm>
       </FormActions>
     </FormRoot>

@@ -1,4 +1,3 @@
-import { useRouteContext } from '@tanstack/react-router'
 import { parseAsString, useQueryState } from 'nuqs'
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'use-intl'
@@ -19,9 +18,10 @@ import {
 
 type Props = {
   orgId: string
+  role: Role
 }
 
-export function KanbanPage({ orgId }: Props) {
+export function KanbanPage({ orgId, role }: Props) {
   const t = useTranslations('production')
 
   const [search, setSearch] = useQueryState('q', parseAsString.withDefault(''))
@@ -32,10 +32,6 @@ export function KanbanPage({ orgId }: Props) {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [reviewTaskId, setReviewTaskId] = useState<string | null>(null)
 
-  const ctx = useRouteContext({ from: '/_org/production/' }) as {
-    org: { id: string; role?: string }
-  }
-  const role = ctx.org.role as Role
   const canApprove = canApproveProductionTask(role)
 
   const { data: stages } = useStages()

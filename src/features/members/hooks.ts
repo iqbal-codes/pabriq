@@ -29,7 +29,9 @@ export function useInviteMember() {
     mutationFn: (input: { email: string; role: string }) =>
       inviteMemberFn({ data: input }),
     onSuccess: () => {
-      return invalidateMutationQueries(queryClient, [{ queryKey: ['members', 'invitations'] }])
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: ['members', 'invitations'] },
+      ])
     },
   })
 }
@@ -62,7 +64,9 @@ export function useCancelInvitation() {
     mutationFn: (input: { invitationId: string }) =>
       cancelInvitationFn({ data: input }),
     onSuccess: () => {
-      return invalidateMutationQueries(queryClient, [{ queryKey: ['members', 'invitations'] }])
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: ['members', 'invitations'] },
+      ])
     },
   })
 }

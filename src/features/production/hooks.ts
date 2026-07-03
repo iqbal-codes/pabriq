@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
-import { queryKeys } from '#/lib/query-keys'
 import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
+import { queryKeys } from '#/lib/query-keys'
 import type { MutationResult } from '#/lib/server-results'
 import type { CreateStageInput, UpdateStageInput } from './model'
 import {
@@ -36,7 +36,9 @@ export function useStageMutations() {
   const t = useTranslations('production')
 
   const invalidate = () => {
-    return invalidateMutationQueries(queryClient, [{ queryKey: ['production', 'stages'] }])
+    return invalidateMutationQueries(queryClient, [
+      { queryKey: ['production', 'stages'] },
+    ])
   }
 
   const createStage = useMutation<
@@ -210,7 +212,6 @@ export function useTaskMutations() {
   const handleMutationError = (error: Error) => {
     toast.error(error.message)
   }
-
 
   const advanceTask = useMutation<
     { ok: true; pendingApproval: boolean } | { ok: false; error: string },

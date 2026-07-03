@@ -3,10 +3,10 @@ import { Printer } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useLocale, useTranslations } from 'use-intl'
+import { AvatarPhoto } from '#/components/app/avatar-photo'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { StatusBadge } from '#/components/status-badge'
-import { AvatarPhoto } from '#/components/app/avatar-photo'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
@@ -138,7 +138,7 @@ export function InvoiceDetailPage() {
             }
             rejectingPaymentId={
               rejectPayment.isPending
-                ? rejectPayment.variables?.paymentId ?? null
+                ? (rejectPayment.variables?.paymentId ?? null)
                 : null
             }
           />

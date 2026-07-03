@@ -6,6 +6,7 @@ import {
   useRouterState,
 } from '@tanstack/react-router'
 import { useTranslations } from 'use-intl'
+import { ForbiddenPage } from '#/components/app/forbidden-page'
 import { LanguageToggle, ThemeToggle } from '#/components/app/header-controls'
 import { Breadcrumbs } from '#/components/app/page-shell/breadcrumbs'
 import { AppSidebar } from '#/components/app-sidebar'
@@ -16,35 +17,94 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '#/components/ui/sidebar'
-import { listUserOrgs } from '#/features/auth/org'
-import type { Role } from '#/features/permissions/model'
-import { getCurrentSession } from '#/lib/auth-session'
 import { FloatingAssistant } from '#/features/assistant/components/floating-assistant'
+import type { Role } from '#/features/permissions/model'
+import { resolveOrgContext } from '#/lib/auth-session'
 
 export const Route = createFileRoute('/_org')({
-  beforeLoad: async ({ location }) => {
-    const session = await getCurrentSession()
-    if (!session) {
-      throw redirect({
-        to: '/sign-in',
-        search: { redirect: location.href },
-      })
-    }
+  beforeLoad: async ({
+    location,
+  }: {
+    location: { pathname: string; href: string }
+    // biome-ignore lint/suspicious/noExplicitAny: TanStack Router type inference limitation
+  }): Promise<any> => {
+    const result = await resolveOrgContext()
 
-    const orgs = await listUserOrgs()
-    if (!orgs || orgs.length === 0) {
+    if (!result.ok) {
+      if (result.reason === 'unauthenticated') {
+        throw redirect({
+          to: '/sign-in',
+          search: { redirect: location.href },
+        })
+      }
       throw redirect({ to: '/onboarding' })
     }
 
-    return { session, org: orgs[0] }
+    if (result.role === 'member' && location.pathname === '/') {
+      throw redirect({ to: '/operator' })
+    }
+
+    return {
+      session: result.session,
+      org: result.org,
+      role: result.role,
+    }
   },
   component: OrgLayout,
 })
 
 function OrgLayout() {
-  const { session, org } = Route.useRouteContext()
+  const ctx = Route.useRouteContext() as unknown as {
+    session: {
+      user: {
+        id: string
+        name: string | null
+        email: string
+        image: string | null
+      }
+    }
+    org: {
+      id: string
+      name: string
+      slug: string
+      logo?: string | null
+      role: Role
+    }
+    role: Role
+  }
+
+  if (ctx.role === 'member') {
+    return <ForbiddenPage actionHref="/operator" actionKey="backToProduction" />
+  }
+
+  return <AdminLayout ctx={ctx} />
+}
+
+function AdminLayout({
+  ctx,
+}: {
+  ctx: {
+    session: {
+      user: {
+        id: string
+        name: string | null
+        email: string
+        image: string | null
+      }
+    }
+    org: {
+      id: string
+      name: string
+      slug: string
+      logo?: string | null
+      role: Role
+    }
+    role: Role
+  }
+}) {
+  const { session, org } = ctx
   const bt = useTranslations('breadcrumb')
-  const role: Role = ((org as Record<string, unknown>).role as Role) ?? 'member'
+  const role: Role = org.role
   const user = {
     name: session.user.name || session.user.email,
     email: session.user.email,
@@ -85,6 +145,7 @@ function OrgLayout() {
     leafMatch?.context as unknown as Record<string, unknown>
   )?.primaryAction as
     | {
+        href: string
         label:
           | 'dashboard'
           | 'detail'
@@ -110,7 +171,6 @@ function OrgLayout() {
           | 'paymentMethods'
           | 'members'
           | 'profile'
-        href: string
       }
     | undefined
 

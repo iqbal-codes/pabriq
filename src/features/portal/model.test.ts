@@ -239,7 +239,6 @@ describe('getPortalOrder', () => {
       expect(result.order.invoices[0].status).toBe('unpaid')
     }
   })
-
 })
 
 describe('confirmPortalOrder', () => {

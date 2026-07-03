@@ -1,6 +1,6 @@
+import { Archive } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { useTranslations } from 'use-intl'
-import { Archive } from 'lucide-react'
 import type { AppColumnDef, DataTableLabels } from '#/components/app/data-table'
 import {
   DataTable,

@@ -1,8 +1,8 @@
 import { and, asc, desc, eq, like } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
-  pricingBreakpoints as breakpointsTable,
   productAddons as addonsTable,
+  pricingBreakpoints as breakpointsTable,
   products as productsTable,
 } from '#/db/schema'
 export type Product = {

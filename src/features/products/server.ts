@@ -6,8 +6,8 @@ import {
   products as productsTable,
 } from '#/db/schema'
 import { resolveOrgId } from '#/lib/auth-session'
-import { buildOrderBy, type SortColumnMap } from '#/lib/sorting'
 import type { MutationResult } from '#/lib/server-results'
+import { buildOrderBy, type SortColumnMap } from '#/lib/sorting'
 import type {
   CreateProductInput,
   ListProductsParams,

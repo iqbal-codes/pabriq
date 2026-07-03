@@ -1308,15 +1308,14 @@ describe('createMidtransTransaction', () => {
       redirect_url: 'https://mock-redirect-url-2',
     })
 
-    const { token } = await createMidtransTransaction(
-      invoiceId,
-      midtransOrgId,
-    )
+    const { token } = await createMidtransTransaction(invoiceId, midtransOrgId)
 
     expect(token).toBe('mock-snap-token-2')
     expect(mockCreateTransaction).toHaveBeenCalled()
     const callArgs = mockCreateTransaction.mock.calls[0][0]
-    expect(callArgs.customer_details.first_name).toBe('Invalid Email/Phone Customer')
+    expect(callArgs.customer_details.first_name).toBe(
+      'Invalid Email/Phone Customer',
+    )
     expect(callArgs.customer_details.email).toBeUndefined()
     expect(callArgs.customer_details.phone).toBeUndefined()
   })

@@ -4,8 +4,8 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
-import { queryKeys } from '#/lib/query-keys'
 import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
+import { queryKeys } from '#/lib/query-keys'
 import type {
   CreatePaymentInput,
   ListInvoicesParams,
@@ -49,7 +49,9 @@ export function useCreateInvoice() {
     mutationFn: (input: Parameters<typeof createInvoiceFn>[0]['data']) =>
       createInvoiceFn({ data: input }),
     onSuccess: () =>
-      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.all }]),
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.invoices.all },
+      ]),
   })
 }
 
@@ -67,7 +69,9 @@ export function useCreatePaymentMethod() {
       input: Omit<PaymentMethod, 'id' | 'orgId' | 'createdAt' | 'updatedAt'>,
     ) => createPaymentMethodFn({ data: input }),
     onSuccess: () =>
-      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.paymentMethods() }]),
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.invoices.paymentMethods() },
+      ]),
   })
 }
 
@@ -80,7 +84,9 @@ export function useUpdatePaymentMethod() {
       >,
     ) => updatePaymentMethodFn({ data: input }),
     onSuccess: () =>
-      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.paymentMethods() }]),
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.invoices.paymentMethods() },
+      ]),
   })
 }
 
@@ -89,7 +95,9 @@ export function useDeletePaymentMethod() {
   return useMutation({
     mutationFn: (id: string) => deletePaymentMethodFn({ data: { id } }),
     onSuccess: () =>
-      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.paymentMethods() }]),
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.invoices.paymentMethods() },
+      ]),
   })
 }
 
@@ -116,7 +124,9 @@ export function useCreatePayment() {
   return useMutation({
     mutationFn: (input: CreatePaymentInput) => createPaymentFn({ data: input }),
     onSuccess: () =>
-      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.all }]),
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.invoices.all },
+      ]),
   })
 }
 
@@ -126,7 +136,9 @@ export function useConfirmPayment() {
     mutationFn: (paymentId: string) =>
       confirmPaymentFn({ data: { paymentId } }),
     onSuccess: () =>
-      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.all }]),
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.invoices.all },
+      ]),
   })
 }
 
@@ -136,7 +148,9 @@ export function useRejectPayment() {
     mutationFn: (input: { paymentId: string; reason: string }) =>
       rejectPaymentFn({ data: input }),
     onSuccess: () =>
-      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.all }]),
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.invoices.all },
+      ]),
   })
 }
 
@@ -145,7 +159,9 @@ export function useMarkInvoicePaid() {
   return useMutation({
     mutationFn: (id: string) => markInvoicePaidFn({ data: { id } }),
     onSuccess: () =>
-      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.all }]),
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.invoices.all },
+      ]),
   })
 }
 
@@ -154,7 +170,9 @@ export function useVoidInvoice() {
   return useMutation({
     mutationFn: (id: string) => voidInvoiceFn({ data: { id } }),
     onSuccess: () =>
-      invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.invoices.all }]),
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.invoices.all },
+      ]),
   })
 }
 

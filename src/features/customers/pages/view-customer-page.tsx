@@ -18,11 +18,11 @@ import {
 } from '#/components/ui/table'
 import { useCustomer } from '#/features/customers/hooks'
 import { useInvoicesList } from '#/features/invoices/hooks'
-import { useOrdersList } from '#/features/orders/hooks'
 import {
   currencyFormatter,
   dateFormatter,
 } from '#/features/orders/components/view-order-utils'
+import { useOrdersList } from '#/features/orders/hooks'
 
 function TableSkeleton({ columns }: { columns: number }) {
   return (

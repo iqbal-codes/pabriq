@@ -84,7 +84,9 @@ export function InviteMemberDialog({
               {ct('cancel')}
             </Button>
             <form.AppForm>
-              <form.SubmitButton isPending={inviteMember.isPending}>{t('invite')}</form.SubmitButton>
+              <form.SubmitButton isPending={inviteMember.isPending}>
+                {t('invite')}
+              </form.SubmitButton>
             </form.AppForm>
           </FormActions>
         </FormRoot>

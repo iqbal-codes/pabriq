@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { cn } from '#/lib/utils'
-import { PortalHeader } from './portal-header'
 import type { PortalOrder } from '../model'
+import { PortalHeader } from './portal-header'
 
 type PortalShellProps = {
   order: Pick<PortalOrder, 'orgLogoAssetId' | 'orderNumber'>

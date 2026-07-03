@@ -13,12 +13,12 @@ import {
   TableHeader,
   TableRow,
 } from '#/components/ui/table'
+import { currencyFormatter } from '#/features/orders/components/view-order-utils'
 import {
   useProduct,
   useProductAddons,
   useProductBreakpoints,
 } from '#/features/products/hooks'
-import { currencyFormatter } from '#/features/orders/components/view-order-utils'
 
 export function ViewProductPage() {
   const { id } = useParams({ from: '/_org/products/$id/' })

@@ -37,7 +37,9 @@ export function useConfirmPortalOrder() {
     mutationFn: (input: ConfirmPortalOrderInput) =>
       confirmPortalOrderFn({ data: input }),
     onSuccess: () => {
-      return invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.portal.all }])
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.portal.all },
+      ])
     },
   })
 }
@@ -48,7 +50,9 @@ export function useGenerateOrderToken() {
     mutationFn: (input: { orderId: string }) =>
       generateOrderTokenFn({ data: input }),
     onSuccess: () => {
-      return invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.orders.lists() }])
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.orders.lists() },
+      ])
     },
   })
 }
@@ -59,7 +63,9 @@ export function useUpdatePortalLineItem() {
     mutationFn: (input: { itemId: string } & UpdatePortalLineItemInput) =>
       updatePortalLineItemFn({ data: input }),
     onSuccess: () => {
-      return invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.portal.all }])
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.portal.all },
+      ])
     },
   })
 }
@@ -74,7 +80,9 @@ export function useSavePortalAddress() {
       streetAddress: string
     }) => savePortalAddressFn({ data: input }),
     onSuccess: () => {
-      return invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.portal.all }])
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.portal.all },
+      ])
     },
   })
 }
@@ -90,7 +98,9 @@ export function usePortalGetInvoiceUploadUrl() {
       fileSize: number
     }) => portalGetInvoiceUploadUrlFn({ data: input }),
     onSuccess: () => {
-      return invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.portal.all }])
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.portal.all },
+      ])
     },
   })
 }
@@ -108,7 +118,9 @@ export function useSubmitPaymentProof() {
       storageKey: string
     }) => submitPaymentProofFn({ data: input }),
     onSuccess: () => {
-      return invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.portal.all }])
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.portal.all },
+      ])
     },
   })
 }

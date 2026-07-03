@@ -32,7 +32,9 @@ export function CancelInvitationDialog({
           <AlertDialogDescription>{t('cancelConfirm')}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isCancelling}>{ct('cancel')}</AlertDialogCancel>
+          <AlertDialogCancel disabled={isCancelling}>
+            {ct('cancel')}
+          </AlertDialogCancel>
           <AlertDialogAction
             isLoading={isCancelling}
             disabled={isCancelling}

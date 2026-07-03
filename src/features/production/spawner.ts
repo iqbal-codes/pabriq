@@ -8,9 +8,9 @@ import {
   productionStages as stagesTable,
   productionTasks as tasksTable,
 } from '#/db/schema'
-import { READY_FOR_PRODUCTION_STATUS } from '#/features/production/constants'
 import { getVisibleDesignName } from '#/features/orders/line-item-display'
 import { advanceOrderStatus, getOrder } from '#/features/orders/model'
+import { READY_FOR_PRODUCTION_STATUS } from '#/features/production/constants'
 import { spawnQueuedPreProductionTasksForOrder } from '#/features/production/task-spawn-helpers'
 
 async function getProductPriorityMap(

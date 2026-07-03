@@ -34,8 +34,15 @@ export function PaymentMethodDeleteDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>{ct('cancel')}</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" isLoading={isDeleting} disabled={isDeleting} onClick={onConfirm}>
+          <AlertDialogCancel disabled={isDeleting}>
+            {ct('cancel')}
+          </AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            isLoading={isDeleting}
+            disabled={isDeleting}
+            onClick={onConfirm}
+          >
             {t('deletePaymentMethod')}
           </AlertDialogAction>
         </AlertDialogFooter>

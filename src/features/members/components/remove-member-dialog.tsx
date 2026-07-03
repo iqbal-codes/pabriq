@@ -32,7 +32,9 @@ export function RemoveMemberDialog({
           <AlertDialogDescription>{t('removeConfirm')}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isRemoving}>{ct('cancel')}</AlertDialogCancel>
+          <AlertDialogCancel disabled={isRemoving}>
+            {ct('cancel')}
+          </AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
             isLoading={isRemoving}

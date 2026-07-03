@@ -43,7 +43,9 @@ export function useCreateProduct() {
     mutationFn: (input: Omit<CreateProductInput, 'orgId'>) =>
       createProductFn({ data: input }),
     onSuccess: () => {
-      return invalidateMutationQueries(queryClient, [{ queryKey: queryKeys.products.lists() }])
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.products.lists() },
+      ])
     },
   })
 }
