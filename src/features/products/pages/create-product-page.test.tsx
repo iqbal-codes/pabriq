@@ -36,7 +36,6 @@ function TestWrapper() {
           createTitle: 'New Product',
           createProduct: 'Create Product',
           productInfo: 'Product Information',
-          productionNotes: 'Production Notes',
           priority: 'Priority product',
           priorityDescription:
             'Tasks spawned from this product will be marked priority.',
@@ -45,7 +44,6 @@ function TestWrapper() {
           namePlaceholder: 'e.g. Custom T-Shirt',
           description: 'Description',
           descriptionPlaceholder: 'Describe the product',
-          productionNotesPlaceholder: 'Special instructions',
           basePrice: 'Base Price',
           productionDays: 'Production Days',
           minQuantity: 'Min. Quantity',

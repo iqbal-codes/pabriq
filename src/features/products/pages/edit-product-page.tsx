@@ -28,7 +28,6 @@ export function EditProductPage() {
     defaultValues: {
       name: product?.name ?? '',
       description: product?.description ?? '',
-      productionNotes: product?.productionNotes ?? '',
       priority: product?.priority ?? false,
       primaryImageAssetId: (product?.primaryImageAssetId ?? null) as
         | string

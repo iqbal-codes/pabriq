@@ -19,7 +19,6 @@ export function CreateProductPage() {
     defaultValues: {
       name: '',
       description: '',
-      productionNotes: '',
       priority: false,
       primaryImageAssetId: null as string | null,
       basePrice: 0,

@@ -9,7 +9,6 @@ function TestWrapper() {
     defaultValues: {
       name: '',
       description: '',
-      productionNotes: '',
       priority: false,
       primaryImageAssetId: null as string | null,
       basePrice: 0,
@@ -39,8 +38,6 @@ function TestWrapper() {
           namePlaceholder: 'e.g. Custom T-Shirt',
           description: 'Description',
           descriptionPlaceholder: 'Describe the product',
-          productionNotes: 'Production Notes',
-          productionNotesPlaceholder: 'Special instructions',
           priority: 'Priority product',
           priorityDescription:
             'Tasks spawned from this product will be marked priority.',
@@ -50,10 +47,22 @@ function TestWrapper() {
           maxQuantity: 'Max. Quantity',
           photo: 'Primary Photo',
           pricingAndOrders: 'Pricing & Orders',
+          advancedSettings: 'Advanced Pricing & Configurations',
+          advancedSettingsDescription:
+            'Configure repeat orders, volume pricing, and addons',
+          basePricingLimits: 'Base Pricing & Limits',
           negotiateAboveQuantity: 'Negotiate Above Quantity',
+          negotiateAboveQuantityDescription:
+            'Negotiate Above Quantity Description',
           repeatOrderUnitPrice: 'Repeat Order Unit Price',
+          repeatOrderUnitPriceDescription:
+            'Repeat Order Unit Price Description',
           repeatOrderMinQuantity: 'Repeat Order Min Quantity',
+          repeatOrderMinQuantityDescription:
+            'Repeat Order Min Quantity Description',
           maxProductionQuantity: 'Max Production Quantity',
+          maxProductionQuantityDescription:
+            'Max Production Quantity Description',
           pricing: {
             breakpoints: 'Pricing Breakpoints',
             addBreakpoint: 'Add Breakpoint',
