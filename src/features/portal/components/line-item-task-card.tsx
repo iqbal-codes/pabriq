@@ -82,17 +82,15 @@ export function LineItemTaskCard({
     <article className="overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
       <div className="grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:gap-4 sm:p-5">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
+          <h3 className="flex flex-wrap items-center gap-2 text-base font-semibold leading-tight">
             {statusText ? (
-              <Badge variant="secondary" className="capitalize">
+              <Badge variant="secondary" className="capitalize shrink-0">
                 {statusText}
               </Badge>
             ) : null}
-          </div>
-          <h3 className="mt-1 truncate text-base font-semibold leading-tight">
-            <span>{item.productName}</span>
+            <span className="min-w-0 truncate">{item.productName}</span>
             {getVisibleDesignName(item.designName, item.productName) && (
-              <span className="block text-xs text-muted-foreground">
+              <span className="block w-full text-xs font-normal text-muted-foreground mt-1">
                 {getVisibleDesignName(item.designName, item.productName)}
               </span>
             )}

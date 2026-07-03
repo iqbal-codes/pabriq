@@ -848,7 +848,7 @@ const id: Messages = {
     designNamePlaceholder:
       "Masukkan nama desain, nama artwork, atau label referensi",
     itemNotes: "Catatan / Spesifikasi",
-    itemNotesPlaceholder: "Tambahkan catatan atau spesifikasi untuk item ini",
+    itemNotesPlaceholder: "Ukuran tinggi dan lebar logo",
     attachment: "Lampiran",
     addAttachment: "Tambah lampiran",
     shippingAddress: "Alamat Pengiriman",

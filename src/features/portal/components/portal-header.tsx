@@ -1,6 +1,7 @@
 import { GalleryVerticalEnd } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
+import { LanguageToggle, ThemeToggle } from '#/components/app/header-controls'
 import { cn } from '#/lib/utils'
 
 interface PortalHeaderProps {
@@ -56,6 +57,10 @@ export function PortalHeader({
               </span>
             </>
           ) : null}
+        </div>
+        <div className="flex items-center gap-1">
+          <LanguageToggle />
+          <ThemeToggle />
         </div>
       </div>
     </header>

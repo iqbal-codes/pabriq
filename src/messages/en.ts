@@ -846,7 +846,7 @@ const en: Messages = {
     designNamePlaceholder:
       "Enter design name, artwork name, or reference label",
     itemNotes: "Notes / Specification",
-    itemNotesPlaceholder: "Add notes or specifications for this item",
+    itemNotesPlaceholder: "Logo height and width dimensions",
     attachment: "Attachment",
     addAttachment: "Add attachment",
     shippingAddress: "Shipping Address",
