@@ -526,6 +526,9 @@ const id: Messages = {
     photo: "Foto Utama",
     viewProduct: "Lihat Produk",
     editProduct: "Edit Produk",
+    advancedSettings: "Harga & Konfigurasi Lanjutan",
+    advancedSettingsDescription: "Konfigurasikan pesanan ulang, tingkatan harga volume, dan addon",
+    basePricingLimits: "Harga Dasar & Batas Kuantitas",
     pricing: {
       title: "Harga",
       breakpoints: "Tingkatan Harga",
@@ -541,9 +544,17 @@ const id: Messages = {
         "Harga menggunakan tingkatan terendah terdekat (step pricing)",
     },
     negotiateAboveQuantity: "Negosiasi Di Atas Kuantitas",
+    negotiateAboveQuantityDescription:
+      "Pesanan yang melebihi kuantitas ini akan memicu negosiasi manual, bukan harga satuan standar.",
     repeatOrderUnitPrice: "Harga Satuan Pesanan Ulang",
+    repeatOrderUnitPriceDescription:
+      "Harga satuan khusus untuk pesanan berulang dari pelanggan.",
     repeatOrderMinQuantity: "Min. Kuantitas Pesanan Ulang",
+    repeatOrderMinQuantityDescription:
+      "Kuantitas minimum untuk mendapatkan harga pesanan berulang.",
     maxProductionQuantity: "Maks. Kuantitas Produksi",
+    maxProductionQuantityDescription:
+      "Pesanan yang melebihi kuantitas ini tetap dapat diterima, tetapi waktu produksi mungkin lebih lama dari estimasi hari standar.",
     addons: {
       title: "Addon",
       addAddon: "Tambah Addon",
@@ -874,6 +885,7 @@ const id: Messages = {
     timelineStatusInProgress: "Dalam proses {stage}",
     timelineStatusCompleted: "Siap Kirim",
     timelineStatusWaitingApproval: "Menunggu persetujuan",
+    timelineReadyForProduction: "Siap Produksi",
 
     progressOverview: "Ringkasan cepat",
     progressStatusApprovedHelp:
@@ -894,7 +906,7 @@ const id: Messages = {
     nextStepDelivery: "Tunggu informasi serah terima pengiriman dari penjual.",
     nextStepCompleted: "Simpan halaman ini sebagai catatan pesanan Anda.",
     estimatedCompletionLabel: "Estimasi selesai",
-    completedOnLabel: "Siap Kirim pada",
+    completedOnLabel: "Selesai pada",
     orderInfoName: "Nama",
     orderInfoPhone: "No. Telepon",
     orderInfoAddress: "Alamat",
@@ -1007,6 +1019,8 @@ const id: Messages = {
     paymentSuccess: "Pembayaran berhasil!",
     paymentFailed: "Pembayaran gagal. Silakan coba lagi.",
     processingPayment: "Memproses...",
+    paymentVerifying: "Memverifikasi pembayaran Anda...",
+    paymentConfirmTimeout: "Pembayaran diterima tetapi konfirmasi membutuhkan waktu lebih lama dari biasanya. Silakan muat ulang sebentar lagi.",
   },
   combobox: {
     searchPlaceholder: "Cari...",
@@ -1030,6 +1044,16 @@ const id: Messages = {
     assistant: "Asisten",
     notConfigured: "Asisten AI belum dikonfigurasi.",
     genericError: "Asisten belum bisa menjawab. Coba lagi.",
+  },
+  operator: {
+    accessDeniedTitle: "Akses ditolak",
+    accessDeniedDescription: "Anda tidak memiliki akses ke halaman ini.",
+    backToProduction: "Kembali ke produksi",
+    backToDashboard: "Kembali ke dashboard",
+    noOrgHeader: "Tanpa organisasi",
+    noOrgTitle: "Belum tergabung organisasi",
+    noOrgDescription: "Akun Anda belum menjadi anggota organisasi mana pun. Hubungi administrator atau keluar.",
+    theme: "Tema",
   },
 };
 

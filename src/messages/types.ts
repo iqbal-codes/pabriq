@@ -515,6 +515,9 @@ export type Messages = {
     photo: string;
     viewProduct: string;
     editProduct: string;
+    advancedSettings: string;
+    advancedSettingsDescription: string;
+    basePricingLimits: string;
     createdAt: string;
     pricing: {
       title: string;
@@ -529,9 +532,13 @@ export type Messages = {
       interpolateOff: string;
     };
     negotiateAboveQuantity: string;
+    negotiateAboveQuantityDescription: string;
     repeatOrderUnitPrice: string;
+    repeatOrderUnitPriceDescription: string;
     repeatOrderMinQuantity: string;
+    repeatOrderMinQuantityDescription: string;
     maxProductionQuantity: string;
+    maxProductionQuantityDescription: string;
     addons: {
       title: string;
       addAddon: string;
@@ -855,6 +862,7 @@ export type Messages = {
     timelineStatusInProgress: string;
     timelineStatusCompleted: string;
     timelineStatusWaitingApproval: string;
+    timelineReadyForProduction: string;
 
     progressOverview: string;
     progressStatusApprovedHelp: string;
@@ -969,6 +977,8 @@ export type Messages = {
     paymentSuccess: string;
     paymentFailed: string;
     processingPayment: string;
+    paymentVerifying: string;
+    paymentConfirmTimeout: string;
   };
   assistant: {
     trigger: string;
@@ -985,5 +995,15 @@ export type Messages = {
     assistant: string;
     notConfigured: string;
     genericError: string;
+  };
+  operator: {
+    accessDeniedTitle: string;
+    accessDeniedDescription: string;
+    backToProduction: string;
+    backToDashboard: string;
+    noOrgHeader: string;
+    noOrgTitle: string;
+    noOrgDescription: string;
+    theme: string;
   };
 };

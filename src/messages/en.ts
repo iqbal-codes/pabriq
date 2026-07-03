@@ -524,6 +524,9 @@ const en: Messages = {
     createdAt: "Created At",
     viewProduct: "View Product",
     editProduct: "Edit Product",
+    advancedSettings: "Advanced Pricing & Configurations",
+    advancedSettingsDescription: "Configure repeat orders, volume pricing, and addons",
+    basePricingLimits: "Base Pricing & Limits",
     pricing: {
       title: "Pricing",
       breakpoints: "Pricing Breakpoints",
@@ -538,9 +541,17 @@ const en: Messages = {
       interpolateOff: "Prices use the nearest lower breakpoint (step pricing)",
     },
     negotiateAboveQuantity: "Negotiate Above Quantity",
+    negotiateAboveQuantityDescription:
+      "Orders exceeding this quantity trigger manual negotiations instead of standard unit/breakpoint pricing.",
     repeatOrderUnitPrice: "Repeat Order Unit Price",
+    repeatOrderUnitPriceDescription:
+      "Special unit price applied to repeat customer orders.",
     repeatOrderMinQuantity: "Repeat Order Min Quantity",
+    repeatOrderMinQuantityDescription:
+      "Minimum quantity required to qualify for repeat order pricing.",
     maxProductionQuantity: "Max Production Quantity",
+    maxProductionQuantityDescription:
+      "Orders exceeding this quantity can still be accepted, but production may take longer than the estimated days.",
     addons: {
       title: "Addons",
       addAddon: "Add Addon",
@@ -871,6 +882,7 @@ const en: Messages = {
     timelineStatusInProgress: "In progress: {stage}",
     timelineStatusCompleted: "Ready to Ship",
     timelineStatusWaitingApproval: "Awaiting approval",
+    timelineReadyForProduction: "Ready for Production",
 
     progressOverview: "At a glance",
     progressStatusApprovedHelp:
@@ -891,7 +903,7 @@ const en: Messages = {
     nextStepDelivery: "Wait for delivery handoff details from the seller.",
     nextStepCompleted: "Keep this page as your order record.",
     estimatedCompletionLabel: "Estimated completion",
-    completedOnLabel: "Ready to Ship on",
+    completedOnLabel: "Completed on",
     orderInfoName: "Name",
     orderInfoPhone: "Phone",
     orderInfoAddress: "Address",
@@ -1003,6 +1015,8 @@ const en: Messages = {
     paymentSuccess: "Payment successful!",
     paymentFailed: "Payment failed. Please try again.",
     processingPayment: "Processing...",
+    paymentVerifying: "Verifying your payment...",
+    paymentConfirmTimeout: "Payment received but confirmation is taking longer than expected. Please refresh shortly.",
   },
   combobox: {
     searchPlaceholder: "Search...",
@@ -1025,6 +1039,16 @@ const en: Messages = {
     assistant: "Assistant",
     notConfigured: "AI assistant is not configured.",
     genericError: "The assistant could not answer. Try again.",
+  },
+  operator: {
+    accessDeniedTitle: "Access denied",
+    accessDeniedDescription: "You don't have access to this page.",
+    backToProduction: "Back to production",
+    backToDashboard: "Back to dashboard",
+    noOrgHeader: "No organization",
+    noOrgTitle: "No organization assigned",
+    noOrgDescription: "Your account is not a member of any organization. Contact your administrator or sign out.",
+    theme: "Theme",
   },
 };
 

@@ -14,7 +14,7 @@ import {
 } from '#/components/ui/dropdown-menu'
 import { LOCALE_KEY } from '#/lib/i18n'
 
-function switchLocale(targetLocale: string) {
+export function switchLocale(targetLocale: string) {
   localStorage.setItem(LOCALE_KEY, targetLocale)
   Cookies.set(LOCALE_KEY, targetLocale, { path: '/', expires: 365 })
   window.location.reload()
