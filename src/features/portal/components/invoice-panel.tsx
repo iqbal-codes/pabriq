@@ -56,12 +56,31 @@ function InvoiceStatusPill({ invoice }: { invoice: PortalInvoice }) {
   return <StatusBadge status={invoice.status} />
 }
 
+function getInvoiceBadgeType(
+  invoice: PortalInvoice,
+  index: number,
+  totalCount: number,
+): 'dp' | 'settlement' | null {
+  if (totalCount > 1) {
+    if (index === totalCount - 1) {
+      return 'settlement'
+    }
+    return 'dp'
+  }
+  if (invoice.percentage !== null && invoice.percentage < 100) {
+    return 'dp'
+  }
+  return null
+}
+
 function InvoiceRow({
   invoice,
   token,
+  badgeType,
 }: {
   invoice: PortalInvoice
   token: string
+  badgeType: 'dp' | 'settlement' | null
 }) {
   const t = useTranslations('portal')
   const locale = useLocale()
@@ -82,6 +101,12 @@ function InvoiceRow({
             <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
               {invoice.invoiceNumber}
             </p>
+            {badgeType === 'dp' && (
+              <Badge variant="outline">{t('invoiceDownPayment')}</Badge>
+            )}
+            {badgeType === 'settlement' && (
+              <Badge variant="outline">{t('invoiceFinalPayment')}</Badge>
+            )}
             <InvoiceStatusPill invoice={invoice} />
           </div>
           <p className="mt-0.5 text-xl font-bold tabular-nums text-foreground">
@@ -136,7 +161,9 @@ function InvoiceRow({
 export function InvoicePanel({ invoices, token, showAboveFold }: Props) {
   const t = useTranslations('portal')
   const locale = useLocale()
-  const visibleInvoices = invoices.filter((inv) => inv.status !== 'void')
+  const visibleInvoices = invoices
+    .filter((inv) => inv.status !== 'void')
+    .sort((a, b) => a.invoiceNumber.localeCompare(b.invoiceNumber))
   const [expanded, setExpanded] = useState(Boolean(showAboveFold))
 
   if (visibleInvoices.length === 0) return null
@@ -190,9 +217,24 @@ export function InvoicePanel({ invoices, token, showAboveFold }: Props) {
         {t('invoicesSectionDescription')}
       </p>
       <ul className="divide-y divide-border">
-        {displayed.map((inv) => (
-          <InvoiceRow key={inv.id} invoice={inv} token={token} />
-        ))}
+        {displayed.map((inv) => {
+          const originalIndex = visibleInvoices.findIndex(
+            (v) => v.id === inv.id,
+          )
+          const badgeType = getInvoiceBadgeType(
+            inv,
+            originalIndex,
+            visibleInvoices.length,
+          )
+          return (
+            <InvoiceRow
+              key={inv.id}
+              invoice={inv}
+              token={token}
+              badgeType={badgeType}
+            />
+          )
+        })}
       </ul>
       {remainingCount > 0 ? (
         <div className="border-t border-border">

@@ -1025,6 +1025,8 @@ const id: Messages = {
     invoicesSectionDescription:
       "Unduh invoice dan unggah bukti pembayaran di sini.",
     invoicePaidOn: "Lunas",
+    invoiceDownPayment: "Down Payment",
+    invoiceFinalPayment: "Pelunasan",
     invoiceUnpaidNoDue: "Belum dibayar",
     invoiceDueLabel: "Jatuh tempo {date}",
     invoiceOverdueOn: "Terlambat {date}",

@@ -980,6 +980,8 @@ export type Messages = {
     invoicesSectionTitle: string;
     invoicesSectionDescription: string;
     invoicePaidOn: string;
+    invoiceDownPayment: string;
+    invoiceFinalPayment: string;
     invoiceUnpaidNoDue: string;
     invoiceDueLabel: string;
     invoiceOverdueOn: string;

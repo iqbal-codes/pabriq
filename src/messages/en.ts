@@ -1022,6 +1022,8 @@ const en: Messages = {
     invoicesSectionDescription:
       "Download invoices and upload payment proof here.",
     invoicePaidOn: "Paid",
+    invoiceDownPayment: "Down Payment",
+    invoiceFinalPayment: "Final Payment",
     invoiceUnpaidNoDue: "Unpaid",
     invoiceDueLabel: "Due {date}",
     invoiceOverdueOn: "Overdue {date}",

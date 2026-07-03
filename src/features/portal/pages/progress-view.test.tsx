@@ -97,6 +97,8 @@ const messages = {
     invoiceShowAll: 'Lihat semua ({count})',
     invoiceShowLess: 'Sembunyikan',
     invoicePaidOn: 'Lunas',
+    invoiceDownPayment: 'Down Payment',
+    invoiceFinalPayment: 'Pelunasan',
     invoiceUnpaidNoDue: 'Belum dibayar',
     invoiceDueLabel: 'Jatuh tempo {date}',
     invoiceOverdueOn: 'Terlambat {date}',
@@ -179,7 +181,7 @@ function renderProgressView(order = makeOrder()) {
   )
 }
 
-describe.skip('ProgressView', () => {
+describe('ProgressView', () => {
   it('renders the estimated completion from the max line item deadline', () => {
     renderProgressView()
     expect(screen.getAllByText(/10 Jan 2026/).length).toBeGreaterThanOrEqual(1)
@@ -313,6 +315,36 @@ describe.skip('ProgressView', () => {
 
     expect(screen.getByText('Invoice dan pembayaran')).toBeInTheDocument()
     expect(screen.getByText(/1 belum dibayar/)).toBeInTheDocument()
+    expect(screen.getByText('Down Payment')).toBeInTheDocument()
+    expect(screen.getByText('Pelunasan')).toBeInTheDocument()
+  })
+
+  it('renders Down Payment badge for a single invoice with percentage < 100', () => {
+    renderProgressView(
+      makeOrder({
+        invoices: [
+          {
+            id: 'inv-1',
+            invoiceNumber: 'INV-1',
+            total: 50000,
+            percentage: 50,
+            dueDate: '2099-01-10',
+            status: 'unpaid',
+            paymentMethodName: null,
+            paymentMethodType: null,
+            paymentMethodBankName: null,
+            paymentMethodAccountNumber: null,
+            paymentMethodAccountHolder: null,
+            paymentMethodInstructions: null,
+            hasPaymentProof: false,
+            shippingFee: null,
+          },
+        ],
+      }),
+    )
+
+    expect(screen.getByText('Down Payment')).toBeInTheDocument()
+    expect(screen.queryByText('Pelunasan')).not.toBeInTheDocument()
   })
 
   it('renders completed portal status as Selesai instead of Siap Kirim', () => {
