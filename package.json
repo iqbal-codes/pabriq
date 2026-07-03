@@ -23,7 +23,7 @@
     "load-env-test": "infisical run --env=staging --projectId=40d6476c-55e5-4e1b-8079-b251009c6772",
     "typecheck": "tsc --noEmit",
     "format": "biome format --write .",
-    "start": "srvx serve --prod --import ./dist/server/instrument.server.mjs --entry ./dist/server/server.js -s ./dist/client",
+    "start": "srvx serve --prod --import ./dist/server/instrument.server.mjs --entry ./dist/server/server.js -s ../client",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "bun run load-env -- drizzle-kit push",
