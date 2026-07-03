@@ -1,49 +1,49 @@
-import { Link } from '@tanstack/react-router'
-import { Eye, Printer } from 'lucide-react'
-import { useTranslations } from 'use-intl'
-import { AssetImage } from '#/components/app/asset-image'
-import { StatusBadge } from '#/components/status-badge'
-import { Button } from '#/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import { Link } from "@tanstack/react-router";
+import { Eye, Printer } from "lucide-react";
+import { useTranslations } from "use-intl";
+import { AssetImage } from "#/components/app/asset-image";
+import { StatusBadge } from "#/components/status-badge";
+import { Button } from "#/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '#/components/ui/tooltip'
-import type { InvoiceRow } from '#/features/invoices/model'
-import { currencyFormatter } from './view-order-utils'
+} from "#/components/ui/tooltip";
+import type { InvoiceRow } from "#/features/invoices/model";
+import { currencyFormatter } from "./view-order-utils";
 
 export function OrderInvoicesCard({
   orderInvoices,
   invoicePayments,
 }: {
-  orderInvoices: InvoiceRow[]
-  invoicePayments: Record<string, Array<{ id: string; proofAssetId: string }>>
+  orderInvoices: InvoiceRow[];
+  invoicePayments: Record<string, Array<{ id: string; proofAssetId: string }>>;
 }) {
-  const it = useTranslations('invoices')
+  const it = useTranslations("invoices");
 
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">{it('title')}</CardTitle>
+          <CardTitle className="text-base">{it("title")}</CardTitle>
           <span className="text-xs text-muted-foreground">
-            {orderInvoices.length}{' '}
-            {orderInvoices.length === 1 ? 'invoice' : 'invoices'}
+            {orderInvoices.length}{" "}
+            {orderInvoices.length === 1 ? "invoice" : "invoices"}
           </span>
         </div>
       </CardHeader>
       <CardContent className="p-0 pb-4">
         {orderInvoices.length === 0 ? (
           <p className="px-6 text-sm text-muted-foreground">
-            {it('noInvoices')}
+            {it("noInvoices")}
           </p>
         ) : (
           <div className="mx-4 rounded-xl border bg-muted/50 p-1.5">
             <div className="rounded-lg border bg-background overflow-hidden divide-y divide-border">
               {orderInvoices.map((inv) => {
-                const payments = invoicePayments?.[inv.id] ?? []
-                const proofPayments = payments.filter((p) => p.proofAssetId)
+                const payments = invoicePayments?.[inv.id] ?? [];
+                const proofPayments = payments.filter((p) => p.proofAssetId);
 
                 return (
                   <div
@@ -71,11 +71,6 @@ export function OrderInvoicesCard({
                           <p className="font-semibold text-sm tabular-nums">
                             {currencyFormatter.format(inv.total)}
                           </p>
-                          {inv.percentage != null && (
-                            <p className="text-[11px] text-muted-foreground">
-                              {inv.percentage}% of order
-                            </p>
-                          )}
                         </div>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -89,7 +84,7 @@ export function OrderInvoicesCard({
                               </a>
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>{it('printInvoice')}</TooltipContent>
+                          <TooltipContent>{it("printInvoice")}</TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -99,7 +94,7 @@ export function OrderInvoicesCard({
                               </Link>
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>{it('viewInvoice')}</TooltipContent>
+                          <TooltipContent>{it("viewInvoice")}</TooltipContent>
                         </Tooltip>
                       </div>
                     </div>
@@ -108,7 +103,7 @@ export function OrderInvoicesCard({
                     {proofPayments.length > 0 && (
                       <div className="mt-2.5">
                         <p className="mb-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                          {it('paymentProof')}
+                          {it("paymentProof")}
                         </p>
                         <div className="flex gap-1.5">
                           {proofPayments.map((p) => (
@@ -127,12 +122,12 @@ export function OrderInvoicesCard({
                       </div>
                     )}
                   </div>
-                )
+                );
               })}
             </div>
           </div>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
