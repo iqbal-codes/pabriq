@@ -35,5 +35,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOST=0.0.0.0
 
-# Start the server using node and import sentry instrumentation
-CMD ["node", "--import", "./dist/server/instrument.server.mjs", "dist/server/server.js"]
+CMD ["npm", "run", "start"]
