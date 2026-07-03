@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
+import type { OrderTaskEvent } from '#/features/portal/model'
 import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 import { queryKeys } from '#/lib/query-keys'
 import type { MutationResult } from '#/lib/server-results'
@@ -10,6 +11,7 @@ import {
   approveTaskAdvanceFn,
   createStageFn,
   deleteStageFn,
+  getOrderTasksTimelineFn,
   getTaskCountsFn,
   getTaskDetailFn,
   listArchivedTasksFn,
@@ -310,4 +312,12 @@ export function useTaskMutations() {
   })
 
   return { advanceTask, approveAdvance, rejectAdvance, saveComment }
+}
+
+export function useOrderTasksTimeline(orderId: string) {
+  return useQuery<OrderTaskEvent[], Error>({
+    queryKey: queryKeys.production.timeline(orderId),
+    queryFn: () => getOrderTasksTimelineFn({ data: { orderId } }),
+    enabled: !!orderId,
+  })
 }

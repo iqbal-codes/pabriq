@@ -288,7 +288,7 @@ const enMessages = {
     required: 'Required',
     optional: 'Optional',
     reorder: 'Reorder',
-    movedToStage: 'Moved to {stage}',
+    movedToStage: 'Moved to next stage',
     advancedFromQueue: 'Advanced from Queue',
     advancementRequested: 'Advancement requested',
     approved: 'Approved by {actor}',

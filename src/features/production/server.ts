@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
+import type { OrderTaskEvent } from '#/features/portal/model'
 import { resolveOrgId } from '#/lib/auth-session'
 import type { MutationResult } from '#/lib/server-results'
 import type { CreateStageInput, Stage, UpdateStageInput } from './model'
@@ -360,4 +361,126 @@ export const listTasksByOrderIdFn = createServerFn({ method: 'GET' })
       },
       stage: t.stageId ? (stageMap.get(t.stageId) ?? null) : null,
     }))
+  })
+
+export const getOrderTasksTimelineFn = createServerFn({ method: 'GET' })
+  .inputValidator((input: { orderId: string }) => input)
+  .handler(async ({ data }): Promise<OrderTaskEvent[]> => {
+    const [
+      orgId,
+      { db },
+      { productionStages, productionTasks, taskActivity },
+      { eq, and, or, inArray, asc },
+      { buildTimelineEvents, extractActivityIndexes },
+    ] = await Promise.all([
+      resolveOrgId(),
+      import('#/db/index'),
+      import('#/db/schema'),
+      import('drizzle-orm'),
+      import('#/features/portal/model'),
+    ])
+
+    // Get all production stages for this org
+    const allStages = await db
+      .select({
+        id: productionStages.id,
+        name: productionStages.name,
+        requirements: productionStages.requirements,
+      })
+      .from(productionStages)
+      .where(eq(productionStages.orgId, orgId))
+    const stageNameMap = new Map(allStages.map((s) => [s.id, s.name]))
+    const stageReqMap = new Map<
+      string,
+      Array<{ id: string; label: string; type: string }>
+    >()
+    for (const stage of allStages) {
+      const requirements = stage.requirements as unknown as Array<{
+        id: string
+        label: string
+        type: string
+      }> | null
+      if (requirements && requirements.length > 0) {
+        stageReqMap.set(stage.id, requirements)
+      }
+    }
+
+    // Query production_tasks for this order
+    const tasks = (
+      await db
+        .select({
+          id: productionTasks.id,
+          taskNumber: productionTasks.taskNumber,
+          lineItemId: productionTasks.lineItemId,
+          context: productionTasks.context,
+          stageId: productionTasks.stageId,
+          status: productionTasks.status,
+        })
+        .from(productionTasks)
+        .where(
+          and(
+            eq(productionTasks.orgId, orgId),
+            eq(productionTasks.orderId, data.orderId),
+          ),
+        )
+    ).map((t) => ({
+      ...t,
+      context: t.context as { productName?: string } | null,
+    }))
+
+    if (tasks.length === 0) return []
+    const taskIds = tasks.map((t) => t.id)
+
+    // Query task_activity for stage transitions
+    const activities = (
+      await db
+        .select({
+          id: taskActivity.id,
+          taskId: taskActivity.taskId,
+          type: taskActivity.type,
+          fromStageId: taskActivity.fromStageId,
+          toStageId: taskActivity.toStageId,
+          data: taskActivity.data,
+          createdAt: taskActivity.createdAt,
+        })
+        .from(taskActivity)
+        .where(
+          and(
+            inArray(taskActivity.taskId, taskIds),
+            or(
+              eq(taskActivity.type, 'stage_transition'),
+              eq(taskActivity.type, 'created'),
+              eq(taskActivity.type, 'completed'),
+              eq(taskActivity.type, 'board_transition'),
+            ),
+          ),
+        )
+        .orderBy(asc(taskActivity.createdAt))
+    ).map((act) => ({
+      ...act,
+      data: act.data as unknown,
+    }))
+
+    const activityIndexes = extractActivityIndexes(activities)
+
+    // Build index: taskId → all activities (for stage transitions)
+    const activitiesByTaskId = new Map<string, typeof activities>()
+    for (const activity of activities) {
+      const list = activitiesByTaskId.get(activity.taskId) ?? []
+      list.push(activity)
+      activitiesByTaskId.set(activity.taskId, list)
+    }
+
+    const events = buildTimelineEvents({
+      tasks,
+      stageNameMap,
+      stageReqMap,
+      activityIndexes,
+      activitiesByTaskId,
+    })
+
+    return events.sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    )
   })
