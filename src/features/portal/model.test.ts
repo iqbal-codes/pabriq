@@ -7,6 +7,7 @@ import {
   assetVariants,
   biteshipAreas,
   customers as customersTable,
+  invoices,
   orderLineItems,
   orders,
   organization,
@@ -209,6 +210,36 @@ describe('getPortalOrder', () => {
       expect(result.order.lineItems[0].assetIds).toContain(asset1Id)
     }
   })
+
+  it('returns invoices with expected data', async () => {
+    await db.insert(invoices).values({
+      id: '00000000-0000-0000-0000-000000000014',
+      orgId: org1Id,
+      invoiceNumber: 'INV-2026-001',
+      orderId: order1Id,
+      customerId: customer1Id,
+      customerName: 'Customer 1',
+      status: 'unpaid',
+      percentage: 100,
+      subtotal: 10000,
+      total: 10000,
+      dueDate: '2026-08-01',
+      issuedDate: '2026-07-01',
+      createdAt: new Date('2026-07-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-01T00:00:00.000Z'),
+    })
+    const token = await generateOrderToken(order1Id)
+    const result = await getPortalOrder(token)
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.order.invoices).toBeDefined()
+      expect(result.order.invoices.length).toBe(1)
+      expect(result.order.invoices[0].invoiceNumber).toBe('INV-2026-001')
+      expect(result.order.invoices[0].total).toBe(10000)
+      expect(result.order.invoices[0].status).toBe('unpaid')
+    }
+  })
+
 })
 
 describe('confirmPortalOrder', () => {

@@ -82,6 +82,8 @@ export type PortalOrder = {
   createdAt: Date
   rejectReason?: string | null
   productionFirstStageName?: string | null
+  courier: string | null
+  trackingNumber: string | null
 }
 
 export type ConfirmPortalOrderInput = {
@@ -407,6 +409,8 @@ export async function getPortalOrder(
       createdAt: order.createdAt,
       rejectReason: order.rejectReason ?? null,
       productionFirstStageName,
+      courier: order.courier ?? null,
+      trackingNumber: order.trackingNumber ?? null,
     },
   }
 }

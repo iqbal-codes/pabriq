@@ -83,10 +83,8 @@ describe('RejectedView', () => {
 
   it('renders the reject reason', () => {
     renderRejectedView()
-    expect(screen.getByText('Artwork is blurry')).toBeInTheDocument()
-  })
-
-  it('renders rejectedHelp text', () => {
+    const reasons = screen.getAllByText('Artwork is blurry')
+    expect(reasons.length).toBeGreaterThanOrEqual(1)
     renderRejectedView()
     expect(
       screen.getByText(

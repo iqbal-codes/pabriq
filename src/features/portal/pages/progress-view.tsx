@@ -1,4 +1,7 @@
+import { Copy, Truck } from 'lucide-react'
 import { useLocale, useTranslations } from 'use-intl'
+import { Button } from '#/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { StatusBadge } from '#/components/status-badge'
 import { CustomerInfoCard } from '#/features/portal/components/customer-info-card'
 import { ShippingAddressCard } from '#/features/portal/components/shipping-address-card'
@@ -126,6 +129,46 @@ export function ProgressView({
           photoAssetId={order.customerPhotoAssetId}
         />
         <ShippingAddressCard address={order.shippingAddress} />
+        {(order.courier || order.trackingNumber) && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Truck className="size-4" />
+                <CardTitle>{t('shipmentTracking')}</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {order.courier && (
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    {t('orderInfoName')}
+                  </p>
+                  <p className="font-medium">{order.courier}</p>
+                </div>
+              )}
+              {order.trackingNumber && (
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    {t('orderNumber')}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-mono">{order.trackingNumber}</p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-6"
+                      onClick={() =>
+                        navigator.clipboard.writeText(order.trackingNumber ?? '')
+                      }
+                    >
+                      <Copy className="size-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Invoices inline */}
