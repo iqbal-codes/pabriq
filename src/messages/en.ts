@@ -202,6 +202,40 @@ const en: Messages = {
       "Manual deadline is required for quantities exceeding production capacity",
     quantityExceedsProductionCap:
       "Quantity exceeds production capacity. A manual deadline is required.",
+    createOrderFailed: "Could not create the order. Check setup and try again.",
+    setupMissionLocked: "Setup required",
+    setupMissionTitle: "Finish setup before creating orders",
+    setupMissionDescription:
+      "Orders depend on your business address, production workflow, product catalog, and payment instructions. Complete these once, then order creation unlocks.",
+    setupMissionProgress: "{completed} of {total} ready",
+    setupMissionListLabel: "Order setup checklist",
+    setupMissionComplete: "Ready",
+    setupMissionIncomplete: "Needed",
+    setupBusinessAddressTitle: "Set business address",
+    setupBusinessAddressDesc:
+      "Used on quotations, invoices, and delivery details.",
+    setupBusinessAddressAction: "Set address",
+    setupProductionStagesTitle: "Create a production stage",
+    setupProductionStagesDesc:
+      "Add at least one active Production stage so approved orders can move to the floor.",
+    setupProductionStagesAction: "Configure stages",
+    setupFirstProductTitle: "Create your first product",
+    setupFirstProductDesc:
+      "Orders need an active product with pricing and production days.",
+    setupFirstProductAction: "Create product",
+    setupPaymentMethodTitle: "Add a payment method",
+    setupPaymentMethodDesc:
+      "Invoices need bank or payment instructions before customers can pay.",
+    setupPaymentMethodAction: "Add payment method",
+    setupMissionHelpTitle: "Why this gate exists",
+    setupMissionHelpBody:
+      "Creating an order too early leaves gaps that break downstream work.",
+    setupMissionHelpAddress:
+      "Address data keeps quotations, invoices, and delivery records consistent.",
+    setupMissionHelpProduction:
+      "Production stages define where approved work lands on the board.",
+    setupMissionHelpPayment:
+      "Payment methods make invoices actionable for customers from the first order.",
   },
   breadcrumb: {
     dashboard: "Dashboard",

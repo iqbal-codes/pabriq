@@ -2,16 +2,21 @@ import { eq, sql } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '#/db/index'
 import {
+  addresses as addressesTable,
   pricingBreakpoints as breakpointsTable,
   customers as customersTable,
   orderLineItems as lineItemsTable,
   orders as ordersTable,
   organization,
+  organizationProfiles as orgProfilesTable,
+  paymentMethods as paymentMethodsTable,
   products as productsTable,
+  productionStages as stagesTable,
 } from '#/db/schema'
 import {
   createDraftOrder,
   getOrder,
+  getOrderCreationReadiness,
   listOrders,
   updateDraftOrder,
 } from './model'
@@ -707,5 +712,194 @@ describe('listOrders sorting', () => {
       perPage: 10,
     })
     expect(descResult.rows.map((r) => r.id)).toEqual([lateId, earlyId, noneId])
+  })
+})
+
+describe('getOrderCreationReadiness', () => {
+  const addressId = 'a0000000-0000-0000-0000-000000000001'
+  const profileId = 'p0000000-0000-0000-0000-000000000001'
+
+  async function seedAddress(areaId: string, streetAddress: string) {
+    await db.insert(addressesTable).values({
+      id: addressId,
+      orgId: org1Id,
+      areaId,
+      areaName: 'Test Area',
+      streetAddress,
+    })
+  }
+
+  async function seedProfileWithAddress(addressRef?: string | null) {
+    await db.insert(orgProfilesTable).values({
+      id: profileId,
+      orgId: org1Id,
+      ...(addressRef === null
+        ? { addressId: null }
+        : { addressId: addressRef ?? addressId }),
+    })
+  }
+
+  async function seedStage(opts?: { board?: string; active?: boolean }) {
+    await db.insert(stagesTable).values({
+      id: `s-${crypto.randomUUID()}`,
+      orgId: org1Id,
+      name: 'Print',
+      board: opts?.board ?? 'production',
+      active: opts?.active ?? true,
+    })
+  }
+
+  async function seedProduct(active = true) {
+    await db.insert(productsTable).values({
+      id: `prod-${crypto.randomUUID()}`,
+      orgId: org1Id,
+      name: 'T-Shirt',
+      active,
+    })
+  }
+
+  async function seedPaymentMethod(active = true) {
+    await db.insert(paymentMethodsTable).values({
+      id: `pm-${crypto.randomUUID()}`,
+      orgId: org1Id,
+      name: 'Bank Transfer',
+      active,
+    })
+  }
+
+  it('returns all-incomplete readiness for an empty org', async () => {
+    const result = await getOrderCreationReadiness(org1Id)
+
+    expect(result.isReady).toBe(false)
+    expect(result.businessAddressComplete).toBe(false)
+    expect(result.productionStageCount).toBe(0)
+    expect(result.activeProductCount).toBe(0)
+    expect(result.paymentMethodCount).toBe(0)
+    expect(result.completedCount).toBe(0)
+    expect(result.totalCount).toBe(4)
+  })
+
+  describe('business address prerequisite', () => {
+    it('marks complete when address has non-empty areaId and streetAddress', async () => {
+      await seedAddress('area-123', '123 Main St')
+      await seedProfileWithAddress()
+
+      const result = await getOrderCreationReadiness(org1Id)
+      expect(result.businessAddressComplete).toBe(true)
+      expect(result.completedCount).toBe(1)
+    })
+
+    it('marks incomplete when address has empty areaId', async () => {
+      await seedAddress('', '123 Main St')
+      await seedProfileWithAddress()
+
+      const result = await getOrderCreationReadiness(org1Id)
+      expect(result.businessAddressComplete).toBe(false)
+    })
+
+    it('marks incomplete when address has empty streetAddress', async () => {
+      await seedAddress('area-123', '')
+      await seedProfileWithAddress()
+
+      const result = await getOrderCreationReadiness(org1Id)
+      expect(result.businessAddressComplete).toBe(false)
+    })
+
+    it('marks incomplete when profile exists but has no linked address', async () => {
+      await seedProfileWithAddress(null)
+
+      const result = await getOrderCreationReadiness(org1Id)
+      expect(result.businessAddressComplete).toBe(false)
+    })
+  })
+
+  describe('production stage prerequisite', () => {
+    it('counts an active production-board stage', async () => {
+      await seedStage({ board: 'production', active: true })
+
+      const result = await getOrderCreationReadiness(org1Id)
+      expect(result.productionStageCount).toBe(1)
+      expect(result.completedCount).toBe(1)
+    })
+
+    it('ignores pre-production-only stages', async () => {
+      await seedStage({ board: 'pre_production', active: true })
+
+      const result = await getOrderCreationReadiness(org1Id)
+      expect(result.productionStageCount).toBe(0)
+    })
+
+    it('ignores inactive stages', async () => {
+      await seedStage({ board: 'production', active: false })
+
+      const result = await getOrderCreationReadiness(org1Id)
+      expect(result.productionStageCount).toBe(0)
+    })
+  })
+
+  describe('product prerequisite', () => {
+    it('counts active products', async () => {
+      await seedProduct(true)
+
+      const result = await getOrderCreationReadiness(org1Id)
+      expect(result.activeProductCount).toBe(1)
+      expect(result.completedCount).toBe(1)
+    })
+
+    it('ignores inactive products', async () => {
+      await seedProduct(false)
+
+      const result = await getOrderCreationReadiness(org1Id)
+      expect(result.activeProductCount).toBe(0)
+    })
+  })
+
+  describe('payment method prerequisite', () => {
+    it('counts active payment methods', async () => {
+      await seedPaymentMethod(true)
+
+      const result = await getOrderCreationReadiness(org1Id)
+      expect(result.paymentMethodCount).toBe(1)
+      expect(result.completedCount).toBe(1)
+    })
+
+    it('ignores inactive payment methods', async () => {
+      await seedPaymentMethod(false)
+
+      const result = await getOrderCreationReadiness(org1Id)
+      expect(result.paymentMethodCount).toBe(0)
+    })
+  })
+
+  it('returns partial readiness when some but not all prerequisites are met', async () => {
+    await seedAddress('area-123', '123 Main St')
+    await seedProfileWithAddress()
+    await seedStage({ board: 'production', active: true })
+
+    const result = await getOrderCreationReadiness(org1Id)
+    expect(result.isReady).toBe(false)
+    expect(result.businessAddressComplete).toBe(true)
+    expect(result.productionStageCount).toBe(1)
+    expect(result.activeProductCount).toBe(0)
+    expect(result.paymentMethodCount).toBe(0)
+    expect(result.completedCount).toBe(2)
+    expect(result.totalCount).toBe(4)
+  })
+
+  it('returns fully ready when all four prerequisites are met', async () => {
+    await seedAddress('area-123', '123 Main St')
+    await seedProfileWithAddress()
+    await seedStage({ board: 'production', active: true })
+    await seedProduct(true)
+    await seedPaymentMethod(true)
+
+    const result = await getOrderCreationReadiness(org1Id)
+    expect(result.isReady).toBe(true)
+    expect(result.businessAddressComplete).toBe(true)
+    expect(result.productionStageCount).toBe(1)
+    expect(result.activeProductCount).toBe(1)
+    expect(result.paymentMethodCount).toBe(1)
+    expect(result.completedCount).toBe(4)
+    expect(result.totalCount).toBe(4)
   })
 })

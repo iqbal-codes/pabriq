@@ -5,11 +5,16 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { queryKeys } from '#/lib/query-keys'
-import type { CreateDraftOrderInput, ListOrdersParams } from './model'
+import type {
+  CreateDraftOrderInput,
+  ListOrdersParams,
+  OrderCreationReadiness,
+} from './model'
 import {
   advanceOrderStatusFn,
   completeProductionFn,
   createDraftOrderFn,
+  getOrderCreationReadinessFn,
   getOrderFn,
   listOrdersFn,
   updateDraftOrderFn,
@@ -26,6 +31,12 @@ export function useOrder(params: { id: string; orgId: string }) {
   return useSuspenseQuery({
     queryKey: queryKeys.orders.detail(params.id),
     queryFn: () => getOrderFn({ data: params }),
+  })
+}
+export function useOrderCreationReadiness() {
+  return useQuery<OrderCreationReadiness>({
+    queryKey: queryKeys.orders.creationReadiness(),
+    queryFn: () => getOrderCreationReadinessFn({ data: {} }),
   })
 }
 

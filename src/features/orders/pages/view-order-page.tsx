@@ -485,6 +485,7 @@ export function ViewOrderPage() {
           remainingAmount: derived.remainingAmt,
           customerId: order.customerId,
           customerName,
+          shippingAddress,
         }}
       />
 

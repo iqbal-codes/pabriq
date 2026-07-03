@@ -1,13 +1,17 @@
 import { and, desc, eq, ilike, inArray, or, type SQL, sql } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
+  addresses as addressesTable,
   assets as assetsTable,
   customers as customersTable,
   invoices as invoicesTable,
   orderLineItemAddons as lineItemAddonsTable,
   orderLineItems as lineItemsTable,
   orders as ordersTable,
+  organizationProfiles as organizationProfilesTable,
+  paymentMethods as paymentMethodsTable,
   productAddons as productAddonsTable,
+  productionStages as productionStagesTable,
   products as productsTable,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
@@ -112,6 +116,15 @@ export type UpdateDraftOrderResult = {
   order: Order
   lineItems: OrderLineItem[]
 }
+export type OrderCreationReadiness = {
+  businessAddressComplete: boolean
+  productionStageCount: number
+  activeProductCount: number
+  paymentMethodCount: number
+  completedCount: number
+  totalCount: number
+  isReady: boolean
+}
 
 export type GetOrderResult = {
   order: Order
@@ -155,6 +168,83 @@ export type ListOrdersResult = {
 
 function generateId(): string {
   return crypto.randomUUID()
+}
+
+const ORDER_CREATION_READINESS_TOTAL = 4
+
+export async function getOrderCreationReadiness(
+  orgId: string,
+): Promise<OrderCreationReadiness> {
+  const [addressRows, stageRows, productRows, paymentMethodRows] =
+    await Promise.all([
+      db
+        .select({
+          areaId: addressesTable.areaId,
+          streetAddress: addressesTable.streetAddress,
+        })
+        .from(organizationProfilesTable)
+        .leftJoin(
+          addressesTable,
+          eq(organizationProfilesTable.addressId, addressesTable.id),
+        )
+        .where(eq(organizationProfilesTable.orgId, orgId))
+        .limit(1),
+      db
+        .select({ id: productionStagesTable.id })
+        .from(productionStagesTable)
+        .where(
+          and(
+            eq(productionStagesTable.orgId, orgId),
+            eq(productionStagesTable.board, 'production'),
+            eq(productionStagesTable.active, true),
+          ),
+        )
+        .limit(1),
+      db
+        .select({ id: productsTable.id })
+        .from(productsTable)
+        .where(
+          and(eq(productsTable.orgId, orgId), eq(productsTable.active, true)),
+        )
+        .limit(1),
+      db
+        .select({ id: paymentMethodsTable.id })
+        .from(paymentMethodsTable)
+        .where(
+          and(
+            eq(paymentMethodsTable.orgId, orgId),
+            eq(paymentMethodsTable.active, true),
+          ),
+        )
+        .limit(1),
+    ])
+
+  const address = addressRows[0]
+  const businessAddressComplete =
+    address !== undefined &&
+    typeof address.areaId === 'string' &&
+    address.areaId.trim().length > 0 &&
+    typeof address.streetAddress === 'string' &&
+    address.streetAddress.trim().length > 0
+  const productionStageCount = stageRows.length
+  const activeProductCount = productRows.length
+  const paymentMethodCount = paymentMethodRows.length
+  const completedCount = [
+    businessAddressComplete,
+    productionStageCount > 0,
+    activeProductCount > 0,
+    paymentMethodCount > 0,
+  ].filter(Boolean).length
+
+  return {
+    businessAddressComplete,
+    productionStageCount,
+    activeProductCount,
+    paymentMethodCount,
+    completedCount,
+    totalCount: ORDER_CREATION_READINESS_TOTAL,
+    isReady: completedCount === ORDER_CREATION_READINESS_TOTAL,
+  }
 }
 
 async function generateOrderNumber(orgId: string): Promise<string> {

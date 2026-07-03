@@ -4,9 +4,11 @@ import { resolveOrgId } from '#/lib/auth-session'
 import type { MutationResult } from '#/lib/server-results'
 import type {
   CreateDraftOrderInput,
+  CreateDraftOrderResult,
   GetOrderResult,
   ListOrdersParams,
   ListOrdersResult,
+  OrderCreationReadiness,
   UpdateDraftOrderInput,
 } from './model'
 
@@ -24,16 +26,32 @@ export const getOrderFn = createServerFn({ method: 'GET' })
     return getOrder(data.id, data.orgId)
   })
 
+export const getOrderCreationReadinessFn = createServerFn({ method: 'GET' })
+  .inputValidator((data: Record<string, never>) => data)
+  .handler(async (): Promise<OrderCreationReadiness> => {
+    const [orgId, { getOrderCreationReadiness }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
+    return getOrderCreationReadiness(orgId)
+  })
+
+
 export const createDraftOrderFn = createServerFn({ method: 'POST' })
   .inputValidator(
     (input: Omit<CreateDraftOrderInput, 'orgId'> & { orgId: string }) => input,
   )
-  .handler(async ({ data }) => {
-    const [orgId, { createDraftOrder }] = await Promise.all([
+  .handler(async ({ data }): Promise<CreateDraftOrderResult> => {
+    const [orgId, orderModel] = await Promise.all([
       resolveOrgId(),
       import('./model'),
     ])
-    return createDraftOrder(orgId, {
+    const readiness = await orderModel.getOrderCreationReadiness(orgId)
+    if (!readiness.isReady) {
+      throw new Error('Complete order setup before creating an order')
+    }
+
+    return orderModel.createDraftOrder(orgId, {
       customerId: data.customerId,
       notes: data.notes,
       lineItems: data.lineItems,

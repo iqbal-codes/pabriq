@@ -18,9 +18,14 @@ import {
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { useCustomersList } from '#/features/customers/hooks'
+import { OrderCreationMissionOverlay } from '#/features/orders/components/order-creation-mission-overlay'
 import { OrderFormFields } from '#/features/orders/components/order-form-fields'
 import { defaultOrderValues } from '#/features/orders/components/order-form-types'
-import { useCreateDraftOrder } from '#/features/orders/hooks'
+import {
+  useCreateDraftOrder,
+  useOrderCreationReadiness,
+} from '#/features/orders/hooks'
+import type { CreateDraftOrderResult } from '#/features/orders/model'
 import { useProductsList } from '#/features/products/hooks'
 
 const currencyFormatter = new Intl.NumberFormat('en-ID', {
@@ -30,6 +35,28 @@ const currencyFormatter = new Intl.NumberFormat('en-ID', {
 })
 
 export function CreateOrderPage() {
+  const t = useTranslations('orders')
+  const ct = useTranslations('common')
+  const { data: readiness, isLoading } = useOrderCreationReadiness()
+
+  if (isLoading || !readiness || !readiness.isReady) {
+    return (
+      <PageContent>
+        <PageHeader
+          title={t('createOrder')}
+          backAction={{ label: ct('back'), href: '/orders' }}
+        />
+        <OrderCreationMissionOverlay
+          readiness={isLoading ? null : (readiness ?? null)}
+        />
+      </PageContent>
+    )
+  }
+
+  return <CreateOrderForm />
+}
+
+function CreateOrderForm() {
   const navigate = useNavigate()
   const ctx = useRouteContext({ from: '/_org/orders/new' }) as {
     org: { id: string }
@@ -57,7 +84,6 @@ export function CreateOrderPage() {
       const validItems = value.lineItems.filter((i) => i.productId)
       if (validItems.length === 0) return
 
-      // Validate manual deadlines before submit
       for (const i of validItems) {
         if (i.manualDeadline && !i.deadline) {
           toast.error(t('manualDeadlineRequired'))
@@ -65,35 +91,41 @@ export function CreateOrderPage() {
         }
       }
 
-      const result = await createOrder.mutateAsync({
-        orgId: ctx.org.id,
-        customerId: value.customerId || null,
-        notes: value.notes || undefined,
-        lineItems: validItems.map((i) => {
-          const qty = parseInt(i.quantity, 10) || 1
-          const prod = products.find((p) => p.id === i.productId)
-          const isNegotiated =
-            prod?.negotiateAboveQuantity != null &&
-            qty > prod.negotiateAboveQuantity
-          return {
-            id: i.id,
-            productId: i.productId,
-            quantity: qty,
-            unitPrice:
-              isNegotiated && i.unitPrice
-                ? Number.parseFloat(i.unitPrice)
+      let result: CreateDraftOrderResult
+      try {
+        result = await createOrder.mutateAsync({
+          orgId: ctx.org.id,
+          customerId: value.customerId || null,
+          notes: value.notes || undefined,
+          lineItems: validItems.map((i) => {
+            const qty = parseInt(i.quantity, 10) || 1
+            const prod = products.find((p) => p.id === i.productId)
+            const isNegotiated =
+              prod?.negotiateAboveQuantity != null &&
+              qty > prod.negotiateAboveQuantity
+            return {
+              id: i.id,
+              productId: i.productId,
+              quantity: qty,
+              unitPrice:
+                isNegotiated && i.unitPrice
+                  ? Number.parseFloat(i.unitPrice)
+                  : undefined,
+              designName: i.designName || undefined,
+              notes: i.notes || undefined,
+              addonIds: i.addonIds.length > 0 ? i.addonIds : undefined,
+              isRepeatOrder: i.isRepeatOrder || undefined,
+              deadline: i.deadline
+                ? new Date(`${i.deadline}T00:00:00`)
                 : undefined,
-            designName: i.designName || undefined,
-            notes: i.notes || undefined,
-            addonIds: i.addonIds.length > 0 ? i.addonIds : undefined,
-            isRepeatOrder: i.isRepeatOrder || undefined,
-            deadline: i.deadline
-              ? new Date(`${i.deadline}T00:00:00`)
-              : undefined,
-            manualDeadline: i.manualDeadline || undefined,
-          }
-        }),
-      })
+              manualDeadline: i.manualDeadline || undefined,
+            }
+          }),
+        })
+      } catch {
+        toast.error(t('createOrderFailed'))
+        return
+      }
 
       toast.success(t('orderCreated'))
       const customer = customers.find((c) => c.id === value.customerId)

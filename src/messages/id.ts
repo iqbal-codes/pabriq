@@ -202,6 +202,40 @@ const id: Messages = {
       "Tenggat manual diperlukan untuk kuantitas yang melebihi kapasitas produksi",
     quantityExceedsProductionCap:
       "Kuantitas melebihi kapasitas produksi. Tenggat manual diperlukan.",
+    createOrderFailed: "Tidak dapat membuat pesanan. Periksa setup lalu coba lagi.",
+    setupMissionLocked: "Setup diperlukan",
+    setupMissionTitle: "Selesaikan setup sebelum membuat pesanan",
+    setupMissionDescription:
+      "Pesanan membutuhkan alamat bisnis, alur produksi, katalog produk, dan instruksi pembayaran. Lengkapi sekali, lalu pembuatan pesanan akan terbuka.",
+    setupMissionProgress: "{completed} dari {total} siap",
+    setupMissionListLabel: "Checklist setup pesanan",
+    setupMissionComplete: "Siap",
+    setupMissionIncomplete: "Perlu",
+    setupBusinessAddressTitle: "Atur alamat bisnis",
+    setupBusinessAddressDesc:
+      "Dipakai pada penawaran, invoice, dan detail pengiriman.",
+    setupBusinessAddressAction: "Atur alamat",
+    setupProductionStagesTitle: "Buat tahapan produksi",
+    setupProductionStagesDesc:
+      "Tambahkan minimal satu tahapan Produksi aktif agar pesanan yang disetujui bisa masuk ke lantai produksi.",
+    setupProductionStagesAction: "Atur tahapan",
+    setupFirstProductTitle: "Buat produk pertama",
+    setupFirstProductDesc:
+      "Pesanan membutuhkan produk aktif dengan harga dan hari produksi.",
+    setupFirstProductAction: "Buat produk",
+    setupPaymentMethodTitle: "Tambah metode pembayaran",
+    setupPaymentMethodDesc:
+      "Invoice membutuhkan rekening atau instruksi pembayaran agar pelanggan bisa membayar.",
+    setupPaymentMethodAction: "Tambah metode",
+    setupMissionHelpTitle: "Mengapa ini dikunci",
+    setupMissionHelpBody:
+      "Membuat pesanan terlalu awal meninggalkan data kosong yang mengganggu proses berikutnya.",
+    setupMissionHelpAddress:
+      "Data alamat membuat penawaran, invoice, dan catatan pengiriman tetap konsisten.",
+    setupMissionHelpProduction:
+      "Tahapan produksi menentukan tempat kerja yang disetujui masuk di papan produksi.",
+    setupMissionHelpPayment:
+      "Metode pembayaran membuat invoice langsung bisa ditindaklanjuti pelanggan sejak pesanan pertama.",
   },
   breadcrumb: {
     dashboard: "Dasbor",
