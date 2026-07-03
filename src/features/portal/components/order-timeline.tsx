@@ -177,11 +177,6 @@ export function OrderTimeline({ events, className, token }: Props) {
               })}
             </p>
             <p className="mt-0.5 flex items-center gap-1.5 text-sm text-foreground">
-              {event.taskNumber ? (
-                <span className="font-mono text-xs text-muted-foreground">
-                  {event.taskNumber}
-                </span>
-              ) : null}
               <span>{getDescription(event)}</span>
             </p>
             {event.requirementResponses &&

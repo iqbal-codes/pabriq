@@ -444,6 +444,18 @@ export async function confirmPortalOrder(
 ): Promise<PortalConfirmResult> {
   try {
     const now = new Date()
+    const hourInJakarta = Number(
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Jakarta',
+        hour: 'numeric',
+        hour12: false,
+      }).format(now),
+    )
+    const isLate = hourInJakarta >= 15
+    const queueDate = new Date(now)
+    if (isLate) {
+      queueDate.setDate(queueDate.getDate() + 1)
+    }
 
     await db.transaction(async (tx) => {
       const orderRows = await tx
@@ -514,18 +526,28 @@ export async function confirmPortalOrder(
           id: orderLineItems.id,
           productionDays: orderLineItems.productionDays,
           manualDeadline: orderLineItems.manualDeadline,
+          deadline: orderLineItems.deadline,
         })
         .from(orderLineItems)
         .where(eq(orderLineItems.orderId, input.orderId))
 
       for (const li of lineItems) {
+        let newDeadline: Date
         if (!li.manualDeadline) {
-          const newDeadline = addWorkingDays(now, li.productionDays)
-          await tx
-            .update(orderLineItems)
-            .set({ deadline: newDeadline, updatedAt: now })
-            .where(eq(orderLineItems.id, li.id))
+          newDeadline = addWorkingDays(now, li.productionDays)
+          if (isLate) {
+            newDeadline.setDate(newDeadline.getDate() + 1)
+          }
+        } else {
+          newDeadline = new Date(li.deadline)
+          if (isLate) {
+            newDeadline.setDate(newDeadline.getDate() + 1)
+          }
         }
+        await tx
+          .update(orderLineItems)
+          .set({ deadline: newDeadline, updatedAt: now })
+          .where(eq(orderLineItems.id, li.id))
       }
 
       await tx
@@ -533,6 +555,7 @@ export async function confirmPortalOrder(
         .set({
           customerId,
           status: 'pending',
+          createdAt: queueDate,
           updatedAt: now,
         })
         .where(eq(orders.id, input.orderId))

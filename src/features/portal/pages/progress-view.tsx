@@ -1,3 +1,4 @@
+import { History } from 'lucide-react'
 import { useLocale, useTranslations } from 'use-intl'
 import { StatusBadge } from '#/components/status-badge'
 import { Badge } from '#/components/ui/badge'
@@ -103,16 +104,15 @@ export function ProgressView({
               {statusHelp}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-medium text-muted-foreground">
-              {order.orderNumber ? (
-                <>
-                  <span className="font-mono text-foreground">
-                    {order.orderNumber}
-                  </span>
-                  <span aria-hidden className="text-muted-foreground/30">
-                    ·
-                  </span>
-                </>
-              ) : null}
+              <span>
+                <span className="text-muted-foreground">Masuk Antrian</span>:{' '}
+                <span className="font-semibold text-foreground">
+                  {formatLongDate(String(order.createdAt), locale)}
+                </span>
+              </span>
+              <span aria-hidden className="text-muted-foreground/30">
+                ·
+              </span>
               <span>
                 <span className="text-muted-foreground">{dateLabel}</span>:{' '}
                 <span className="font-semibold text-foreground">
@@ -152,12 +152,10 @@ export function ProgressView({
       {/* Items */}
       <section className="space-y-3">
         <header className="px-1">
-          <h2 className="text-base font-semibold tracking-tight text-foreground">
-            {t('itemsSectionTitle')}
+          <h2 className="flex items-center gap-2 text-base font-semibold tracking-tight text-foreground">
+            <History className="size-4 shrink-0 text-muted-foreground" />
+            <span>{t('itemsSectionTitle')}</span>
           </h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            {t('itemsSectionDescription')}
-          </p>
         </header>
         <div className="space-y-3">
           {order.lineItems.map((item) => (

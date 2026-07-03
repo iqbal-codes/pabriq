@@ -1,4 +1,4 @@
-import { Copy, Truck } from 'lucide-react'
+import { ExternalLink, Truck } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils'
@@ -43,10 +43,16 @@ export function ShipmentTrackingCard({
               variant="ghost"
               size="icon"
               className="size-5 text-muted-foreground hover:text-foreground"
-              aria-label={t('copyTrackingNumber')}
-              onClick={() => navigator.clipboard.writeText(trackingNumber)}
+              aria-label={t('trackShipment')}
+              asChild
             >
-              <Copy className="size-3" />
+              <a
+                href={`https://cekresi.com/?noresi=${trackingNumber}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="size-3" />
+              </a>
             </Button>
           </div>
         ) : null}

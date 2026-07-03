@@ -976,7 +976,6 @@ export type Messages = {
     obligationNextDelivery: string;
     obligationNextCompleted: string;
     itemsSectionTitle: string;
-    itemsSectionDescription: string;
     invoicesSectionTitle: string;
     invoicesSectionDescription: string;
     invoicePaidOn: string;
@@ -991,7 +990,6 @@ export type Messages = {
     invoicePaymentInstructions: string;
     invoiceShowAll: string;
     invoiceShowLess: string;
-    itemTaskNumber: string;
     itemDeadlineLabel: string;
     itemProductionDaysInline: string;
     itemShowTimeline: string;
@@ -1008,7 +1006,7 @@ export type Messages = {
     paymentVerifying: string;
     paymentConfirmTimeout: string;
     shipmentTracking: string;
-    copyTrackingNumber: string;
+    trackShipment: string;
   };
   assistant: {
     trigger: string;

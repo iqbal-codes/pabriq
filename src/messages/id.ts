@@ -920,7 +920,7 @@ const id: Messages = {
     progressStatusApprovedHelp:
       "Pesanan Anda sudah disetujui. Penjual sedang menyiapkannya untuk produksi.",
     progressStatusProductionHelp:
-      "Pesanan Anda sedang diproduksi. Buka setiap item untuk melihat timeline tahap, catatan, dan lampiran.",
+      "Pesanan Anda dalam proses produksi, buka halaman ini secara berkala untuk melihat perkembangan pesanan anda.",
     progressStatusDeliveryHelp:
       "Pesanan Anda sedang dikirim atau disiapkan untuk serah terima.",
     progressStatusCompletedHelp:
@@ -1018,10 +1018,8 @@ const id: Messages = {
       "Pengiriman sedang berjalan. Tunggu info serah terima kurir.",
     obligationNextCompleted:
       "Pesanan selesai. Simpan halaman ini sebagai catatan Anda.",
-    itemsSectionTitle: "Item dalam pesanan",
-    itemsSectionDescription:
-      "Setiap item menampilkan timeline, catatan, dan lampiran.",
-    invoicesSectionTitle: "Invoice dan pembayaran",
+    itemsSectionTitle: "Riwayat Pesanan",
+    invoicesSectionTitle: "Invoice",
     invoicesSectionDescription:
       "Unduh invoice dan unggah bukti pembayaran di sini.",
     invoicePaidOn: "Lunas",
@@ -1036,12 +1034,11 @@ const id: Messages = {
     invoicePaymentInstructions: "Instruksi",
     invoiceShowAll: "Lihat semua ({count})",
     invoiceShowLess: "Sembunyikan",
-    itemTaskNumber: "Tugas",
     itemDeadlineLabel: "Deadline {date}",
     itemProductionDaysInline: "Produksi {days} hari",
     itemShowTimeline: "Lihat timeline",
     itemHideTimeline: "Sembunyikan timeline",
-    itemAttachmentsLabel: "Lampiran",
+    itemAttachmentsLabel: "Design Pesanan",
     itemNoAttachments: "Tidak ada lampiran untuk item ini",
     itemNoEvents: "Belum ada pembaruan tahap",
     rejectedNote: "Alasan: {note}",
@@ -1053,7 +1050,7 @@ const id: Messages = {
     paymentVerifying: "Memverifikasi pembayaran Anda...",
     paymentConfirmTimeout: "Pembayaran diterima tetapi konfirmasi membutuhkan waktu lebih lama dari biasanya. Silakan muat ulang sebentar lagi.",
     shipmentTracking: "Pelacakan Pengiriman",
-    copyTrackingNumber: "Salin nomor resi",
+    trackShipment: "Lacak pengiriman",
   },
   combobox: {
     searchPlaceholder: "Cari...",

@@ -76,15 +76,12 @@ const messages = {
     obligationPayTitle: 'Selesaikan invoice yang belum dibayar',
     obligationPayBody: '{count} invoice menunggu bukti pembayaran Anda',
     obligationNextTitle: 'Selanjutnya',
-    itemsSectionTitle: 'Item dalam pesanan',
-    itemsSectionDescription:
-      'Setiap item menampilkan timeline, catatan, dan lampiran.',
-    itemTaskNumber: 'Tugas',
+    itemsSectionTitle: 'Riwayat Pesanan',
     itemShowTimeline: 'Lihat timeline',
     itemHideTimeline: 'Sembunyikan timeline',
     itemProductionDaysInline: 'Produksi {days} hari',
     itemDeadlineLabel: 'Deadline {date}',
-    itemAttachmentsLabel: 'Lampiran',
+    itemAttachmentsLabel: 'Design Pesanan',
     itemNoEvents: 'Belum ada pembaruan tahap',
     shippingAddress: 'Alamat Pengiriman',
     noShippingAddress: 'Belum ada alamat pengiriman',
@@ -106,7 +103,7 @@ const messages = {
     invoiceBankCopied: 'Tersalin',
     invoiceProofPending: 'Menunggu konfirmasi',
     invoicePaymentInstructions: 'Instruksi',
-    invoicesSectionTitle: 'Invoice dan pembayaran',
+    invoicesSectionTitle: 'Invoice',
     invoicesSectionDescription:
       'Unduh invoice dan unggah bukti pembayaran di sini.',
     stageTrackerLabel: 'Tahap produksi',
@@ -313,7 +310,7 @@ describe('ProgressView', () => {
       }),
     )
 
-    expect(screen.getByText('Invoice dan pembayaran')).toBeInTheDocument()
+    expect(screen.getByText('Invoice')).toBeInTheDocument()
     expect(screen.getByText(/1 belum dibayar/)).toBeInTheDocument()
     expect(screen.getByText('Down Payment')).toBeInTheDocument()
     expect(screen.getByText('Pelunasan')).toBeInTheDocument()

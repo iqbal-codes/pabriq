@@ -918,7 +918,7 @@ const en: Messages = {
     progressStatusApprovedHelp:
       "Your order is approved. The seller is preparing it for production.",
     progressStatusProductionHelp:
-      "Your order is in production. Open each item to see its stage timeline, notes, and attachments.",
+      "Your order is in the production process, please open this page periodically to see the progress of your order.",
     progressStatusDeliveryHelp:
       "Your order is being delivered or prepared for handoff.",
     progressStatusCompletedHelp:
@@ -1015,10 +1015,8 @@ const en: Messages = {
     obligationNextDelivery:
       "Delivery is in motion. Watch for the courier handoff note.",
     obligationNextCompleted: "Order complete. Keep this page as your record.",
-    itemsSectionTitle: "Items in this order",
-    itemsSectionDescription:
-      "Each item shows its own stage timeline, notes, and attachments.",
-    invoicesSectionTitle: "Invoices and payments",
+    itemsSectionTitle: "Order History",
+    invoicesSectionTitle: "Invoices",
     invoicesSectionDescription:
       "Download invoices and upload payment proof here.",
     invoicePaidOn: "Paid",
@@ -1033,12 +1031,11 @@ const en: Messages = {
     invoicePaymentInstructions: "Instructions",
     invoiceShowAll: "View all ({count})",
     invoiceShowLess: "Hide",
-    itemTaskNumber: "Task",
     itemDeadlineLabel: "Deadline {date}",
     itemProductionDaysInline: "{days}-day production",
     itemShowTimeline: "Show timeline",
     itemHideTimeline: "Hide timeline",
-    itemAttachmentsLabel: "Attachments",
+    itemAttachmentsLabel: "Order Design",
     itemNoAttachments: "No attachments for this item",
     itemNoEvents: "No stage updates yet",
     rejectedNote: "Reason: {note}",
@@ -1050,7 +1047,7 @@ const en: Messages = {
     paymentVerifying: "Verifying your payment...",
     paymentConfirmTimeout: "Payment received but confirmation is taking longer than expected. Please refresh shortly.",
     shipmentTracking: "Shipment Tracking",
-    copyTrackingNumber: "Copy tracking number",
+    trackShipment: "Track shipment",
   },
   combobox: {
     searchPlaceholder: "Search...",

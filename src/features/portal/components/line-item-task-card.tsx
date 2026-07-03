@@ -83,11 +83,6 @@ export function LineItemTaskCard({
       <div className="grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:gap-4 sm:p-5">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            {item.taskNumber ? (
-              <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                {t('itemTaskNumber')}: {item.taskNumber}
-              </span>
-            ) : null}
             {statusText ? (
               <Badge variant="secondary" className="capitalize">
                 {statusText}
