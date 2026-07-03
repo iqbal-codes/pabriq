@@ -223,29 +223,26 @@ export async function calculateShippingRates(
   }
 
   try {
-    const res = await fetch(
-      'https://api.biteship.com/v1/rates/couriers',
-      {
-        method: 'POST',
-        headers: {
-          authorization: apiKey,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          origin_area_id: input.originAreaId,
-          destination_area_id: input.destinationAreaId,
-          couriers: 'jne,sicepat,jnt,anteraja,tiki',
-          items: [
-            {
-              name: 'Order Shipment',
-              value: Math.max(1, Math.round(input.orderValue)),
-              quantity: 1,
-              weight: Math.round(input.weightGrams),
-            },
-          ],
-        }),
+    const res = await fetch('https://api.biteship.com/v1/rates/couriers', {
+      method: 'POST',
+      headers: {
+        authorization: apiKey,
+        'content-type': 'application/json',
       },
-    )
+      body: JSON.stringify({
+        origin_area_id: input.originAreaId,
+        destination_area_id: input.destinationAreaId,
+        couriers: 'jne,sicepat,jnt,anteraja,tiki',
+        items: [
+          {
+            name: 'Order Shipment',
+            value: Math.max(1, Math.round(input.orderValue)),
+            quantity: 1,
+            weight: Math.round(input.weightGrams),
+          },
+        ],
+      }),
+    })
 
     if (!res.ok) {
       return { ok: false, error: 'biteshipRateCalculationFailed' }
@@ -293,10 +290,7 @@ export async function calculateShippingRates(
 
     const rates: ShippingRate[] = rawRates
       .filter(
-        (r) =>
-          r.courier_code &&
-          r.courier_service_code &&
-          (r.price ?? 0) > 0,
+        (r) => r.courier_code && r.courier_service_code && (r.price ?? 0) > 0,
       )
       .map((r) => ({
         courierCode: r.courier_code!,
@@ -318,10 +312,7 @@ export async function calculateShippingRates(
 export const calculateShippingRatesFn = createServerFn({
   method: 'POST',
 })
-  .inputValidator(
-    (input: unknown) =>
-      input as ShippingRateInput,
-  )
+  .inputValidator((input: unknown) => input as ShippingRateInput)
   .handler(async ({ data }): Promise<ShippingRatesResult> => {
     return calculateShippingRates(data)
   })
