@@ -78,6 +78,9 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  trustedOrigins: [
+    ...(process.env.TRUSTED_ORIGINS?.split(',').filter(Boolean) ?? []),
+  ],
   plugins: [
     tanstackStartCookies(),
     organization({

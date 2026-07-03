@@ -81,6 +81,11 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
         return
       }
 
+      if (value.courier && !value.trackingNumber) {
+        toast.error(t('trackingNumberRequired'))
+        return
+      }
+
       const result = await completeProduction.mutateAsync({
         id: order.id,
         courier: value.courier || undefined,

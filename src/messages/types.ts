@@ -803,6 +803,7 @@ export type Messages = {
     shippingFeeDescriptionPlaceholder: string;
     total: string;
     paymentMethodRequired: string;
+    trackingNumberRequired: string;
     invoiceAmountRequired: string;
     completeProductionFailed: string;
     orderNumberLabel: string;

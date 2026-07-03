@@ -361,11 +361,21 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                                     if (result.ok) {
                                       setRates(result.rates)
                                     } else {
-                                      toast.error(
-                                        t(
-                                          result.error as 'biteshipRateCalculationFailed',
-                                        ) ?? t('biteshipRateCalculationFailed'),
-                                      )
+                                      const knownErrorKeys: Record<
+                                        string,
+                                        true
+                                      > = {
+                                        biteshipApiKeyMissing: true,
+                                        biteshipRateCalculationFailed: true,
+                                      }
+                                      const message = knownErrorKeys[
+                                        result.error
+                                      ]
+                                        ? t(
+                                            result.error as 'biteshipRateCalculationFailed',
+                                          )
+                                        : result.error
+                                      toast.error(message)
                                     }
                                   }}
                                   disabled={

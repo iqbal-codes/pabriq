@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { and, eq } from 'drizzle-orm'
 import { addresses, customers } from '#/db/schema'
+import { logger } from '#/lib/logger'
 
 export type BiteshipArea = {
   id: string
@@ -245,7 +246,26 @@ export async function calculateShippingRates(
     })
 
     if (!res.ok) {
-      return { ok: false, error: 'biteshipRateCalculationFailed' }
+      const errorBody = await res.text().catch(() => 'unknown')
+      let errorMessage: string
+      try {
+        const parsed = JSON.parse(errorBody) as Record<string, unknown>
+        errorMessage =
+          (typeof parsed.message === 'string' ? parsed.message : undefined) ??
+          (typeof parsed.error === 'string' ? parsed.error : undefined) ??
+          `HTTP ${res.status}`
+        logger.error(
+          { status: res.status, body: errorBody, parsedMessage: errorMessage },
+          'biteship rate calculation failed',
+        )
+      } catch {
+        errorMessage = `HTTP ${res.status}`
+        logger.error(
+          { status: res.status, body: errorBody },
+          'biteship rate calculation failed (unparseable body)',
+        )
+      }
+      return { ok: false, error: errorMessage }
     }
 
     const body = (await res.json()) as {
@@ -258,7 +278,7 @@ export async function calculateShippingRates(
         description?: string
         price?: number
         shipping_fee?: number
-        estimated_days?: string
+        duration?: string
       }>
       pricings?: Array<{
         courier_code?: string
@@ -268,7 +288,7 @@ export async function calculateShippingRates(
         description?: string
         price?: number
         shipping_fee?: number
-        estimated_days?: string
+        duration?: string
       }>
       couriers?: Array<{
         courier_code?: string
@@ -278,11 +298,12 @@ export async function calculateShippingRates(
         description?: string
         price?: number
         shipping_fee?: number
-        estimated_days?: string
+        duration?: string
       }>
     }
 
     if (!body.success) {
+      logger.error({ body }, 'biteship rate calculation returned success:false')
       return { ok: false, error: 'biteshipRateCalculationFailed' }
     }
 
@@ -299,12 +320,13 @@ export async function calculateShippingRates(
         serviceName: r.courier_service_name ?? r.courier_service_code!,
         description: r.description ?? null,
         price: r.price ?? r.shipping_fee ?? 0,
-        estimatedDays: r.estimated_days ?? null,
+        estimatedDays: r.duration ?? null,
       }))
       .sort((a, b) => a.price - b.price)
 
     return { ok: true, rates }
-  } catch {
+  } catch (err) {
+    logger.error({ err }, 'biteship rate calculation threw')
     return { ok: false, error: 'biteshipRateCalculationFailed' }
   }
 }
