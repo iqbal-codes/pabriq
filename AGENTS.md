@@ -2,6 +2,8 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
+> ⚠️ **CRITICAL SAFETY RULE:** Always run tests with `bun run test`, NEVER run `vitest` directly. Running vitest directly may use the wrong database and destroy production data. See Section 8 for details.
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
@@ -50,7 +52,7 @@ The test: Every changed line should trace directly to the user's request.
 Transform tasks into verifiable goals:
 
 - "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Fix the bug" → "Write a test that reproduces it, then make them pass"
 - "Refactor X" → "Ensure tests pass before and after"
 
 For multi-step tasks, state a brief plan:
@@ -161,10 +163,27 @@ Single-context: `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain
 
 ## 8. Database & Environment Safety
 
+> ⚠️ **THIS IS THE MOST IMPORTANT SECTION. VIOLATIONS WILL DESTROY PRODUCTION DATA.**
+
 - **NEVER** access Infisical or any secrets manager directly. Agents do not have permission to retrieve, inject, or override environment variables from Infisical or similar services.
 - **NEVER** run test runners (`vitest`, `jest`, `playwright`, etc.) directly (e.g. `npx vitest run`). Always use the project scripts: `bun run test`, `bun run test:e2e`, etc. These scripts load the correct environment (staging/test) via `load-env-test` and prevent tests from hitting production databases.
 - **NEVER** source `.env.local` or `.env` manually to run commands. Use `bun run load-env -- <command>` for dev, `bun run load-env-test -- <command>` for tests.
 - Tests that touch the database (`TRUNCATE`, `INSERT`, `DELETE`) are **destructive**. If the wrong environment is loaded, they will destroy production data. Always verify which `DATABASE_URL` a test command will use before executing.
+
+### Why this matters
+
+The test files contain `TRUNCATE ... CASCADE` statements that clear database tables. If an agent runs `vitest` directly instead of `bun run test`, the tests may connect to the wrong database (production instead of staging) and destroy real data.
+
+### Safe test execution
+
+```bash
+# ✅ CORRECT - uses load-env-test which loads staging environment
+bun run test
+
+# ❌ WRONG - may use wrong database, will now fail with safety error
+vitest run
+npx vitest run
+```
 
 ## 9. Non-Negotiable Project Rules (Legacy)
 
