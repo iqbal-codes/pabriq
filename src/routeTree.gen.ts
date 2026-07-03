@@ -41,7 +41,6 @@ import { Route as OrgProductsIdIndexRouteImport } from './routes/_org/products/$
 import { Route as OrgOrdersIdIndexRouteImport } from './routes/_org/orders/$id/index'
 import { Route as OrgInvoicesIdIndexRouteImport } from './routes/_org/invoices/$id/index'
 import { Route as OrgCustomersIdIndexRouteImport } from './routes/_org/customers/$id/index'
-import { Route as OrgProductsIdEditRouteImport } from './routes/_org/products/$id/edit'
 import { Route as OrgOrdersIdEditRouteImport } from './routes/_org/orders/$id/edit'
 import { Route as OrgCustomersIdEditRouteImport } from './routes/_org/customers/$id/edit'
 import { Route as ApiDocumentsOrdersIdQuotationRouteImport } from './routes/api/documents/orders/$id/quotation'
@@ -210,11 +209,6 @@ const OrgCustomersIdIndexRoute = OrgCustomersIdIndexRouteImport.update({
   path: '/customers/$id/',
   getParentRoute: () => OrgRoute,
 } as any)
-const OrgProductsIdEditRoute = OrgProductsIdEditRouteImport.update({
-  id: '/products/$id/edit',
-  path: '/products/$id/edit',
-  getParentRoute: () => OrgRoute,
-} as any)
 const OrgOrdersIdEditRoute = OrgOrdersIdEditRouteImport.update({
   id: '/orders/$id/edit',
   path: '/orders/$id/edit',
@@ -280,7 +274,6 @@ export interface FileRoutesByFullPath {
   '/settings/': typeof OrgSettingsIndexRoute
   '/customers/$id/edit': typeof OrgCustomersIdEditRoute
   '/orders/$id/edit': typeof OrgOrdersIdEditRoute
-  '/products/$id/edit': typeof OrgProductsIdEditRoute
   '/customers/$id/': typeof OrgCustomersIdIndexRoute
   '/invoices/$id/': typeof OrgInvoicesIdIndexRoute
   '/orders/$id/': typeof OrgOrdersIdIndexRoute
@@ -318,7 +311,6 @@ export interface FileRoutesByTo {
   '/settings': typeof OrgSettingsIndexRoute
   '/customers/$id/edit': typeof OrgCustomersIdEditRoute
   '/orders/$id/edit': typeof OrgOrdersIdEditRoute
-  '/products/$id/edit': typeof OrgProductsIdEditRoute
   '/customers/$id': typeof OrgCustomersIdIndexRoute
   '/invoices/$id': typeof OrgInvoicesIdIndexRoute
   '/orders/$id': typeof OrgOrdersIdIndexRoute
@@ -360,7 +352,6 @@ export interface FileRoutesById {
   '/_org/settings/': typeof OrgSettingsIndexRoute
   '/_org/customers/$id/edit': typeof OrgCustomersIdEditRoute
   '/_org/orders/$id/edit': typeof OrgOrdersIdEditRoute
-  '/_org/products/$id/edit': typeof OrgProductsIdEditRoute
   '/_org/customers/$id/': typeof OrgCustomersIdIndexRoute
   '/_org/invoices/$id/': typeof OrgInvoicesIdIndexRoute
   '/_org/orders/$id/': typeof OrgOrdersIdIndexRoute
@@ -402,7 +393,6 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/customers/$id/edit'
     | '/orders/$id/edit'
-    | '/products/$id/edit'
     | '/customers/$id/'
     | '/invoices/$id/'
     | '/orders/$id/'
@@ -440,7 +430,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/customers/$id/edit'
     | '/orders/$id/edit'
-    | '/products/$id/edit'
     | '/customers/$id'
     | '/invoices/$id'
     | '/orders/$id'
@@ -481,7 +470,6 @@ export interface FileRouteTypes {
     | '/_org/settings/'
     | '/_org/customers/$id/edit'
     | '/_org/orders/$id/edit'
-    | '/_org/products/$id/edit'
     | '/_org/customers/$id/'
     | '/_org/invoices/$id/'
     | '/_org/orders/$id/'
@@ -735,13 +723,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgCustomersIdIndexRouteImport
       parentRoute: typeof OrgRoute
     }
-    '/_org/products/$id/edit': {
-      id: '/_org/products/$id/edit'
-      path: '/products/$id/edit'
-      fullPath: '/products/$id/edit'
-      preLoaderRoute: typeof OrgProductsIdEditRouteImport
-      parentRoute: typeof OrgRoute
-    }
     '/_org/orders/$id/edit': {
       id: '/_org/orders/$id/edit'
       path: '/orders/$id/edit'
@@ -822,7 +803,6 @@ interface OrgRouteChildren {
   OrgProductsIndexRoute: typeof OrgProductsIndexRoute
   OrgCustomersIdEditRoute: typeof OrgCustomersIdEditRoute
   OrgOrdersIdEditRoute: typeof OrgOrdersIdEditRoute
-  OrgProductsIdEditRoute: typeof OrgProductsIdEditRoute
   OrgCustomersIdIndexRoute: typeof OrgCustomersIdIndexRoute
   OrgInvoicesIdIndexRoute: typeof OrgInvoicesIdIndexRoute
   OrgOrdersIdIndexRoute: typeof OrgOrdersIdIndexRoute
@@ -843,7 +823,6 @@ const OrgRouteChildren: OrgRouteChildren = {
   OrgProductsIndexRoute: OrgProductsIndexRoute,
   OrgCustomersIdEditRoute: OrgCustomersIdEditRoute,
   OrgOrdersIdEditRoute: OrgOrdersIdEditRoute,
-  OrgProductsIdEditRoute: OrgProductsIdEditRoute,
   OrgCustomersIdIndexRoute: OrgCustomersIdIndexRoute,
   OrgInvoicesIdIndexRoute: OrgInvoicesIdIndexRoute,
   OrgOrdersIdIndexRoute: OrgOrdersIdIndexRoute,

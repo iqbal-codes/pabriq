@@ -21,7 +21,7 @@ export function CreateProductPage() {
       description: '',
       priority: false,
       primaryImageAssetId: null as string | null,
-      basePrice: 0,
+      basePrice: undefined as number | undefined,
       productionDays: 1,
       minQuantity: 1,
       maxQuantity: undefined as number | undefined,
@@ -32,12 +32,16 @@ export function CreateProductPage() {
       pricingMode: 'interpolated' as 'interpolated' | 'step',
       pricingBreakpoints: [] as Array<{
         minQuantity: number
-        unitPrice: number
+        unitPrice: number | undefined
       }>,
-      productAddons: [] as Array<{ name: string; unitSurcharge: number }>,
+      productAddons: [] as Array<{
+        name: string
+        unitSurcharge: number | undefined
+      }>,
     },
     validators: {
       onChange: productFormSchema,
+      onSubmit: productFormSchema,
     },
     onSubmit: async ({ value, formApi }) => {
       if (!formApi.state.isValid) return

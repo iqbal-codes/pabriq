@@ -4,9 +4,21 @@ import { IntlProvider } from 'use-intl'
 import { describe, expect, it, vi } from 'vitest'
 import { EditProductPage } from './edit-product-page'
 
-vi.mock('#/features/products/hooks', () => ({
-  useProduct: () => ({
-    data: {
+const {
+  mockProductData,
+  getMockBreakpoints,
+  getMockAddons,
+  setMockBreakpoints,
+  setMockAddons,
+} = vi.hoisted(() => {
+  let mockBreakpoints:
+    | Array<{ minQuantity: number; unitPrice: number }>
+    | undefined = []
+  let mockAddons:
+    | Array<{ id: string; name: string; unitSurcharge: number }>
+    | undefined = []
+  return {
+    mockProductData: {
       id: 'product-1',
       name: 'Custom T-Shirt',
       description: 'A nice shirt',
@@ -23,12 +35,26 @@ vi.mock('#/features/products/hooks', () => ({
       createdAt: new Date(),
       updatedAt: new Date(),
     },
+    getMockBreakpoints: () => mockBreakpoints,
+    getMockAddons: () => mockAddons,
+    setMockBreakpoints: (val: any) => {
+      mockBreakpoints = val
+    },
+    setMockAddons: (val: any) => {
+      mockAddons = val
+    },
+  }
+})
+
+vi.mock('#/features/products/hooks', () => ({
+  useProduct: () => ({
+    data: mockProductData,
   }),
   useProductBreakpoints: () => ({
-    data: [] as Array<{ minQuantity: number; unitPrice: number }>,
+    data: getMockBreakpoints(),
   }),
   useProductAddons: () => ({
-    data: [] as Array<{ id: string; name: string; unitSurcharge: number }>,
+    data: getMockAddons(),
   }),
   useUpdateProduct: () => ({
     mutateAsync: vi.fn().mockResolvedValue({ ok: true }),
@@ -88,6 +114,7 @@ function TestWrapper() {
         },
         common: {
           back: 'Back',
+          loading: 'Loading',
         },
       }}
     >
@@ -98,7 +125,16 @@ function TestWrapper() {
 
 describe('EditProductPage', () => {
   it('renders the page title', () => {
+    setMockBreakpoints([])
+    setMockAddons([])
     render(<TestWrapper />)
     expect(screen.getByText('Edit Product')).toBeDefined()
+  })
+
+  it('renders loading state when breakpoints or addons are undefined', () => {
+    setMockBreakpoints(undefined)
+    setMockAddons(undefined)
+    render(<TestWrapper />)
+    expect(screen.getByText('Loading...')).toBeDefined()
   })
 })

@@ -1,7 +1,8 @@
 import { Link, useRouteContext } from '@tanstack/react-router'
-import { Eye, Package, Pencil } from 'lucide-react'
+import { Package, Pencil, Trash2 } from 'lucide-react'
 import { parseAsString, useQueryState } from 'nuqs'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
 import type {
@@ -16,9 +17,10 @@ import {
 } from '#/components/app/data-table'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
+import { ConfirmDialog } from '#/components/confirm-dialog'
 import { StatusBadge } from '#/components/status-badge'
 import { Button } from '#/components/ui/button'
-import { useProductsList } from '#/features/products/hooks'
+import { useDeleteProduct, useProductsList } from '#/features/products/hooks'
 import type { ProductRow } from '#/features/products/server'
 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
@@ -77,6 +79,8 @@ export function ProductsListPage() {
   const { data, isFetching } = useProductsList(queryFilters)
   const rows = data?.rows ?? []
   const totalRows = data?.totalRows ?? 0
+  const deleteProduct = useDeleteProduct()
+  const [deleteTarget, setDeleteTarget] = useState<ProductRow | null>(null)
 
   const handleApplyFilters = useCallback(
     (values: Record<string, unknown>) => {
@@ -96,6 +100,17 @@ export function ProductsListPage() {
     setStatusFilter(null)
     resetPage()
   }, [setSearch, setStatusFilter, resetPage])
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return
+    const result = await deleteProduct.mutateAsync(deleteTarget.id)
+    if (result.ok) {
+      toast.success(t('deleted'))
+      setDeleteTarget(null)
+      return
+    }
+    toast.error(result.error)
+  }, [deleteProduct, deleteTarget, t])
 
   const filtersConfig = useMemo<DataTableFiltersConfig>(
     () => ({
@@ -232,24 +247,31 @@ export function ProductsListPage() {
               variant="ghost"
               size="icon-sm"
               asChild
-              tooltip={t('viewProduct')}
+              tooltip={t('editProduct')}
             >
               <Link to="/products/$id" params={{ id: row.id }}>
-                <Eye className="size-4" />
+                <Pencil className="size-4" />
               </Link>
             </Button>
             <Button
               variant="ghost"
               size="icon-sm"
-              asChild
-              tooltip={t('editProduct')}
+              tooltip={t('deleteProduct')}
+              onClick={() => setDeleteTarget(row)}
             >
-              <Link to="/products/$id/edit" params={{ id: row.id }}>
-                <Pencil className="size-4" />
-              </Link>
+              <Trash2 className="size-4" />
             </Button>
           </div>
         )}
+      />
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={t('deleteProduct')}
+        description={t('deleteConfirm')}
+        confirmLabel={t('deleteProduct')}
+        variant="destructive"
+        onConfirm={handleConfirmDelete}
       />
     </PageContent>
   )

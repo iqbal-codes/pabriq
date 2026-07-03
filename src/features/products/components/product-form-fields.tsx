@@ -17,7 +17,7 @@ export const ProductFormFields = withForm({
     description: '',
     priority: false,
     primaryImageAssetId: null as string | null,
-    basePrice: 0,
+    basePrice: undefined as number | undefined,
     productionDays: 1,
     minQuantity: 1,
     maxQuantity: undefined as number | undefined,
@@ -26,8 +26,14 @@ export const ProductFormFields = withForm({
     repeatOrderMinQuantity: undefined as number | undefined,
     maxProductionQuantity: undefined as number | undefined,
     pricingMode: 'interpolated' as 'interpolated' | 'step',
-    pricingBreakpoints: [] as Array<{ minQuantity: number; unitPrice: number }>,
-    productAddons: [] as Array<{ name: string; unitSurcharge: number }>,
+    pricingBreakpoints: [] as Array<{
+      minQuantity: number
+      unitPrice: number | undefined
+    }>,
+    productAddons: [] as Array<{
+      name: string
+      unitSurcharge: number | undefined
+    }>,
   },
   render: function Render({ form }) {
     const t = useTranslations('products')
@@ -56,6 +62,7 @@ export const ProductFormFields = withForm({
                     <field.TextareaField
                       label={t('description')}
                       placeholder={t('descriptionPlaceholder')}
+                      optional
                     />
                   )}
                 </form.AppField>
@@ -237,7 +244,7 @@ export const ProductFormFields = withForm({
                                 : baseQty + 1
                             breakpointsField.pushValue({
                               minQuantity: nextMinQty,
-                              unitPrice: 0,
+                              unitPrice: undefined as number | undefined,
                             })
                           }}
                         >
@@ -314,7 +321,7 @@ export const ProductFormFields = withForm({
                           onClick={() => {
                             addonsField.pushValue({
                               name: '',
-                              unitSurcharge: 0,
+                              unitSurcharge: undefined as number | undefined,
                             })
                           }}
                         >

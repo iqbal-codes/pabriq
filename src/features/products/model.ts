@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, like } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, like } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   productAddons as addonsTable,
@@ -265,7 +265,10 @@ export async function updateProduct(
 export async function listProducts(
   options: ProductListOptions,
 ): Promise<Product[]> {
-  const conditions = [eq(productsTable.orgId, options.orgId)]
+  const conditions = [
+    eq(productsTable.orgId, options.orgId),
+    isNull(productsTable.deletedAt),
+  ]
 
   if (options.activeOnly) {
     conditions.push(eq(productsTable.active, true))
@@ -301,7 +304,13 @@ export async function getProduct(
   const rows = await db
     .select()
     .from(productsTable)
-    .where(and(eq(productsTable.id, id), eq(productsTable.orgId, orgId)))
+    .where(
+      and(
+        eq(productsTable.id, id),
+        eq(productsTable.orgId, orgId),
+        isNull(productsTable.deletedAt),
+      ),
+    )
     .limit(1)
 
   return (rows[0] as Product) ?? null
@@ -309,7 +318,8 @@ export async function getProduct(
 
 export async function deleteProduct(id: string, orgId: string): Promise<void> {
   await db
-    .delete(productsTable)
+    .update(productsTable)
+    .set({ active: false, deletedAt: new Date(), updatedAt: new Date() })
     .where(and(eq(productsTable.id, id), eq(productsTable.orgId, orgId)))
 }
 

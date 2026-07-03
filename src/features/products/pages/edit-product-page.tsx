@@ -12,56 +12,59 @@ import {
   useProductBreakpoints,
   useUpdateProduct,
 } from '#/features/products/hooks'
+import type { Product } from '#/features/products/model'
 import { productFormSchema } from '#/lib/validation-schemas'
 
-export function EditProductPage() {
+interface EditProductFormProps {
+  product: Product
+  breakpoints: Array<{ minQuantity: number; unitPrice: number }>
+  addons: Array<{ name: string; unitSurcharge: number }>
+}
+
+function EditProductForm({
+  product,
+  breakpoints,
+  addons,
+}: EditProductFormProps) {
   const navigate = useNavigate()
-  const { id } = useParams({ from: '/_org/products/$id/edit' })
-  const product = useProduct(id).data
-  const breakpoints = useProductBreakpoints(product?.id ?? '')
-  const addons = useProductAddons(product?.id ?? '')
   const t = useTranslations('products')
   const ct = useTranslations('common')
   const updateProduct = useUpdateProduct()
 
   const form = useAppForm({
     defaultValues: {
-      name: product?.name ?? '',
-      description: product?.description ?? '',
-      priority: product?.priority ?? false,
-      primaryImageAssetId: (product?.primaryImageAssetId ?? null) as
-        | string
-        | null,
-      basePrice: product?.basePrice ?? 0,
-      productionDays: product?.productionDays ?? 1,
-      minQuantity: product?.minQuantity ?? 1,
-      maxQuantity: (product?.maxQuantity ?? undefined) as number | undefined,
-      negotiateAboveQuantity: (product?.negotiateAboveQuantity ?? undefined) as
+      name: product.name,
+      description: product.description ?? '',
+      priority: product.priority,
+      primaryImageAssetId: product.primaryImageAssetId,
+      basePrice: product.basePrice,
+      productionDays: product.productionDays,
+      minQuantity: product.minQuantity,
+      maxQuantity: (product.maxQuantity ?? undefined) as number | undefined,
+      negotiateAboveQuantity: (product.negotiateAboveQuantity ?? undefined) as
         | number
         | undefined,
-      repeatOrderUnitPrice: (product?.repeatOrderUnitPrice ?? undefined) as
+      repeatOrderUnitPrice: (product.repeatOrderUnitPrice ?? undefined) as
         | number
         | undefined,
-      repeatOrderMinQuantity: (product?.repeatOrderMinQuantity ?? undefined) as
+      repeatOrderMinQuantity: (product.repeatOrderMinQuantity ?? undefined) as
         | number
         | undefined,
-      maxProductionQuantity: (product?.maxProductionQuantity ?? undefined) as
+      maxProductionQuantity: (product.maxProductionQuantity ?? undefined) as
         | number
         | undefined,
       pricingMode:
-        (product?.pricingMode as 'interpolated' | 'step' | undefined) ??
+        (product.pricingMode as 'interpolated' | 'step' | undefined) ??
         'interpolated',
-      pricingBreakpoints:
-        (breakpoints.data as
-          | Array<{ minQuantity: number; unitPrice: number }>
-          | undefined) ?? [],
-      productAddons: (addons.data?.map((a) => ({
+      pricingBreakpoints: breakpoints,
+      productAddons: addons.map((a) => ({
         name: a.name,
         unitSurcharge: a.unitSurcharge,
-      })) ?? []) as Array<{ name: string; unitSurcharge: number }>,
+      })),
     },
     validators: {
       onChange: productFormSchema,
+      onSubmit: productFormSchema,
     },
     onSubmit: async ({ value, formApi }) => {
       if (!formApi.state.isValid) return
@@ -73,7 +76,7 @@ export function EditProductPage() {
       } = value
       const result = await updateProduct.mutateAsync({
         ...productValues,
-        id: product?.id ?? '',
+        id: product.id,
         pricingMode,
         pricingBreakpoints,
         productAddons,
@@ -88,14 +91,6 @@ export function EditProductPage() {
   })
 
   const isSubmitting = useStore(form.store, (state) => state.isSubmitting)
-
-  if (!product) {
-    return (
-      <PageContent>
-        <p>{t('noProducts')}</p>
-      </PageContent>
-    )
-  }
 
   return (
     <PageContent>
@@ -112,5 +107,44 @@ export function EditProductPage() {
         <ProductFormFields form={form} />
       </FormRoot>
     </PageContent>
+  )
+}
+
+export function EditProductPage() {
+  const { id } = useParams({ from: '/_org/products/$id/' })
+  const product = useProduct(id).data
+  const breakpoints = useProductBreakpoints(product?.id ?? '')
+  const addons = useProductAddons(product?.id ?? '')
+  const t = useTranslations('products')
+  const ct = useTranslations('common')
+
+  if (!product) {
+    return (
+      <PageContent>
+        <p>{t('noProducts')}</p>
+      </PageContent>
+    )
+  }
+
+  if (breakpoints.data === undefined || addons.data === undefined) {
+    return (
+      <PageContent>
+        <PageHeader
+          title={t('editTitle')}
+          backAction={{ label: ct('back'), href: '/products' }}
+        />
+        <div className="flex items-center justify-center p-8">
+          <p className="text-sm text-muted-foreground">{ct('loading')}...</p>
+        </div>
+      </PageContent>
+    )
+  }
+
+  return (
+    <EditProductForm
+      product={product}
+      breakpoints={breakpoints.data}
+      addons={addons.data}
+    />
   )
 }

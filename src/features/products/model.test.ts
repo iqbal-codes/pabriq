@@ -1,7 +1,7 @@
-import { sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '#/db/index'
-import { organization } from '#/db/schema'
+import { organization, products as productsTable } from '#/db/schema'
 import {
   createBreakpoint,
   createProduct,
@@ -147,13 +147,24 @@ describe('products', () => {
     expect(reactivated.active).toBe(true)
   })
 
-  it('deletes a product', async () => {
+  it('soft deletes a product', async () => {
     const created = await createProduct({ orgId: org1Id, name: 'Delete Me' })
 
     await deleteProduct(created.id, org1Id)
 
     const fetched = await getProduct(created.id, org1Id)
     expect(fetched).toBeNull()
+
+    const [deleted] = await db
+      .select({
+        active: productsTable.active,
+        deletedAt: productsTable.deletedAt,
+      })
+      .from(productsTable)
+      .where(eq(productsTable.id, created.id))
+      .limit(1)
+    expect(deleted?.active).toBe(false)
+    expect(deleted?.deletedAt).toBeInstanceOf(Date)
   })
 
   it('does not delete from wrong org', async () => {

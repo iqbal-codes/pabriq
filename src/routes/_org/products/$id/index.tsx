@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ViewProductPage } from '#/features/products/pages/view-product-page'
+import { EditProductPage } from '#/features/products/pages/edit-product-page'
 
 export const Route = createFileRoute('/_org/products/$id/')({
   beforeLoad: () => ({
-    breadcrumb: 'detail',
+    breadcrumb: 'edit',
     parentBreadcrumbs: [{ label: 'products', href: '/products' }],
-    pageTitle: 'viewProduct',
+    pageTitle: 'editProduct',
   }),
-  component: ViewProductPage,
+  component: EditProductPage,
 })

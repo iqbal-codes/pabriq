@@ -1,8 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, desc, eq, ilike, type SQL, sql } from 'drizzle-orm'
+import { and, desc, eq, ilike, isNull, type SQL, sql } from 'drizzle-orm'
 import {
   pricingBreakpoints as breakpointsTable,
-  productAddons as productAddonsTable,
   products as productsTable,
 } from '#/db/schema'
 import { resolveOrgId } from '#/lib/auth-session'
@@ -30,7 +29,10 @@ export const listProductsFn = createServerFn({ method: 'GET' })
   .inputValidator((data: ListProductsParams) => data)
   .handler(async ({ data }): Promise<ListProductsResult> => {
     const { db } = await import('#/db/index')
-    const conditions: SQL[] = [eq(productsTable.orgId, data.orgId)]
+    const conditions: SQL[] = [
+      eq(productsTable.orgId, data.orgId),
+      isNull(productsTable.deletedAt),
+    ]
 
     if (data.search?.trim()) {
       const pattern = `%${data.search.trim()}%`
@@ -116,6 +118,24 @@ export const createProductFn = createServerFn({ method: 'POST' })
     ])
     try {
       await createProduct({ ...data, orgId })
+      return { ok: true }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
+  })
+
+export const deleteProductFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ data }): Promise<MutationResult> => {
+    const [{ deleteProduct }, orgId] = await Promise.all([
+      import('./model'),
+      resolveOrgId(),
+    ])
+    try {
+      await deleteProduct(data.id, orgId)
       return { ok: true }
     } catch (e) {
       return {

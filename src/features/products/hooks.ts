@@ -15,6 +15,7 @@ import type {
 import {
   calculateProductPriceFn,
   createProductFn,
+  deleteProductFn,
   getProductFn,
   listBreakpointsFn,
   listProductAddonsFn,
@@ -42,6 +43,18 @@ export function useCreateProduct() {
   return useMutation({
     mutationFn: (input: Omit<CreateProductInput, 'orgId'>) =>
       createProductFn({ data: input }),
+    onSuccess: () => {
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.products.lists() },
+      ])
+    },
+  })
+}
+
+export function useDeleteProduct() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteProductFn({ data: { id } }),
     onSuccess: () => {
       return invalidateMutationQueries(queryClient, [
         { queryKey: queryKeys.products.lists() },
@@ -106,6 +119,9 @@ export function useUpdateProduct() {
       return invalidateMutationQueries(queryClient, [
         { queryKey: queryKeys.products.lists() },
         { queryKey: queryKeys.products.detail(variables.id) },
+        { queryKey: queryKeys.products.breakpoints(variables.id) },
+        { queryKey: queryKeys.products.addons(variables.id) },
+        { queryKey: ['products', 'pricing', variables.id] },
       ])
     },
   })
