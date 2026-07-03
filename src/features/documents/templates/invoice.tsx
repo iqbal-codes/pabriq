@@ -157,18 +157,25 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
               label={PDF_LOCALE.subtotal}
               value={formatPdfCurrency(data.subtotal)}
             />
+            {data.isFinal && data.alreadyPaid > 0 && (
+              <PdfPricingLine
+                styles={styles}
+                label={PDF_LOCALE.alreadyPaidDP}
+                value={formatPdfCurrency(data.alreadyPaid)}
+                muted
+              />
+            )}
             {data.percentage !== null && data.percentage < 100 && (
               <PdfPricingLine
                 styles={styles}
-                label={PDF_LOCALE.paymentAmount}
+                label={
+                  data.isFinal
+                    ? PDF_LOCALE.paymentAmountFinal
+                    : data.isDP
+                      ? PDF_LOCALE.paymentAmountDP
+                      : PDF_LOCALE.paymentAmount
+                }
                 value={formatPdfCurrency(data.total)}
-              />
-            )}
-            {data.shippingFee > 0 && (
-              <PdfPricingLine
-                styles={styles}
-                label={PDF_LOCALE.shipping}
-                value={formatPdfCurrency(data.shippingFee)}
               />
             )}
             <PdfPricingLine
@@ -176,7 +183,7 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
               label={PDF_LOCALE.taxes}
               value={formatPdfCurrency(data.taxes)}
             />
-            {data.alreadyPaid > 0 && (
+            {!data.isFinal && data.alreadyPaid > 0 && (
               <PdfPricingLine
                 styles={styles}
                 label={PDF_LOCALE.alreadyPaid}

@@ -301,6 +301,8 @@ export async function generateInvoicePdf(
 
   // Compute payment label based on percentage and order context
   let paymentLabel: string | null = null
+  let isDP = false
+  let isFinal = false
   if (invoice.orderId && invoice.percentage != null) {
     const { PDF_LOCALE } = await import('./pdf-locale')
     if (invoice.percentage >= 100) {
@@ -324,9 +326,11 @@ export async function generateInvoicePdf(
       if (otherInvoices.length === 0) {
         // First invoice for this order with percentage < 100 → DP
         paymentLabel = `${PDF_LOCALE.paymentTypeDP} ${invoice.percentage}%`
+        isDP = true
       } else if (invoice.percentage + otherTotal >= 100) {
         // Combined percentage reaches 100 → this is the final payment
         paymentLabel = `${PDF_LOCALE.paymentTypePelunasan} ${invoice.percentage}%`
+        isFinal = true
       } else {
         // More payments expected → installment
         paymentLabel = `${PDF_LOCALE.paymentTypeTermin} ${invoice.percentage}%`
@@ -342,6 +346,8 @@ export async function generateInvoicePdf(
     createdAt: invoice.createdAt.toISOString(),
     percentage: invoice.percentage,
     paymentLabel,
+    isDP,
+    isFinal,
     customer: customerPdfInfo,
     lineItems,
     subtotal: invoice.subtotal,

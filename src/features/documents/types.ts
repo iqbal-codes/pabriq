@@ -43,6 +43,8 @@ export interface InvoicePdfData {
   createdAt: string
   percentage: number | null
   paymentLabel: string | null
+  isDP?: boolean
+  isFinal?: boolean
   customer: CustomerPdfInfo
   lineItems: PdfLineItem[]
   subtotal: number
