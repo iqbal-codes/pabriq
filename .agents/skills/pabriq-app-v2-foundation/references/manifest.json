@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "repo_path": "/Users/efishery/Documents/workspace/projects/pabriq-app-v2",
+  "slug": "pabriq-app-v2",
+  "generated_at": "2026-07-04T12:00:00Z",
+  "generator": "codebase-skills",
+  "output_dir": "/Users/efishery/Documents/workspace/projects/pabriq-app-v2/.agents/skills",
+  "catalog": {
+    "generated": [
+      {
+        "domain": "foundation",
+        "skill": "pabriq-app-v2-foundation",
+        "reason": "always generated; is the hub holding the profile and this manifest"
+      },
+      {
+        "domain": "ui",
+        "skill": "pabriq-app-v2-ui",
+        "reason": "frontend layer present: React 19 + TanStack Start + Tailwind CSS v4, src/components, src/routes"
+      },
+      {
+        "domain": "backend",
+        "skill": "pabriq-app-v2-backend",
+        "reason": "server/API layer present: TanStack Start server functions, Better Auth, API routing"
+      },
+      {
+        "domain": "data",
+        "skill": "pabriq-app-v2-data",
+        "reason": "distinct data layer present: Drizzle ORM, schema in src/db/schema.ts, migrations in drizzle/"
+      },
+      {
+        "domain": "testing",
+        "skill": "pabriq-app-v2-testing",
+        "reason": "testing configuration present: vitest.config.ts, playwright.config.ts, and tests in src/ and e2e/"
+      },
+      {
+        "domain": "conventions",
+        "skill": "pabriq-app-v2-conventions",
+        "reason": "lint/format and naming/workflow conventions configured via biome.json and tsconfig.json"
+      },
+      {
+        "domain": "infra",
+        "skill": "pabriq-app-v2-infra",
+        "reason": "infrastructure present: Dockerfile at root, Infisical config, containerized deployment scripts"
+      }
+    ],
+    "skipped": [
+      {
+        "domain": "mobile",
+        "reason": "no iOS/Android/ReactNative targets found in package.json or codebase"
+      },
+      {
+        "domain": "docs",
+        "reason": "no distinct documentation framework/site folder found (docs are just standard markdown files)"
+      }
+    ]
+  },
+  "skills": [
+    {
+      "domain": "foundation",
+      "name": "pabriq-app-v2-foundation",
+      "path": "pabriq-app-v2-foundation/SKILL.md",
+      "generated_hash": "sha256:0c2c08ee576fa7c7d458120e67e6f9363005bd92530d0413f3e4913e4a8dbd83",
+      "watches": [
+        "package.json",
+        "tsconfig.json",
+        "README.md",
+        "AGENTS.md",
+        "CONTEXT.md",
+        "vite.config.ts",
+        "src/start.ts",
+        "src/router.tsx"
+      ]
+    },
+    {
+      "domain": "ui",
+      "name": "pabriq-app-v2-ui",
+      "path": "pabriq-app-v2-ui/SKILL.md",
+      "generated_hash": "sha256:4e65452d70594cb2c02241b5df2ed6c622dc3dcf524b23502181fbc5f8094aeb",
+      "watches": [
+        "src/components/**",
+        "src/routes/**",
+        "src/styles.css",
+        "tailwind.config.*",
+        "vite.config.ts",
+        "package.json"
+      ]
+    },
+    {
+      "domain": "backend",
+      "name": "pabriq-app-v2-backend",
+      "path": "pabriq-app-v2-backend/SKILL.md",
+      "generated_hash": "sha256:9495a5d2396e7e6b8cea6ffd86bee55e472c9cc64d5b5b22957a4d2a7a2dab88",
+      "watches": [
+        "src/features/**/server.ts",
+        "src/routes/api/**",
+        "src/lib/auth*.ts",
+        "package.json"
+      ]
+    },
+    {
+      "domain": "data",
+      "name": "pabriq-app-v2-data",
+      "path": "pabriq-app-v2-data/SKILL.md",
+      "generated_hash": "sha256:3769c99f9be085cbbbe249cf5eb647ae7749b93468ae4405dc9c5372b8c798c5",
+      "watches": [
+        "src/db/**",
+        "drizzle.config.ts",
+        "drizzle/**",
+        "package.json"
+      ]
+    },
+    {
+      "domain": "testing",
+      "name": "pabriq-app-v2-testing",
+      "path": "pabriq-app-v2-testing/SKILL.md",
+      "generated_hash": "sha256:20217c14bb09089b0d7f4f6b544d55046172f35eec78101f1b760402cf462985",
+      "watches": [
+        "vitest.config.ts",
+        "playwright.config.ts",
+        "src/test/**",
+        "e2e/**",
+        "src/**/*.test.ts",
+        "src/**/*.test.tsx"
+      ]
+    },
+    {
+      "domain": "conventions",
+      "name": "pabriq-app-v2-conventions",
+      "path": "pabriq-app-v2-conventions/SKILL.md",
+      "generated_hash": "sha256:6d502e4da55b36809544cafd732da6da9b17d42b61159b24e6d7042495f2a88a",
+      "watches": [
+        "biome.json",
+        "tsconfig.json",
+        "package.json"
+      ]
+    },
+    {
+      "domain": "infra",
+      "name": "pabriq-app-v2-infra",
+      "path": "pabriq-app-v2-infra/SKILL.md",
+      "generated_hash": "sha256:46aaabc49a3eab34fe77746e80993c515e4466a50403be68d7ef7ce3c9d00cff",
+      "watches": [
+        "Dockerfile",
+        ".dockerignore",
+        ".infisical.json",
+        "package.json"
+      ]
+    }
+  ],
+  "fingerprints": {
+    "package.json": "sha256:d99f7c5989557567af9e7f695d80730c5116957f579e78bfca293b3817ed109f",
+    "*.config.*": "sha256:7172e9d314731faa162458fb3a5f0f68cf17cf3886bc182d8472530189cf3b05",
+    "src/**/*.ts": "sha256:022b88e8b62d0a65516866b6019724cd3ee0e9ce9310d5eb8e983247bf08e1f4",
+    "src/**/*.tsx": "sha256:0d4ab43bc7544dc0cab907206a2c6416b918b50032fcaa33f36350393bb0d723",
+    "e2e/**": "sha256:55f4aefd9dbab02ce6ab19d636a1b8bfa600949b7137e554133b485fc09fa97c",
+    "biome.json": "sha256:acc0799f8a90ad646888c0ae6f81d2589ccf749cddc7a2224c64b8f83553fae4"
+  },
+  "fingerprints_glob": [
+    "package.json",
+    "*.config.*",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "e2e/**",
+    "biome.json"
+  ]
+}
