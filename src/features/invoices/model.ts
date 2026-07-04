@@ -14,7 +14,6 @@ import {
   orders as ordersTable,
   paymentMethods as paymentMethodsTable,
   payments as paymentsTable,
-  products as productsTable,
 } from '#/db/schema'
 import { formatProductDesignLabel } from '#/features/orders/line-item-display'
 import type { SortState } from '#/lib/sorting'
@@ -261,20 +260,12 @@ export async function createInvoice(
     const order = orderRows[0]
     const percentage = input.percentage ?? 100
 
-    const [orderItemRows, productRows] = await Promise.all([
-      db
-        .select()
-        .from(orderLineItemsTable)
-        .where(eq(orderLineItemsTable.orderId, input.orderId)),
-      db
-        .select({ id: productsTable.id, name: productsTable.name })
-        .from(productsTable)
-        .where(eq(productsTable.orgId, orgId)),
-    ])
-    const productNameMap = new Map(productRows.map((p) => [p.id, p.name]))
-
+    const orderItemRows = await db
+      .select()
+      .from(orderLineItemsTable)
+      .where(eq(orderLineItemsTable.orderId, input.orderId))
     for (const oi of orderItemRows) {
-      const productName = productNameMap.get(oi.productId) ?? 'Unknown'
+      const productName = oi.productName
       items.push({
         id: generateId(),
         invoiceId,

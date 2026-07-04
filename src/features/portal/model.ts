@@ -13,7 +13,6 @@ import {
   paymentMethods as paymentMethodsTable,
   productionStages,
   productionTasks,
-  products,
   taskActivity,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
@@ -154,7 +153,7 @@ export async function getPortalOrder(
       )[0]
     : null
 
-  const [itemRows, productRows, allStages, taskRows] = await Promise.all([
+  const [itemRows, allStages, taskRows] = await Promise.all([
     db
       .select({
         id: orderLineItems.id,
@@ -168,6 +167,7 @@ export async function getPortalOrder(
         productionDays: orderLineItems.productionDays,
         deadline: orderLineItems.deadline,
         createdAt: orderLineItems.createdAt,
+        productName: orderLineItems.productName,
       })
       .from(orderLineItems)
       .where(
@@ -176,14 +176,6 @@ export async function getPortalOrder(
           eq(orderLineItems.orgId, order.orgId),
         ),
       ),
-    db
-      .select({
-        id: products.id,
-        name: products.name,
-        productionDays: products.productionDays,
-      })
-      .from(products)
-      .where(eq(products.orgId, order.orgId)),
     db
       .select({ id: productionStages.id, name: productionStages.name })
       .from(productionStages)
@@ -199,10 +191,6 @@ export async function getPortalOrder(
       .where(eq(productionTasks.orderId, order.id)),
   ])
 
-  const productNameMap = new Map(productRows.map((p) => [p.id, p.name]))
-  const productDaysMap = new Map(
-    productRows.map((p) => [p.id, p.productionDays]),
-  )
   const stageNameMap = new Map(allStages.map((s) => [s.id, s.name]))
 
   const lineItemIds = itemRows.map((item) => item.id)
@@ -250,7 +238,7 @@ export async function getPortalOrder(
     const task = taskByLineItem.get(item.id)
     return {
       id: item.id,
-      productName: productNameMap.get(item.productId) ?? 'Unknown',
+      productName: item.productName,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       total: item.total,
@@ -264,7 +252,7 @@ export async function getPortalOrder(
       currentStageName: task?.stageId
         ? (stageNameMap.get(task.stageId) ?? null)
         : null,
-      productionDays: productDaysMap.get(item.productId) ?? 0,
+      productionDays: item.productionDays,
       deadline: item.deadline,
     }
   })

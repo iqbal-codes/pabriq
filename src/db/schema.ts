@@ -258,6 +258,7 @@ export const orderLineItems = pgTable('order_line_items', {
   productId: text('product_id')
     .notNull()
     .references(() => products.id, { onDelete: 'restrict' }),
+  productName: text('product_name').notNull().default(''),
   quantity: integer('quantity').notNull().default(1),
   unitPrice: real('unit_price').notNull(),
   total: real('total').notNull(),

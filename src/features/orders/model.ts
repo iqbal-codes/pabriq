@@ -613,16 +613,9 @@ export async function getOrder(
       manualDeadline: lineItemsTable.manualDeadline,
       createdAt: lineItemsTable.createdAt,
       updatedAt: lineItemsTable.updatedAt,
-      productName: productsTable.name,
+      productName: lineItemsTable.productName,
     })
     .from(lineItemsTable)
-    .innerJoin(
-      productsTable,
-      and(
-        eq(productsTable.id, lineItemsTable.productId),
-        eq(productsTable.orgId, lineItemsTable.orgId),
-      ),
-    )
     .where(and(eq(lineItemsTable.orderId, id), eq(lineItemsTable.orgId, orgId)))
     .orderBy(lineItemsTable.createdAt)
 

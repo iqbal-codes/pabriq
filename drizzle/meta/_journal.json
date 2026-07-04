@@ -155,6 +155,13 @@
       "when": 1783030000000,
       "tag": "0027_soft_delete_customers_products",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1783137295051,
+      "tag": "0027_overconfident_imperial_guard",
+      "breakpoints": true
     }
   ]
 }
