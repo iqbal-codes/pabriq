@@ -272,7 +272,7 @@ describe('confirmPortalOrder', () => {
     if (!result.ok) expect(result.error).toBe('notDraft')
   })
 
-  it('matches an existing customer by phone and keeps their name', async () => {
+  it('matches an existing customer by phone and updates their name', async () => {
     const now = new Date()
 
     await db.insert(orders).values({
@@ -315,7 +315,7 @@ describe('confirmPortalOrder', () => {
       .from(customersTable)
       .where(eq(customersTable.id, matchedCustomerId))
       .limit(1)
-    expect(customerRows[0]?.name).toBe('Existing Guest')
+    expect(customerRows[0]?.name).toBe('Portal Guest')
   })
 
   it('backfills an empty customer name from the portal input', async () => {

@@ -515,7 +515,7 @@ export async function confirmPortalOrder(
 
         if (matchedCustomer) {
           customerId = matchedCustomer.id
-          if (!matchedCustomer.name.trim()) {
+          if (matchedCustomer.name.trim() !== guestName) {
             await tx
               .update(customers)
               .set({ name: guestName, updatedAt: now })

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useTranslations } from 'use-intl'
 import { FormGrid, withForm } from '#/components/app/form'
 import { formatNumber } from '#/components/app/form/form-utils'
@@ -25,6 +25,10 @@ export const OrderLineItemRow = withForm({
     const t = useTranslations('orders')
     const { isPending: isCalculatingPrice, mutateAsync: calculatePrice } =
       useCalculateProductPrice()
+    const isFirstRender = useRef(true)
+    const initialPriceExists = useRef(
+      !!(item.unitPrice && parseFloat(String(item.unitPrice)) > 0),
+    )
 
     const product = useMemo(
       () => products.find((p) => p.id === item.productId),
@@ -64,6 +68,13 @@ export const OrderLineItemRow = withForm({
     )
 
     useEffect(() => {
+      if (isFirstRender.current) {
+        isFirstRender.current = false
+        if (initialPriceExists.current) {
+          return
+        }
+      }
+
       let isCurrent = true
 
       const timer = window.setTimeout(() => {
