@@ -41,6 +41,7 @@
     "@mastra/pg": "^1.14.2",
     "@react-pdf/renderer": "^4.5.1",
     "@sentry/tanstackstart-react": "^10.42.0",
+    "@serwist/window": "^9.5.11",
     "@tanstack/react-devtools": "latest",
     "@tanstack/react-form": "latest",
     "@tanstack/react-pacer": "^0.22.0",
@@ -70,6 +71,7 @@
     "react-day-picker": "^10.0.0",
     "react-dropzone": "^15.0.0",
     "recharts": "3.8.0",
+    "serwist": "^9.5.11",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.1.18",
@@ -80,6 +82,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",
+    "@serwist/build": "^9.5.11",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/devtools-vite": "latest",
     "@testing-library/jest-dom": "^6.6.3",

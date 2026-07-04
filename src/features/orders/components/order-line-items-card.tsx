@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslations } from 'use-intl'
-import { AssetImage } from '#/components/app/asset-image'
+import { AssetFileList } from '#/components/app/asset-file'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
@@ -86,16 +86,13 @@ function LineItemRow({
             </p>
           )}
           {assets && assets.length > 0 && (
-            <div className="mt-2 flex gap-1.5">
-              {assets.map((asset: { id: string }) => (
-                <AssetImage
-                  key={asset.id}
-                  assetId={asset.id}
-                  assetKind="image"
-                  className="size-12 rounded-md object-cover ring-1 ring-border"
-                />
-              ))}
-            </div>
+            <AssetFileList
+              assetIds={assets.map((asset) => asset.id)}
+              prefetchedAssets={assets}
+              layout="grid"
+              showSize={false}
+              className="grid-cols-3 sm:grid-cols-4 md:grid-cols-5"
+            />
           )}
         </div>
 

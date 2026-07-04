@@ -26,6 +26,7 @@ import {
   products as productsTable,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
+import type { AssetMetadata } from '#/features/assets/server'
 import { getCustomerAddress } from '#/features/address/model'
 import { normalizeDesignName } from '#/features/orders/line-item-display'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
@@ -704,12 +705,14 @@ export async function getOrder(
 export async function getAssetsForLineItem(
   lineItemId: string,
   orgId: string,
-): Promise<Array<{ id: string; originalFilename: string; mimeType: string }>> {
+): Promise<AssetMetadata[]> {
   const rows = await db
     .select({
       id: assetsTable.id,
       originalFilename: assetsTable.originalFilename,
       mimeType: assetsTable.mimeType,
+      sizeBytes: assetsTable.sizeBytes,
+      assetKind: assetsTable.assetKind,
     })
     .from(assetsTable)
     .where(

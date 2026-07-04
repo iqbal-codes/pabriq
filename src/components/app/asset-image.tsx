@@ -22,8 +22,6 @@ interface AssetImageProps {
   token?: string
 }
 
-const previewableKinds: readonly AssetKind[] = ['image', 'video']
-
 export function AssetImage({
   assetId,
   assetKind,
@@ -33,7 +31,7 @@ export function AssetImage({
 }: AssetImageProps) {
   const common = useTranslations('common')
   const [open, setOpen] = useState(false)
-  const isPreviewable = assetKind ? previewableKinds.includes(assetKind) : false
+  const isPreviewable = assetKind === 'image'
 
   const {
     data: previewData,
@@ -110,29 +108,14 @@ export function AssetImage({
             className,
           )}
         >
-          {assetKind === 'video' ? (
-            <video
-              src={thumbnailUrl}
-              muted
-              playsInline
-              preload="metadata"
-              tabIndex={-1}
-              aria-label={previewLabel}
-              className={cn(
-                'pointer-events-none h-full w-full object-cover',
-                className,
-              )}
-            />
-          ) : (
-            <img
-              src={thumbnailUrl}
-              alt=""
-              className={cn(
-                'pointer-events-none h-full w-full object-cover',
-                className,
-              )}
-            />
-          )}
+          <img
+            src={thumbnailUrl}
+            alt=""
+            className={cn(
+              'pointer-events-none h-full w-full object-cover',
+              className,
+            )}
+          />
         </Button>
       </DialogTrigger>
       <DialogContent
@@ -152,29 +135,11 @@ export function AssetImage({
               <X className="size-4" />
             </Button>
           </DialogClose>
-          {assetKind === 'video' ? (
-            <video
-              src={dialogUrl}
-              controls
-              preload="metadata"
-              aria-label={previewLabel}
-              className="max-h-[85vh] w-full max-w-6xl object-contain"
-            >
-              <track
-                kind="captions"
-                label={previewLabel}
-                srcLang="en"
-                src="data:text/vtt,WEBVTT%0A%0A"
-                default
-              />
-            </video>
-          ) : (
-            <img
-              src={dialogUrl}
-              alt=""
-              className="max-h-[85vh] w-full max-w-6xl object-contain"
-            />
-          )}
+          <img
+            src={dialogUrl}
+            alt=""
+            className="max-h-[85vh] w-full max-w-6xl object-contain"
+          />
         </div>
       </DialogContent>
     </Dialog>

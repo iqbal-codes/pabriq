@@ -81,6 +81,10 @@ const id: Messages = {
     status: "Status",
     optional: "Opsional",
     required: "Wajib",
+    download: "Unduh",
+    file: "File",
+    noAttachments: "Tidak ada lampiran",
+    moreFiles: "+{count} file lagi",
   },
   dataTable: {
     clearFilters: "Hapus filter",

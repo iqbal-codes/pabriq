@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
+import { AssetExtensionPlaceholder } from '#/components/app/asset-file'
 import { AssetImage } from '#/components/app/asset-image'
 import type { UploaderAdapter } from '#/components/app/asset-upload'
 import {
@@ -13,7 +14,7 @@ import {
   getMaxBytes,
 } from '#/components/app/asset-upload'
 import { Button } from '#/components/ui/button'
-import type { AssetKind, OwnerType, Usage } from '#/features/assets/model'
+import type { OwnerType, Usage } from '#/features/assets/model'
 import type { AssetMetadata } from '#/features/assets/server'
 import { getAssetsMetadata } from '#/features/assets/server'
 import type { UploadItem } from '#/features/assets/upload-machine'
@@ -60,15 +61,24 @@ function ExistingFileRow({
   token?: string
 }) {
   const t = useTranslations('assetUpload')
+  const common = useTranslations('common')
 
   return (
     <div className="flex items-center gap-3 rounded-lg border py-2 pr-2 pl-3">
-      <AssetImage
-        assetId={metadata.id}
-        assetKind={metadata.assetKind as AssetKind}
-        className="rounded-lg"
-        token={token}
-      />
+      {metadata.assetKind === 'image' ? (
+        <AssetImage
+          assetId={metadata.id}
+          assetKind="image"
+          className="rounded-lg"
+          token={token}
+        />
+      ) : (
+        <AssetExtensionPlaceholder
+          filename={metadata.originalFilename}
+          fallbackLabel={common('file')}
+          className="rounded-lg"
+        />
+      )}
       <div className="flex-1 min-w-0">
         <p className="truncate text-sm font-medium">
           {metadata.originalFilename}
