@@ -28,7 +28,11 @@ export const Route = createFileRoute(
 
         let pdfBuffer: Buffer
         try {
-          pdfBuffer = await generateInvoicePdf(rows[0].orgId, params.invoiceId)
+          pdfBuffer = await generateInvoicePdf(
+            rows[0].orgId,
+            params.invoiceId,
+            params.token,
+          )
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : 'Unknown error'
           if (message === 'Invoice not found') {

@@ -33,6 +33,7 @@ export const Route = createFileRoute('/api/documents/invoices/token/$token')({
           pdfBuffer = await generateInvoicePdf(
             orderRows[0].orgId,
             invoiceRows[0].id,
+            params.token,
           )
         } catch {
           return new Response('Internal Server Error', { status: 500 })

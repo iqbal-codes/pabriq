@@ -47,7 +47,10 @@ export async function resolveOrgForDocument(
   return { orgId: memberships[0].orgId, userId: session.user.id }
 }
 
-async function buildOrgPdfInfo(orgId: string): Promise<OrgPdfInfo> {
+async function buildOrgPdfInfo(
+  orgId: string,
+  token?: string,
+): Promise<OrgPdfInfo> {
   const {
     organizationProfiles: profiles,
     addresses,
@@ -90,6 +93,7 @@ async function buildOrgPdfInfo(orgId: string): Promise<OrgPdfInfo> {
         data: {
           assetId: profile.logoAssetId,
           variantKey: 'preview' as const,
+          token,
         },
       })
       logoUrl = result.url
@@ -207,7 +211,6 @@ export async function generateQuotationPdf(
     grandTotal: subtotal + taxes,
     notes: order.notes ?? null,
   }
-
   const buffer = await renderToBuffer(<QuotationDocument data={pdfData} />)
   return Buffer.from(buffer)
 }
@@ -215,6 +218,7 @@ export async function generateQuotationPdf(
 export async function generateInvoicePdf(
   orgId: string,
   invoiceId: string,
+  token?: string,
 ): Promise<Buffer> {
   const {
     invoices: invoicesTable,
@@ -237,7 +241,7 @@ export async function generateInvoicePdf(
 
   const [orgPdfInfo, customerPdfInfo, itemRows, pmRows, orderRows] =
     await Promise.all([
-      buildOrgPdfInfo(orgId),
+      buildOrgPdfInfo(orgId, token),
       buildCustomerPdfInfo(invoice.customerId),
       db
         .select()
