@@ -1,6 +1,6 @@
 import { ArrowRight, CheckCircle2, File } from 'lucide-react'
 import { useLocale, useTranslations } from 'use-intl'
-import { AssetImage } from '#/components/app/asset-image'
+import { AssetFileList } from '#/components/app/asset-file'
 import { formatShortDate } from '#/lib/formatters'
 import { cn } from '#/lib/utils'
 import type { OrderTaskEvent } from '../model'
@@ -32,7 +32,8 @@ function RequirementResponses({
   token?: string
 }) {
   const t = useTranslations('portal')
-  const hasFiles = responses.some((r) => r.assetIds && r.assetIds.length > 0)
+  const assetIds = responses.flatMap((r) => r.assetIds ?? [])
+  const hasFiles = assetIds.length > 0
   const hasValues = responses.some((r) => r.value)
 
   if (!hasFiles && !hasValues) return null
@@ -44,21 +45,13 @@ function RequirementResponses({
         <span>{t('requirementsSubmitted')}</span>
       </div>
       {hasFiles && (
-        <div className="grid grid-cols-4 gap-2">
-          {responses.flatMap((r) =>
-            r.assetIds && r.assetIds.length > 0
-              ? r.assetIds.map((assetId) => (
-                  <AssetImage
-                    key={assetId}
-                    assetId={assetId}
-                    assetKind="image"
-                    className="size-12 rounded-md object-cover"
-                    token={token}
-                  />
-                ))
-              : [],
-          )}
-        </div>
+        <AssetFileList
+          assetIds={assetIds}
+          layout="grid"
+          showSize={false}
+          className="grid-cols-4"
+          token={token}
+        />
       )}
       {hasValues && (
         <div className="space-y-1">

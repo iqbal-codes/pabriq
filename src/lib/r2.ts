@@ -23,10 +23,14 @@ const r2Client = new S3Client({
 export async function generateSignedDownloadUrl(
   key: string,
   expiresInSeconds: number,
+  options?: { contentDisposition?: string },
 ): Promise<{ url: string; expiresAt: number }> {
   const command = new GetObjectCommand({
     Bucket: R2_BUCKET_NAME,
     Key: key,
+    ...(options?.contentDisposition && {
+      ResponseContentDisposition: options.contentDisposition,
+    }),
   })
 
   const url = await getSignedUrl(r2Client, command, {

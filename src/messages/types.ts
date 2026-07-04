@@ -78,6 +78,10 @@ export type Messages = {
     status: string;
     optional: string;
     required: string;
+    download: string;
+    file: string;
+    noAttachments: string;
+    moreFiles: string;
   };
   settings: {
     general: string;

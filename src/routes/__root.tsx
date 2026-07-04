@@ -1,3 +1,4 @@
+import { Serwist } from '@serwist/window'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { type QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
@@ -10,6 +11,7 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router'
+import { type ReactNode, useEffect } from 'react'
 import { IntlProvider, useTranslations } from 'use-intl'
 import { Toaster } from '#/components/ui/sonner'
 import { ThemeProvider } from '#/components/ui/theme-provider'
@@ -49,6 +51,22 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         name: 'viewport',
         content: 'width=device-width, initial-scale=1',
       },
+      {
+        name: 'theme-color',
+        content: '#111111',
+      },
+      {
+        name: 'apple-mobile-web-app-capable',
+        content: 'yes',
+      },
+      {
+        name: 'apple-mobile-web-app-title',
+        content: 'Pabriq',
+      },
+      {
+        name: 'apple-mobile-web-app-status-bar-style',
+        content: 'black-translucent',
+      },
     ],
     links: [
       {
@@ -68,6 +86,18 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         rel: 'stylesheet',
         href: appCss,
       },
+      {
+        rel: 'manifest',
+        href: '/manifest.json',
+      },
+      {
+        rel: 'icon',
+        href: '/favicon.ico',
+      },
+      {
+        rel: 'apple-touch-icon',
+        href: '/logo192.png',
+      },
     ],
   }),
   shellComponent: RootDocument,
@@ -83,8 +113,24 @@ function TitleSetter() {
   return <title>{t('title')}</title>
 }
 
-function RootDocument({ children }: { children: React.ReactNode }) {
+function RootDocument({ children }: { children: ReactNode }) {
   const locale = getCurrentLocale()
+
+  useEffect(() => {
+    if (!import.meta.env.PROD) {
+      return
+    }
+
+    if (!('serviceWorker' in navigator)) {
+      return
+    }
+
+    const serwist = new Serwist('/sw.js', { scope: '/', type: 'module' })
+
+    void serwist.register().catch((error: unknown) => {
+      console.error('Service worker registration failed:', error)
+    })
+  }, [])
 
   return (
     <html lang={locale} suppressHydrationWarning>

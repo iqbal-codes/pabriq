@@ -260,14 +260,24 @@ export const getUploadUrl = createServerFn({ method: 'POST' })
     },
   )
 
+function buildAttachmentContentDisposition(filename: string): string {
+  const fallback = filename.replace(/["\\\r\n]/g, '_')
+  const encoded = encodeURIComponent(filename)
+  return `attachment; filename="${fallback || 'download'}"; filename*=UTF-8''${encoded}`
+}
+
 export const getAssetSignedUrl = createServerFn({ method: 'GET' })
   .inputValidator(
-    (input: { assetId: string; variantKey: VariantKey; token?: string }) =>
-      input,
+    (input: {
+      assetId: string
+      variantKey: VariantKey
+      token?: string
+      disposition?: 'inline' | 'attachment'
+    }) => input,
   )
   .handler(async ({ data }): Promise<{ url: string; expiresAt: number }> => {
     const token = data.token
-    const [, { db }] = await Promise.all([
+    const [orgId, { db }] = await Promise.all([
       token
         ? import('#/features/portal/server').then((m) =>
             m.getOrgIdFromToken(token),
@@ -314,6 +324,28 @@ export const getAssetSignedUrl = createServerFn({ method: 'GET' })
 
     const key = variant.storageKey
     const ttl = data.variantKey === 'original' ? 5 * 60 : 15 * 60
+
+    if (data.disposition === 'attachment') {
+      const [asset] = await db
+        .select({ originalFilename: assets.originalFilename })
+        .from(assets)
+        .where(
+          and(
+            eq(assets.id, data.assetId),
+            eq(assets.orgId, orgId),
+            eq(assets.status, 'active'),
+          ),
+        )
+        .limit(1)
+
+      if (!asset) throw new Error('Asset not found')
+
+      return generateSignedDownloadUrl(key, ttl, {
+        contentDisposition: buildAttachmentContentDisposition(
+          asset.originalFilename,
+        ),
+      })
+    }
 
     return generateSignedDownloadUrl(key, ttl)
   })

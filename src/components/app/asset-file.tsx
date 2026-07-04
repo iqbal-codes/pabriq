@@ -1,16 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import {
-  ExternalLink,
-  File,
-  FileArchive,
-  FileSpreadsheet,
-  FileText,
-  FileType,
-  Package,
-} from 'lucide-react'
+import { Download, Package } from 'lucide-react'
+import { useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
-import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils'
 import type { AssetKind } from '../../features/assets/model'
 import type { AssetMetadata } from '../../features/assets/server'
@@ -30,44 +21,29 @@ function getExtension(filename: string): string {
   return parts.length > 1 ? (parts.pop() ?? '').toUpperCase() : ''
 }
 
-function getFileIcon(mimeType: string) {
-  if (mimeType === 'application/pdf') return FileText
-  if (mimeType.includes('spreadsheet') || mimeType.includes('excel'))
-    return FileSpreadsheet
-  if (
-    mimeType.includes('document') ||
-    mimeType.includes('word') ||
-    mimeType.startsWith('text/')
-  )
-    return FileText
-  if (
-    mimeType.includes('zip') ||
-    mimeType.includes('rar') ||
-    mimeType.includes('tar') ||
-    mimeType.includes('7z') ||
-    mimeType.includes('gzip') ||
-    mimeType.includes('compress')
-  )
-    return FileArchive
-  if (
-    mimeType.startsWith('font/') ||
-    mimeType.includes('json') ||
-    mimeType.includes('xml') ||
-    mimeType.includes('csv')
-  )
-    return FileType
-  return File
-}
-
-function FileIconDisplay({
-  mimeType,
+export function AssetExtensionPlaceholder({
+  filename,
+  fallbackLabel,
   className,
 }: {
-  mimeType: string
+  filename: string
+  fallbackLabel: string
   className?: string
 }) {
-  const Icon = getFileIcon(mimeType)
-  return <Icon className={cn('shrink-0', className)} />
+  const ext = getExtension(filename)
+  const label = ext || fallbackLabel.toUpperCase()
+  return (
+    <div
+      className={cn(
+        'flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted',
+        className,
+      )}
+    >
+      <span className="max-w-full truncate px-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
+    </div>
+  )
 }
 
 function AssetFileRow({
@@ -81,30 +57,33 @@ function AssetFileRow({
   className?: string
   token?: string
 }) {
+  const common = useTranslations('common')
   const isImage = metadata.assetKind === 'image'
-  const isVideo = metadata.assetKind === 'video'
-  const isPreviewable = isImage || isVideo
-  const ext = getExtension(metadata.originalFilename)
+
   const { data: signedUrlData } = useQuery({
-    queryKey: ['asset-signed-url', metadata.id, 'original', token].filter(
-      Boolean,
-    ),
+    queryKey: [
+      'asset-signed-url',
+      metadata.id,
+      'original',
+      'attachment',
+      token,
+    ].filter(Boolean),
     queryFn: () =>
       getAssetSignedUrl({
-        data: { assetId: metadata.id, variantKey: 'original', token },
+        data: {
+          assetId: metadata.id,
+          variantKey: 'original',
+          token,
+          disposition: 'attachment',
+        },
       }),
-    enabled: !isPreviewable,
+    enabled: !isImage,
     staleTime: 5 * 60 * 1000,
   })
 
-  return (
-    <div
-      className={cn(
-        'flex items-center gap-3 rounded-lg border py-2 pr-2 pl-3',
-        className,
-      )}
-    >
-      {isPreviewable ? (
+  const rowContent = (
+    <>
+      {isImage ? (
         <AssetImage
           assetId={metadata.id}
           assetKind={metadata.assetKind as AssetKind}
@@ -112,44 +91,48 @@ function AssetFileRow({
           token={token}
         />
       ) : (
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-          <FileIconDisplay
-            mimeType={metadata.mimeType}
-            className="size-5 text-muted-foreground"
-          />
-        </div>
+        <AssetExtensionPlaceholder
+          filename={metadata.originalFilename}
+          fallbackLabel={common('file')}
+          className={cn(!signedUrlData?.url && 'opacity-60')}
+        />
       )}
       <div className="flex-1 min-w-0 w-0 overflow-hidden">
         <p className="truncate text-sm font-medium">
           {metadata.originalFilename}
         </p>
-        <div className="flex items-center gap-2 mt-0.5">
-          {showSize && (
-            <span className="text-xs text-muted-foreground">
-              {formatBytes(metadata.sizeBytes)}
-            </span>
-          )}
-          {!isPreviewable && ext && (
-            <Badge variant="outline" className="text-xs leading-3 py-0 h-4">
-              {ext}
-            </Badge>
-          )}
-        </div>
+        {showSize && (
+          <span className="text-xs text-muted-foreground">
+            {formatBytes(metadata.sizeBytes)}
+          </span>
+        )}
       </div>
-      {!isPreviewable && signedUrlData?.url && (
-        <Button variant="ghost" size="icon-sm" asChild className="shrink-0">
-          <a
-            href={signedUrlData.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Download"
-          >
-            <ExternalLink className="size-4" />
-          </a>
-        </Button>
+      {!isImage && signedUrlData?.url && (
+        <Download className="size-4 shrink-0 text-muted-foreground" />
       )}
-    </div>
+    </>
   )
+
+  const rowClasses = cn(
+    'flex items-center gap-3 rounded-lg border py-2 pr-2 pl-3',
+    !isImage && signedUrlData?.url && 'hover:bg-accent/50 cursor-pointer',
+    className,
+  )
+
+  if (!isImage && signedUrlData?.url) {
+    return (
+      <a
+        href={signedUrlData.url}
+        download={metadata.originalFilename}
+        aria-label={`${common('download')} ${metadata.originalFilename}`}
+        className={rowClasses}
+      >
+        {rowContent}
+      </a>
+    )
+  }
+
+  return <div className={rowClasses}>{rowContent}</div>
 }
 
 function AssetFileGridCard({
@@ -161,27 +144,34 @@ function AssetFileGridCard({
   showSize?: boolean
   token?: string
 }) {
+  const common = useTranslations('common')
   const isImage = metadata.assetKind === 'image'
-  const isVideo = metadata.assetKind === 'video'
-  const isPreviewable = isImage || isVideo
-  const ext = getExtension(metadata.originalFilename)
 
   const { data: signedUrlData } = useQuery({
-    queryKey: ['asset-signed-url', metadata.id, 'original', token].filter(
-      Boolean,
-    ),
+    queryKey: [
+      'asset-signed-url',
+      metadata.id,
+      'original',
+      'attachment',
+      token,
+    ].filter(Boolean),
     queryFn: () =>
       getAssetSignedUrl({
-        data: { assetId: metadata.id, variantKey: 'original', token },
+        data: {
+          assetId: metadata.id,
+          variantKey: 'original',
+          token,
+          disposition: 'attachment',
+        },
       }),
-    enabled: !isPreviewable,
+    enabled: !isImage,
     staleTime: 5 * 60 * 1000,
   })
 
-  return (
-    <div className="group relative flex flex-col overflow-hidden rounded-lg border bg-card transition-shadow hover:shadow-md">
+  const cardContent = (
+    <>
       <div className="flex aspect-square items-center justify-center bg-muted/30">
-        {isPreviewable ? (
+        {isImage ? (
           <AssetImage
             assetId={metadata.id}
             assetKind={metadata.assetKind as AssetKind}
@@ -189,12 +179,11 @@ function AssetFileGridCard({
             token={token}
           />
         ) : (
-          <div className="flex items-center justify-center">
-            <FileIconDisplay
-              mimeType={metadata.mimeType}
-              className="size-12 text-muted-foreground"
-            />
-          </div>
+          <AssetExtensionPlaceholder
+            filename={metadata.originalFilename}
+            fallbackLabel={common('file')}
+            className="size-full rounded-none bg-transparent"
+          />
         )}
       </div>
       <div className="flex flex-col gap-1 p-2.5">
@@ -207,33 +196,26 @@ function AssetFileGridCard({
           </p>
         )}
       </div>
-      {!isPreviewable && signedUrlData?.url && (
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          asChild
-          className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur"
-        >
-          <a
-            href={signedUrlData.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={metadata.originalFilename}
-          >
-            <ExternalLink className="size-3.5" />
-          </a>
-        </Button>
-      )}
-      {!isPreviewable && ext && (
-        <Badge
-          variant="secondary"
-          className="absolute top-1.5 left-1.5 text-xs leading-3 py-0 h-4"
-        >
-          {ext}
-        </Badge>
-      )}
-    </div>
+    </>
   )
+
+  const cardClasses =
+    'group relative flex flex-col overflow-hidden rounded-lg border bg-card transition-shadow hover:shadow-md'
+
+  if (!isImage && signedUrlData?.url) {
+    return (
+      <a
+        href={signedUrlData.url}
+        download={metadata.originalFilename}
+        aria-label={`${common('download')} ${metadata.originalFilename}`}
+        className={cardClasses}
+      >
+        {cardContent}
+      </a>
+    )
+  }
+
+  return <div className={cardClasses}>{cardContent}</div>
 }
 
 type AssetFileListProps = {
@@ -243,6 +225,7 @@ type AssetFileListProps = {
   maxVisible?: number
   className?: string
   token?: string
+  prefetchedAssets?: AssetMetadata[]
 }
 
 export function AssetFileList({
@@ -252,19 +235,23 @@ export function AssetFileList({
   maxVisible,
   className,
   token,
+  prefetchedAssets,
 }: AssetFileListProps) {
-  const { data: assets } = useQuery({
+  const common = useTranslations('common')
+  const { data: queriedAssets } = useQuery({
     queryKey: ['asset-file-meta', assetIds, token].filter(Boolean),
     queryFn: () => getAssetsMetadata({ data: { assetIds, token } }),
-    enabled: assetIds.length > 0,
+    enabled: assetIds.length > 0 && !prefetchedAssets,
     staleTime: 60 * 1000,
   })
+
+  const assets = prefetchedAssets ?? queriedAssets
 
   if (!assets || assets.length === 0) {
     return (
       <div className="flex items-center gap-2 py-4 text-xs text-muted-foreground">
         <Package className="size-4" />
-        <span>No attachments</span>
+        <span>{common('noAttachments')}</span>
       </div>
     )
   }
@@ -290,7 +277,7 @@ export function AssetFileList({
         ))}
         {remaining > 0 && (
           <div className="flex aspect-square items-center justify-center rounded-lg border bg-muted/30 text-sm text-muted-foreground">
-            +{remaining} more
+            {common('moreFiles', { count: remaining })}
           </div>
         )}
       </div>
@@ -309,7 +296,7 @@ export function AssetFileList({
       ))}
       {remaining > 0 && (
         <p className="text-xs text-center text-muted-foreground">
-          +{remaining} more file{remaining > 1 ? 's' : ''}
+          {common('moreFiles', { count: remaining })}
         </p>
       )}
     </div>

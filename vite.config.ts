@@ -6,18 +6,19 @@ import { devtools } from '@tanstack/devtools-vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 
 import viteReact from '@vitejs/plugin-react'
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import neon from './neon-vite-plugin.ts'
+import { tanstackSerwistPlugin } from './src/tanstack-serwist-plugin.ts'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const browserPolyfills = () => ({
+const browserPolyfills = (): Plugin => ({
   name: 'browser-polyfills',
-  enforce: 'pre' as const,
+  enforce: 'pre',
   resolveId(
     source: string,
-    importer: string | undefined,
+    _importer: string | undefined,
     options: { ssr?: boolean },
   ) {
     if (options?.ssr) {
@@ -56,6 +57,7 @@ const config = defineConfig(({ mode }) => {
       neonLaunchpad,
       tailwindcss(),
       tanstackStart(),
+      tanstackSerwistPlugin(),
       viteReact(),
     ],
   }

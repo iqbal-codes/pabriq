@@ -81,6 +81,10 @@ const en: Messages = {
     status: "Status",
     optional: "Optional",
     required: "Required",
+    download: "Download",
+    file: "File",
+    noAttachments: "No attachments",
+    moreFiles: "+{count} more {count, plural, one {file} other {files}}",
   },
   dataTable: {
     clearFilters: "Clear filters",
