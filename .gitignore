@@ -23,3 +23,7 @@ docs/specs/later
 
 # Impeccable live config (dev tool)
 .impeccable/live/
+
+# Worktrees and accidental directories
+.worktree/
+iajfoaiwe/
