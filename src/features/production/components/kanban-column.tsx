@@ -34,6 +34,7 @@ type Props = {
   onClickCard?: (taskId: string) => void
   variant?: ColumnVariant
   needApproval?: boolean
+  showDeadlineOutcome?: boolean
 }
 
 export function KanbanColumn({
@@ -43,6 +44,7 @@ export function KanbanColumn({
   onClickCard,
   variant = 'queue',
   needApproval,
+  showDeadlineOutcome = false,
 }: Props) {
   const t = useTranslations('production')
   const styles = variantStyles[variant]
@@ -74,7 +76,12 @@ export function KanbanColumn({
           </p>
         ) : (
           tasks.map((bt) => (
-            <KanbanTaskCard key={bt.task.id} task={bt} onClick={onClickCard} />
+            <KanbanTaskCard
+              key={bt.task.id}
+              task={bt}
+              onClick={onClickCard}
+              showDeadlineOutcome={showDeadlineOutcome}
+            />
           ))
         )}
       </CardContent>

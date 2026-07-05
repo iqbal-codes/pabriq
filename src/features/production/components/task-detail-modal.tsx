@@ -7,6 +7,7 @@ import { Button } from '#/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
@@ -104,6 +105,43 @@ export function TaskDetailModal({
   const hasRequirements =
     currentStage !== null && currentStage.requirements?.length > 0
 
+  const actionButtonClassName =
+    'bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95 font-semibold text-sm transition-colors cursor-pointer'
+  const footerAction =
+    task.status === 'queued' && nextStage ? (
+      <Button
+        className={actionButtonClassName}
+        onClick={handleAdvanceClick}
+        isLoading={advanceTask.isPending}
+        disabled={advanceTask.isPending}
+      >
+        {t('advanceTo', { stage: nextStage.name })}
+      </Button>
+    ) : task.status === 'in_progress' && (nextStage || isAtLastBoardStage) ? (
+      <Button
+        className={actionButtonClassName}
+        onClick={handleAdvanceClick}
+        isLoading={advanceTask.isPending}
+        disabled={advanceTask.isPending}
+      >
+        {currentStage?.needApproval
+          ? t('requestReview')
+          : isAtLastBoardStage && task.board === 'pre_production'
+            ? t('markReadyForProduction')
+            : isAtLastBoardStage
+              ? t('done')
+              : t('advanceTo', { stage: nextStage?.name })}
+      </Button>
+    ) : task.status === 'pending_approval' && canApprove && onReview ? (
+      <Button
+        className={actionButtonClassName}
+        onClick={() => onReview(taskId)}
+        disabled={advanceTask.isPending}
+      >
+        {t('reviewAdvancement')}
+      </Button>
+    ) : null
+
   function handleAdvanceClick() {
     if (hasRequirements) {
       setShowRequirementForm(true)
@@ -165,59 +203,18 @@ export function TaskDetailModal({
                 </span>
                 {currentStage && <Badge>{currentStage.name}</Badge>}
               </div>
-              <div className="w-full flex flex-row items-center">
-                <div className="space-y-1 flex-1">
-                  <DialogTitle className="text-xl font-bold tracking-tight text-foreground sm:text-2xl text-left">
-                    {productName || t('taskDetail')}
-                  </DialogTitle>
-                  {designName && (
-                    <p className="text-sm font-medium text-muted-foreground text-left">
-                      {t('designName')}:{' '}
-                      <span className="text-foreground font-semibold">
-                        {designName}
-                      </span>
-                    </p>
-                  )}
-                </div>
-
-                {task.status === 'queued' && nextStage && (
-                  <Button
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95 font-semibold text-sm transition-colors cursor-pointer"
-                    onClick={handleAdvanceClick}
-                    isLoading={advanceTask.isPending}
-                    disabled={advanceTask.isPending}
-                  >
-                    {t('advanceTo', { stage: nextStage.name })}
-                  </Button>
+              <div className="space-y-1">
+                <DialogTitle className="text-xl font-bold tracking-tight text-foreground sm:text-2xl text-left">
+                  {productName || t('taskDetail')}
+                </DialogTitle>
+                {designName && (
+                  <p className="text-sm font-medium text-muted-foreground text-left">
+                    {t('designName')}:{' '}
+                    <span className="text-foreground font-semibold">
+                      {designName}
+                    </span>
+                  </p>
                 )}
-                {task.status === 'in_progress' &&
-                  (nextStage || isAtLastBoardStage) && (
-                    <Button
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95 font-semibold text-sm transition-colors cursor-pointer"
-                      onClick={handleAdvanceClick}
-                      isLoading={advanceTask.isPending}
-                      disabled={advanceTask.isPending}
-                    >
-                      {currentStage?.needApproval
-                        ? t('requestReview')
-                        : isAtLastBoardStage && task.board === 'pre_production'
-                          ? t('markReadyForProduction')
-                          : isAtLastBoardStage
-                            ? t('done')
-                            : t('advanceTo', { stage: nextStage?.name })}
-                    </Button>
-                  )}
-                {task.status === 'pending_approval' &&
-                  canApprove &&
-                  onReview && (
-                    <Button
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95 font-semibold text-sm transition-colors cursor-pointer"
-                      onClick={() => onReview(taskId)}
-                      disabled={advanceTask.isPending}
-                    >
-                      {t('reviewAdvancement')}
-                    </Button>
-                  )}
               </div>
             </DialogHeader>
 
@@ -343,6 +340,11 @@ export function TaskDetailModal({
                   </div>
                 </TabsContent>
               </Tabs>
+              {footerAction && (
+                <DialogFooter className="shrink-0 border-t border-border px-6 py-4">
+                  {footerAction}
+                </DialogFooter>
+              )}
             </div>
           </>
         )}

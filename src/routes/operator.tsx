@@ -44,7 +44,11 @@ export const Route = createFileRoute('/operator')({
           search: { redirect: location.href },
         })
       }
-      return { access: 'no-org' as const, session: result.session }
+      return {
+        access: 'no-org' as const,
+        session: result.session,
+        pageTitle: 'noOrganization' as const,
+      }
     }
 
     if (result.role === 'member') {
@@ -53,6 +57,7 @@ export const Route = createFileRoute('/operator')({
         session: result.session,
         org: result.org,
         role: result.role,
+        pageTitle: 'production' as const,
       }
     }
 
@@ -61,6 +66,7 @@ export const Route = createFileRoute('/operator')({
       session: result.session,
       org: result.org,
       role: result.role,
+      pageTitle: 'accessDenied' as const,
     }
   },
   component: OperatorLayout,

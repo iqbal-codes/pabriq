@@ -34,6 +34,8 @@ export const Route = createFileRoute('/onboarding')({
     if (!session) {
       throw redirect({ to: '/sign-in', search: { redirect: undefined } })
     }
+
+    return { pageTitle: 'createOrganization' as const }
   },
   component: OnboardingPage,
 })

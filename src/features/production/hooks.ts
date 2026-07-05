@@ -263,6 +263,7 @@ export function useTaskMutations() {
         { queryKey: queryKeys.production.task(vars.taskId) },
         { queryKey: queryKeys.production.activities(vars.taskId) },
         { queryKey: [queryKeys.production.all[0], 'board'] },
+        { queryKey: queryKeys.notifications.all },
       ])
     },
   })
@@ -284,6 +285,7 @@ export function useTaskMutations() {
         { queryKey: queryKeys.production.task(vars.taskId) },
         { queryKey: queryKeys.production.activities(vars.taskId) },
         { queryKey: [queryKeys.production.all[0], 'board'] },
+        { queryKey: queryKeys.notifications.all },
       ])
     },
   })

@@ -73,16 +73,14 @@ export function ShipmentDetailsSection({
           </div>
         )}
 
-        {order.remainingAmount !== 0 && (
-          <form.AppField name="courier">
-            {(field) => (
-              <field.TextField
-                label={labels.courier}
-                placeholder={labels.courierPlaceholder}
-              />
-            )}
-          </form.AppField>
-        )}
+        <form.AppField name="courier">
+          {(field) => (
+            <field.TextField
+              label={labels.courier}
+              placeholder={labels.courierPlaceholder}
+            />
+          )}
+        </form.AppField>
 
         <form.AppField name="trackingNumber">
           {(field) => (
@@ -93,18 +91,16 @@ export function ShipmentDetailsSection({
           )}
         </form.AppField>
 
-        {order.remainingAmount !== 0 && (
-          <form.AppField name="shippingFee">
-            {(field) => (
-              <field.NumberField
-                label={labels.shippingFee}
-                optional
-                optionalLabel={` ${labels.optional}`}
-                placeholder="0"
-              />
-            )}
-          </form.AppField>
-        )}
+        <form.AppField name="shippingFee">
+          {(field) => (
+            <field.NumberField
+              label={labels.shippingFee}
+              optional
+              optionalLabel={` ${labels.optional}`}
+              placeholder="0"
+            />
+          )}
+        </form.AppField>
         {shippingAmount > 0 && (
           <form.AppField name="shippingFeeDescription">
             {(field) => (

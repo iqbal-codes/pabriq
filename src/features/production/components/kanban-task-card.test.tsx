@@ -44,6 +44,11 @@ const enMessages = {
     deadlineDaysOverdue:
       '{days, plural, one {# day overdue} other {# days overdue}}',
     deadlineLabel: 'Deadline {date}',
+    deadlineFinishedEarly:
+      '{days, plural, one {Early by # day} other {Early by # days}}',
+    deadlineOnTime: 'On time',
+    deadlineFinishedLate:
+      '{days, plural, one {Late by # day} other {Late by # days}}',
   },
   status: {
     in_progress: 'In Progress',
@@ -56,10 +61,18 @@ const enMessages = {
   },
 }
 
-function renderCard(task: BoardTask, onClick = vi.fn()) {
+function renderCard(
+  task: BoardTask,
+  onClick = vi.fn(),
+  options?: { showDeadlineOutcome?: boolean },
+) {
   const result = render(
     <IntlProvider locale="en" messages={enMessages}>
-      <KanbanTaskCard task={task} onClick={onClick} />
+      <KanbanTaskCard
+        task={task}
+        onClick={onClick}
+        showDeadlineOutcome={options?.showDeadlineOutcome}
+      />
     </IntlProvider>,
   )
   return { onClick, result }
@@ -75,6 +88,12 @@ function isoAtDays(offset: number): string {
   const d = atMidnight(new Date())
   d.setDate(d.getDate() + offset)
   return d.toISOString()
+}
+
+function dateAtDays(offset: number): Date {
+  const d = atMidnight(new Date())
+  d.setDate(d.getDate() + offset)
+  return d
 }
 
 describe('KanbanTaskCard', () => {
@@ -205,6 +224,83 @@ describe('KanbanTaskCard', () => {
         }),
       )
       expect(screen.getByText('2 days overdue')).toBeInTheDocument()
+    })
+    it('renders early label with success color on the final production stage', () => {
+      renderCard(
+        createMockTask({
+          context: {
+            productName: 'Custom T-Shirt',
+            customerName: 'Acme Corp',
+            orderNumber: 'ORD-001',
+            quantity: 500,
+            deadline: isoAtDays(2),
+          },
+        }),
+        vi.fn(),
+        { showDeadlineOutcome: true },
+      )
+      const badge = screen
+        .getByText('Early by 2 days')
+        .closest('[data-slot="badge"]')
+      expect(badge?.className).toContain('text-success')
+    })
+
+    it('renders on-time label with accent color on the final production stage', () => {
+      renderCard(
+        createMockTask({
+          context: {
+            productName: 'Custom T-Shirt',
+            customerName: 'Acme Corp',
+            orderNumber: 'ORD-001',
+            quantity: 500,
+            deadline: isoAtDays(0),
+          },
+        }),
+        vi.fn(),
+        { showDeadlineOutcome: true },
+      )
+      const badge = screen.getByText('On time').closest('[data-slot="badge"]')
+      expect(badge?.className).toContain('text-brand-accent')
+    })
+
+    it('renders late label with destructive color on the final production stage', () => {
+      renderCard(
+        createMockTask({
+          context: {
+            productName: 'Custom T-Shirt',
+            customerName: 'Acme Corp',
+            orderNumber: 'ORD-001',
+            quantity: 500,
+            deadline: isoAtDays(-2),
+          },
+        }),
+        vi.fn(),
+        { showDeadlineOutcome: true },
+      )
+      const badge = screen
+        .getByText('Late by 2 days')
+        .closest('[data-slot="badge"]')
+      expect(badge?.className).toContain('text-destructive')
+    })
+
+    it('uses completed updatedAt for done-card outcome timing', () => {
+      renderCard(
+        createMockTask({
+          status: 'completed',
+          updatedAt: dateAtDays(-2),
+          context: {
+            productName: 'Custom T-Shirt',
+            customerName: 'Acme Corp',
+            orderNumber: 'ORD-001',
+            quantity: 500,
+            deadline: isoAtDays(0),
+          },
+        }),
+        vi.fn(),
+        { showDeadlineOutcome: true },
+      )
+
+      expect(screen.getByText('Early by 2 days')).toBeInTheDocument()
     })
 
     it('ignores invalid deadline strings', () => {

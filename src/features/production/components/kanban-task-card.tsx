@@ -10,6 +10,7 @@ import type { BoardTask } from '../model'
 type Props = {
   task: BoardTask
   onClick?: (taskId: string) => void
+  showDeadlineOutcome?: boolean
 }
 
 function getCtx(
@@ -22,40 +23,53 @@ function getCtx(
 
 type DeadlineInfo = {
   date: Date
-  daysFromNow: number
+  dayDelta: number
   dateLabel: string
 }
 
 function getDeadlineInfo(
   ctx: Record<string, string | number | boolean | null> | null,
   locale: string,
+  referenceDate: Date,
 ): DeadlineInfo | null {
   const raw = ctx?.deadline
   if (raw == null || raw === '') return null
   const date = new Date(String(raw))
   if (Number.isNaN(date.getTime())) return null
   const msPerDay = 24 * 60 * 60 * 1000
-  const startOfToday = new Date()
-  startOfToday.setHours(0, 0, 0, 0)
+  const startOfReference = new Date(referenceDate)
+  startOfReference.setHours(0, 0, 0, 0)
   const startOfDeadline = new Date(date)
   startOfDeadline.setHours(0, 0, 0, 0)
-  const daysFromNow = Math.round(
-    (startOfDeadline.getTime() - startOfToday.getTime()) / msPerDay,
+  const dayDelta = Math.round(
+    (startOfDeadline.getTime() - startOfReference.getTime()) / msPerDay,
   )
   return {
     date,
-    daysFromNow,
+    dayDelta,
     dateLabel: formatShortDate(date.toISOString(), locale),
   }
 }
 
-function getDeadlineClasses(daysFromNow: number): string {
+function getDeadlineClasses(
+  daysFromNow: number,
+  showDeadlineOutcome: boolean,
+): string {
+  if (showDeadlineOutcome) {
+    if (daysFromNow > 0) return 'text-success'
+    if (daysFromNow === 0) return 'text-brand-accent'
+    return 'text-destructive'
+  }
   if (daysFromNow < 0) return 'text-destructive'
   if (daysFromNow <= 1) return 'text-warning'
   return 'text-muted-foreground'
 }
 
-export function KanbanTaskCard({ task, onClick }: Props) {
+export function KanbanTaskCard({
+  task,
+  onClick,
+  showDeadlineOutcome = false,
+}: Props) {
   const ct = useTranslations('common')
   const pt = useTranslations('production')
   const locale = useLocale()
@@ -68,7 +82,11 @@ export function KanbanTaskCard({ task, onClick }: Props) {
   const designName = getCtx(ctx, 'designName')
   const orderNum = getCtx(ctx, 'orderNumber')
   const quantity = getCtx(ctx, 'quantity')
-  const deadline = getDeadlineInfo(ctx, locale)
+  const deadlineReferenceDate =
+    showDeadlineOutcome && taskData.status === 'completed'
+      ? new Date(taskData.updatedAt)
+      : new Date()
+  const deadline = getDeadlineInfo(ctx, locale, deadlineReferenceDate)
   const isPendingApproval = taskData.status === 'pending_approval'
   const isInteractive = typeof onClick === 'function'
 
@@ -129,18 +147,28 @@ export function KanbanTaskCard({ task, onClick }: Props) {
               variant="outline"
               className={cn(
                 'shrink-0 text-[10px] gap-1 border-current',
-                getDeadlineClasses(deadline.daysFromNow),
+                getDeadlineClasses(deadline.dayDelta, showDeadlineOutcome),
               )}
               title={pt('deadlineLabel', { date: deadline.dateLabel })}
             >
               <Clock className="size-3" />
-              {deadline.daysFromNow < 0
-                ? pt('deadlineDaysOverdue', { days: -deadline.daysFromNow })
-                : deadline.daysFromNow === 0
-                  ? pt('deadlineToday')
-                  : deadline.daysFromNow === 1
-                    ? pt('deadlineTomorrow')
-                    : pt('deadlineDaysLeft', { days: deadline.daysFromNow })}
+              {showDeadlineOutcome
+                ? deadline.dayDelta > 0
+                  ? pt('deadlineFinishedEarly', { days: deadline.dayDelta })
+                  : deadline.dayDelta === 0
+                    ? pt('deadlineOnTime')
+                    : pt('deadlineFinishedLate', {
+                        days: -deadline.dayDelta,
+                      })
+                : deadline.dayDelta < 0
+                  ? pt('deadlineDaysOverdue', { days: -deadline.dayDelta })
+                  : deadline.dayDelta === 0
+                    ? pt('deadlineToday')
+                    : deadline.dayDelta === 1
+                      ? pt('deadlineTomorrow')
+                      : pt('deadlineDaysLeft', {
+                          days: deadline.dayDelta,
+                        })}
             </Badge>
           ) : null}
         </div>

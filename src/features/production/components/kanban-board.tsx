@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useTranslations } from 'use-intl'
+import { useLocale, useTranslations } from 'use-intl'
 import { Separator } from '#/components/ui/separator'
 import type { BoardTask, Stage } from '../model'
 import { KanbanColumn } from './kanban-column'
@@ -17,7 +17,7 @@ type Props = {
 
 export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
   const t = useTranslations('production')
-
+  const locale = useLocale()
   const preProdStages = useMemo(
     () =>
       stages
@@ -33,6 +33,16 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
         .sort((a, b) => a.orderIndex - b.orderIndex),
     [stages],
   )
+
+  const firstProdStageName = prodStages[0]?.name
+  const readyForProductionTitle = useMemo(() => {
+    if (firstProdStageName) {
+      return locale === 'id'
+        ? `Antri ${firstProdStageName}`
+        : `Queue for ${firstProdStageName}`
+    }
+    return t('readyForProduction')
+  }, [firstProdStageName, locale, t])
 
   return (
     <section
@@ -62,7 +72,7 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
       ))}
       {preProdStages.length > 0 && (
         <KanbanColumn
-          title={t('readyForProduction')}
+          title={readyForProductionTitle}
           count={boardData.readyForProduction.length}
           tasks={boardData.readyForProduction}
           variant="preProduction"
@@ -73,7 +83,7 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
       {prodStages.length > 0 && (
         <Separator orientation="vertical" className="h-auto self-stretch" />
       )}
-      {prodStages.map((stage) => (
+      {prodStages.map((stage, index) => (
         <KanbanColumn
           key={stage.id}
           title={stage.name}
@@ -82,6 +92,7 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
           onClickCard={onClickCard}
           variant="production"
           needApproval={stage.needApproval}
+          showDeadlineOutcome={index === prodStages.length - 1}
         />
       ))}
 
@@ -93,6 +104,7 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
         tasks={boardData.done}
         onClickCard={onClickCard}
         variant="done"
+        showDeadlineOutcome={true}
       />
     </section>
   )

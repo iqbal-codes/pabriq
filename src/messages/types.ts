@@ -345,6 +345,14 @@ export type Messages = {
     paymentMethods: string;
     members: string;
     profile: string;
+    signIn: string;
+    signUp: string;
+    createOrganization: string;
+    accessDenied: string;
+    noOrganization: string;
+    completeOrderData: string;
+    acceptInvitation: string;
+    notifications: string;
   };
   status: {
     draft: string;
@@ -400,6 +408,7 @@ export type Messages = {
     production: string;
     settings: string;
     admin: string;
+    notifications: string;
   };
   customers: {
     title: string;
@@ -766,6 +775,9 @@ export type Messages = {
     deadlineDaysLeft: string;
     deadlineDaysOverdue: string;
     deadlineLabel: string;
+    deadlineFinishedEarly: string;
+    deadlineOnTime: string;
+    deadlineFinishedLate: string;
     taskCreated: string;
     noActivity: string;
     tabActive: string;
@@ -1010,6 +1022,14 @@ export type Messages = {
     paymentConfirmTimeout: string;
     shipmentTracking: string;
     trackShipment: string;
+    orderTimelineSectionTitle: string;
+    orderTimelineEmpty: string;
+    timelineOrderReceived: string;
+    timelineOrderApproved: string;
+    timelineOrderCompleted: string;
+    timelinePaymentDpConfirmed: string;
+    timelinePaymentFinalConfirmed: string;
+    timelineProductionStageReached: string;
   };
   assistant: {
     trigger: string;
@@ -1026,6 +1046,37 @@ export type Messages = {
     assistant: string;
     notConfigured: string;
     genericError: string;
+  };
+  notifications: {
+    title: string;
+    pageTitle: string;
+    description: string;
+    subtitle: string;
+    viewAll: string;
+    emptyTitle: string;
+    emptyDescription: string;
+    paymentConfirmations: string;
+    orderReviews: string;
+    taskReviews: string;
+    dpInvoiceRequests: string;
+    finalInvoiceRequests: string;
+    paymentConfirmationLabel: string;
+    orderReviewLabel: string;
+    taskReviewLabel: string;
+    dpInvoiceLabel: string;
+    finalInvoiceLabel: string;
+    paymentConfirmationMessage: string;
+    orderReviewMessage: string;
+    taskReviewMessage: string;
+    dpInvoiceMessage: string;
+    finalInvoiceMessage: string;
+    openAction: string;
+    amount: string;
+    noCustomer: string;
+    noOrderNumber: string;
+    noTaskNumber: string;
+    noStage: string;
+    productionStageFallback: string;
   };
   operator: {
     accessDeniedTitle: string;

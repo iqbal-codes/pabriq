@@ -17,7 +17,7 @@ export const Route = createFileRoute('/invite/accept')({
         search: { redirect: `/invite/accept?id=${search.id}` },
       })
     }
-    return { invitationId: search.id }
+    return { invitationId: search.id, pageTitle: 'acceptInvitation' as const }
   },
   component: function InviteAcceptRoute() {
     const { invitationId } = Route.useRouteContext()

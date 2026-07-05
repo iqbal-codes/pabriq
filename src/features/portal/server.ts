@@ -218,3 +218,10 @@ export const getOrderTasksTimelineFn = createServerFn({ method: 'GET' })
     const { getOrderTasksTimeline } = await import('./model')
     return getOrderTasksTimeline(data.token)
   })
+
+export const getOrderTimelineFn = createServerFn({ method: 'GET' })
+  .inputValidator((input: { token: string }) => input)
+  .handler(async ({ data }) => {
+    const { getOrderTimeline } = await import('./model')
+    return getOrderTimeline(data.token)
+  })

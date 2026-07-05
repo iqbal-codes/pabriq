@@ -1,4 +1,3 @@
-import { Minus, Plus } from 'lucide-react'
 import { useLocale, useTranslations } from 'use-intl'
 import { StatusBadge } from '#/components/status-badge'
 import { Badge } from '#/components/ui/badge'
@@ -16,14 +15,15 @@ import type { OrderForInvoice } from '#/features/invoices/model'
 import { formatProductDesignLabel } from '#/features/orders/line-item-display'
 import { formatCurrency } from '#/lib/formatters'
 import type { InvoicePercentageMode } from './create-invoice-form-types'
+import { InvoiceAmountInput } from './invoice-amount-input'
 
 type OrderForInvoiceSummaryCardProps = {
   orderData: OrderForInvoice
   selectedPercentage: InvoicePercentageMode
-  customPercentage: number
+  customAmount: number
   invoiceTotal: number
   onSelectedPercentageChange: (value: InvoicePercentageMode) => void
-  onCustomPercentageChange: (value: number) => void
+  onCustomAmountChange: (value: number) => void
 }
 
 export function OrderForInvoiceSummaryCard(
@@ -32,10 +32,10 @@ export function OrderForInvoiceSummaryCard(
   const {
     orderData,
     selectedPercentage,
-    customPercentage,
+    customAmount,
     invoiceTotal,
     onSelectedPercentageChange,
-    onCustomPercentageChange,
+    onCustomAmountChange,
   } = props
   const t = useTranslations('invoices')
   const locale = useLocale()
@@ -98,67 +98,34 @@ export function OrderForInvoiceSummaryCard(
             </div>
           )}
 
-          {/* Percentage Selector */}
           <div>
             <p className="text-sm text-muted-foreground mb-2">
               {t('invoiceAmount')}
             </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant={selectedPercentage === 'full' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => onSelectedPercentageChange('full')}
-              >
-                {t('fullAmount')}
-              </Button>
-              <Button
-                variant={
-                  selectedPercentage === 'remaining' ? 'default' : 'outline'
-                }
-                size="sm"
-                onClick={() => onSelectedPercentageChange('remaining')}
-                disabled={orderData.remainingPercentage <= 0}
-              >
-                {t('remaining')} ({orderData.remainingPercentage}%)
-              </Button>
-              <Button
-                variant={
-                  selectedPercentage === 'custom' ? 'default' : 'outline'
-                }
-                size="sm"
-                onClick={() => onSelectedPercentageChange('custom')}
-              >
-                {t('customAmount')}
-              </Button>
-              {selectedPercentage === 'custom' && (
-                <div className="flex items-center gap-1">
+            <div className="space-y-3">
+              {orderData.existingInvoices.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() =>
-                      onCustomPercentageChange(
-                        Math.max(1, customPercentage - 10),
-                      )
+                    variant={
+                      selectedPercentage === 'remaining' ? 'default' : 'outline'
                     }
+                    size="sm"
+                    onClick={() => onSelectedPercentageChange('remaining')}
+                    disabled={orderData.remainingPercentage <= 0}
                   >
-                    <Minus className="size-3" />
-                  </Button>
-                  <span className="w-16 text-center font-medium">
-                    {customPercentage}%
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() =>
-                      onCustomPercentageChange(
-                        Math.min(100, customPercentage + 10),
-                      )
-                    }
-                  >
-                    <Plus className="size-3" />
+                    {t('remaining')} ({orderData.remainingPercentage}%)
                   </Button>
                 </div>
               )}
+              <InvoiceAmountInput
+                ariaLabel={t('invoiceAmount')}
+                baseAmount={orderData.order.total}
+                value={customAmount}
+                onChange={(value) => {
+                  onSelectedPercentageChange('custom')
+                  onCustomAmountChange(value)
+                }}
+              />
             </div>
             <p className="mt-2 font-semibold">
               {t('invoiceTotal', {

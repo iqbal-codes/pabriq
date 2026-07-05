@@ -8,6 +8,7 @@ import {
   HeadContent,
   Outlet,
   Scripts,
+  useRouterState,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router'
@@ -19,8 +20,44 @@ import { TooltipProvider } from '#/components/ui/tooltip'
 import { defaultLocale } from '#/lib/i18n'
 import { getCurrentLocale } from '#/lib/i18n.utils'
 import { getQueryClient } from '#/lib/query-client'
-import { type Locale, messages } from '#/messages'
+import { type Locale, type Messages, messages } from '#/messages'
 import appCss from '../styles.css?url'
+
+type PageTitleKey = keyof Messages['breadcrumb']
+type PageTitleMatch = { routeId: string; context: unknown }
+const pageTitleKeys = messages[defaultLocale].breadcrumb
+
+function isPageTitleKey(value: unknown): value is PageTitleKey {
+  return typeof value === 'string' && value in pageTitleKeys
+}
+
+export function getPageTitleKey(
+  matches: ReadonlyArray<PageTitleMatch>,
+): PageTitleKey | undefined {
+  for (let i = matches.length - 1; i >= 0; i--) {
+    const match = matches[i]
+    if (match.routeId === '__root__') continue
+    const key = (match.context as Record<string, unknown>)?.pageTitle
+    if (isPageTitleKey(key)) return key
+  }
+  return undefined
+}
+
+export function PageTitleSetter() {
+  const t = useTranslations('app')
+  const bt = useTranslations('breadcrumb')
+  const matches = useRouterState({ select: (s) => s.matches })
+
+  const appTitle = t('title')
+  const pageTitleKey = getPageTitleKey(matches)
+  const title = pageTitleKey ? `${bt(pageTitleKey)} - ${appTitle}` : appTitle
+
+  useEffect(() => {
+    document.title = title
+  }, [title])
+
+  return <title>{title}</title>
+}
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -108,11 +145,6 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   ),
 })
 
-function TitleSetter() {
-  const t = useTranslations('app')
-  return <title>{t('title')}</title>
-}
-
 function RootDocument({ children }: { children: ReactNode }) {
   const locale = getCurrentLocale()
 
@@ -146,7 +178,7 @@ function RootDocument({ children }: { children: ReactNode }) {
           messages={messages[locale ?? defaultLocale]}
           timeZone="UTC"
         >
-          <TitleSetter />
+          <PageTitleSetter />
           <QueryClientProvider client={getQueryClient()}>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
               <TooltipProvider>

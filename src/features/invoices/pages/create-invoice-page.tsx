@@ -1,6 +1,6 @@
 import { useRouter } from '@tanstack/react-router'
 import { parseAsString, useQueryState } from 'nuqs'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useLocale, useTranslations } from 'use-intl'
 import { FormActions, FormRoot, useAppForm } from '#/components/app/form'
@@ -30,6 +30,8 @@ export function CreateInvoicePage() {
   const orderForInvoice = useOrderForInvoice(orderIdValue)
   const orderData =
     orderIdValue && orderForInvoice.data ? orderForInvoice.data : null
+  const orderTotal = orderData?.order.total ?? 0
+  const orderDataId = orderData?.order.id ?? null
 
   const { data: paymentMethods } = usePaymentMethods()
   const paymentMethodOptions = useMemo(
@@ -41,27 +43,31 @@ export function CreateInvoicePage() {
     [paymentMethods],
   )
 
-  const [customPercentage, setCustomPercentage] = useState<number>(100)
+  const [customAmount, setCustomAmount] = useState<number>(0)
   const [selectedPercentage, setSelectedPercentage] =
     useState<InvoicePercentageMode | null>(null)
   const selectedMode =
     selectedPercentage ??
-    ((orderData?.invoicedPercentage ?? 0) > 0 ? 'remaining' : 'full')
+    ((orderData?.invoicedPercentage ?? 0) > 0 ? 'remaining' : 'custom')
 
   const effectivePercentage =
     selectedMode === 'remaining'
       ? (orderData?.remainingPercentage ?? 100)
-      : selectedMode === 'custom'
-        ? customPercentage
-        : 100
+      : orderTotal > 0
+        ? Math.round((customAmount / orderTotal) * 10_000) / 100
+        : 0
 
   const invoicesTotal = orderData
     ? selectedMode === 'remaining'
       ? orderData.remainingAmount
-      : Math.round(
-          ((orderData.order.total * effectivePercentage) / 100) * 100,
-        ) / 100
+      : customAmount
     : 0
+
+  useEffect(() => {
+    if (orderDataId) {
+      setCustomAmount(orderTotal)
+    }
+  }, [orderDataId, orderTotal])
 
   const form = useAppForm({
     defaultValues: defaultCreateInvoiceValues(orderData),
@@ -99,13 +105,12 @@ export function CreateInvoicePage() {
         <OrderForInvoiceSummaryCard
           orderData={orderData}
           selectedPercentage={selectedMode}
-          customPercentage={customPercentage}
+          customAmount={customAmount}
           invoiceTotal={invoicesTotal}
           onSelectedPercentageChange={setSelectedPercentage}
-          onCustomPercentageChange={setCustomPercentage}
+          onCustomAmountChange={setCustomAmount}
         />
       )}
-
       <FormRoot form={form}>
         <CreateInvoiceFormFields
           form={form}
@@ -115,7 +120,10 @@ export function CreateInvoicePage() {
 
         <FormActions>
           <form.AppForm>
-            <form.SubmitButton isPending={createInvoice.isPending}>
+            <form.SubmitButton
+              isPending={createInvoice.isPending}
+              disabled={Boolean(orderData && invoicesTotal <= 0)}
+            >
               {orderData
                 ? `${t('createInvoice')} — ${formatCurrency(invoicesTotal, locale)}`
                 : t('createInvoice')}

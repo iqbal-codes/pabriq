@@ -66,18 +66,12 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
       notes: '',
     },
     onSubmit: async ({ value }) => {
-      const isInvoiceNeeded = order.remainingAmount > 0
+      const shippingAmount = value.shippingFee || 0
+      const invoiceTotal = order.remainingAmount + shippingAmount
+      const isInvoiceNeeded = invoiceTotal > 0
 
       if (isInvoiceNeeded && !value.paymentMethodId) {
         toast.error(t('paymentMethodRequired'))
-        return
-      }
-
-      const shippingAmount = isInvoiceNeeded ? value.shippingFee || 0 : 0
-      const invoiceTotal = order.remainingAmount + shippingAmount
-
-      if (isInvoiceNeeded && invoiceTotal <= 0) {
-        toast.error(t('invoiceAmountRequired'))
         return
       }
 
@@ -90,12 +84,9 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
         id: order.id,
         courier: value.courier || undefined,
         trackingNumber: value.trackingNumber || undefined,
-        shippingFee:
-          isInvoiceNeeded && shippingAmount > 0 ? shippingAmount : undefined,
+        shippingFee: shippingAmount > 0 ? shippingAmount : undefined,
         shippingFeeDescription:
-          isInvoiceNeeded && shippingAmount > 0
-            ? value.shippingFeeDescription
-            : undefined,
+          shippingAmount > 0 ? value.shippingFeeDescription : undefined,
         invoiceDueDate: isInvoiceNeeded ? value.dueDate : undefined,
         invoicePaymentMethodId: isInvoiceNeeded
           ? value.paymentMethodId
@@ -161,7 +152,7 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
                   />
 
                   {/* Payment Details */}
-                  {order.remainingAmount > 0 && (
+                  {invoiceTotal > 0 && (
                     <FormSection title={t('payment')}>
                       <FormGrid columns={1}>
                         <form.AppField name="paymentMethodId">
@@ -183,7 +174,7 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
                     </FormSection>
                   )}
 
-                  {order.remainingAmount > 0 && (
+                  {invoiceTotal > 0 && (
                     <FinalInvoicePreview
                       order={order}
                       shippingAmount={shippingAmount}
@@ -201,13 +192,8 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
 
                   <FormActions>
                     <form.AppForm>
-                      <form.SubmitButton
-                        isPending={completeProduction.isPending}
-                        disabled={
-                          order.remainingAmount > 0 && invoiceTotal <= 0
-                        }
-                      >
-                        {order.remainingAmount > 0
+                      <form.SubmitButton isPending={completeProduction.isPending}>
+                        {invoiceTotal > 0
                           ? t('createInvoiceAndShip')
                           : t('markAsShipped')}
                       </form.SubmitButton>

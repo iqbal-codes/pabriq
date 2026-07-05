@@ -10,33 +10,11 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '#/components/ui/breadcrumb'
+import type { Messages } from '#/messages'
 
+type BreadcrumbKey = keyof Messages['breadcrumb']
 type BreadcrumbParent = {
-  label:
-    | 'dashboard'
-    | 'detail'
-    | 'edit'
-    | 'new'
-    | 'customers'
-    | 'createCustomer'
-    | 'editCustomer'
-    | 'viewCustomer'
-    | 'products'
-    | 'newProduct'
-    | 'editProduct'
-    | 'orders'
-    | 'createOrder'
-    | 'viewOrder'
-    | 'editOrder'
-    | 'invoices'
-    | 'createInvoice'
-    | 'viewInvoice'
-    | 'settings'
-    | 'general'
-    | 'productionStages'
-    | 'paymentMethods'
-    | 'members'
-    | 'profile'
+  label: BreadcrumbKey
   href: string
 }
 
@@ -57,7 +35,7 @@ export function Breadcrumbs() {
   const crumbs = routeCrumbs.flatMap((crumb): BreadcrumbEntry[] => {
     const context = crumb.context as unknown as Record<string, unknown>
     const parents = (context.parentBreadcrumbs ?? []) as BreadcrumbParent[]
-    const label = context.breadcrumb as BreadcrumbParent['label']
+    const label = context.breadcrumb as BreadcrumbKey
 
     return [
       ...parents.map((parent, i) => ({

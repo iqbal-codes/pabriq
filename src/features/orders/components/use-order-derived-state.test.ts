@@ -158,7 +158,7 @@ describe('useOrderDerivedState.canStartProduction', () => {
 })
 
 describe('useOrderDerivedState.canSendDpInvoice', () => {
-  it('is true when approved, all tasks ready, and no paid invoice', () => {
+  it('is true when approved, all tasks ready, and no active invoice', () => {
     const state = derive(
       makeOrder('approved'),
       [],
@@ -171,6 +171,15 @@ describe('useOrderDerivedState.canSendDpInvoice', () => {
     const state = derive(
       makeOrder('approved'),
       [makeInvoice('i1', 'paid', 50, 500_000)],
+      [{ task: { status: 'ready_for_production' } }],
+    )
+    expect(state.canSendDpInvoice).toBe(false)
+  })
+
+  it('is false when a DP invoice already exists but is not paid', () => {
+    const state = derive(
+      makeOrder('approved'),
+      [makeInvoice('i1', 'unpaid', 50, 500_000)],
       [{ task: { status: 'ready_for_production' } }],
     )
     expect(state.canSendDpInvoice).toBe(false)
@@ -259,20 +268,29 @@ describe('useOrderDerivedState.canCompleteProduction', () => {
 })
 
 describe('useOrderDerivedState.canSendSettlementInvoice', () => {
-  it('is true for in_progress order when final invoice does not exist', () => {
+  it('is true for in_progress order when production tasks are completed and final invoice does not exist', () => {
     const state = derive(
       makeOrder('in_progress'),
       [makeInvoice('i1', 'paid', 50, 500_000)],
-      [],
+      [{ task: { status: 'completed' } }],
     )
     expect(state.canSendSettlementInvoice).toBe(true)
   })
 
-  it('is false for approved order even if tasks ready and no final invoice', () => {
+  it('is false for approved order even if final invoice does not exist', () => {
     const state = derive(
       makeOrder('approved'),
       [makeInvoice('i1', 'paid', 50, 500_000)],
       [],
+    )
+    expect(state.canSendSettlementInvoice).toBe(false)
+  })
+
+  it('is false when production tasks are not completed yet', () => {
+    const state = derive(
+      makeOrder('in_progress'),
+      [makeInvoice('i1', 'paid', 50, 500_000)],
+      [{ task: { status: 'in_progress' } }],
     )
     expect(state.canSendSettlementInvoice).toBe(false)
   })
@@ -284,7 +302,7 @@ describe('useOrderDerivedState.canSendSettlementInvoice', () => {
         makeInvoice('i1', 'paid', 50, 500_000),
         makeInvoice('i2', 'unpaid', 50, 500_000),
       ],
-      [],
+      [{ task: { status: 'completed' } }],
     )
     expect(state.canSendSettlementInvoice).toBe(false)
   })

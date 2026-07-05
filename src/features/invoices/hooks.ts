@@ -126,6 +126,7 @@ export function useCreatePayment() {
     onSuccess: () =>
       invalidateMutationQueries(queryClient, [
         { queryKey: queryKeys.invoices.all },
+        { queryKey: queryKeys.notifications.all },
       ]),
   })
 }
@@ -138,6 +139,7 @@ export function useConfirmPayment() {
     onSuccess: () =>
       invalidateMutationQueries(queryClient, [
         { queryKey: queryKeys.invoices.all },
+        { queryKey: queryKeys.notifications.all },
       ]),
   })
 }
@@ -150,6 +152,7 @@ export function useRejectPayment() {
     onSuccess: () =>
       invalidateMutationQueries(queryClient, [
         { queryKey: queryKeys.invoices.all },
+        { queryKey: queryKeys.notifications.all },
       ]),
   })
 }
@@ -161,6 +164,7 @@ export function useMarkInvoicePaid() {
     onSuccess: () =>
       invalidateMutationQueries(queryClient, [
         { queryKey: queryKeys.invoices.all },
+        { queryKey: queryKeys.notifications.all },
       ]),
   })
 }
@@ -172,6 +176,7 @@ export function useVoidInvoice() {
     onSuccess: () =>
       invalidateMutationQueries(queryClient, [
         { queryKey: queryKeys.invoices.all },
+        { queryKey: queryKeys.notifications.all },
       ]),
   })
 }

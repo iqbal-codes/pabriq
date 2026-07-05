@@ -500,6 +500,7 @@ export async function listOrders(
       totalPaidAmount: number
       totalPaidPercentage: number
       anyPartiallyPaid: boolean
+      hasOpenInvoice: boolean
       allVoid: boolean
       dueDate: string | null
     }
@@ -514,6 +515,7 @@ export async function listOrders(
         totalPaidAmount: sql<number>`SUM(CASE WHEN ${invoicesTable.status} = 'paid' THEN ${invoicesTable.total} ELSE 0 END)`,
         totalPaidPercentage: sql<number>`SUM(CASE WHEN ${invoicesTable.status} = 'paid' THEN COALESCE(${invoicesTable.percentage}, 0) ELSE 0 END)`,
         anyPartiallyPaid: sql<boolean>`BOOL_OR(${invoicesTable.status} = 'partially_paid')`,
+        hasOpenInvoice: sql<boolean>`BOOL_OR(${invoicesTable.status} NOT IN ('paid', 'void'))`,
         allVoid: sql<boolean>`BOOL_AND(${invoicesTable.status} = 'void')`,
         dueDate: sql<string | null>`
           MIN(CASE WHEN ${invoicesTable.status} NOT IN ('paid', 'void') THEN ${invoicesTable.dueDate} END)
@@ -534,6 +536,7 @@ export async function listOrders(
           totalPaidAmount: Number(agg.totalPaidAmount || 0),
           totalPaidPercentage: Number(agg.totalPaidPercentage || 0),
           anyPartiallyPaid: Boolean(agg.anyPartiallyPaid),
+          hasOpenInvoice: Boolean(agg.hasOpenInvoice),
           allVoid: Boolean(agg.allVoid),
           dueDate: agg.dueDate as string | null,
         })
@@ -551,8 +554,14 @@ export async function listOrders(
       if (agg.allVoid) {
         paymentStatus = 'void'
       } else {
+        const isFinalShipmentSettlementPending =
+          row.status === 'approved' ||
+          row.status === 'in_progress' ||
+          row.status === 'production'
         const isFullyPaid =
-          agg.totalPaidAmount >= row.total || agg.totalPaidPercentage >= 100
+          !agg.hasOpenInvoice &&
+          !isFinalShipmentSettlementPending &&
+          (agg.totalPaidAmount >= row.total || agg.totalPaidPercentage >= 100)
 
         if (isFullyPaid) {
           paymentStatus = 'paid'

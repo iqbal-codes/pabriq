@@ -1,11 +1,15 @@
 import { render, screen } from '@testing-library/react'
 import { IntlProvider } from 'use-intl'
 import { describe, expect, it, vi } from 'vitest'
-import type { PortalOrder } from '../model'
+import type { OrderTimelineEvent, PortalOrder } from '../model'
 import { ProgressView } from './progress-view'
 
+const mockUseOrderTimeline = vi.fn(() => ({ data: [] as OrderTimelineEvent[] }))
+const mockUseOrderTasksTimeline = vi.fn(() => ({ data: [] }))
+
 vi.mock('../hooks', () => ({
-  useOrderTimeline: vi.fn(() => ({ data: [] })),
+  useOrderTimeline: () => mockUseOrderTimeline(),
+  useOrderTasksTimeline: () => mockUseOrderTasksTimeline(),
   usePortalGetInvoiceUploadUrl: vi.fn(() => ({
     mutateAsync: vi.fn(),
     isPending: false,
@@ -76,7 +80,7 @@ const messages = {
     obligationPayTitle: 'Selesaikan invoice yang belum dibayar',
     obligationPayBody: '{count} invoice menunggu bukti pembayaran Anda',
     obligationNextTitle: 'Selanjutnya',
-    itemsSectionTitle: 'Riwayat Pesanan',
+    itemsSectionTitle: 'Daftar Pesanan',
     itemShowTimeline: 'Lihat timeline',
     itemHideTimeline: 'Sembunyikan timeline',
     itemProductionDaysInline: 'Produksi {days} hari',
@@ -106,8 +110,16 @@ const messages = {
     invoicesSectionTitle: 'Invoice',
     invoicesSectionDescription:
       'Unduh invoice dan unggah bukti pembayaran di sini.',
-    stageTrackerLabel: 'Tahap produksi',
-    stagesUnknown: 'Belum ada pembaruan tahap',
+    shipmentTracking: 'Pelacakan Pengiriman',
+    trackShipment: 'Lacak pengiriman',
+    orderTimelineSectionTitle: 'Perkembangan Pesanan',
+    orderTimelineEmpty: 'Belum ada pembaruan',
+    timelineOrderReceived: 'Pesanan diterima',
+    timelineOrderApproved: 'Pesanan disetujui',
+    timelineOrderCompleted: 'Pesanan selesai',
+    timelinePaymentDpConfirmed: 'Pembayaran DP diterima',
+    timelinePaymentFinalConfirmed: 'Pelunasan diterima',
+    timelineProductionStageReached: '{product}: {stage}',
     statusCompleted: 'Selesai',
   },
   status: {
@@ -244,6 +256,7 @@ describe('ProgressView', () => {
             paymentMethodAccountHolder: null,
             paymentMethodInstructions: null,
             hasPaymentProof: false,
+            paidAt: null,
             shippingFee: 5000,
           },
           {
@@ -260,6 +273,7 @@ describe('ProgressView', () => {
             paymentMethodAccountHolder: null,
             paymentMethodInstructions: null,
             hasPaymentProof: false,
+            paidAt: '2026-01-08T10:00:00.000Z',
             shippingFee: null,
           },
         ],
@@ -288,6 +302,7 @@ describe('ProgressView', () => {
             paymentMethodAccountHolder: null,
             paymentMethodInstructions: null,
             hasPaymentProof: false,
+            paidAt: null,
             shippingFee: 5000,
           },
           {
@@ -304,6 +319,7 @@ describe('ProgressView', () => {
             paymentMethodAccountHolder: null,
             paymentMethodInstructions: null,
             hasPaymentProof: false,
+            paidAt: '2026-01-08T10:00:00.000Z',
             shippingFee: null,
           },
         ],
@@ -315,7 +331,6 @@ describe('ProgressView', () => {
     expect(screen.getByText('Down Payment')).toBeInTheDocument()
     expect(screen.getByText('Pelunasan')).toBeInTheDocument()
   })
-
   it('renders Down Payment badge for a single invoice with percentage < 100', () => {
     renderProgressView(
       makeOrder({
@@ -334,6 +349,7 @@ describe('ProgressView', () => {
             paymentMethodAccountHolder: null,
             paymentMethodInstructions: null,
             hasPaymentProof: false,
+            paidAt: null,
             shippingFee: null,
           },
         ],
@@ -342,6 +358,100 @@ describe('ProgressView', () => {
 
     expect(screen.getByText('Down Payment')).toBeInTheDocument()
     expect(screen.queryByText('Pelunasan')).not.toBeInTheDocument()
+  })
+
+  it('renders order received in the order timeline section', () => {
+    mockUseOrderTimeline.mockReturnValue({
+      data: [
+        {
+          id: 'order-received-1',
+          type: 'order_received',
+          createdAt: new Date('2026-01-01T00:00:00Z'),
+        },
+      ],
+    })
+    renderProgressView()
+    expect(screen.getByText('Perkembangan Pesanan')).toBeInTheDocument()
+    expect(screen.getByText('Pesanan diterima')).toBeInTheDocument()
+  })
+
+  it('renders DP and final payment confirmations in the order timeline', () => {
+    mockUseOrderTimeline.mockReturnValue({
+      data: [
+        {
+          id: 'order-received-1',
+          type: 'order_received',
+          createdAt: new Date('2026-01-01T00:00:00Z'),
+        },
+        {
+          id: 'dp-payment-1',
+          type: 'payment_confirmed',
+          kind: 'down_payment',
+          invoiceId: 'inv-dp',
+          invoiceNumber: 'INV-DP-1',
+          amount: 50000,
+          createdAt: new Date('2026-01-05T00:00:00Z'),
+        },
+        {
+          id: 'final-payment-1',
+          type: 'payment_confirmed',
+          kind: 'final_payment',
+          invoiceId: 'inv-final',
+          invoiceNumber: 'INV-FINAL-1',
+          amount: 50000,
+          createdAt: new Date('2026-01-20T00:00:00Z'),
+        },
+      ],
+    })
+    renderProgressView(
+      makeOrder({
+        status: 'production',
+        invoices: [
+          {
+            id: 'inv-dp',
+            invoiceNumber: 'INV-DP-1',
+            total: 50000,
+            percentage: 50,
+            dueDate: '2099-01-10',
+            status: 'paid',
+            paidAt: '2026-01-05T00:00:00.000Z',
+            paymentMethodName: null,
+            paymentMethodType: null,
+            paymentMethodBankName: null,
+            paymentMethodAccountNumber: null,
+            paymentMethodAccountHolder: null,
+            paymentMethodInstructions: null,
+            hasPaymentProof: true,
+            shippingFee: null,
+          },
+          {
+            id: 'inv-final',
+            invoiceNumber: 'INV-FINAL-1',
+            total: 50000,
+            percentage: 100,
+            dueDate: '2099-01-30',
+            status: 'paid',
+            paidAt: '2026-01-20T00:00:00.000Z',
+            paymentMethodName: null,
+            paymentMethodType: null,
+            paymentMethodBankName: null,
+            paymentMethodAccountNumber: null,
+            paymentMethodAccountHolder: null,
+            paymentMethodInstructions: null,
+            hasPaymentProof: true,
+            shippingFee: null,
+          },
+        ],
+      }),
+    )
+    expect(screen.getByText('Pembayaran DP diterima')).toBeInTheDocument()
+    expect(screen.getByText('Pelunasan diterima')).toBeInTheDocument()
+  })
+
+  it('renders empty state for the order timeline when there are no events', () => {
+    mockUseOrderTimeline.mockReturnValue({ data: [] })
+    renderProgressView()
+    expect(screen.getByText('Belum ada pembaruan')).toBeInTheDocument()
   })
 
   it('renders completed portal status as Selesai instead of Siap Kirim', () => {

@@ -137,7 +137,7 @@ describe('CreateInvoicePage', () => {
     expect(submitButton.textContent).not.toMatch(/6[.,]000[.,]000/)
   })
 
-  it('clicking full mode changes the displayed amount to the full order total', async () => {
+  it('switches from remaining mode to custom amount via quick buttons and manual input', async () => {
     const user = userEvent.setup()
     renderPage()
 
@@ -148,15 +148,24 @@ describe('CreateInvoicePage', () => {
       expect(submitButton.textContent).toMatch(/3[.,]000[.,]000/)
     })
 
-    // Click the Full (100%) button
-    const fullButton = screen.getByRole('button', { name: /Full/ })
-    await user.click(fullButton)
+    await user.click(screen.getByRole('button', { name: '100%' }))
 
     await waitFor(() => {
       const submitButton = screen.getByRole('button', {
         name: /Create Invoice/,
       })
       expect(submitButton.textContent).toMatch(/6[.,]000[.,]000/)
+    })
+
+    const amountInput = screen.getByLabelText('Invoice amount')
+    await user.clear(amountInput)
+    await user.type(amountInput, '1500000')
+
+    await waitFor(() => {
+      const submitButton = screen.getByRole('button', {
+        name: /Create Invoice/,
+      })
+      expect(submitButton.textContent).toMatch(/1[.,]500[.,]000/)
     })
   })
 })

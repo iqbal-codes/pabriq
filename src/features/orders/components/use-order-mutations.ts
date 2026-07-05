@@ -37,6 +37,7 @@ export function useOrderMutations({
         { queryKey: queryKeys.orders.lists() },
         { queryKey: queryKeys.orders.detail(variables.id) },
         { queryKey: queryKeys.production.all },
+        { queryKey: queryKeys.notifications.all },
       ])
     },
   })
@@ -48,6 +49,7 @@ export function useOrderMutations({
       return invalidateMutationQueries(queryClient, [
         { queryKey: queryKeys.orders.lists() },
         { queryKey: queryKeys.orders.detail(variables.id) },
+        { queryKey: queryKeys.notifications.all },
       ]).then(() => onRejectSuccess())
     },
   })

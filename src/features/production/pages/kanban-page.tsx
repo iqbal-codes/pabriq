@@ -1,5 +1,5 @@
 import { parseAsString, useQueryState } from 'nuqs'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useTranslations } from 'use-intl'
 import { Input } from '#/components/ui/input'
 import { NativeSelect } from '#/components/ui/native-select'
@@ -29,8 +29,8 @@ export function KanbanPage({ orgId, role }: Props) {
     'stage',
     parseAsString.withDefault(''),
   )
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
-  const [reviewTaskId, setReviewTaskId] = useState<string | null>(null)
+  const [selectedTaskId, setSelectedTaskId] = useQueryState('task', parseAsString)
+  const [reviewTaskId, setReviewTaskId] = useQueryState('reviewTask', parseAsString)
 
   const canApprove = canApproveProductionTask(role)
 

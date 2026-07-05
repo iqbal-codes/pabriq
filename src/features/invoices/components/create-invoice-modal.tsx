@@ -1,4 +1,3 @@
-import { Minus, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
@@ -20,6 +19,7 @@ import { useCalculateShippingRates } from '#/features/address/hooks'
 import type { ShippingAddress, ShippingRate } from '#/features/address/model'
 import { useCreateInvoice, usePaymentMethods } from '#/features/invoices/hooks'
 import { useOrgSettings } from '#/features/settings/hooks'
+import { InvoiceAmountInput } from './invoice-amount-input'
 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
   style: 'currency',
@@ -67,10 +67,7 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
 
   const hasPaidInvoices = order.invoicedPercentage > 0
 
-  const [mode, setMode] = useState<'full' | 'remaining' | 'custom'>(
-    hasPaidInvoices ? 'remaining' : 'full',
-  )
-  const [customPct, setCustomPct] = useState(50)
+  const [customAmount, setCustomAmount] = useState(order.total)
   const [rates, setRates] = useState<ShippingRate[]>([])
 
   const originAreaId = orgSettings?.address?.areaId ?? null
@@ -79,11 +76,9 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
 
   const effectivePct = hasPaidInvoices
     ? order.remainingPercentage
-    : mode === 'remaining'
-      ? order.remainingPercentage
-      : mode === 'custom'
-        ? customPct
-        : 100
+    : order.total > 0
+      ? Math.round((customAmount / order.total) * 10_000) / 100
+      : 0
 
   const paymentMethodOptions = (paymentMethods ?? []).map((pm) => ({
     value: pm.id,
@@ -194,12 +189,7 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
               )
               const baseTotal = hasPaidInvoices
                 ? order.remainingAmount
-                : mode === 'remaining'
-                  ? order.remainingAmount
-                  : mode === 'custom'
-                    ? Math.round(((order.total * effectivePct) / 100) * 100) /
-                      100
-                    : order.total
+                : customAmount
               const invoiceTotal = baseTotal + shippingFee
 
               return (
@@ -216,63 +206,17 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
 
                   <FormGrid columns={1}>
                     {!hasPaidInvoices ? (
-                      <div>
-                        <p className="text-sm font-medium mb-1">
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium">
                           {t('invoiceAmount')}
                         </p>
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            type="button"
-                            variant={mode === 'full' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setMode('full')}
-                          >
-                            {t('fullAmount')}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant={mode === 'custom' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setMode('custom')}
-                          >
-                            {t('customAmount')}
-                          </Button>
-                        </div>
-
-                        {mode === 'custom' && (
-                          <div className="mt-2 flex items-center gap-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon-sm"
-                              aria-label={t('decreasePercentage')}
-                              onClick={() =>
-                                setCustomPct((p) => Math.max(5, p - 5))
-                              }
-                            >
-                              <Minus className="size-3" />
-                            </Button>
-                            <span className="w-16 text-center font-medium tabular-nums">
-                              {customPct}%
-                            </span>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon-sm"
-                              aria-label={t('increasePercentage')}
-                              onClick={() =>
-                                setCustomPct((p) => Math.min(100, p + 5))
-                              }
-                            >
-                              <Plus className="size-3" />
-                            </Button>
-                            <span className="text-sm text-muted-foreground">
-                              {t('stepHint', { percentage: 5 })}
-                            </span>
-                          </div>
-                        )}
-
-                        <p className="mt-2 text-lg font-bold">
+                        <InvoiceAmountInput
+                          ariaLabel={t('invoiceAmount')}
+                          baseAmount={order.total}
+                          value={customAmount}
+                          onChange={setCustomAmount}
+                        />
+                        <p className="text-lg font-bold">
                           {currencyFormatter.format(invoiceTotal)}
                         </p>
                       </div>
@@ -347,12 +291,15 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                                   type="button"
                                   variant="outline"
                                   onClick={async () => {
+                                    if (!originAreaId || !destinationAreaId)
+                                      return
+
                                     const weightKg =
                                       form.getFieldValue('packageWeightKg')
                                     const result =
                                       await calculateRates.mutateAsync({
-                                        originAreaId: originAreaId!,
-                                        destinationAreaId: destinationAreaId!,
+                                        originAreaId,
+                                        destinationAreaId,
                                         weightGrams: Math.round(
                                           (weightKg || 1) * 1000,
                                         ),

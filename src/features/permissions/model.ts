@@ -40,6 +40,10 @@ export function canManageStages(role: Role): boolean {
   return role === 'owner' || role === 'admin'
 }
 
+export function canViewActionNotifications(role: Role): boolean {
+  return role === 'owner' || role === 'admin'
+}
+
 export function canManageSettings(role: Role): boolean {
   return role === 'owner' || role === 'admin'
 }

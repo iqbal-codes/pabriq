@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { PortalPage } from '#/features/portal/pages/portal-page'
 
 export const Route = createFileRoute('/order/$token')({
+  beforeLoad: () => ({ pageTitle: 'completeOrderData' as const }),
   component: PortalRoute,
 })
 

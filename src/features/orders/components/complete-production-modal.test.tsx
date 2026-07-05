@@ -128,6 +128,58 @@ describe('CompleteProductionModal', () => {
     })
   })
 
+  it('keeps the no-invoice ship flow when nothing remains to bill', () => {
+    renderModal({
+      remainingAmount: 0,
+      remainingPercentage: 0,
+      invoicedAmount: 500000,
+    })
+
+    expect(screen.queryByText('Payment Method')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Mark as Shipped/ }),
+    ).toBeInTheDocument()
+  })
+
+  it('re-enables invoice fields for a shipping-fee-only final invoice', async () => {
+    const user = userEvent.setup()
+    mutateAsync.mockReset()
+    mutateAsync.mockResolvedValue({ ok: true })
+    renderModal({
+      remainingAmount: 0,
+      remainingPercentage: 0,
+      invoicedAmount: 500000,
+    })
+
+    const shippingFeeInput = screen.getByPlaceholderText('0')
+    await user.type(shippingFeeInput, '50000')
+
+    expect(screen.getAllByText('Payment Method').length).toBeGreaterThanOrEqual(
+      1,
+    )
+    const submitButton = screen.getByRole('button', {
+      name: /Create Invoice & Ship/,
+    })
+    expect(submitButton).toBeInTheDocument()
+
+    const selects = document.querySelectorAll('select')
+    if (selects.length > 0) {
+      await user.selectOptions(selects[0], 'pm-1')
+    }
+
+    await user.click(submitButton)
+
+    await waitFor(() => {
+      expect(mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'order-1',
+          invoicePaymentMethodId: 'pm-1',
+          shippingFee: 50000,
+        }),
+      )
+    })
+  })
+
   it('submitting without a payment method calls toast.error with paymentMethodRequired and does not call mutateAsync', async () => {
     const user = userEvent.setup()
     vi.mocked(toast.error).mockClear()

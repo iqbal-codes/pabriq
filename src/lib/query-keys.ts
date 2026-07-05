@@ -85,7 +85,9 @@ export const queryKeys = {
     order: (token: string) =>
       [...queryKeys.portal.all, 'order', token] as const,
     timeline: (token: string) =>
-      [...queryKeys.portal.all, 'timeline', token] as const,
+      [...queryKeys.portal.all, 'tasks-timeline', token] as const,
+    orderTimeline: (token: string) =>
+      [...queryKeys.portal.all, 'order-timeline', token] as const,
   },
   address: {
     all: ['address'] as const,
@@ -119,6 +121,11 @@ export const queryKeys = {
       [...queryKeys.production.all, 'tasks-by-order', orderId] as const,
     timeline: (orderId: string) =>
       [...queryKeys.production.all, 'timeline', orderId] as const,
+  },
+  notifications: {
+    all: ['notifications'] as const,
+    list: (filters: { limit?: number }) =>
+      [...queryKeys.notifications.all, 'list', filters] as const,
   },
   assistant: {
     all: ['assistant'] as const,

@@ -1071,6 +1071,7 @@ describe('listOrders payment status aggregation', () => {
         total: number
         percentage: number | null
       }>,
+      orderStatus = 'draft',
     ) => {
       // Create order
       await db.insert(ordersTable).values({
@@ -1078,7 +1079,7 @@ describe('listOrders payment status aggregation', () => {
         orgId: org1Id,
         orderNumber,
         customerId: 'pay-cust-1',
-        status: 'draft',
+        status: orderStatus,
         total: 10000,
         createdAt: now,
         updatedAt: now,
@@ -1160,6 +1161,33 @@ describe('listOrders payment status aggregation', () => {
       { status: 'void', total: 5000, percentage: 50 },
     ])
 
+    // K. Fully covered DP before shipment stays partially paid until shipping is resolved
+    await createOrderWithInvoices(
+      'order-awaiting-shipment',
+      'ORD-AWAITING-SHIPMENT',
+      [{ status: 'paid', total: 10000, percentage: 100 }],
+      'in_progress',
+    )
+
+    // L. Once shipped with no open invoice, the same paid amount is fully paid
+    await createOrderWithInvoices(
+      'order-shipped-paid',
+      'ORD-SHIPPED-PAID',
+      [{ status: 'paid', total: 10000, percentage: 100 }],
+      'in_delivery',
+    )
+
+    // M. Shipped order with an unpaid shipping-fee invoice stays partially paid
+    await createOrderWithInvoices(
+      'order-shipped-open-fee',
+      'ORD-SHIPPED-OPEN-FEE',
+      [
+        { status: 'paid', total: 10000, percentage: 100 },
+        { status: 'unpaid', total: 500, percentage: 0 },
+      ],
+      'in_delivery',
+    )
+
     // Call listOrders
     const result = await listOrders({ orgId: org1Id, perPage: 100 })
     const rowsMap = new Map(result.rows.map((r) => [r.id, r]))
@@ -1174,5 +1202,12 @@ describe('listOrders payment status aggregation', () => {
     expect(rowsMap.get('order-split-3')?.paymentStatus).toBe('paid')
     expect(rowsMap.get('order-split-4')?.paymentStatus).toBe('unpaid')
     expect(rowsMap.get('order-split-5')?.paymentStatus).toBe('void')
+    expect(rowsMap.get('order-awaiting-shipment')?.paymentStatus).toBe(
+      'partially_paid',
+    )
+    expect(rowsMap.get('order-shipped-paid')?.paymentStatus).toBe('paid')
+    expect(rowsMap.get('order-shipped-open-fee')?.paymentStatus).toBe(
+      'partially_paid',
+    )
   })
 })

@@ -1,14 +1,15 @@
-import { History } from 'lucide-react'
+import { ListOrdered, Package } from 'lucide-react'
 import { useLocale, useTranslations } from 'use-intl'
 import { StatusBadge } from '#/components/status-badge'
 import { Badge } from '#/components/ui/badge'
 import { CustomerInfoCard } from '#/features/portal/components/customer-info-card'
+import { OrderFlowTimeline } from '#/features/portal/components/order-flow-timeline'
 import { ShipmentTrackingCard } from '#/features/portal/components/shipment-tracking-card'
 import { ShippingAddressCard } from '#/features/portal/components/shipping-address-card'
 import { formatCurrency, formatLongDate } from '#/lib/formatters'
 import { InvoicePanel } from '../components/invoice-panel'
 import { LineItemTaskCard } from '../components/line-item-task-card'
-import { useOrderTimeline } from '../hooks'
+import { useOrderTasksTimeline, useOrderTimeline } from '../hooks'
 import type { PortalOrder } from '../model'
 
 export function ProgressView({
@@ -29,7 +30,10 @@ export function ProgressView({
       'approved',
       'in_progress',
     ].includes(order.status)
-  const { data: timelineEvents } = useOrderTimeline(
+  const { data: orderTimelineEvents } = useOrderTimeline(
+    shouldFetchTimeline ? token : '',
+  )
+  const { data: taskTimelineEvents } = useOrderTasksTimeline(
     shouldFetchTimeline ? token : '',
   )
 
@@ -40,12 +44,13 @@ export function ProgressView({
         )
       : null
 
-  const safeTimelineEvents = timelineEvents ?? []
+  const safeOrderTimelineEvents = orderTimelineEvents ?? []
+  const safeTaskTimelineEvents = taskTimelineEvents ?? []
   const hasUnpaidInvoices = order.invoices.some(
     (invoice) => invoice.status !== 'void' && invoice.status !== 'paid',
   )
   const completedDateText = (() => {
-    const completedEvent = safeTimelineEvents
+    const completedEvent = safeTaskTimelineEvents
       .filter((e) => e.type === 'completed')
       .sort(
         (a, b) =>
@@ -128,6 +133,17 @@ export function ProgressView({
         </div>
       </section>
 
+      {/* Order-level flow timeline */}
+      <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+        <header className="mb-4 flex items-center gap-2">
+          <ListOrdered className="size-4 shrink-0 text-muted-foreground" />
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {t('orderTimelineSectionTitle')}
+          </p>
+        </header>
+        <OrderFlowTimeline events={safeOrderTimelineEvents} />
+      </section>
+
       {/* Details Grid */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <CustomerInfoCard
@@ -157,7 +173,7 @@ export function ProgressView({
       <section className="space-y-3">
         <header className="px-1">
           <h2 className="flex items-center gap-2 text-base font-semibold tracking-tight text-foreground">
-            <History className="size-4 shrink-0 text-muted-foreground" />
+            <Package className="size-4 shrink-0 text-muted-foreground" />
             <span>{t('itemsSectionTitle')}</span>
           </h2>
         </header>
@@ -166,7 +182,7 @@ export function ProgressView({
             <LineItemTaskCard
               key={item.id}
               item={item}
-              events={safeTimelineEvents}
+              events={safeTaskTimelineEvents}
               token={token}
             />
           ))}

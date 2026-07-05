@@ -305,9 +305,11 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
 
     const invoicedAmount = paidInvoices.reduce((sum, inv) => sum + inv.total, 0)
     const remainingAmount = Math.max(0, order.total - invoicedAmount)
+    const shippingAmount = data.shippingFee ?? 0
+    const invoiceTotal = remainingAmount + shippingAmount
 
-    // 4. Create final invoice if there's remaining balance
-    if (remainingAmount > 0) {
+    // 4. Create final invoice when there is unpaid order balance or shipping
+    if (invoiceTotal > 0) {
       if (!data.invoiceDueDate || !data.invoicePaymentMethodId) {
         throw new Error(
           'Due date and payment method are required to create the final invoice',
@@ -315,9 +317,9 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
       }
 
       const remainingPercentage =
-        order.total > 0
+        remainingAmount > 0 && order.total > 0
           ? Math.round((remainingAmount / order.total) * 10_000) / 100
-          : 100
+          : 0
 
       await createInvoice(orgId, {
         orderId: data.id,
@@ -328,8 +330,9 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
         dueDate: data.invoiceDueDate,
         paymentMethodId: data.invoicePaymentMethodId,
         notes: data.invoiceNotes,
-        shippingFee: data.shippingFee,
-        shippingFeeDescription: data.shippingFeeDescription,
+        shippingFee: shippingAmount > 0 ? shippingAmount : undefined,
+        shippingFeeDescription:
+          shippingAmount > 0 ? data.shippingFeeDescription : undefined,
       })
     }
 

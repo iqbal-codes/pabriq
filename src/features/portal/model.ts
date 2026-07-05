@@ -51,6 +51,7 @@ export type PortalInvoice = {
   percentage: number | null
   dueDate: string
   status: string
+  paidAt: string | null
   paymentMethodName: string | null
   paymentMethodType: string | null
   paymentMethodBankName: string | null
@@ -265,6 +266,7 @@ export async function getPortalOrder(
       percentage: invoicesTable.percentage,
       dueDate: invoicesTable.dueDate,
       status: invoicesTable.status,
+      paidAt: invoicesTable.paidAt,
       paymentMethodName: paymentMethodsTable.name,
       paymentMethodType: paymentMethodsTable.type,
       paymentMethodBankName: paymentMethodsTable.bankName,
@@ -334,6 +336,7 @@ export async function getPortalOrder(
     percentage: inv.percentage,
     dueDate: inv.dueDate,
     status: inv.status,
+    paidAt: inv.paidAt ? inv.paidAt.toISOString() : null,
     paymentMethodName: inv.paymentMethodName,
     paymentMethodType: inv.paymentMethodType,
     paymentMethodBankName: inv.paymentMethodBankName,
@@ -1201,6 +1204,141 @@ export async function getOrderTasksTimeline(
     activityIndexes,
     activitiesByTaskId,
   })
+
+  return events.sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  )
+}
+
+export type OrderTimelineEvent =
+  | {
+      id: string
+      type: 'order_received'
+      createdAt: Date
+    }
+  | {
+      id: string
+      type: 'order_approved'
+      createdAt: Date
+    }
+  | {
+      id: string
+      type: 'order_completed'
+      createdAt: Date
+    }
+  | {
+      id: string
+      type: 'payment_confirmed'
+      kind: 'down_payment' | 'final_payment'
+      invoiceId: string
+      invoiceNumber: string
+      amount: number
+      createdAt: Date
+    }
+  | {
+      id: string
+      type: 'production_stage'
+      taskId: string
+      lineItemId: string | null
+      taskNumber: string | null
+      productName: string
+      fromStageName: string | null
+      toStageName: string | null
+      eventKind: 'created' | 'transition' | 'completed' | 'board_transition'
+      createdAt: Date
+    }
+
+function classifyPaymentKind(
+  percentage: number | null,
+): 'down_payment' | 'final_payment' {
+  if (percentage !== null && percentage < 100) return 'down_payment'
+  return 'final_payment'
+}
+
+export async function getOrderTimeline(
+  token: string,
+): Promise<OrderTimelineEvent[]> {
+  const orderResult = await getPortalOrder(token)
+  if (!orderResult.ok) throw new Error('Invalid token')
+  const order = orderResult.order
+
+  const taskEvents = await getOrderTasksTimeline(token)
+
+  const events: OrderTimelineEvent[] = []
+
+  events.push({
+    id: `order-received-${order.id}`,
+    type: 'order_received',
+    createdAt: order.createdAt,
+  })
+
+  if (
+    order.status === 'approved' ||
+    order.status === 'production' ||
+    order.status === 'in_progress' ||
+    order.status === 'in_delivery' ||
+    order.status === 'completed'
+  ) {
+    const approveEvent = taskEvents
+      .filter((e) => e.type === 'board_transition')
+      .sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      )[0]
+    if (approveEvent) {
+      events.push({
+        id: `order-approved-${approveEvent.id}`,
+        type: 'order_approved',
+        createdAt: approveEvent.createdAt,
+      })
+    }
+  }
+
+  for (const invoice of order.invoices) {
+    if (invoice.status !== 'paid' || !invoice.paidAt) continue
+    events.push({
+      id: `payment-confirmed-${invoice.id}`,
+      type: 'payment_confirmed',
+      kind: classifyPaymentKind(invoice.percentage),
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      amount: invoice.total,
+      createdAt: new Date(invoice.paidAt),
+    })
+  }
+
+  for (const e of taskEvents) {
+    if (e.type === 'board_transition') {
+      events.push({
+        id: `prod-${e.id}`,
+        type: 'production_stage',
+        taskId: e.taskId,
+        lineItemId: e.lineItemId,
+        taskNumber: e.taskNumber,
+        productName: e.productName,
+        fromStageName: e.fromStageName,
+        toStageName: e.toStageName,
+        eventKind: 'board_transition',
+        createdAt: e.createdAt,
+      })
+    }
+  }
+
+  if (order.status === 'completed') {
+    const completedEvent = taskEvents
+      .filter((e) => e.type === 'completed')
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      )[0]
+    if (completedEvent) {
+      events.push({
+        id: `order-completed-${completedEvent.id}`,
+        type: 'order_completed',
+        createdAt: completedEvent.createdAt,
+      })
+    }
+  }
 
   return events.sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),

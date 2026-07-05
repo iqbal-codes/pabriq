@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { IntlProvider } from 'use-intl'
 import { describe, expect, it, vi } from 'vitest'
@@ -139,51 +139,57 @@ describe('CreateInvoiceModal', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders invoice amount, full, and custom selectors in DP mode', () => {
+  it('renders manual amount input and quick amount buttons in DP mode', () => {
     renderModal(dpOrder)
 
     expect(screen.getByText('Order #ORD-001')).toBeInTheDocument()
-    expect(screen.getByText('Invoice amount')).toBeInTheDocument()
-    expect(screen.getByText('Custom')).toBeInTheDocument()
-    // Shipment method should NOT be visible in DP mode
+    expect(screen.getByLabelText('Invoice amount')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '30%' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '50%' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '100%' })).toBeInTheDocument()
     expect(screen.queryByText('Shipment Method')).not.toBeInTheDocument()
   })
 
-  it('clicking Custom then Increase percentage changes displayed percentage and submit amount in DP mode', async () => {
+  it('updates the DP invoice total from quick buttons and manual amount input', async () => {
     const user = userEvent.setup()
     renderModal(dpOrder)
 
-    await user.click(screen.getByRole('button', { name: 'Custom' }))
+    await user.click(screen.getByRole('button', { name: '30%' }))
 
-    // Initial custom mode starts at 50%
-    expect(screen.getByText('50%')).toBeInTheDocument()
+    let submitButton = screen.getByRole('button', {
+      name: /Create Invoice/,
+    })
+    expect(submitButton.textContent).toMatch(/150\.000/)
 
-    // Click increase
-    await user.click(
-      screen.getByRole('button', { name: 'Increase percentage' }),
-    )
+    const amountInput = screen.getByLabelText('Invoice amount')
+    await user.clear(amountInput)
+    await user.type(amountInput, '275000')
 
-    // Should now show 55%
-    expect(screen.getByText('55%')).toBeInTheDocument()
-    // Submit button should show 55% of 500,000 = 275,000
-    const submitButton = screen.getByRole('button', {
+    submitButton = screen.getByRole('button', {
       name: /Create Invoice/,
     })
     expect(submitButton.textContent).toMatch(/275\.000/)
   })
 
-  it('custom mode shows translated step hint and accessible stepper buttons in DP mode', async () => {
+  it('keeps settlement invoices on the remaining percentage', async () => {
     const user = userEvent.setup()
-    renderModal(dpOrder)
+    mutateAsync.mockReset()
+    mutateAsync.mockResolvedValue({ ok: true })
+    renderModal(defaultOrder)
 
-    await user.click(screen.getByRole('button', { name: 'Custom' }))
+    const selects = document.querySelectorAll('select')
+    if (selects.length > 0) {
+      await user.selectOptions(selects[0], 'pm-1')
+    }
 
-    expect(screen.getByText('(5% steps)')).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Decrease percentage' }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Increase percentage' }),
-    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Create Invoice/ }))
+
+    await waitFor(() => {
+      expect(mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          percentage: 50,
+        }),
+      )
+    })
   })
 })

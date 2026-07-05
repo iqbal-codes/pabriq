@@ -31,6 +31,8 @@ export const Route = createFileRoute('/sign-in')({
     if (result.reason === 'no-org') {
       throw redirect({ to: '/onboarding' })
     }
+
+    return { pageTitle: 'signIn' as const }
   },
   component: SignInRoute,
 })

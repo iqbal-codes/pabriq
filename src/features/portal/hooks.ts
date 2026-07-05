@@ -9,6 +9,7 @@ import {
   confirmPortalOrderFn,
   generateOrderTokenFn,
   getOrderTasksTimelineFn,
+  getOrderTimelineFn,
   getPortalOrderFn,
   portalGetInvoiceUploadUrlFn,
   savePortalAddressFn,
@@ -23,10 +24,18 @@ export function usePortalOrder(token: string) {
   })
 }
 
-export function useOrderTimeline(token: string) {
+export function useOrderTasksTimeline(token: string) {
   return useQuery({
     queryKey: queryKeys.portal.timeline(token),
     queryFn: () => getOrderTasksTimelineFn({ data: { token } }),
+    enabled: !!token,
+  })
+}
+
+export function useOrderTimeline(token: string) {
+  return useQuery({
+    queryKey: queryKeys.portal.orderTimeline(token),
+    queryFn: () => getOrderTimelineFn({ data: { token } }),
     enabled: !!token,
   })
 }

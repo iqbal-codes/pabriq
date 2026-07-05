@@ -1,7 +1,7 @@
 import type { OrderForInvoice } from '#/features/invoices/model'
 import { formatProductDesignLabel } from '#/features/orders/line-item-display'
 
-export type InvoicePercentageMode = 'full' | 'remaining' | 'custom'
+export type InvoicePercentageMode = 'remaining' | 'custom'
 
 export type CreateInvoiceLineItemValue = {
   description: string

@@ -10,16 +10,42 @@ const mutationMocks = vi.hoisted(() => ({
   rejectAdvanceMutate: vi.fn(),
 }))
 
+const queryStateStore = vi.hoisted(() => ({
+  store: {
+    q: '',
+    stage: '',
+    task: null,
+    reviewTask: null,
+  } as Record<string, string | null>,
+}))
+
 vi.mock('nuqs', () => {
+  const { useState, useEffect } = require('react')
   const parseAsString = {
     withDefault: (value: string) => value,
   }
   return {
     parseAsString,
-    useQueryState: (_key: string, defaultValue: string) => [
-      defaultValue,
-      vi.fn(),
-    ],
+    useQueryState: (key: string, defaultValue?: string | null) => {
+      const [state, setState] = useState(() => {
+        const storeVal = queryStateStore.store[key]
+        return storeVal !== undefined ? storeVal : (typeof defaultValue === 'string' ? defaultValue : null)
+      })
+
+      useEffect(() => {
+        const val = queryStateStore.store[key]
+        if (val !== undefined && val !== state) {
+          setState(val)
+        }
+      }, [state])
+
+      const setter = (newVal: string | null | ((prev: string | null) => string | null)) => {
+        const nextVal = typeof newVal === 'function' ? newVal(state) : newVal
+        queryStateStore.store[key] = nextVal
+        setState(nextVal)
+      }
+      return [state, setter] as const
+    },
   }
 })
 
@@ -247,6 +273,7 @@ const enMessages = {
     commentPlaceholder: 'Add a comment...',
     send: 'Send',
     startProduction: 'Start Pre-Production',
+    readyForProduction: 'Ready for Production',
     continueToProduction: 'Continue to Production',
     advanceTo: 'Advance to {stage}',
     completeRequirements: 'Complete Requirements',
@@ -377,6 +404,14 @@ function renderPage() {
 }
 
 describe('KanbanPage', () => {
+  beforeEach(() => {
+    queryStateStore.store = {
+      q: '',
+      stage: '',
+      task: null,
+      reviewTask: null,
+    }
+  })
   it('keeps review modal open when approve returns a server error', async () => {
     mutationMocks.approveAdvanceMutate.mockImplementation(
       (_vars: unknown, options?: { onSuccess?: (result: unknown) => void }) => {
@@ -437,5 +472,11 @@ describe('KanbanPage', () => {
     // reviewNextStageName should show 'Print' (first production stage)
     expect(screen.getByText('Review Advancement')).toBeInTheDocument()
     expect(screen.getByText('Print')).toBeInTheDocument()
+  })
+
+  it('opens ReviewModal immediately when reviewTask is present in query state', () => {
+    queryStateStore.store.reviewTask = 'task-1'
+    renderPage()
+    expect(screen.getByText('Review Advancement')).toBeInTheDocument()
   })
 })

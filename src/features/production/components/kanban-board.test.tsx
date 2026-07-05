@@ -32,6 +32,46 @@ const stage2: Stage = {
   updatedAt: new Date(),
 }
 
+const prodStage1: Stage = {
+  id: 'p1',
+  orgId: 'org-1',
+  name: 'Print',
+  board: 'production',
+  description: null,
+  needApproval: false,
+  requirements: [],
+  orderIndex: 0,
+  active: true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+}
+
+const prodStage2: Stage = {
+  id: 'p2',
+  orgId: 'org-1',
+  name: 'Packing',
+  board: 'production',
+  description: null,
+  needApproval: false,
+  requirements: [],
+  orderIndex: 1,
+  active: true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+}
+
+function atMidnight(date: Date): Date {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+function isoAtDays(offset: number): string {
+  const d = atMidnight(new Date())
+  d.setDate(d.getDate() + offset)
+  return d.toISOString()
+}
+
 function createTask(
   id: string,
   status: string,
@@ -59,6 +99,39 @@ function createTask(
   }
 }
 
+function createProductionTask(
+  id: string,
+  stage: Stage,
+  deadlineOffset: number,
+  status: 'completed' | 'in_progress' = 'in_progress',
+): BoardTask {
+  return {
+    task: {
+      id,
+      orgId: 'org-1',
+      orderId: 'order-1',
+      board: 'production',
+      stageId: stage.id,
+      status,
+      taskNumber: `TSK-${id}`,
+      lineItemId: 'line-item-1',
+      priority: false,
+      context: {
+        productName: `P-${id}`,
+        customerName: 'Acme',
+        orderNumber: 'ORD-001',
+        quantity: 10,
+        deadline: isoAtDays(deadlineOffset),
+      },
+      assignedTo: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      archivedAt: null,
+    },
+    stage,
+  }
+}
+
 const enMessages = {
   production: {
     queue: 'Queue',
@@ -71,6 +144,17 @@ const enMessages = {
     columnTaskCount: '{column}: {count, plural, one {# task} other {# tasks}}',
     needApproval: 'Requires Approval',
     readyForProduction: 'Ready for Production',
+    deadlineToday: 'Due today',
+    deadlineTomorrow: 'Due tomorrow',
+    deadlineDaysLeft: '{days, plural, one {# day left} other {# days left}}',
+    deadlineDaysOverdue:
+      '{days, plural, one {# day overdue} other {# days overdue}}',
+    deadlineLabel: 'Deadline {date}',
+    deadlineFinishedEarly:
+      '{days, plural, one {Early by # day} other {Early by # days}}',
+    deadlineOnTime: 'On time',
+    deadlineFinishedLate:
+      '{days, plural, one {Late by # day} other {Late by # days}}',
   },
   status: {
     in_progress: 'In Progress',
@@ -83,15 +167,18 @@ const enMessages = {
     pcs: 'pcs',
   },
 }
-function renderBoard(data: {
-  queued: BoardTask[]
-  stages: Map<string, BoardTask[]>
-  readyForProduction: BoardTask[]
-  done: BoardTask[]
-}) {
+function renderBoard(
+  data: {
+    queued: BoardTask[]
+    stages: Map<string, BoardTask[]>
+    readyForProduction: BoardTask[]
+    done: BoardTask[]
+  },
+  stages: Stage[] = [stage1, stage2],
+) {
   return render(
     <IntlProvider locale="en" messages={enMessages}>
-      <KanbanBoard stages={[stage1, stage2]} boardData={data} />
+      <KanbanBoard stages={stages} boardData={data} />
     </IntlProvider>,
   )
 }
@@ -192,4 +279,37 @@ describe.skip('KanbanBoard', () => {
     const badges = screen.getAllByText('Requires Approval')
     expect(badges).toHaveLength(1)
   })
+})
+
+it('uses final-stage deadline copy only on the last production column', () => {
+  const stageTasks = new Map<string, BoardTask[]>()
+  stageTasks.set('p1', [createProductionTask('prod-1', prodStage1, 2)])
+  stageTasks.set('p2', [createProductionTask('prod-2', prodStage2, 2)])
+
+  renderBoard(
+    {
+      queued: [],
+      stages: stageTasks,
+      readyForProduction: [],
+      done: [],
+    },
+    [stage1, stage2, prodStage1, prodStage2],
+  )
+
+  expect(screen.getByText('2 days left')).toBeInTheDocument()
+  expect(screen.getByText('Early by 2 days')).toBeInTheDocument()
+})
+
+it('uses deadline outcome copy on done-column cards', () => {
+  renderBoard(
+    {
+      queued: [],
+      stages: new Map(),
+      readyForProduction: [],
+      done: [createProductionTask('done-1', prodStage2, 5, 'completed')],
+    },
+    [stage1, stage2, prodStage1, prodStage2],
+  )
+
+  expect(screen.getByText('Early by 5 days')).toBeInTheDocument()
 })

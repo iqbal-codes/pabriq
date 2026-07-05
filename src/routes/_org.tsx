@@ -18,8 +18,12 @@ import {
   SidebarTrigger,
 } from '#/components/ui/sidebar'
 import { FloatingAssistant } from '#/features/assistant/components/floating-assistant'
+import { NotificationBell } from '#/features/notifications/components/notification-bell'
 import type { Role } from '#/features/permissions/model'
 import { resolveOrgContext } from '#/lib/auth-session'
+import type { Messages } from '#/messages'
+
+type BreadcrumbKey = keyof Messages['breadcrumb']
 
 export const Route = createFileRoute('/_org')({
   beforeLoad: async ({
@@ -115,62 +119,13 @@ function AdminLayout({
   const leafMatch = matches.filter((m) => m.routeId !== '__root__').at(-1)
   const pageTitleKey = (
     leafMatch?.context as unknown as Record<string, unknown>
-  )?.pageTitle as
-    | 'dashboard'
-    | 'detail'
-    | 'edit'
-    | 'new'
-    | 'customers'
-    | 'createCustomer'
-    | 'editCustomer'
-    | 'viewCustomer'
-    | 'products'
-    | 'newProduct'
-    | 'editProduct'
-    | 'orders'
-    | 'createOrder'
-    | 'viewOrder'
-    | 'editOrder'
-    | 'invoices'
-    | 'createInvoice'
-    | 'viewInvoice'
-    | 'settings'
-    | 'general'
-    | 'productionStages'
-    | 'paymentMethods'
-    | 'members'
-    | 'profile'
-    | undefined
+  )?.pageTitle as BreadcrumbKey | undefined
   const primaryAction = (
     leafMatch?.context as unknown as Record<string, unknown>
   )?.primaryAction as
     | {
         href: string
-        label:
-          | 'dashboard'
-          | 'detail'
-          | 'edit'
-          | 'new'
-          | 'customers'
-          | 'createCustomer'
-          | 'editCustomer'
-          | 'viewCustomer'
-          | 'products'
-          | 'newProduct'
-          | 'editProduct'
-          | 'orders'
-          | 'createOrder'
-          | 'viewOrder'
-          | 'editOrder'
-          | 'invoices'
-          | 'createInvoice'
-          | 'viewInvoice'
-          | 'settings'
-          | 'general'
-          | 'productionStages'
-          | 'paymentMethods'
-          | 'members'
-          | 'profile'
+        label: BreadcrumbKey
       }
     | undefined
 
@@ -190,6 +145,7 @@ function AdminLayout({
             </div>
           </div>
           <div className="flex items-center gap-1 ml-auto">
+            <NotificationBell />
             <ThemeToggle />
             <LanguageToggle />
           </div>
