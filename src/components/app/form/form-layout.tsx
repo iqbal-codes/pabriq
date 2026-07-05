@@ -99,7 +99,7 @@ export function FormGrid({ columns = 2, className, children }: FormGridProps) {
 }
 
 type FormActionsProps = {
-  align?: 'end' | 'stretch'
+  align?: 'end' | 'stretch' | 'stacked'
   className?: string
   children: React.ReactNode
 }
@@ -115,6 +115,8 @@ export function FormActions({
         'flex gap-3',
         align === 'end' && 'flex-col md:flex-row md:justify-end',
         align === 'stretch' && 'flex-col',
+        align === 'stacked' &&
+          'flex-col [&_button]:w-full md:flex-row md:justify-end md:[&_button]:w-auto',
         className,
       )}
     >

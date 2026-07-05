@@ -1,10 +1,9 @@
-import { useStore } from '@tanstack/react-form'
 import { useNavigate, useRouteContext } from '@tanstack/react-router'
 import { Copy } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
-import { FormRoot, useAppForm } from '#/components/app/form'
+import { FormActions, FormRoot, useAppForm } from '#/components/app/form'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import {
@@ -154,25 +153,26 @@ function CreateOrderForm() {
     }
   }
 
-  const isSubmitting = useStore(form.store, (s) => s.isSubmitting)
-
   return (
     <PageContent>
       <PageHeader
         title={t('createOrder')}
         backAction={{ label: ct('back'), href: '/orders' }}
-        primaryAction={{
-          label: t('save'),
-          isLoading: isSubmitting,
-          onClick: () => form.handleSubmit(),
-        }}
       />
+      <h1 className="text-2xl font-semibold tracking-tight md:hidden">
+        {t('createOrder')}
+      </h1>
       <FormRoot form={form}>
         <OrderFormFields
           form={form}
           customers={customers}
           products={products}
         />
+        <FormActions align="stacked">
+          <form.AppForm>
+            <form.SubmitButton>{t('save')}</form.SubmitButton>
+          </form.AppForm>
+        </FormActions>
       </FormRoot>
 
       <AlertDialog open={confirmationOpen} onOpenChange={setConfirmationOpen}>

@@ -330,6 +330,20 @@ describe('FormActions', () => {
 
     expect(screen.getByText('Save')).toBeDefined()
   })
+
+  it('applies full-width stacked layout on mobile when align is stacked', () => {
+    const { container } = render(
+      <FormActions align="stacked">
+        <button type="submit">Save</button>
+      </FormActions>,
+    )
+
+    const root = container.firstChild as HTMLElement
+    expect(root.className).toContain('flex-col')
+    expect(root.className).toContain('md:flex-row')
+    expect(root.className).toContain('[&_button]:w-full')
+    expect(root.className).toContain('md:[&_button]:w-auto')
+  })
 })
 
 describe('form-utils', () => {

@@ -1,4 +1,3 @@
-import { useStore } from '@tanstack/react-form'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import {
@@ -34,11 +33,6 @@ export function ProfilePage({
     },
   })
 
-  const isSubmitting = useStore(
-    profileForm.store,
-    (state) => state.isSubmitting,
-  )
-
   const passwordForm = useAppForm({
     defaultValues: { currentPassword: '', newPassword: '' },
     onSubmit: async ({ value }) => {
@@ -57,14 +51,10 @@ export function ProfilePage({
 
   return (
     <>
-      <PageHeader
-        title={t('title')}
-        primaryAction={{
-          label: ct('confirm'),
-          onClick: () => profileForm.handleSubmit(),
-          isLoading: isSubmitting,
-        }}
-      />
+      <PageHeader title={t('title')} />
+      <h1 className="text-2xl font-semibold tracking-tight md:hidden">
+        {t('title')}
+      </h1>
       <div className="space-y-8">
         <FormRoot form={profileForm}>
           <Card>
@@ -93,6 +83,13 @@ export function ProfilePage({
               </FormGrid>
             </CardContent>
           </Card>
+          <FormActions align="stacked">
+            <profileForm.AppForm>
+              <profileForm.SubmitButton>
+                {ct('confirm')}
+              </profileForm.SubmitButton>
+            </profileForm.AppForm>
+          </FormActions>
         </FormRoot>
 
         <FormRoot form={passwordForm}>
@@ -116,7 +113,7 @@ export function ProfilePage({
               </FormGrid>
             </CardContent>
           </Card>
-          <FormActions>
+          <FormActions align="stacked">
             <passwordForm.AppForm>
               <passwordForm.SubmitButton>
                 {t('changePassword')}

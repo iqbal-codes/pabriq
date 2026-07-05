@@ -1,8 +1,7 @@
-import { useStore } from '@tanstack/react-form'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
-import { FormRoot, useAppForm } from '#/components/app/form'
+import { FormActions, FormRoot, useAppForm } from '#/components/app/form'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { CustomerFormFields } from '#/features/customers/components/customer-form-fields'
@@ -53,8 +52,6 @@ export function EditCustomerPage() {
     },
   })
 
-  const isSubmitting = useStore(form.store, (state) => state.isSubmitting)
-
   if (!customer) {
     return (
       <PageContent>
@@ -68,14 +65,17 @@ export function EditCustomerPage() {
       <PageHeader
         title={t('editCustomer')}
         backAction={{ label: ct('back'), href: '/customers' }}
-        primaryAction={{
-          label: t('save'),
-          isLoading: isSubmitting,
-          onClick: () => form.handleSubmit(),
-        }}
       />
+      <h1 className="text-2xl font-semibold tracking-tight md:hidden">
+        {t('editCustomer')}
+      </h1>
       <FormRoot form={form}>
         <CustomerFormFields form={form} />
+        <FormActions align="stacked">
+          <form.AppForm>
+            <form.SubmitButton>{t('save')}</form.SubmitButton>
+          </form.AppForm>
+        </FormActions>
       </FormRoot>
     </PageContent>
   )

@@ -1,8 +1,7 @@
-import { useStore } from '@tanstack/react-form'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
-import { FormRoot, useAppForm } from '#/components/app/form'
+import { FormActions, FormRoot, useAppForm } from '#/components/app/form'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { ProductFormFields } from '#/features/products/components/product-form-fields'
@@ -90,21 +89,22 @@ function EditProductForm({
     },
   })
 
-  const isSubmitting = useStore(form.store, (state) => state.isSubmitting)
-
   return (
     <PageContent>
       <PageHeader
         title={t('editTitle')}
         backAction={{ label: ct('back'), href: '/products' }}
-        primaryAction={{
-          label: t('updateProduct'),
-          isLoading: isSubmitting,
-          onClick: () => form.handleSubmit(),
-        }}
       />
+      <h1 className="text-2xl font-semibold tracking-tight md:hidden">
+        {t('editTitle')}
+      </h1>
       <FormRoot form={form}>
         <ProductFormFields form={form} />
+        <FormActions align="stacked">
+          <form.AppForm>
+            <form.SubmitButton>{t('updateProduct')}</form.SubmitButton>
+          </form.AppForm>
+        </FormActions>
       </FormRoot>
     </PageContent>
   )
