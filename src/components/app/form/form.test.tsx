@@ -4,6 +4,27 @@ import { renderToString } from 'react-dom/server'
 import { IntlProvider } from 'use-intl'
 import { describe, expect, it } from 'vitest'
 
+if (!HTMLElement.prototype.setPointerCapture) {
+  Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', {
+    configurable: true,
+    value: () => {},
+  })
+}
+
+if (!HTMLElement.prototype.releasePointerCapture) {
+  Object.defineProperty(HTMLElement.prototype, 'releasePointerCapture', {
+    configurable: true,
+    value: () => {},
+  })
+}
+
+if (!HTMLElement.prototype.hasPointerCapture) {
+  Object.defineProperty(HTMLElement.prototype, 'hasPointerCapture', {
+    configurable: true,
+    value: () => false,
+  })
+}
+
 const testMessages = {
   common: {
     optional: 'Optional',
@@ -135,12 +156,11 @@ describe('Form components', () => {
     render(<TestForm />)
     expect(screen.getByText('Status')).toBeDefined()
 
-    // Click trigger to open portal select options
     const trigger = screen.getByRole('combobox')
     await userEvent.click(trigger)
 
-    expect(screen.getByText('Active')).toBeDefined()
-    expect(screen.getByText('Inactive')).toBeDefined()
+    expect(await screen.findByText('Active')).toBeDefined()
+    expect(await screen.findByText('Inactive')).toBeDefined()
   })
 
   it('NumberField stores raw digits and displays Indonesian formatting', async () => {

@@ -1,14 +1,24 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { IntlProvider } from 'use-intl'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TaskDetailModal } from './task-detail-modal'
 
 const mutationMocks = vi.hoisted(() => ({
   advanceTaskMutate: vi.fn(),
   saveCommentMutate: vi.fn(),
 }))
+
+beforeEach(() => {
+  mutationMocks.advanceTaskMutate.mockReset()
+  mutationMocks.advanceTaskMutate.mockResolvedValue({
+    ok: true,
+    pendingApproval: false,
+  })
+  mutationMocks.saveCommentMutate.mockReset()
+  mutationMocks.saveCommentMutate.mockResolvedValue({ ok: true })
+})
 
 const enMessages = {
   production: {
@@ -151,10 +161,10 @@ vi.mock('../hooks', () => {
       isLoading: false,
     }),
     useTaskMutations: () => ({
-      advanceTask: { mutate: mutationMocks.advanceTaskMutate },
+      advanceTask: { mutateAsync: mutationMocks.advanceTaskMutate },
       approveAdvance,
       rejectAdvance,
-      saveComment: { mutate: mutationMocks.saveCommentMutate },
+      saveComment: { mutateAsync: mutationMocks.saveCommentMutate },
     }),
   }
 })
@@ -221,53 +231,46 @@ describe('TaskDetailModal', () => {
   })
 
   it('does not close when advance returns a server error', async () => {
-    mutationMocks.advanceTaskMutate.mockImplementation(
-      (_vars: unknown, options?: { onSuccess?: (result: unknown) => void }) => {
-        options?.onSuccess?.({ ok: false, error: 'Failed to advance' })
-      },
-    )
+    mutationMocks.advanceTaskMutate.mockResolvedValue({
+      ok: false,
+      error: 'Failed to advance',
+    })
     const { onOpenChange } = renderModal()
     await userEvent.click(screen.getByText('Advance to Production'))
-    expect(onOpenChange).not.toHaveBeenCalled()
+    await waitFor(() => expect(onOpenChange).not.toHaveBeenCalled())
   })
 
   it('closes when advance succeeds', async () => {
-    mutationMocks.advanceTaskMutate.mockImplementation(
-      (_vars: unknown, options?: { onSuccess?: (result: unknown) => void }) => {
-        options?.onSuccess?.({ ok: true, pendingApproval: false })
-      },
-    )
+    mutationMocks.advanceTaskMutate.mockResolvedValue({
+      ok: true,
+      pendingApproval: false,
+    })
     const { onOpenChange } = renderModal()
     await userEvent.click(screen.getByText('Advance to Production'))
-    expect(onOpenChange).toHaveBeenCalledWith(false)
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
   })
 
   it('does not clear comment when save comment returns a server error', async () => {
-    mutationMocks.saveCommentMutate.mockImplementation(
-      (_vars: unknown, options?: { onSuccess?: (result: unknown) => void }) => {
-        options?.onSuccess?.({ ok: false, error: 'Failed to comment' })
-      },
-    )
+    mutationMocks.saveCommentMutate.mockResolvedValue({
+      ok: false,
+      error: 'Failed to comment',
+    })
     renderModal()
     await userEvent.click(screen.getByText('Activity'))
     const input = screen.getByPlaceholderText('Type a comment...')
     await userEvent.type(input, 'Hello world')
     await userEvent.click(screen.getByText('Send'))
-    expect(input).toHaveValue('Hello world')
+    await waitFor(() => expect(input).toHaveValue('Hello world'))
   })
 
   it('clears comment when save comment succeeds', async () => {
-    mutationMocks.saveCommentMutate.mockImplementation(
-      (_vars: unknown, options?: { onSuccess?: (result: unknown) => void }) => {
-        options?.onSuccess?.({ ok: true })
-      },
-    )
+    mutationMocks.saveCommentMutate.mockResolvedValue({ ok: true })
     renderModal()
     await userEvent.click(screen.getByText('Activity'))
     const input = screen.getByPlaceholderText('Type a comment...')
     await userEvent.type(input, 'Hello world')
     await userEvent.click(screen.getByText('Send'))
-    expect(input).toHaveValue('')
+    await waitFor(() => expect(input).toHaveValue(''))
   })
 
   it('shows Request Review for in_progress task at needApproval stage', () => {
@@ -276,25 +279,23 @@ describe('TaskDetailModal', () => {
   })
 
   it('calls onReview when advance returns pendingApproval and canApprove is true', async () => {
-    mutationMocks.advanceTaskMutate.mockImplementation(
-      (_vars: unknown, options?: { onSuccess?: (result: unknown) => void }) => {
-        options?.onSuccess?.({ ok: true, pendingApproval: true })
-      },
-    )
+    mutationMocks.advanceTaskMutate.mockResolvedValue({
+      ok: true,
+      pendingApproval: true,
+    })
     const onReview = vi.fn()
     renderModal('task-approval', { canApprove: true, onReview })
     await userEvent.click(screen.getByText('Request Review'))
-    expect(onReview).toHaveBeenCalledWith('task-approval')
+    await waitFor(() => expect(onReview).toHaveBeenCalledWith('task-approval'))
   })
 
   it('closes modal when advance returns pendingApproval but canApprove is false', async () => {
-    mutationMocks.advanceTaskMutate.mockImplementation(
-      (_vars: unknown, options?: { onSuccess?: (result: unknown) => void }) => {
-        options?.onSuccess?.({ ok: true, pendingApproval: true })
-      },
-    )
+    mutationMocks.advanceTaskMutate.mockResolvedValue({
+      ok: true,
+      pendingApproval: true,
+    })
     const { onOpenChange } = renderModal('task-approval', { canApprove: false })
     await userEvent.click(screen.getByText('Request Review'))
-    expect(onOpenChange).toHaveBeenCalledWith(false)
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
   })
 })

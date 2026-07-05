@@ -149,7 +149,6 @@ export function TaskDetailModal({
       handleAdvance({})
     }
   }
-  1
   async function handleAdvance(
     responses: Record<string, { value?: string; assetIds?: string[] }>,
   ) {

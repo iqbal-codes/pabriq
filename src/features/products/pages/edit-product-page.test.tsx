@@ -128,7 +128,9 @@ describe('EditProductPage', () => {
     setMockBreakpoints([])
     setMockAddons([])
     render(<TestWrapper />)
-    expect(screen.getByText('Edit Product')).toBeDefined()
+    expect(
+      screen.getAllByRole('heading', { name: 'Edit Product' }).length,
+    ).toBeGreaterThan(0)
   })
 
   it('renders loading state when breakpoints or addons are undefined', () => {

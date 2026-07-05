@@ -73,6 +73,8 @@ function TestWrapper() {
 describe('CreateProductPage', () => {
   it('renders the page title', () => {
     render(<TestWrapper />)
-    expect(screen.getByText('New Product')).toBeDefined()
+    expect(
+      screen.getAllByRole('heading', { name: 'New Product' }).length,
+    ).toBeGreaterThan(0)
   })
 })
