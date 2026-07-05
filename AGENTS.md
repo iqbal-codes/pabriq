@@ -69,49 +69,23 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
 
-## 5. Project Context
+## 5. Agent Skills
 
-- Runtime: TanStack Start + React 19 + Vite + file-based TanStack Router.
-- Package manager: Bun only.
-- Tooling: Biome via `bun run check`, TypeScript via `bun run typecheck`.
-- UI: Tailwind CSS v4 + shadcn/ui + lucide.
-- Forms: TanStack Form.
-- URL state: nuqs.
-- Server boundary: TanStack Start `createServerFn`.
-- Database: Neon Postgres + Drizzle.
-- Auth: Better Auth + Drizzle adapter.
-- Design tokens: `DESIGN.md` (colors, typography, spacing, radius).
-- Monitoring: Sentry optional locally, required in production when configured.
+### Loading codebase skills
 
-## 6. Agent skills
+Use the `skill` tool to load domain-specific knowledge on-demand. These project-local skills are stored under `.agents/skills/` and capture "how we do things here":
 
-### Loading topic knowledge
+| Skill | When to load / trigger |
+|---|---|
+| `pabriq-app-v2-foundation` | High-level architecture, project setup, starting dev server, feature folder layout |
+| `pabriq-app-v2-ui` | Frontend, layout shells, TanStack Form, DataTable, Tailwind CSS v4, i18n |
+| `pabriq-app-v2-backend` | createServerFn, session & role checks, API webhooks, server validation |
+| `pabriq-app-v2-data` | Drizzle ORM schemas, database connections, query pooling, migrations |
+| `pabriq-app-v2-testing` | Writing or running Vitest unit/integration tests or Playwright E2E tests |
+| `pabriq-app-v2-conventions` | Code style, Biome rules, TypeScript strictness, named exports, import aliases (`#/`) |
+| `pabriq-app-v2-infra` | Dockerfile, Infisical secrets, environment configurations |
 
-Use the `skill` tool to load domain-specific knowledge on-demand. Each skill combines non-negotiables (rules) with reference (patterns/code):
-
-| Skill                | When to load                                                   |
-| -------------------- | -------------------------------------------------------------- |
-| `ui-system`          | Building or modifying UI, forms, data tables, sidebar, styling |
-| `server-logic`       | Writing server functions, feature modules, routes              |
-| `data-layer`         | Writing DB queries, search/filter endpoints, migrations        |
-| `auth`               | Sign-in/sign-up flows, session checks, permission guards       |
-| `i18n`               | Adding translations, locale handling, user-facing text         |
-| `testing`            | Writing tests, running verification pipeline before commit     |
-| `project-foundation` | Understanding the stack, config, utilities                     |
-
-### Issue tracker
-
-Issues in GitHub Issues via `gh` CLI. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Default: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Single-context: `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain.md`.
-
-## 7. Code Best Practices
+## 6. Code Best Practices
 
 ### TypeScript
 
@@ -161,7 +135,7 @@ Single-context: `CONTEXT.md` + `docs/adr/` at repo root. See `docs/agents/domain
 - Continuous small refactoring compounds into a healthier codebase over time
 - Readability over conciseness — code is read far more often than it's written
 
-## 8. Database & Environment Safety
+## 7. Database & Environment Safety
 
 > ⚠️ **THIS IS THE MOST IMPORTANT SECTION. VIOLATIONS WILL DESTROY PRODUCTION DATA.**
 
@@ -185,7 +159,7 @@ vitest run
 npx vitest run
 ```
 
-## 9. Non-Negotiable Project Rules (Legacy)
+## 8. Non-Negotiable Project Rules (Legacy)
 
 - Use Bun only: `bun install`, `bun run dev`, `bun run build`, `bun run check`, `bun run typecheck`.
 - `bun.lock` is authoritative. Do not add npm, pnpm, or yarn lockfiles.

@@ -2,9 +2,9 @@
   "schema_version": 1,
   "repo_path": "/Users/efishery/Documents/workspace/projects/pabriq-app-v2",
   "slug": "pabriq-app-v2",
-  "generated_at": "2026-07-04T12:00:00Z",
+  "generated_at": "2026-07-04T16:22:34.469Z",
   "generator": "codebase-skills",
-  "output_dir": "/Users/efishery/Documents/workspace/projects/pabriq-app-v2/.agents/skills",
+  "output_dir": "/Users/efishery/.claude/skills",
   "catalog": {
     "generated": [
       {
@@ -15,42 +15,42 @@
       {
         "domain": "ui",
         "skill": "pabriq-app-v2-ui",
-        "reason": "frontend layer present: React 19 + TanStack Start + Tailwind CSS v4, src/components, src/routes"
+        "reason": "frontend layer present: src/components/ (shadcn/ui + app components), src/routes/ (TanStack Router file-based), React 19 + Tailwind v4 in package.json"
       },
       {
         "domain": "backend",
         "skill": "pabriq-app-v2-backend",
-        "reason": "server/API layer present: TanStack Start server functions, Better Auth, API routing"
-      },
-      {
-        "domain": "data",
-        "skill": "pabriq-app-v2-data",
-        "reason": "distinct data layer present: Drizzle ORM, schema in src/db/schema.ts, migrations in drizzle/"
+        "reason": "server layer present: src/features/*/server.ts (createServerFn), src/routes/api/, Better Auth, org resolution pattern"
       },
       {
         "domain": "testing",
         "skill": "pabriq-app-v2-testing",
-        "reason": "testing configuration present: vitest.config.ts, playwright.config.ts, and tests in src/ and e2e/"
+        "reason": "test infrastructure present: vitest.config.ts, src/**/*.test.ts files, playwright.config.ts, e2e/ directory"
       },
       {
         "domain": "conventions",
         "skill": "pabriq-app-v2-conventions",
-        "reason": "lint/format and naming/workflow conventions configured via biome.json and tsconfig.json"
+        "reason": "meaningful conventions configured: biome.json, tsconfig.json (strict, verbatimModuleSyntax), AGENTS.md, .sandcastle/CODING_STANDARDS.md"
+      },
+      {
+        "domain": "data",
+        "skill": "pabriq-app-v2-data",
+        "reason": "distinct data layer: src/db/schema.ts (~30 Drizzle tables), src/db/index.ts, drizzle.config.ts, drizzle/ migrations"
       },
       {
         "domain": "infra",
         "skill": "pabriq-app-v2-infra",
-        "reason": "infrastructure present: Dockerfile at root, Infisical config, containerized deployment scripts"
+        "reason": "infra present: Dockerfile (multi-stage), .infisical.json, scripts/infisical-run.sh, instrument.server.mjs (Sentry), .sandcastle/Dockerfile"
       }
     ],
     "skipped": [
       {
         "domain": "mobile",
-        "reason": "no iOS/Android/ReactNative targets found in package.json or codebase"
+        "reason": "no iOS/Android targets; web-only SPA/SSR"
       },
       {
         "domain": "docs",
-        "reason": "no distinct documentation framework/site folder found (docs are just standard markdown files)"
+        "reason": "docs are agent-focused reference material in docs/agents/, not a docs site worth its own skill"
       }
     ]
   },
@@ -59,29 +59,33 @@
       "domain": "foundation",
       "name": "pabriq-app-v2-foundation",
       "path": "pabriq-app-v2-foundation/SKILL.md",
-      "generated_hash": "sha256:0c2c08ee576fa7c7d458120e67e6f9363005bd92530d0413f3e4913e4a8dbd83",
+      "generated_hash": "sha256:e77dd9f921deb47f0554dff3452a0dcc6dbe152a884bc3e3590076a4bba59ea3",
       "watches": [
         "package.json",
         "tsconfig.json",
+        "vite.config.ts",
         "README.md",
         "AGENTS.md",
-        "CONTEXT.md",
-        "vite.config.ts",
-        "src/start.ts",
-        "src/router.tsx"
+        "src/routes/__root.tsx",
+        "src/routes/_org.tsx",
+        "src/router.tsx",
+        "src/start.ts"
       ]
     },
     {
       "domain": "ui",
       "name": "pabriq-app-v2-ui",
       "path": "pabriq-app-v2-ui/SKILL.md",
-      "generated_hash": "sha256:4e65452d70594cb2c02241b5df2ed6c622dc3dcf524b23502181fbc5f8094aeb",
+      "generated_hash": "sha256:72f8fa532e00804d3f977aeedf3b875526bcf8a7493168e55ed1a31ad54ca4df",
       "watches": [
         "src/components/**",
         "src/routes/**",
+        "src/features/*/pages/**",
+        "src/features/*/components/**",
         "src/styles.css",
-        "tailwind.config.*",
-        "vite.config.ts",
+        "src/messages/**",
+        "src/hooks/**",
+        "components.json",
         "package.json"
       ]
     },
@@ -89,23 +93,18 @@
       "domain": "backend",
       "name": "pabriq-app-v2-backend",
       "path": "pabriq-app-v2-backend/SKILL.md",
-      "generated_hash": "sha256:9495a5d2396e7e6b8cea6ffd86bee55e472c9cc64d5b5b22957a4d2a7a2dab88",
+      "generated_hash": "sha256:818e0a4b299b0489e8936dc9b0f7bc0a9a3656995cd828df9e2ff22f3368b341",
       "watches": [
-        "src/features/**/server.ts",
+        "src/features/*/server.ts",
+        "src/features/*/model.ts",
+        "src/lib/auth.ts",
+        "src/lib/auth-session.ts",
+        "src/lib/auth-client.ts",
         "src/routes/api/**",
-        "src/lib/auth*.ts",
-        "package.json"
-      ]
-    },
-    {
-      "domain": "data",
-      "name": "pabriq-app-v2-data",
-      "path": "pabriq-app-v2-data/SKILL.md",
-      "generated_hash": "sha256:3769c99f9be085cbbbe249cf5eb647ae7749b93468ae4405dc9c5372b8c798c5",
-      "watches": [
-        "src/db/**",
-        "drizzle.config.ts",
-        "drizzle/**",
+        "src/lib/server-logger-middleware.ts",
+        "src/lib/validation-schemas.ts",
+        "src/features/permissions/**",
+        "src/features/auth/**",
         "package.json"
       ]
     },
@@ -113,24 +112,42 @@
       "domain": "testing",
       "name": "pabriq-app-v2-testing",
       "path": "pabriq-app-v2-testing/SKILL.md",
-      "generated_hash": "sha256:20217c14bb09089b0d7f4f6b544d55046172f35eec78101f1b760402cf462985",
+      "generated_hash": "sha256:f419007ee47606c874048e576c5b5ea93f9169d49461b39531975d38cf1a725c",
       "watches": [
+        "src/**/*.test.ts",
+        "src/**/*.test.tsx",
+        "e2e/**",
+        "src/test/**",
         "vitest.config.ts",
         "playwright.config.ts",
-        "src/test/**",
-        "e2e/**",
-        "src/**/*.test.ts",
-        "src/**/*.test.tsx"
+        "package.json"
       ]
     },
     {
       "domain": "conventions",
       "name": "pabriq-app-v2-conventions",
       "path": "pabriq-app-v2-conventions/SKILL.md",
-      "generated_hash": "sha256:6d502e4da55b36809544cafd732da6da9b17d42b61159b24e6d7042495f2a88a",
+      "generated_hash": "sha256:761b7df69dda638a6168d3780905b4ff18714a7371132bb05329ebe0652ff70a",
       "watches": [
         "biome.json",
         "tsconfig.json",
+        "AGENTS.md",
+        ".sandcastle/CODING_STANDARDS.md",
+        "package.json"
+      ]
+    },
+    {
+      "domain": "data",
+      "name": "pabriq-app-v2-data",
+      "path": "pabriq-app-v2-data/SKILL.md",
+      "generated_hash": "sha256:fe565f5522bbb8778344c28cacb6f0cabf8a781cbda2eacd8c88176043bc27b8",
+      "watches": [
+        "src/db/**",
+        "src/features/*/model.ts",
+        "drizzle/**",
+        "drizzle.config.ts",
+        "src/lib/rls.ts",
+        "src/lib/sorting.ts",
         "package.json"
       ]
     },
@@ -138,29 +155,88 @@
       "domain": "infra",
       "name": "pabriq-app-v2-infra",
       "path": "pabriq-app-v2-infra/SKILL.md",
-      "generated_hash": "sha256:46aaabc49a3eab34fe77746e80993c515e4466a50403be68d7ef7ce3c9d00cff",
+      "generated_hash": "sha256:c8f2266d6a1d4c4825a3da699a64cc74a55ff36e114f30a25cd0327817449537",
       "watches": [
         "Dockerfile",
         ".dockerignore",
         ".infisical.json",
-        "package.json"
+        "scripts/infisical-run.sh",
+        "instrument.server.mjs",
+        ".env.example",
+        ".sandcastle/Dockerfile",
+        ".sandcastle/CODING_STANDARDS.md",
+        "package.json",
+        "src/sw.ts",
+        "src/tanstack-serwist-plugin.ts",
+        "public/manifest.json",
+        "docs/plans/offline-first-implementation-plan.md"
       ]
     }
   ],
   "fingerprints": {
     "package.json": "sha256:d99f7c5989557567af9e7f695d80730c5116957f579e78bfca293b3817ed109f",
-    "*.config.*": "sha256:7172e9d314731faa162458fb3a5f0f68cf17cf3886bc182d8472530189cf3b05",
-    "src/**/*.ts": "sha256:022b88e8b62d0a65516866b6019724cd3ee0e9ce9310d5eb8e983247bf08e1f4",
-    "src/**/*.tsx": "sha256:0d4ab43bc7544dc0cab907206a2c6416b918b50032fcaa33f36350393bb0d723",
+    "tsconfig.json": "sha256:4fdf8c608077c230f5e3fc195dc575684895ef01736ee29e8bb89e76ed60e3b6",
+    "biome.json": "sha256:acc0799f8a90ad646888c0ae6f81d2589ccf749cddc7a2224c64b8f83553fae4",
+    "vite.config.ts": "sha256:bdd56fa4ce0b142d7c0226db942c27880f679267136441e57259d44dc2b256ce",
+    "vitest.config.ts": "sha256:6efd9b7a1ce8648dbc453615781996ace6d24978b985b2827549e4ac0442c030",
+    "drizzle.config.ts": "sha256:619af4ef3edbbd4c64ef30b08dc22c54603e7e6b0c88b2493b599aff2afa1fae",
+    "playwright.config.ts": "sha256:acc003e28a4f73df4cf1fb6b3a9b4b212592c4d8845e21c2cc94c7f4b891751c",
+    "Dockerfile": "sha256:5d25e54803eff002606367b470b9a43aa5169f613b04fbbfb6fafd773b736c9f",
+    "AGENTS.md": "sha256:b221cbd8ea3a63a1ec86d6e56de97bf3c90efa2d33199fea8e65919eb467160a",
+    "src/db/schema.ts": "sha256:b2bee24503c3bb111f4bec8c7d4f730ad962da9b80a271037568b3dbfc50f4ad",
+    "src/db/index.ts": "sha256:685da82030ff9a0a33174a9185eff4f39466369aeffde03c7dc0a01c83e00d12",
+    "src/lib/auth.ts": "sha256:1500eec7aff3dcf1db3e04dd9f9fa838ee4ff694ea4c02bb7e1cca30cff20d06",
+    "src/lib/auth-session.ts": "sha256:5700fc37bd1825dd97dc9798ec7bc9dc01e925d618d2cd87fe8d8b1c0fdaf2b1",
+    "src/lib/query-keys.ts": "sha256:f6a67e29fb20d906a8b1d95271c03a18789ab520349fddd0f9edf1d6dbb93e0f",
+    "src/routes/__root.tsx": "sha256:63df1e737040b0e235e6236687504e50c848f9a579502ce8f14d07a578ff70d5",
+    "src/routes/_org.tsx": "sha256:f59c7ed83b9e38a40c46a35b65f8e0e886e45411873616008843fb87cd33a9cb",
+    "src/styles.css": "sha256:3df76b4924183abf38e06c76ec5a4d0547efa18e21cce0b84813c79c30206860",
+    "src/components/app/**": "sha256:3bc430f655c38a97ca853b78873d5e0303ee5b9639113e3f816c7daacaaa621c",
+    "src/features/*/model.ts": "sha256:03efcfad66b9fa3eb9e532d5aa40ee840d6a1218397eb8f8e5fc2ad0e880c2e3",
+    "src/features/*/server.ts": "sha256:298f7dc0dcbb9df1b03932801f124d1c2d947dd198dc491fe2597830f9320873",
+    "src/features/*/hooks.ts": "sha256:c4e5297a14da55903ff914b5adb8799dfc225cf34d643981c4a9de16a5762284",
+    "src/db/**": "sha256:290f62ffc64c70cbf08024edda9c67be02d27346c6007a9aae928d8e5df815d8",
+    "src/lib/**": "sha256:40a7e521e6c7234ce92764a3671de08e050d85c250902bbfa4ec91fef685d1c6",
+    "src/messages/**": "sha256:657e239eb375df427c5960884bde1431bd6bfda4755026e48af0ab9d01bcb522",
+    "src/routes/**": "sha256:9198182e2266726376cd8e200eac5ca38df799c28ab451372e5025c19307b2ce",
+    "drizzle/**": "sha256:4960fded267957b1b99edb9e31abe7b5b86f3243adc3c0743c1cd026adf03d10",
     "e2e/**": "sha256:55f4aefd9dbab02ce6ab19d636a1b8bfa600949b7137e554133b485fc09fa97c",
-    "biome.json": "sha256:acc0799f8a90ad646888c0ae6f81d2589ccf749cddc7a2224c64b8f83553fae4"
+    "docs/agents/**": "sha256:3861c39674362f226fe071b03507e6610ad46b60150d0fa7133bdacdcac6723f",
+    "src/sw.ts": "sha256:63810d256586d8468a7432f1ef35cd6293edf9e91be3d2a58205ef40eb2ec3e6",
+    "src/tanstack-serwist-plugin.ts": "sha256:c7ac8a876bd46c9977a0682296223962fc4d64540f03d49a4cc6dd90b0ed5af9",
+    "public/manifest.json": "sha256:c88c5b08203b301fd452dfad210b2fd4b81d8bf074b13c9849ac73a465dd6bf5"
   },
   "fingerprints_glob": [
     "package.json",
-    "*.config.*",
-    "src/**/*.ts",
-    "src/**/*.tsx",
+    "tsconfig.json",
+    "biome.json",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "drizzle.config.ts",
+    "playwright.config.ts",
+    "Dockerfile",
+    "AGENTS.md",
+    "src/db/schema.ts",
+    "src/db/index.ts",
+    "src/lib/auth.ts",
+    "src/lib/auth-session.ts",
+    "src/lib/query-keys.ts",
+    "src/routes/__root.tsx",
+    "src/routes/_org.tsx",
+    "src/styles.css",
+    "src/components/app/**",
+    "src/features/*/model.ts",
+    "src/features/*/server.ts",
+    "src/features/*/hooks.ts",
+    "src/db/**",
+    "src/lib/**",
+    "src/messages/**",
+    "src/routes/**",
+    "drizzle/**",
     "e2e/**",
-    "biome.json"
+    "docs/agents/**",
+    "src/sw.ts",
+    "src/tanstack-serwist-plugin.ts",
+    "public/manifest.json"
   ]
 }

@@ -1,170 +1,205 @@
 ---
 name: pabriq-app-v2-ui
-description: >
-  How UI work is done in the pabriq-app-v2 codebase: components live in src/components/ (ui/ for
-  shadcn primitives, app/ for reusable app-level pieces), feature pages in src/features/*/pages/,
-  and routes in src/routes/. Forms use TanStack Form with a custom useAppForm/withForm hook and
-  Zod validation; data tables use TanStack Table wrapped in a reusable DataTable component; pages
-  follow a PageContent/PageHeader shell pattern. Styling is Tailwind CSS v4 with a cn() utility.
-  Use whenever the user adds or edits components, pages, forms, tables, or frontend logic in
-  pabriq-app-v2, even if they don't say "UI".
+description: How UI work is done in the pabriq-app-v2 codebase: components live in src/components/ (ui/ for shadcn primitives, app/ for reusable app-level pieces), feature pages in src/features/*/pages/, and routes in src/routes/. Forms use TanStack Form with a custom useAppForm/withForm hook and Zod validation; data tables use TanStack Table wrapped in a reusable DataTable component; pages follow a PageContent/PageHeader shell pattern. Styling is Tailwind CSS v4 with a cn() utility. Use whenever the user adds or edits components, pages, forms, tables, or frontend logic in pabriq-app-v2, even if they don't say "UI".
 ---
 
-# pabriq-app-v2 — UI / UX
+# pabriq-app-v2 — UI
 
-This domain covers the frontend layer of pabriq-app-v2: components, pages, forms, data tables,
-routing, and client-side state. The stack is React 19 via TanStack Start with TanStack Router,
-TanStack Query, TanStack Form, and Tailwind CSS v4.
+UI layer for a manufacturing SaaS (TanStack Start SSR + React 19). All user-facing code: components, pages, forms, data tables, sidebar, routing, styling, and i18n.
 
-> Read `../pabriq-app-v2-foundation/references/codebase-profile.md` first for the full stack,
-> architecture, and tooling context. This skill adds the UI-specific details.
+> Read `../pabriq-app-v2-foundation/references/codebase-profile.md` first for the stack, architecture, and tooling context. This skill adds the UI-specific details.
 
 ## Where things live
 
-- **Shadcn/ui primitives**: `src/components/ui/` — button, input, dialog, sidebar, table, etc.
-- **Reusable app components**: `src/components/app/` — page-shell/, data-table/, form/, asset-file, etc.
-- **Shared standalone components**: `src/components/` (root) — confirm-dialog.tsx, status-badge.tsx, nav-user.tsx
-- **Feature pages**: `src/features/<feature>/pages/` — one file per page (e.g. create-product-page.tsx)
-- **Feature components**: `src/features/<feature>/components/` — feature-specific UI pieces
-- **Routes**: `src/routes/` — file-based routing via TanStack Router (e.g. `_org.tsx`, `__root.tsx`)
-- **Shared hooks**: `src/hooks/` — use-mobile.ts and other cross-cutting hooks
-- **Validation schemas**: `src/lib/validation-schemas.ts` — Zod schemas for form validation
-- **i18n messages**: `src/messages/en.ts`, `src/messages/id.ts` — translation strings
+- **shadcn/ui primitives** (57 components, never hand-edited): `src/components/ui/`
+- **App-level reusable components**: `src/components/app/` — `page-shell/`, `form/`, `data-table/`, `asset-upload/`
+- **Feature pages**: `src/features/*/pages/` (e.g. `src/features/customers/pages/customers-list-page.tsx`)
+- **Routes**: `src/routes/_org/` for authenticated workspace routes; `src/routes/` for auth and public routes
+- **Shared hooks**: `src/hooks/`
+- **i18n translations**: `src/messages/en.ts`, `src/messages/id.ts`, `src/messages/types.ts`
+- **Styling config**: `src/styles.css` (Tailwind v4 + oklch theme tokens)
+- **PWA**: `public/manifest.json` (installable PWA), `src/routes/__root.tsx` (manifest link + SW registration), `src/sw.ts` (Serwist service worker) — see `pabriq-app-v2-infra` for full PWA architecture
+
+## Proven preferences / reusable patterns
+
+- **PageShell**: `PageHeader` + `PageContent` from `src/components/app/page-shell/` — use for every workspace page.
+- **useAppForm**: Custom TanStack Form wrapper from `src/components/app/form/form-context.tsx` — use for all forms.
+- **DataTable**: Wrapped TanStack Table from `src/components/app/data-table/` — use for all list/table UIs.
+- **ConfirmDialog**: From `src/components/confirm-dialog.tsx` — destructive action confirmation, never `window.confirm`.
+- **StatusBadge**: From `src/components/status-badge.tsx` — entity status display with i18n.
+- **withForm**: Reusable field group composition from `src/components/app/form/`.
+
+Full pattern catalog: `references/ui-patterns.md`.
 
 ## How we do UI here
 
-### Form pattern — TanStack Form with custom hook
+### Page shell pattern
 
-Forms use TanStack Form's `createFormHook` to produce a typed `useAppForm` hook. Each page
-instantiates the form with `defaultValues`, Zod validators, and an `onSubmit` handler, then
-renders via `FormRoot` → `form.AppField` → `<field.Component>`.
+Every workspace page uses `PageContent` + `PageHeader`. Route files define breadcrumbs and page metadata in `beforeLoad`.
 
-> from `src/features/products/pages/create-product-page.tsx`
-```tsx
-const form = useAppForm({
-  defaultValues: { name: '', description: '', basePrice: undefined as number | undefined },
-  validators: { onChange: productFormSchema, onSubmit: productFormSchema },
-  onSubmit: async ({ value, formApi }) => {
-    if (!formApi.state.isValid) return
-    const result = await createProduct.mutateAsync(value)
-    if (result.ok) { toast.success(t('created')); navigate({ to: '/products' }) }
-  },
+> from `src/routes/_org/customers/index.tsx`
+```typescript
+export const Route = createFileRoute('/_org/customers/')({
+  beforeLoad: () => ({
+    breadcrumb: 'customers',
+    pageTitle: 'customers',
+    primaryAction: { label: 'createCustomer', href: '/customers/new' },
+  }),
+  component: CustomersListPage,
 })
 ```
+Why: `beforeLoad` metadata drives the sidebar breadcrumbs, mobile header title, and primary action button — no manual wiring needed.
 
-Why: Centralizes form state, validation, and submission. The `useAppForm` hook is defined in
-`src/components/app/form/form-context.tsx` and bundles all custom field components.
+### List page with DataTable
 
-### Field shell pattern — reusable field wrappers
+Feature pages compose `PageContent` → `PageHeader` → `DataTable` with `useListPageState` for URL-synced pagination/sorting/search.
 
-Text-based fields are thin wrappers around `TextInputFieldShell`, which provides label, error
-display, and field context wiring. Each specific field (TextField, EmailField, PasswordField)
-simply passes its own `<Input>` render function.
-
-> from `src/components/app/form/text-field.tsx`
+> from `src/features/customers/pages/customers-list-page.tsx`
 ```tsx
-export function TextField(props: FieldProps) {
-  return (
-    <TextInputFieldShell {...props}>
-      {(inputProps) => <Input {...inputProps} />}
-    </TextInputFieldShell>
-  )
-}
+return (
+  <PageContent>
+    <PageHeader
+      title={t('title')}
+      description={t('listDescription')}
+      primaryAction={{ label: t('createCustomer'), href: '/customers/new' }}
+    />
+    <DataTable
+      columns={columns}
+      data={rows}
+      isRefetching={isFetching}
+      isLoading={rows.length === 0 && isFetching}
+      labels={labels}
+      page={page}
+      perPage={perPage}
+      sort={sort}
+      tableId="customers"
+      totalRows={totalRows}
+      filters={filtersConfig}
+      toolbarStart={<DataTableSearch ... />}
+    />
+  </PageContent>
+)
 ```
+Why: `DataTable` handles loading/empty/error/refetching states, mobile cards, column visibility, and filter panels — don't build from scratch.
 
-Why: Eliminates repetitive label/error/layout boilerplate. The shell (`text-input-field-shell.tsx`)
-uses `useFieldContext<string>()` from TanStack Form to bind value, onChange, and onBlur.
+### Form pattern with useAppForm
 
-### Data table pattern — TanStack Table with server pagination
+All forms use `useAppForm` (created via `createFormHook`) with field components registered in `src/components/app/form/form-context.tsx`. Zod validators go in `validators.onChange` and `validators.onSubmit`.
 
-The `DataTable<TData>` component wraps TanStack Table with built-in pagination, search, filters,
-empty/error states, and responsive mobile cards. Pages define column definitions and pass
-server-side page/perPage/sort state plus callbacks.
-
-> from `src/components/app/data-table/data-table.tsx`
+> from `src/features/orders/pages/create-order-page.tsx`
 ```tsx
-type DataTableProps<TData> = {
-  columns: AppColumnDef<TData>[]
-  data: TData[]
-  isLoading?: boolean
-  labels: DataTableLabels
-  onPageChange: (page: number) => void
-  onPerPageChange: (perPage: number) => void
-  page: number
-  perPage: number
-  totalRows: number
-  emptyTitle?: string
-  emptyDescription?: string
-  onRowClick?: (row: TData) => void
-  rowActions?: (row: TData) => React.ReactNode
-}
+const form = useAppForm({
+  defaultValues: defaultOrderValues(),
+  validators: { onChange: orderFormSchema, onSubmit: orderFormSchema },
+  onSubmit: async ({ value }) => {
+    const result = await createOrder.mutateAsync({ ... })
+    toast.success(t('orderCreated'))
+  },
+})
+
+return (
+  <PageContent>
+    <PageHeader
+      title={t('createOrder')}
+      backAction={{ label: ct('back'), href: '/orders' }}
+      primaryAction={{ label: t('save'), isLoading: isSubmitting, onClick: () => form.handleSubmit() }}
+    />
+    <FormRoot form={form}>
+      <OrderFormFields form={form} ... />
+    </FormRoot>
+  </PageContent>
+)
 ```
+Why: `useAppForm` registers project-specific field components (`field.TextField`, `field.SelectField`, etc.) so forms are type-safe and consistent.
 
-Why: Every list page shares the same table infrastructure. Column defs stay local to the feature;
-pagination/filter/sort wiring is handled by `useListPageState` from the data-table barrel.
+### Form field components
 
-### Page shell pattern — consistent page structure
+Field components wrap shadcn primitives with validation, labels, and error display. Available fields: `TextField`, `EmailField`, `PasswordField`, `TextareaField`, `NumberField`, `PhoneField`, `SelectField`, `ComboboxField`, `AddressField`, `AreaSearchField`, `PhotoUploadField`, `FileUploadField`, `RadioCardField`, `RadioGroupField`, `DateField`, `CheckboxGroupField`.
 
-Every page follows `PageContent` → `PageHeader` → body. `PageContent` sets max-width and padding;
-`PageHeader` renders title, description, back/primary/secondary actions.
+> from `src/components/app/form/form-context.tsx`
+```typescript
+export const { useAppForm, withForm } = createFormHook({
+  fieldComponents: {
+    TextField, EmailField, PasswordField, TextareaField, SelectField,
+    NumberField, PhoneField, ComboboxField, AddressField, AreaSearchField,
+    PhotoUploadField, FileUploadField, DateField, RadioCardField,
+    RadioGroupField, CheckboxGroupField,
+  },
+  formComponents: { SubmitButton, FormError },
+  fieldContext, formContext,
+})
+```
+Why: `createFormHook` from TanStack Form gives you `form.AppField` with typed field components — never build forms from raw `useState` + `<input>`.
 
-> from `src/components/app/page-shell/page-header.tsx`
+### Array fields (dynamic lists)
+
+Dynamic lists use `form.AppField` with `mode="array"` and indexed names. Reference: `src/routes/_org/orders/new.tsx`.
+
 ```tsx
-export function PageHeader({ title, description, backAction, primaryAction, secondaryActions, className }: PageHeaderProps) {
-  return (
-    <div className={cn('hidden md:flex md:items-center md:justify-between mb-6', className)}>
-      <div className="flex min-w-0 items-start gap-2">
-        {backAction?.href ? (
-          <Button variant="ghost" size="icon-sm" asChild>
-            <Link to={backAction.href} aria-label={backAction.label}>
-              <ArrowLeft className="size-4" />
-            </Link>
-          </Button>
-        ) : null}
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+<form.AppField name="items" mode="array">
+  {(itemsField) => (
+    <div>
+      {itemsField.state.value.map((_, i) => (
+        <div key={i}>
+          <form.AppField name={`items[${i}].productId`}>
+            {(field) => <field.SelectField label="Product" options={...} />}
+          </form.AppField>
+          <button onClick={() => itemsField.removeValue(i)}>Remove</button>
         </div>
-      </div>
-      <PageActions primaryAction={primaryAction} secondaryActions={secondaryActions} />
+      ))}
+      <button onClick={() => itemsField.pushValue({ productId: '', quantity: '1' })}>Add</button>
     </div>
-  )
-}
+  )}
+</form.AppField>
 ```
 
-Why: Enforces visual consistency across all pages. The `PageAction` type standardizes
-{ label, href?, onClick?, isLoading? } so every page header has the same interaction model.
+### URL search params (nuqs)
+
+All URL search state uses `nuqs` (`useQueryState`, `parseAsString`, etc.) — never raw `useSearchParams` or `window.location.search`. The `useListPageState` hook from `src/components/app/data-table/` handles standard list pagination/sorting/search.
+
+### i18n in components
+
+Every user-visible string uses `useTranslations('namespace')` in JSX or `getTranslations()` outside JSX. Keys are camelCase in `src/messages/en.ts` (source of truth for the `Messages` type) and `src/messages/id.ts`.
+
+```tsx
+const t = useTranslations('customers')
+const dt = useTranslations('dataTable')
+const st = useTranslations('status')
+```
+Why: Multiple namespaces per component is normal — `status`, `dataTable`, `common` are reused across features.
 
 ## Commands
 
 - Dev server: `bun run dev`
-- Build: `bun run build`
 - Typecheck: `bun run typecheck`
-- Lint/format check: `bun run check`
-- Format write: `bun run format`
+- Lint + format check: `bun run check`
+- Run all tests: `bun run test`
+- Run single test file: `bun run vitest run src/features/customers/pages/list.test.tsx`
 
 ## Conventions observed
 
-- Components are PascalCase, one per file, co-located with their test (`*.test.tsx`) when tested.
-- Barrel `index.ts` files re-export public APIs from feature and shared component directories.
-- Forms always use `useAppForm` from `#/components/app/form` — never raw `useForm`.
-- All text content goes through `useTranslations('feature')` from `use-intl` — no hardcoded strings.
-- Styling uses the `cn()` utility (`clsx` + `twMerge`) from `#/lib/utils` — never raw template strings.
-- Imports use the `#/` prefix mapping to `./src/` (configured in package.json `imports`).
-- Server mutations return discriminated unions `{ ok: true, data: T } | { ok: false, error: string }`.
-- Toast notifications use `sonner` — `toast.success()` for success, `toast.error()` for errors.
-- URL state (search params, pagination) managed via `nuqs` — `useQueryState` / `parseAsString`.
+- Components: one per file, PascalCase filenames, named exports only.
+- shadcn/ui primitives (`src/components/ui/`) are generated — never hand-edit.
+- Imports: `#/` prefix for all internal imports; `import type` for type-only bindings.
+- All icons from `lucide-react` — no other icon libraries.
+- `Button asChild` when wrapping a `Link` (e.g. `<Button asChild><Link to="...">...</Link></Button>`).
+- `useState` only for local UI state (toggle, modal open, submission error) — never for form field values.
+- `cn()` utility from `src/lib/utils` for conditional class merging.
+- Dark mode via `.dark` class on `<html>`, oklch color tokens in `src/styles.css`.
+- App is installable as a PWA (standalone mode) — `public/manifest.json` defines name, icons, display mode. Root route links the manifest and registers the service worker.
 
 ## Anti-patterns to avoid
 
-- No raw `<form>` elements — always use `FormRoot` from the form module which handles submit prevention and context.
-- No direct `fetch()` calls — server state goes through TanStack Query hooks in `src/features/<name>/hooks.ts`.
-- No inline styles or CSS modules — Tailwind utility classes only, composed via `cn()`.
-- No default exports — the codebase uses named exports everywhere.
-- No `useEffect` for data fetching — use TanStack Query `useQuery` / `useMutation` instead.
-- No hardcoded English strings in components — all user-facing text uses `useTranslations`.
+- No raw HTML form elements (`<input>`, `<select>`, `<textarea>`, `<button>`, `<table>`, `<dialog>`, `<label>`) — use shadcn/ui components.
+- No `react-hook-form` or raw `useState` for form state — use `useAppForm`.
+- No `useSearchParams` from React Router — use `nuqs`.
+- No `window.confirm` — use `ConfirmDialog`.
+- No hardcoded English strings in JSX — use `useTranslations()`.
+- No `console.log` on user-facing pages.
+- No emoji or non-Lucide icon libraries.
 
 ## Gaps / verify
 
-- Form field components are extensive (16+ field types); the barrel export in `src/components/app/form/index.ts` is the canonical list. New fields should follow the `TextInputFieldShell` pattern.
-- The data-table module has ~25 files; the public API is the barrel at `src/components/app/data-table/index.ts`. Internal hooks like `use-data-table-accumulation` are implementation details.
-- Route guard logic lives in `src/routes/-route-guards.test.tsx` and `src/routes/_org.tsx` `beforeLoad`. Verify the guard pattern before adding new protected routes.
+- `docs/agents/boilerplate/components.md` documents `PageActions` accepting `PageAction` with `label` as raw strings, but source shows labels passed as i18n keys from the route. Verify `PageActions` rendering — it appears to render labels directly without translation.
+- `orgFilter` from `src/lib/rls.ts` is documented in the profile but unused in practice — source filters by `eq(table.orgId, orgId)` directly. Don't adopt `orgFilter`.
+- The `@/*` alias exists alongside `#/` for shadcn/ui compatibility. Convention is `#/` for all authored code.

@@ -30,9 +30,9 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 
-# Expose the default port for TanStack Start (usually 3000)
-EXPOSE 3000
-ENV PORT=3000
+# Expose the default port for TanStack Start (usually 3001)
+EXPOSE 3001
+ENV PORT=3001
 ENV HOST=0.0.0.0
 
 CMD ["npm", "run", "start"]
