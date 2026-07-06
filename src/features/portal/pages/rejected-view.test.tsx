@@ -65,6 +65,9 @@ const order = {
   rejectReason: 'Artwork is blurry',
   courier: null,
   trackingNumber: null,
+  approvedAt: null,
+  shippedAt: null,
+  deliveredAt: null,
 }
 
 function renderRejectedView(o = order) {

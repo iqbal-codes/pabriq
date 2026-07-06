@@ -21,7 +21,8 @@ export function ProgressView({
 }) {
   const t = useTranslations('portal')
   const locale = useLocale()
-  const shouldFetchTimeline =
+  const shouldFetchOrderTimeline = Boolean(token)
+  const shouldFetchTaskTimeline =
     token &&
     [
       'production',
@@ -31,10 +32,10 @@ export function ProgressView({
       'in_progress',
     ].includes(order.status)
   const { data: orderTimelineEvents } = useOrderTimeline(
-    shouldFetchTimeline ? token : '',
+    shouldFetchOrderTimeline ? token : '',
   )
   const { data: taskTimelineEvents } = useOrderTasksTimeline(
-    shouldFetchTimeline ? token : '',
+    shouldFetchTaskTimeline ? token : '',
   )
 
   const maxDeadline =
@@ -49,17 +50,9 @@ export function ProgressView({
   const hasUnpaidInvoices = order.invoices.some(
     (invoice) => invoice.status !== 'void' && invoice.status !== 'paid',
   )
-  const completedDateText = (() => {
-    const completedEvent = safeTaskTimelineEvents
-      .filter((e) => e.type === 'completed')
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      )[0]
-    return completedEvent
-      ? formatLongDate(String(completedEvent.createdAt), locale)
-      : null
-  })()
+  const completedDateText = order.deliveredAt
+    ? formatLongDate(String(order.deliveredAt), locale)
+    : null
 
   const dateLabel =
     order.status === 'completed'

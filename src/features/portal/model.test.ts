@@ -11,6 +11,7 @@ import {
   orderLineItems,
   orders,
   organization,
+  payments,
   productionStages,
   productionTasks,
   products,
@@ -20,6 +21,7 @@ import {
   confirmPortalOrder,
   generateOrderToken,
   getOrderTasksTimeline,
+  getOrderTimeline,
   getPortalOrder,
   removePortalAsset,
   savePortalAddress,
@@ -905,5 +907,338 @@ describe('getOrderTasksTimeline', () => {
         events[i - 1].createdAt.getTime(),
       )
     }
+  })
+})
+
+describe('getOrderTimeline', () => {
+  const timelineOrgId = '00000000-0000-0000-0000-000000000020'
+  const timelineCustomerId = '00000000-0000-0000-0000-000000000021'
+  const timelineProductId = '00000000-0000-0000-0000-000000000022'
+
+  it('returns all 11 milestones as completed for a completed order', async () => {
+    const completedOrderId = '00000000-0000-0000-0000-000000000023'
+    const dpInvoiceId = '00000000-0000-0000-0000-000000000030'
+    const finalInvoiceId = '00000000-0000-0000-0000-000000000031'
+    const dpPaymentId = '00000000-0000-0000-0000-000000000040'
+    const finalPaymentId = '00000000-0000-0000-0000-000000000041'
+    const taskId = '00000000-0000-0000-0000-000000000050'
+    const stageId = '00000000-0000-0000-0000-000000000060'
+    const taskActivityId = '00000000-0000-0000-0000-000000000070'
+
+    await db.insert(organization).values({
+      id: timelineOrgId,
+      name: 'Timeline Org',
+      slug: 'timeline-org',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    await db.insert(biteshipAreas).values({
+      areaId: 'area-timeline-1',
+      name: 'Area Timeline',
+      subdistrict: 'Palmerah',
+      district: 'Palmerah',
+      city: 'Jakarta Barat',
+      province: 'DKI Jakarta',
+      postalCode: '11480',
+    })
+
+    await db.insert(customersTable).values({
+      id: timelineCustomerId,
+      orgId: timelineOrgId,
+      name: 'Timeline Customer',
+      phone: '081234567890',
+      active: true,
+      isWni: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    await db.insert(products).values({
+      id: timelineProductId,
+      orgId: timelineOrgId,
+      name: 'Timeline Product',
+      active: true,
+      basePrice: 10000,
+      productionDays: 1,
+      minQuantity: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    await db.insert(orders).values({
+      id: completedOrderId,
+      orgId: timelineOrgId,
+      customerId: timelineCustomerId,
+      status: 'completed',
+      total: 100000,
+      orderNumber: 'ORD-TL-001',
+      approvedAt: new Date('2026-01-02T00:00:00Z'),
+      shippedAt: new Date('2026-01-20T00:00:00Z'),
+      deliveredAt: new Date('2026-01-25T00:00:00Z'),
+      courier: 'JNE',
+      trackingNumber: 'TRACK-1',
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+      updatedAt: new Date('2026-01-25T00:00:00Z'),
+    })
+
+    await db.insert(invoices).values({
+      id: dpInvoiceId,
+      orgId: timelineOrgId,
+      orderId: completedOrderId,
+      customerId: timelineCustomerId,
+      customerName: 'Timeline Customer',
+      invoiceNumber: 'INV-DP-001',
+      status: 'partially_paid',
+      percentage: 50,
+      subtotal: 50000,
+      total: 50000,
+      dueDate: '2026-01-10',
+      paidAt: null,
+      createdAt: new Date('2026-01-03T00:00:00Z'),
+      updatedAt: new Date('2026-01-03T00:00:00Z'),
+    })
+
+    await db.insert(invoices).values({
+      id: finalInvoiceId,
+      orgId: timelineOrgId,
+      orderId: completedOrderId,
+      customerId: timelineCustomerId,
+      customerName: 'Timeline Customer',
+      invoiceNumber: 'INV-FINAL-001',
+      status: 'paid',
+      percentage: 50,
+      subtotal: 50000,
+      total: 50000,
+      dueDate: '2026-01-25',
+      paidAt: new Date('2026-01-21T00:00:00Z'),
+      createdAt: new Date('2026-01-18T00:00:00Z'),
+      updatedAt: new Date('2026-01-21T00:00:00Z'),
+    })
+
+    await db.insert(payments).values({
+      id: dpPaymentId,
+      orgId: timelineOrgId,
+      invoiceId: dpInvoiceId,
+      amount: 50000,
+      method: 'bank_transfer',
+      status: 'confirmed',
+      confirmedAt: new Date('2026-01-04T00:00:00Z'),
+      createdAt: new Date('2026-01-04T00:00:00Z'),
+      updatedAt: new Date('2026-01-04T00:00:00Z'),
+    })
+
+    await db.insert(payments).values({
+      id: finalPaymentId,
+      orgId: timelineOrgId,
+      invoiceId: finalInvoiceId,
+      amount: 50000,
+      method: 'bank_transfer',
+      status: 'confirmed',
+      confirmedAt: new Date('2026-01-19T00:00:00Z'),
+      createdAt: new Date('2026-01-19T00:00:00Z'),
+      updatedAt: new Date('2026-01-19T00:00:00Z'),
+    })
+
+    await db.insert(productionStages).values({
+      id: stageId,
+      orgId: timelineOrgId,
+      name: 'Cutting',
+      board: 'pre_production',
+      orderIndex: 0,
+      active: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    await db.insert(productionTasks).values({
+      id: taskId,
+      orgId: timelineOrgId,
+      orderId: completedOrderId,
+      board: 'pre_production',
+      stageId,
+      status: 'completed',
+      taskNumber: 'T-TL-001',
+      lineItemId: lineItem1Id,
+      context: {
+        productName: 'Timeline Product',
+        customerName: 'Timeline Customer',
+        requirements: null,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    await db.insert(taskActivity).values({
+      id: taskActivityId,
+      orgId: timelineOrgId,
+      taskId,
+      type: 'board_transition',
+      fromStageId: null,
+      toStageId: stageId,
+      data: {},
+      actorId: 'system',
+      createdAt: new Date(),
+    })
+
+    const token = await generateOrderToken(completedOrderId)
+    const events = await getOrderTimeline(token)
+
+    expect(events.map((e) => e.type)).toEqual([
+      'draft_created',
+      'draft_confirmed',
+      'order_approved',
+      'dp_invoice_created',
+      'dp_payment_confirmed',
+      'production_started',
+      'final_invoice_created',
+      'final_payment_confirmed',
+      'production_finished',
+      'shipment_confirmed',
+      'order_completed',
+    ])
+
+    for (const event of events) {
+      expect(event.status).toBe('completed')
+    }
+
+    expect(events.some((e) => (e.type as string) === 'production_stage')).toBe(false)
+
+    const dpPaymentEvent = events.find(
+      (e) => e.type === 'dp_payment_confirmed',
+    )
+    expect(dpPaymentEvent).toBeDefined()
+    expect(dpPaymentEvent?.completedAt).toEqual(
+      new Date('2026-01-04T00:00:00.000Z'),
+    )
+
+    const finalPaymentEvent = events.find(
+      (e) => e.type === 'final_payment_confirmed',
+    )
+    expect(finalPaymentEvent).toBeDefined()
+    expect(finalPaymentEvent?.completedAt).toEqual(
+      new Date('2026-01-19T00:00:00.000Z'),
+    )
+  })
+
+  it('marks dp_payment_confirmed as current for approved order with unpaid DP invoice', async () => {
+    const approvedOrderId = '00000000-0000-0000-0000-000000000024'
+    const dpInvoiceId = '00000000-0000-0000-0000-000000000032'
+
+    await db.insert(organization).values({
+      id: timelineOrgId,
+      name: 'Timeline Org',
+      slug: 'timeline-org',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    await db.insert(biteshipAreas).values({
+      areaId: 'area-timeline-1',
+      name: 'Area Timeline',
+      subdistrict: 'Palmerah',
+      district: 'Palmerah',
+      city: 'Jakarta Barat',
+      province: 'DKI Jakarta',
+      postalCode: '11480',
+    })
+
+    await db.insert(customersTable).values({
+      id: timelineCustomerId,
+      orgId: timelineOrgId,
+      name: 'Timeline Customer',
+      phone: '081234567890',
+      active: true,
+      isWni: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    await db.insert(products).values({
+      id: timelineProductId,
+      orgId: timelineOrgId,
+      name: 'Timeline Product',
+      active: true,
+      basePrice: 10000,
+      productionDays: 1,
+      minQuantity: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    await db.insert(orders).values({
+      id: approvedOrderId,
+      orgId: timelineOrgId,
+      customerId: timelineCustomerId,
+      status: 'approved',
+      total: 100000,
+      orderNumber: 'ORD-TL-002',
+      approvedAt: new Date('2026-01-02T00:00:00Z'),
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+      updatedAt: new Date('2026-01-02T00:00:00Z'),
+    })
+
+    await db.insert(invoices).values({
+      id: dpInvoiceId,
+      orgId: timelineOrgId,
+      orderId: approvedOrderId,
+      customerId: timelineCustomerId,
+      customerName: 'Timeline Customer',
+      invoiceNumber: 'INV-DP-002',
+      status: 'unpaid',
+      percentage: 50,
+      subtotal: 50000,
+      total: 50000,
+      dueDate: '2026-01-10',
+      paidAt: null,
+      createdAt: new Date('2026-01-03T00:00:00Z'),
+      updatedAt: new Date('2026-01-03T00:00:00Z'),
+    })
+
+    const token = await generateOrderToken(approvedOrderId)
+    const events = await getOrderTimeline(token)
+
+    const types = events.map((e) => e.type)
+    expect(types).toEqual([
+      'draft_created',
+      'draft_confirmed',
+      'order_approved',
+      'dp_invoice_created',
+      'dp_payment_confirmed',
+      'production_started',
+      'final_invoice_created',
+      'final_payment_confirmed',
+      'production_finished',
+      'shipment_confirmed',
+      'order_completed',
+    ])
+
+    const completedTypes = events
+      .filter((e) => e.status === 'completed')
+      .map((e) => e.type)
+    expect(completedTypes).toEqual([
+      'draft_created',
+      'draft_confirmed',
+      'order_approved',
+      'dp_invoice_created',
+    ])
+
+    const dpPaymentEvent = events.find(
+      (e) => e.type === 'dp_payment_confirmed',
+    )
+    expect(dpPaymentEvent).toBeDefined()
+    expect(dpPaymentEvent?.status).toBe('current')
+
+    const upcomingTypes = events
+      .filter((e) => e.status === 'upcoming')
+      .map((e) => e.type)
+    expect(upcomingTypes).toEqual([
+      'production_started',
+      'final_invoice_created',
+      'final_payment_confirmed',
+      'production_finished',
+      'shipment_confirmed',
+      'order_completed',
+    ])
   })
 })

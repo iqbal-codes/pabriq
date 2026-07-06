@@ -71,6 +71,9 @@ function makeOrder(overrides: Partial<PortalOrder> = {}): PortalOrder {
     createdAt: new Date(),
     courier: null,
     trackingNumber: null,
+    approvedAt: null,
+    shippedAt: null,
+    deliveredAt: null,
     ...overrides,
   }
 }

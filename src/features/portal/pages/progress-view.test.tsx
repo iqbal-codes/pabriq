@@ -114,12 +114,21 @@ const messages = {
     trackShipment: 'Lacak pengiriman',
     orderTimelineSectionTitle: 'Perkembangan Pesanan',
     orderTimelineEmpty: 'Belum ada pembaruan',
-    timelineOrderReceived: 'Pesanan diterima',
-    timelineOrderApproved: 'Pesanan disetujui',
-    timelineOrderCompleted: 'Pesanan selesai',
-    timelinePaymentDpConfirmed: 'Pembayaran DP diterima',
-    timelinePaymentFinalConfirmed: 'Pelunasan diterima',
-    timelineProductionStageReached: '{product}: {stage}',
+    timelineDraftCreated: 'Draft pesanan dibuat',
+    timelineDraftConfirmed: 'Draft pesanan dikonfirmasi, menunggu review',
+    timelineOrderApproved: 'Pesanan disetujui admin',
+    timelineDpInvoiceCreated: 'Invoice DP dibuat',
+    timelinePaymentDpConfirmed: 'Pembayaran DP dikonfirmasi',
+    timelineProductionStarted: 'Produksi dimulai',
+    timelineFinalInvoiceCreated: 'Invoice pelunasan dibuat',
+    timelinePaymentFinalConfirmed: 'Pembayaran pelunasan dikonfirmasi',
+    timelineProductionFinished: 'Produksi selesai, siap dikirim',
+    timelineShipmentConfirmed: 'Pengiriman dikonfirmasi',
+    timelineOrderCompleted: 'Selesai',
+    timelineStepCompleted: 'Selesai',
+    timelineStepCurrent: 'Saat ini',
+    timelineStepUpcoming: 'Menunggu',
+    timelineDateUnavailable: 'Tanggal belum tercatat',
     statusCompleted: 'Selesai',
   },
   status: {
@@ -176,6 +185,9 @@ function makeOrder(overrides: Partial<PortalOrder> = {}): PortalOrder {
     ],
     invoices: [],
     createdAt: new Date('2026-01-01'),
+    approvedAt: null,
+    shippedAt: null,
+    deliveredAt: null,
     courier: null,
     trackingNumber: null,
     ...overrides,
@@ -360,92 +372,45 @@ describe('ProgressView', () => {
     expect(screen.queryByText('Pelunasan')).not.toBeInTheDocument()
   })
 
-  it('renders order received in the order timeline section', () => {
+  it('renders all 11 order timeline milestones with Indonesian labels', () => {
     mockUseOrderTimeline.mockReturnValue({
       data: [
-        {
-          id: 'order-received-1',
-          type: 'order_received',
-          createdAt: new Date('2026-01-01T00:00:00Z'),
-        },
+        { id: 'e1', type: 'draft_created', status: 'completed', completedAt: new Date('2026-01-01T00:00:00Z') },
+        { id: 'e2', type: 'draft_confirmed', status: 'completed', completedAt: null },
+        { id: 'e3', type: 'order_approved', status: 'completed', completedAt: new Date('2026-01-02T00:00:00Z') },
+        { id: 'e4', type: 'dp_invoice_created', status: 'completed', completedAt: new Date('2026-01-03T00:00:00Z'), invoiceId: 'inv-dp', invoiceNumber: 'INV-DP-1', amount: 50000 },
+        { id: 'e5', type: 'dp_payment_confirmed', status: 'completed', completedAt: new Date('2026-01-04T00:00:00Z'), amount: 50000 },
+        { id: 'e6', type: 'production_started', status: 'completed', completedAt: null },
+        { id: 'e7', type: 'final_invoice_created', status: 'completed', completedAt: new Date('2026-01-18T00:00:00Z'), invoiceId: 'inv-final', invoiceNumber: 'INV-FINAL-1', amount: 50000 },
+        { id: 'e8', type: 'final_payment_confirmed', status: 'completed', completedAt: new Date('2026-01-19T00:00:00Z'), amount: 50000 },
+        { id: 'e9', type: 'production_finished', status: 'completed', completedAt: new Date('2026-01-20T00:00:00Z') },
+        { id: 'e10', type: 'shipment_confirmed', status: 'completed', completedAt: new Date('2026-01-20T00:00:00Z') },
+        { id: 'e11', type: 'order_completed', status: 'completed', completedAt: new Date('2026-01-25T00:00:00Z') },
       ],
     })
     renderProgressView()
     expect(screen.getByText('Perkembangan Pesanan')).toBeInTheDocument()
-    expect(screen.getByText('Pesanan diterima')).toBeInTheDocument()
+    expect(screen.getByText('Draft pesanan dibuat')).toBeInTheDocument()
+    expect(screen.getByText('Draft pesanan dikonfirmasi, menunggu review')).toBeInTheDocument()
+    expect(screen.getByText('Pesanan disetujui admin')).toBeInTheDocument()
+    expect(screen.getByText('Invoice DP dibuat')).toBeInTheDocument()
+    expect(screen.getByText('Pembayaran DP dikonfirmasi')).toBeInTheDocument()
+    expect(screen.getByText('Produksi dimulai')).toBeInTheDocument()
+    expect(screen.getByText('Invoice pelunasan dibuat')).toBeInTheDocument()
+    expect(screen.getByText('Pembayaran pelunasan dikonfirmasi')).toBeInTheDocument()
+    expect(screen.getByText('Produksi selesai, siap dikirim')).toBeInTheDocument()
+    expect(screen.getByText('Pengiriman dikonfirmasi')).toBeInTheDocument()
+    expect(screen.getByText('Selesai')).toBeInTheDocument()
   })
 
-  it('renders DP and final payment confirmations in the order timeline', () => {
+  it('does not show product/stage workflow text in the order timeline section', () => {
     mockUseOrderTimeline.mockReturnValue({
       data: [
-        {
-          id: 'order-received-1',
-          type: 'order_received',
-          createdAt: new Date('2026-01-01T00:00:00Z'),
-        },
-        {
-          id: 'dp-payment-1',
-          type: 'payment_confirmed',
-          kind: 'down_payment',
-          invoiceId: 'inv-dp',
-          invoiceNumber: 'INV-DP-1',
-          amount: 50000,
-          createdAt: new Date('2026-01-05T00:00:00Z'),
-        },
-        {
-          id: 'final-payment-1',
-          type: 'payment_confirmed',
-          kind: 'final_payment',
-          invoiceId: 'inv-final',
-          invoiceNumber: 'INV-FINAL-1',
-          amount: 50000,
-          createdAt: new Date('2026-01-20T00:00:00Z'),
-        },
+        { id: 'e1', type: 'draft_created', status: 'completed', completedAt: new Date('2026-01-01T00:00:00Z') },
       ],
     })
-    renderProgressView(
-      makeOrder({
-        status: 'production',
-        invoices: [
-          {
-            id: 'inv-dp',
-            invoiceNumber: 'INV-DP-1',
-            total: 50000,
-            percentage: 50,
-            dueDate: '2099-01-10',
-            status: 'paid',
-            paidAt: '2026-01-05T00:00:00.000Z',
-            paymentMethodName: null,
-            paymentMethodType: null,
-            paymentMethodBankName: null,
-            paymentMethodAccountNumber: null,
-            paymentMethodAccountHolder: null,
-            paymentMethodInstructions: null,
-            hasPaymentProof: true,
-            shippingFee: null,
-          },
-          {
-            id: 'inv-final',
-            invoiceNumber: 'INV-FINAL-1',
-            total: 50000,
-            percentage: 100,
-            dueDate: '2099-01-30',
-            status: 'paid',
-            paidAt: '2026-01-20T00:00:00.000Z',
-            paymentMethodName: null,
-            paymentMethodType: null,
-            paymentMethodBankName: null,
-            paymentMethodAccountNumber: null,
-            paymentMethodAccountHolder: null,
-            paymentMethodInstructions: null,
-            hasPaymentProof: true,
-            shippingFee: null,
-          },
-        ],
-      }),
-    )
-    expect(screen.getByText('Pembayaran DP diterima')).toBeInTheDocument()
-    expect(screen.getByText('Pelunasan diterima')).toBeInTheDocument()
+    renderProgressView()
+    expect(screen.queryByText('Custom T-Shirt: Cutting')).not.toBeInTheDocument()
   })
 
   it('renders empty state for the order timeline when there are no events', () => {

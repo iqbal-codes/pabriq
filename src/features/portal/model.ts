@@ -11,6 +11,7 @@ import {
   organization,
   organizationProfiles,
   paymentMethods as paymentMethodsTable,
+  payments as paymentsTable,
   productionStages,
   productionTasks,
   taskActivity,
@@ -85,6 +86,9 @@ export type PortalOrder = {
   preProductionFirstStageName?: string | null
   courier: string | null
   trackingNumber: string | null
+  approvedAt: Date | null
+  shippedAt: Date | null
+  deliveredAt: Date | null
 }
 
 export type ConfirmPortalOrderInput = {
@@ -421,6 +425,9 @@ export async function getPortalOrder(
       preProductionFirstStageName,
       courier: order.courier ?? null,
       trackingNumber: order.trackingNumber ?? null,
+      approvedAt: order.approvedAt ?? null,
+      shippedAt: order.shippedAt ?? null,
+      deliveredAt: order.deliveredAt ?? null,
     },
   }
 }
@@ -1209,51 +1216,60 @@ export async function getOrderTasksTimeline(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   )
 }
+export type OrderTimelineMilestoneType =
+  | 'draft_created'
+  | 'draft_confirmed'
+  | 'order_approved'
+  | 'dp_invoice_created'
+  | 'dp_payment_confirmed'
+  | 'production_started'
+  | 'final_invoice_created'
+  | 'final_payment_confirmed'
+  | 'production_finished'
+  | 'shipment_confirmed'
+  | 'order_completed'
 
-export type OrderTimelineEvent =
-  | {
-      id: string
-      type: 'order_received'
-      createdAt: Date
-    }
-  | {
-      id: string
-      type: 'order_approved'
-      createdAt: Date
-    }
-  | {
-      id: string
-      type: 'order_completed'
-      createdAt: Date
-    }
-  | {
-      id: string
-      type: 'payment_confirmed'
-      kind: 'down_payment' | 'final_payment'
-      invoiceId: string
-      invoiceNumber: string
-      amount: number
-      createdAt: Date
-    }
-  | {
-      id: string
-      type: 'production_stage'
-      taskId: string
-      lineItemId: string | null
-      taskNumber: string | null
-      productName: string
-      fromStageName: string | null
-      toStageName: string | null
-      eventKind: 'created' | 'transition' | 'completed' | 'board_transition'
-      createdAt: Date
-    }
+export type OrderTimelineStatus = 'completed' | 'current' | 'upcoming'
 
-function classifyPaymentKind(
-  percentage: number | null,
+export type OrderTimelineEvent = {
+  id: string
+  type: OrderTimelineMilestoneType
+  status: OrderTimelineStatus
+  completedAt: Date | null
+  invoiceId?: string
+  invoiceNumber?: string
+  amount?: number
+}
+
+function classifyInvoiceKind(
+  invoices: Array<{ id: string; percentage: number | null }>,
+  targetId: string,
 ): 'down_payment' | 'final_payment' {
-  if (percentage !== null && percentage < 100) return 'down_payment'
+  if (invoices.length > 1) {
+    const lastInvoice = invoices.at(-1)
+    return lastInvoice?.id === targetId ? 'final_payment' : 'down_payment'
+  }
+  const only = invoices[0]
+  if (only && only.percentage !== null && only.percentage < 100) {
+    return 'down_payment'
+  }
   return 'final_payment'
 }
+
+const ORDER_APPROVED_STATUSES = new Set([
+  'approved',
+  'in_progress',
+  'production',
+  'in_delivery',
+  'completed',
+])
+
+const ORDER_PRODUCING_STATUSES = new Set([
+  'in_progress',
+  'production',
+  'in_delivery',
+  'completed',
+])
 
 export async function getOrderTimeline(
   token: string,
@@ -1262,85 +1278,233 @@ export async function getOrderTimeline(
   if (!orderResult.ok) throw new Error('Invalid token')
   const order = orderResult.order
 
-  const taskEvents = await getOrderTasksTimeline(token)
+  const [orderRow, rawInvoices] = await Promise.all([
+    db
+      .select({
+        id: orders.id,
+        status: orders.status,
+        createdAt: orders.createdAt,
+        approvedAt: orders.approvedAt,
+        shippedAt: orders.shippedAt,
+        deliveredAt: orders.deliveredAt,
+        courier: orders.courier,
+        trackingNumber: orders.trackingNumber,
+      })
+      .from(orders)
+      .where(and(eq(orders.id, order.id), eq(orders.orgId, order.orgId)))
+      .limit(1)
+      .then((r) => r[0]),
+    db
+      .select({
+        id: invoicesTable.id,
+        invoiceNumber: invoicesTable.invoiceNumber,
+        percentage: invoicesTable.percentage,
+        total: invoicesTable.total,
+        status: invoicesTable.status,
+        paidAt: invoicesTable.paidAt,
+        createdAt: invoicesTable.createdAt,
+      })
+      .from(invoicesTable)
+      .where(
+        and(
+          eq(invoicesTable.orderId, order.id),
+          eq(invoicesTable.orgId, order.orgId),
+        ),
+      )
+      .orderBy(asc(invoicesTable.createdAt)),
+  ])
 
-  const events: OrderTimelineEvent[] = []
+  const invoiceIds = rawInvoices.map((i) => i.id)
+  const rawPayments =
+    invoiceIds.length > 0
+      ? await db
+          .select({
+            invoiceId: paymentsTable.invoiceId,
+            amount: paymentsTable.amount,
+            status: paymentsTable.status,
+            confirmedAt: paymentsTable.confirmedAt,
+            createdAt: paymentsTable.createdAt,
+          })
+          .from(paymentsTable)
+          .where(
+            and(
+              eq(paymentsTable.orgId, order.orgId),
+              inArray(paymentsTable.invoiceId, invoiceIds),
+            ),
+          )
+      : []
 
-  events.push({
-    id: `order-received-${order.id}`,
-    type: 'order_received',
-    createdAt: order.createdAt,
+  if (!orderRow) throw new Error('Order not found')
+
+  const nonVoidInvoices = rawInvoices.filter((inv) => inv.status !== 'void')
+
+  const confirmedPayments = rawPayments
+    .filter(
+      (p): p is typeof p & { confirmedAt: Date } =>
+        p.status === 'confirmed' && p.confirmedAt !== null,
+    )
+    .sort(
+      (a, b) =>
+        new Date(a.confirmedAt).getTime() - new Date(b.confirmedAt).getTime(),
+    )
+
+  const invoiceIdSet = new Set(nonVoidInvoices.map((i) => i.id))
+  const paymentsByInvoice = new Map<string, typeof confirmedPayments>()
+  for (const p of confirmedPayments) {
+    if (!invoiceIdSet.has(p.invoiceId)) continue
+    const list = paymentsByInvoice.get(p.invoiceId) ?? []
+    list.push(p)
+    paymentsByInvoice.set(p.invoiceId, list)
+  }
+
+  const classifiedInvoices = nonVoidInvoices.map((inv) => ({
+    ...inv,
+    kind: classifyInvoiceKind(nonVoidInvoices, inv.id),
+  }))
+  const dpInvoice =
+    classifiedInvoices.find((inv) => inv.kind === 'down_payment') ?? null
+  const finalInvoice =
+    classifiedInvoices.find((inv) => inv.kind === 'final_payment') ?? null
+
+  const dpPayments = dpInvoice
+    ? (paymentsByInvoice.get(dpInvoice.id) ?? [])
+    : []
+  const finalPayments = finalInvoice
+    ? (paymentsByInvoice.get(finalInvoice.id) ?? [])
+    : []
+  const dpPaymentSum = dpPayments.reduce((s, p) => s + p.amount, 0)
+  const finalPaymentSum = finalPayments.reduce((s, p) => s + p.amount, 0)
+  const dpEarliestConfirmed = dpPayments[0]?.confirmedAt ?? null
+  const finalEarliestConfirmed = finalPayments[0]?.confirmedAt ?? null
+
+  const status = orderRow.status
+  const draftCreated = true
+  const draftConfirmed = status !== 'draft'
+  const orderApproved =
+    orderRow.approvedAt !== null || ORDER_APPROVED_STATUSES.has(status)
+  const dpInvoiceCreated = dpInvoice !== null
+  const dpPaymentConfirmed =
+    dpInvoiceCreated &&
+    (dpPayments.length > 0 ||
+      (dpInvoice?.paidAt !== null && dpInvoice?.paidAt !== undefined))
+  const productionStarted = ORDER_PRODUCING_STATUSES.has(status)
+  const finalInvoiceCreated = finalInvoice !== null
+  const finalPaymentConfirmed =
+    finalInvoiceCreated &&
+    (finalPayments.length > 0 ||
+      (finalInvoice?.paidAt !== null && finalInvoice?.paidAt !== undefined))
+  const productionFinished =
+    status === 'in_delivery' ||
+    status === 'completed' ||
+    orderRow.shippedAt !== null
+  const shipmentConfirmed =
+    orderRow.courier !== null || orderRow.trackingNumber !== null
+  const orderCompleted = status === 'completed' || orderRow.deliveredAt !== null
+
+  const completedFlags = [
+    draftCreated,
+    draftConfirmed,
+    orderApproved,
+    dpInvoiceCreated,
+    dpPaymentConfirmed,
+    productionStarted,
+    finalInvoiceCreated,
+    finalPaymentConfirmed,
+    productionFinished,
+    shipmentConfirmed,
+    orderCompleted,
+  ] as const
+
+  const milestoneTypes: OrderTimelineMilestoneType[] = [
+    'draft_created',
+    'draft_confirmed',
+    'order_approved',
+    'dp_invoice_created',
+    'dp_payment_confirmed',
+    'production_started',
+    'final_invoice_created',
+    'final_payment_confirmed',
+    'production_finished',
+    'shipment_confirmed',
+    'order_completed',
+  ]
+
+  const dpInvoiceCompletedAt = dpInvoice?.createdAt ?? null
+  const dpPaymentCompletedAt =
+    dpEarliestConfirmed ??
+    (dpInvoice?.paidAt !== null && dpInvoice?.paidAt !== undefined
+      ? dpInvoice.paidAt
+      : null)
+  const dpPaymentAmount =
+    dpPayments.length > 0
+      ? dpPaymentSum
+      : dpInvoice?.paidAt !== null && dpInvoice?.paidAt !== undefined
+        ? dpInvoice.total
+        : undefined
+  const finalInvoiceCompletedAt = finalInvoice?.createdAt ?? null
+  const finalPaymentCompletedAt =
+    finalEarliestConfirmed ??
+    (finalInvoice?.paidAt !== null && finalInvoice?.paidAt !== undefined
+      ? finalInvoice.paidAt
+      : null)
+  const finalPaymentAmount =
+    finalPayments.length > 0
+      ? finalPaymentSum
+      : finalInvoice?.paidAt !== null && finalInvoice?.paidAt !== undefined
+        ? finalInvoice.total
+        : undefined
+
+  const completedDates: Array<Date | null> = [
+    orderRow.createdAt,
+    null,
+    orderRow.approvedAt,
+    dpInvoiceCompletedAt,
+    dpPaymentCompletedAt,
+    null,
+    finalInvoiceCompletedAt,
+    finalPaymentCompletedAt,
+    orderRow.shippedAt,
+    orderRow.shippedAt,
+    orderRow.deliveredAt,
+  ]
+
+  let firstIncompleteIdx = completedFlags.findIndex((c) => !c)
+  if (firstIncompleteIdx === -1) firstIncompleteIdx = milestoneTypes.length
+
+  const events: OrderTimelineEvent[] = milestoneTypes.map((type, i) => {
+    const isCompleted = completedFlags[i] ?? false
+    const timelineStatus: OrderTimelineStatus = isCompleted
+      ? 'completed'
+      : i === firstIncompleteIdx
+        ? 'current'
+        : 'upcoming'
+
+    const event: OrderTimelineEvent = {
+      id: `${type}-${order.id}`,
+      type,
+      status: timelineStatus,
+      completedAt: isCompleted ? completedDates[i] : null,
+    }
+
+    if (type === 'dp_invoice_created' && dpInvoice) {
+      event.invoiceId = dpInvoice.id
+      event.invoiceNumber = dpInvoice.invoiceNumber
+      event.amount = dpInvoice.total
+    } else if (type === 'dp_payment_confirmed' && dpPaymentAmount != null) {
+      event.amount = dpPaymentAmount
+    } else if (type === 'final_invoice_created' && finalInvoice) {
+      event.invoiceId = finalInvoice.id
+      event.invoiceNumber = finalInvoice.invoiceNumber
+      event.amount = finalInvoice.total
+    } else if (
+      type === 'final_payment_confirmed' &&
+      finalPaymentAmount != null
+    ) {
+      event.amount = finalPaymentAmount
+    }
+
+    return event
   })
 
-  if (
-    order.status === 'approved' ||
-    order.status === 'production' ||
-    order.status === 'in_progress' ||
-    order.status === 'in_delivery' ||
-    order.status === 'completed'
-  ) {
-    const approveEvent = taskEvents
-      .filter((e) => e.type === 'board_transition')
-      .sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      )[0]
-    if (approveEvent) {
-      events.push({
-        id: `order-approved-${approveEvent.id}`,
-        type: 'order_approved',
-        createdAt: approveEvent.createdAt,
-      })
-    }
-  }
-
-  for (const invoice of order.invoices) {
-    if (invoice.status !== 'paid' || !invoice.paidAt) continue
-    events.push({
-      id: `payment-confirmed-${invoice.id}`,
-      type: 'payment_confirmed',
-      kind: classifyPaymentKind(invoice.percentage),
-      invoiceId: invoice.id,
-      invoiceNumber: invoice.invoiceNumber,
-      amount: invoice.total,
-      createdAt: new Date(invoice.paidAt),
-    })
-  }
-
-  for (const e of taskEvents) {
-    if (e.type === 'board_transition') {
-      events.push({
-        id: `prod-${e.id}`,
-        type: 'production_stage',
-        taskId: e.taskId,
-        lineItemId: e.lineItemId,
-        taskNumber: e.taskNumber,
-        productName: e.productName,
-        fromStageName: e.fromStageName,
-        toStageName: e.toStageName,
-        eventKind: 'board_transition',
-        createdAt: e.createdAt,
-      })
-    }
-  }
-
-  if (order.status === 'completed') {
-    const completedEvent = taskEvents
-      .filter((e) => e.type === 'completed')
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      )[0]
-    if (completedEvent) {
-      events.push({
-        id: `order-completed-${completedEvent.id}`,
-        type: 'order_completed',
-        createdAt: completedEvent.createdAt,
-      })
-    }
-  }
-
-  return events.sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-  )
+  return events
 }
