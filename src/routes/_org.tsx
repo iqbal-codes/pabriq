@@ -9,6 +9,7 @@ import { useTranslations } from 'use-intl'
 import { ForbiddenPage } from '#/components/app/forbidden-page'
 import { LanguageToggle, ThemeToggle } from '#/components/app/header-controls'
 import { Breadcrumbs } from '#/components/app/page-shell/breadcrumbs'
+import { RoutePendingOverlay } from '#/components/app/route-pending-overlay'
 import { AppSidebar } from '#/components/app-sidebar'
 import { Button } from '#/components/ui/button'
 import { Separator } from '#/components/ui/separator'
@@ -157,9 +158,10 @@ function AdminLayout({
             )}
           </div>
         </header>
-        <div className="overflow-x-auto flex-1 min-w-0">
+        <div className="relative overflow-x-auto flex-1 min-w-0">
           <Outlet />
           <FloatingAssistant orgId={org.id} userId={session.user.id} />
+          <RoutePendingOverlay />
         </div>
       </SidebarInset>
     </SidebarProvider>
