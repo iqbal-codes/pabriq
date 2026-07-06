@@ -542,3 +542,45 @@ export const assetVariants = pgTable('asset_variants', {
   height: integer('height'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
+
+export const assistantActions = pgTable(
+  'assistant_actions',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull(),
+    threadId: text('thread_id').notNull(),
+    kind: text('kind').notNull(),
+    status: text('status').notNull().default('pending'),
+    payload: json('payload').$type<AssistantActionPayload>().notNull(),
+    resultOrderId: text('result_order_id'),
+    expiresAt: timestamp('expires_at').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_assistant_actions_org_user_thread').on(
+      table.orgId,
+      table.userId,
+      table.threadId,
+    ),
+    index('idx_assistant_actions_status').on(table.status),
+    index('idx_assistant_actions_expires').on(table.expiresAt),
+  ],
+)
+
+export type AssistantActionPayload = {
+  lineItems: Array<{
+    productId: string
+    productName: string
+    quantity: number
+    unitPrice: number
+    total: number
+    minQuantity: number
+  }>
+  customerId: string | null
+  customerName: string | null
+  total: number
+}
