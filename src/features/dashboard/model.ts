@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, lte, ne } from 'drizzle-orm'
+import { and, count, desc, eq, gte, isNull, lte } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   customers,
@@ -7,6 +7,7 @@ import {
   productionStages,
   productionTasks,
 } from '#/db/schema'
+import { READY_FOR_PRODUCTION_STATUS } from '#/features/production/constants'
 
 export type MetricTrend = {
   current: number
@@ -338,8 +339,7 @@ export async function getTaskStageCounts(
           eq(productionStages.orgId, orgId),
           eq(productionStages.active, true),
         ),
-      )
-      .orderBy(productionStages.orderIndex),
+      ),
     db
       .select({
         stageId: productionTasks.stageId,
@@ -349,42 +349,77 @@ export async function getTaskStageCounts(
       .where(
         and(
           eq(productionTasks.orgId, orgId),
-          // Only count active tasks (not completed)
-          ne(productionTasks.status, 'completed'),
+          isNull(productionTasks.archivedAt),
         ),
       ),
   ])
 
   const counts = new Map<string, number>()
   let queueCount = 0
+  let readyForProductionCount = 0
+  let doneCount = 0
 
   for (const task of tasks) {
-    if (task.stageId === null) {
+    if (task.status === 'queued') {
       queueCount += 1
+      continue
+    }
+
+    if (task.status === READY_FOR_PRODUCTION_STATUS) {
+      readyForProductionCount += 1
+      continue
+    }
+
+    if (task.status === 'completed') {
+      doneCount += 1
+      continue
+    }
+
+    if (task.stageId === null) {
       continue
     }
 
     counts.set(task.stageId, (counts.get(task.stageId) ?? 0) + 1)
   }
 
-  const result: TaskStageCount[] = [
+  const preProductionStageItems = stages
+    .filter((stage) => stage.board === 'pre_production')
+    .sort((a, b) => a.orderIndex - b.orderIndex)
+
+  const productionStageItems = stages
+    .filter((stage) => stage.board === 'production')
+    .sort((a, b) => a.orderIndex - b.orderIndex)
+
+  return [
     {
       id: 'queue',
       name: 'queue',
-      board: 'pre_production' as const,
+      board: 'pre_production',
       count: queueCount,
     },
-  ]
-
-  // Then add all stages
-  for (const stage of stages) {
-    result.push({
+    ...preProductionStageItems.map((stage) => ({
       id: stage.id,
       name: stage.name,
-      board: stage.board as 'pre_production' | 'production',
+      board: 'pre_production' as const,
       count: counts.get(stage.id) ?? 0,
-    })
-  }
-
-  return result
+    })),
+    {
+      id: READY_FOR_PRODUCTION_STATUS,
+      name: READY_FOR_PRODUCTION_STATUS,
+      board: 'pre_production',
+      count: readyForProductionCount,
+    },
+    ...productionStageItems.map((stage) => ({
+      id: stage.id,
+      name: stage.name,
+      board: 'production' as const,
+      count: counts.get(stage.id) ?? 0,
+    })),
+    {
+      id: 'done',
+      name: 'done',
+      board: 'production',
+      count: doneCount,
+    },
+  ]
 }

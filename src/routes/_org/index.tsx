@@ -24,6 +24,7 @@ import {
   type DashboardPeriod,
   useDashboardData,
 } from '#/features/dashboard/hooks'
+import { getReadyForProductionLabel } from '#/features/production/ready-for-production-label'
 import { formatCurrency, formatNumber } from '#/lib/formatters'
 import { EmptyCardState } from './-dashboard/empty-card-state'
 import { KpiCard } from './-dashboard/kpi-card'
@@ -57,6 +58,15 @@ function OrgDashboard() {
 
   const totalTasks =
     data?.taskStages.reduce((sum, item) => sum + item.count, 0) ?? 0
+  const firstProductionStageName = data?.taskStages.find(
+    (item) => item.board === 'production' && item.id !== 'done',
+  )?.name
+  const readyForProductionLabel = getReadyForProductionLabel({
+    firstProductionStageName,
+    readyForProduction: pt('readyForProduction'),
+    readyForProductionWithStage: (values) =>
+      pt('readyForProductionQueue', values),
+  })
 
   return (
     <PageContent className="max-w-7xl">
@@ -169,6 +179,8 @@ function OrgDashboard() {
                 items={data.taskStages}
                 locale={locale}
                 queueLabel={pt('queue')}
+                readyForProductionLabel={readyForProductionLabel}
+                doneLabel={pt('done')}
               />
             )}
           </CardContent>
