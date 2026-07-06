@@ -15,7 +15,7 @@ import {
   useAssistantChatHistory,
   useSendAssistantMessage,
 } from '#/features/assistant/hooks'
-
+import { OrderDraftProposalCard } from '#/features/assistant/components/order-draft-proposal-card'
 type FloatingAssistantProps = {
   orgId: string
   userId: string
@@ -134,6 +134,30 @@ export function FloatingAssistant({ orgId, userId }: FloatingAssistantProps) {
                     </span>
                     {msg.content}
                   </div>
+                  {msg.role === 'assistant' &&
+                    msg.metadata?.kind === 'order_draft_proposal' && (
+                      <div className="max-w-[85%] ml-2">
+                        <OrderDraftProposalCard
+                          metadata={msg.metadata}
+                          scope={scope}
+                        />
+                      </div>
+                    )}
+                  {msg.role === 'assistant' &&
+                    msg.metadata?.kind === 'order_draft_cancelled' && (
+                      <div className="max-w-[85%] ml-2 text-xs italic text-muted-foreground px-1 py-0.5">
+                        {t('proposal.cancelled')}
+                      </div>
+                    )}
+                  {msg.role === 'assistant' &&
+                    msg.metadata?.kind === 'order_draft_error' && (
+                      <div className="max-w-[85%] ml-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                        {msg.metadata.reason}
+                        <span className="block mt-1 text-muted-foreground">
+                          {t('error.tryAgain')}
+                        </span>
+                      </div>
+                    )}
                 </div>
               ))
             )}

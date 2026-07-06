@@ -22,6 +22,20 @@ const messages = {
     assistant: 'Assistant',
     notConfigured: 'AI assistant is not configured.',
     genericError: 'The assistant could not answer. Try again.',
+    proposal: {
+      title: 'Draft proposal',
+      subtotal: 'Subtotal',
+      total: 'Total',
+      customer: 'Customer',
+      expiresIn: '{minutes} min remaining',
+      proceed: 'Proceed — create draft',
+      cancel: 'Cancel',
+      cancelled: 'Draft proposal cancelled.',
+      expired: 'This proposal is no longer valid. Ask the assistant for a fresh one.',
+    },
+    error: {
+      tryAgain: 'Try again by asking the assistant for a fresh proposal.',
+    },
   },
 }
 
