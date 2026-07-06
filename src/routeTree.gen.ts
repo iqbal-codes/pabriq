@@ -19,7 +19,9 @@ import { Route as OperatorIndexRouteImport } from './routes/operator/index'
 import { Route as OrgIndexRouteImport } from './routes/_org/index'
 import { Route as OrderTokenRouteImport } from './routes/order.$token'
 import { Route as InviteAcceptRouteImport } from './routes/invite/accept'
+import { Route as ApiReadyRouteImport } from './routes/api/ready'
 import { Route as ApiMidtransNotificationRouteImport } from './routes/api/midtrans-notification'
+import { Route as ApiHealthzRouteImport } from './routes/api/healthz'
 import { Route as OrgSettingsRouteRouteImport } from './routes/_org/settings/route'
 import { Route as OrgSettingsIndexRouteImport } from './routes/_org/settings/index'
 import { Route as OrgProductsIndexRouteImport } from './routes/_org/products/index'
@@ -97,9 +99,19 @@ const InviteAcceptRoute = InviteAcceptRouteImport.update({
   path: '/invite/accept',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiReadyRoute = ApiReadyRouteImport.update({
+  id: '/api/ready',
+  path: '/api/ready',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMidtransNotificationRoute = ApiMidtransNotificationRouteImport.update({
   id: '/api/midtrans-notification',
   path: '/api/midtrans-notification',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthzRoute = ApiHealthzRouteImport.update({
+  id: '/api/healthz',
+  path: '/api/healthz',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrgSettingsRouteRoute = OrgSettingsRouteRouteImport.update({
@@ -252,7 +264,9 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/settings': typeof OrgSettingsRouteRouteWithChildren
+  '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
+  '/api/ready': typeof ApiReadyRoute
   '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
   '/operator/': typeof OperatorIndexRoute
@@ -288,7 +302,9 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
+  '/api/ready': typeof ApiReadyRoute
   '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
   '/': typeof OrgIndexRoute
@@ -329,7 +345,9 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/_org/settings': typeof OrgSettingsRouteRouteWithChildren
+  '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
+  '/api/ready': typeof ApiReadyRoute
   '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
   '/_org/': typeof OrgIndexRoute
@@ -371,7 +389,9 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/settings'
+    | '/api/healthz'
     | '/api/midtrans-notification'
+    | '/api/ready'
     | '/invite/accept'
     | '/order/$token'
     | '/operator/'
@@ -407,7 +427,9 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/sign-in'
     | '/sign-up'
+    | '/api/healthz'
     | '/api/midtrans-notification'
+    | '/api/ready'
     | '/invite/accept'
     | '/order/$token'
     | '/'
@@ -447,7 +469,9 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/_org/settings'
+    | '/api/healthz'
     | '/api/midtrans-notification'
+    | '/api/ready'
     | '/invite/accept'
     | '/order/$token'
     | '/_org/'
@@ -487,7 +511,9 @@ export interface RootRouteChildren {
   OperatorRoute: typeof OperatorRouteWithChildren
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  ApiHealthzRoute: typeof ApiHealthzRoute
   ApiMidtransNotificationRoute: typeof ApiMidtransNotificationRoute
+  ApiReadyRoute: typeof ApiReadyRoute
   InviteAcceptRoute: typeof InviteAcceptRoute
   OrderTokenRoute: typeof OrderTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -569,11 +595,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InviteAcceptRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ready': {
+      id: '/api/ready'
+      path: '/api/ready'
+      fullPath: '/api/ready'
+      preLoaderRoute: typeof ApiReadyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/midtrans-notification': {
       id: '/api/midtrans-notification'
       path: '/api/midtrans-notification'
       fullPath: '/api/midtrans-notification'
       preLoaderRoute: typeof ApiMidtransNotificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/healthz': {
+      id: '/api/healthz'
+      path: '/api/healthz'
+      fullPath: '/api/healthz'
+      preLoaderRoute: typeof ApiHealthzRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_org/settings': {
@@ -850,7 +890,9 @@ const rootRouteChildren: RootRouteChildren = {
   OperatorRoute: OperatorRouteWithChildren,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  ApiHealthzRoute: ApiHealthzRoute,
   ApiMidtransNotificationRoute: ApiMidtransNotificationRoute,
+  ApiReadyRoute: ApiReadyRoute,
   InviteAcceptRoute: InviteAcceptRoute,
   OrderTokenRoute: OrderTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
