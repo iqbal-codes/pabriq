@@ -1,13 +1,16 @@
+import { useState } from 'react'
 import {
   ArrowRight,
   Banknote,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   ClipboardList,
+  ListOrdered,
   PackageCheck,
   PartyPopper,
 } from 'lucide-react'
 import { useLocale, useTranslations } from 'use-intl'
-import { Badge } from '#/components/ui/badge'
 import { formatShortDate } from '#/lib/formatters'
 import { cn } from '#/lib/utils'
 import type { OrderTimelineEvent } from '../model'
@@ -18,6 +21,10 @@ type Props = {
 }
 
 type PortalTimelineKey =
+  | 'orderTimelineSectionTitle'
+  | 'timelineLastUpdatePrefix'
+  | 'timelineExpand'
+  | 'timelineCollapse'
   | 'orderTimelineEmpty'
   | 'timelineDraftCreated'
   | 'timelineDraftConfirmed'
@@ -34,6 +41,8 @@ type PortalTimelineKey =
   | 'timelineStepCurrent'
   | 'timelineStepUpcoming'
   | 'timelineDateUnavailable'
+  | 'timelineShowAll'
+  | 'timelineShowLess'
 
 type TranslateFn = (key: PortalTimelineKey) => string
 
@@ -120,89 +129,126 @@ export function OrderFlowTimeline({ events, className }: Props) {
   const t = useTranslations('portal')
   const translate: TranslateFn = (key) => t(key)
   const locale = useLocale()
+  const [isExpanded, setIsExpanded] = useState(false)
 
-  if (events.length === 0) {
+  const completedEvents = events.filter((e) => e.status === 'completed')
+
+  if (completedEvents.length === 0) {
     return (
-      <p
+      <section
         className={cn(
-          'rounded-md border border-dashed border-border bg-muted/30 px-3 py-4 text-center text-xs text-muted-foreground',
+          'rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6',
           className,
         )}
       >
-        {translate('orderTimelineEmpty')}
-      </p>
+        <header className="flex items-center gap-2">
+          <ListOrdered className="size-4 shrink-0 text-muted-foreground" />
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {translate('orderTimelineSectionTitle')}
+          </p>
+        </header>
+        <p className="mt-4 rounded-md border border-dashed border-border bg-muted/30 px-3 py-4 text-center text-xs text-muted-foreground">
+          {translate('orderTimelineEmpty')}
+        </p>
+      </section>
     )
   }
 
+  const latestEvent = completedEvents[completedEvents.length - 1]
+  const { description: latestDescription } = getEventMeta(latestEvent, translate)
+  const hasDate = latestEvent.completedAt !== null
+  const latestStatusLabel = hasDate
+    ? getStatusLabel(latestEvent, translate, locale)
+    : ''
+  const baseSubtitle = hasDate
+    ? `${latestDescription} · ${latestStatusLabel}`
+    : latestDescription
+  const subtitle = `${translate('timelineLastUpdatePrefix')}${baseSubtitle}`
+
+  const displayEvents = [...completedEvents].reverse()
+
   return (
-    <div className={cn('space-y-3', className)}>
-      {events.map((event, i) => {
-        const { icon, description } = getEventMeta(event, translate)
-        const statusLabel = getStatusLabel(event, translate, locale)
-        const invoiceSuffix = event.invoiceNumber
-          ? ` · ${event.invoiceNumber}`
-          : ''
-        const isCompleted = event.status === 'completed'
-        const isCurrent = event.status === 'current'
-        return (
-          <div key={event.id} className="flex gap-3">
-            <div className="flex flex-col items-center">
-              <div
-                className={cn(
-                  'flex size-6 shrink-0 items-start justify-center pt-0.5',
-                  isCompleted
-                    ? 'text-success'
-                    : isCurrent
-                      ? 'text-foreground'
-                      : 'text-muted-foreground',
-                )}
-              >
-                {icon}
-              </div>
-              {i < events.length - 1 ? (
-                <div className="w-px flex-1 bg-border" />
-              ) : null}
-            </div>
-            <div className="min-w-0 flex-1 pb-3 last:pb-0">
-              <p
-                className={cn(
-                  'text-xs tabular-nums',
-                  isCompleted
-                    ? 'text-success'
-                    : isCurrent
-                      ? 'text-foreground'
-                      : 'text-muted-foreground',
-                )}
-              >
-                {statusLabel}
-                {invoiceSuffix}
-              </p>
-              <div className="mt-0.5 flex items-center gap-2">
-                <p
-                  className={cn(
-                    'text-sm',
-                    isCompleted
-                      ? 'text-foreground'
-                      : isCurrent
-                        ? 'text-foreground'
-                        : 'text-muted-foreground',
-                  )}
-                >
-                  {description}
-                </p>
-                {isCurrent ? (
-                  <Badge
-                    variant="secondary"
-                    className="text-[10px] px-1.5 py-0 shrink-0"
-                  >
-                    {translate('timelineStepCurrent')}
-                  </Badge>
-                ) : null}
-              </div>
-            </div>
+    <section
+      className={cn(
+        'rounded-2xl border border-border bg-card shadow-sm overflow-hidden',
+        className,
+      )}
+    >
+      <div className="p-5 sm:p-6 flex items-start gap-3">
+        <div className="mt-0.5 text-muted-foreground">
+          <ListOrdered className="size-4 shrink-0" />
+        </div>
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {translate('orderTimelineSectionTitle')}
+          </p>
+          <p className="text-sm font-medium text-foreground">
+            {subtitle}
+          </p>
+        </div>
+      </div>
+
+      <div
+        className={cn(
+          'grid transition-all duration-200 ease-out',
+          isExpanded ? 'grid-rows-[1fr] border-t border-border' : 'grid-rows-[0fr] border-t border-transparent'
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6 space-y-3">
+            {displayEvents.map((event, i) => {
+              const { icon, description } = getEventMeta(event, translate)
+              const statusLabel = getStatusLabel(event, translate, locale)
+              const invoiceSuffix = event.invoiceNumber
+                ? ` · ${event.invoiceNumber}`
+                : ''
+              return (
+                <div key={event.id} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className="flex size-6 shrink-0 items-start justify-center pt-0.5 text-success">
+                      {icon}
+                    </div>
+                    {i < displayEvents.length - 1 ? (
+                      <div className="w-px flex-1 bg-border" />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1 pb-3 last:pb-0">
+                    <p className="text-xs tabular-nums text-success">
+                      {statusLabel}
+                      {invoiceSuffix}
+                    </p>
+                    <div className="mt-0.5 flex items-center gap-2">
+                      <p className="text-sm text-foreground">
+                        {description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
-        )
-      })}
-    </div>
+        </div>
+      </div>
+
+      <div className="border-t border-border">
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full py-3 hover:bg-muted/5 focus-visible:bg-muted/5 transition-colors focus:outline-none text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5"
+          aria-expanded={isExpanded}
+        >
+          <span>
+            {isExpanded
+              ? translate('timelineCollapse')
+              : translate('timelineExpand')}
+          </span>
+          {isExpanded ? (
+            <ChevronUp className="size-3.5" />
+          ) : (
+            <ChevronDown className="size-3.5" />
+          )}
+        </button>
+      </div>
+    </section>
   )
 }

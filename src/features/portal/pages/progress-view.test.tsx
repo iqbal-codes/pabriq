@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { IntlProvider } from 'use-intl'
 import { describe, expect, it, vi } from 'vitest'
 import type { OrderTimelineEvent, PortalOrder } from '../model'
@@ -112,7 +112,10 @@ const messages = {
       'Unduh invoice dan unggah bukti pembayaran di sini.',
     shipmentTracking: 'Pelacakan Pengiriman',
     trackShipment: 'Lacak pengiriman',
-    orderTimelineSectionTitle: 'Perkembangan Pesanan',
+    orderTimelineSectionTitle: 'Riwayat Pesanan',
+    timelineLastUpdatePrefix: 'Update Terakhir: ',
+    timelineExpand: 'Lihat selengkapnya',
+    timelineCollapse: 'Sembunyikan',
     orderTimelineEmpty: 'Belum ada pembaruan',
     timelineDraftCreated: 'Draft pesanan dibuat',
     timelineDraftConfirmed: 'Draft pesanan dikonfirmasi, menunggu review',
@@ -145,6 +148,9 @@ const messages = {
     uploadProof: 'Unggah Bukti',
     uploadFailed: 'Gagal mengunggah',
     downloadInvoice: 'Unduh Invoice',
+  },
+  common: {
+    download: 'Unduh',
   },
 }
 
@@ -268,6 +274,7 @@ describe('ProgressView', () => {
             paymentMethodAccountHolder: null,
             paymentMethodInstructions: null,
             hasPaymentProof: false,
+            midtransOrderId: null,
             paidAt: null,
             shippingFee: 5000,
           },
@@ -285,6 +292,7 @@ describe('ProgressView', () => {
             paymentMethodAccountHolder: null,
             paymentMethodInstructions: null,
             hasPaymentProof: false,
+            midtransOrderId: null,
             paidAt: '2026-01-08T10:00:00.000Z',
             shippingFee: null,
           },
@@ -314,6 +322,7 @@ describe('ProgressView', () => {
             paymentMethodAccountHolder: null,
             paymentMethodInstructions: null,
             hasPaymentProof: false,
+            midtransOrderId: null,
             paidAt: null,
             shippingFee: 5000,
           },
@@ -331,6 +340,7 @@ describe('ProgressView', () => {
             paymentMethodAccountHolder: null,
             paymentMethodInstructions: null,
             hasPaymentProof: false,
+            midtransOrderId: null,
             paidAt: '2026-01-08T10:00:00.000Z',
             shippingFee: null,
           },
@@ -361,6 +371,7 @@ describe('ProgressView', () => {
             paymentMethodAccountHolder: null,
             paymentMethodInstructions: null,
             hasPaymentProof: false,
+            midtransOrderId: null,
             paidAt: null,
             shippingFee: null,
           },
@@ -375,30 +386,99 @@ describe('ProgressView', () => {
   it('renders all 11 order timeline milestones with Indonesian labels', () => {
     mockUseOrderTimeline.mockReturnValue({
       data: [
-        { id: 'e1', type: 'draft_created', status: 'completed', completedAt: new Date('2026-01-01T00:00:00Z') },
-        { id: 'e2', type: 'draft_confirmed', status: 'completed', completedAt: null },
-        { id: 'e3', type: 'order_approved', status: 'completed', completedAt: new Date('2026-01-02T00:00:00Z') },
-        { id: 'e4', type: 'dp_invoice_created', status: 'completed', completedAt: new Date('2026-01-03T00:00:00Z'), invoiceId: 'inv-dp', invoiceNumber: 'INV-DP-1', amount: 50000 },
-        { id: 'e5', type: 'dp_payment_confirmed', status: 'completed', completedAt: new Date('2026-01-04T00:00:00Z'), amount: 50000 },
-        { id: 'e6', type: 'production_started', status: 'completed', completedAt: null },
-        { id: 'e7', type: 'final_invoice_created', status: 'completed', completedAt: new Date('2026-01-18T00:00:00Z'), invoiceId: 'inv-final', invoiceNumber: 'INV-FINAL-1', amount: 50000 },
-        { id: 'e8', type: 'final_payment_confirmed', status: 'completed', completedAt: new Date('2026-01-19T00:00:00Z'), amount: 50000 },
-        { id: 'e9', type: 'production_finished', status: 'completed', completedAt: new Date('2026-01-20T00:00:00Z') },
-        { id: 'e10', type: 'shipment_confirmed', status: 'completed', completedAt: new Date('2026-01-20T00:00:00Z') },
-        { id: 'e11', type: 'order_completed', status: 'completed', completedAt: new Date('2026-01-25T00:00:00Z') },
+        {
+          id: 'e1',
+          type: 'draft_created',
+          status: 'completed',
+          completedAt: new Date('2026-01-01T00:00:00Z'),
+        },
+        {
+          id: 'e2',
+          type: 'draft_confirmed',
+          status: 'completed',
+          completedAt: null,
+        },
+        {
+          id: 'e3',
+          type: 'order_approved',
+          status: 'completed',
+          completedAt: new Date('2026-01-02T00:00:00Z'),
+        },
+        {
+          id: 'e4',
+          type: 'dp_invoice_created',
+          status: 'completed',
+          completedAt: new Date('2026-01-03T00:00:00Z'),
+          invoiceId: 'inv-dp',
+          invoiceNumber: 'INV-DP-1',
+          amount: 50000,
+        },
+        {
+          id: 'e5',
+          type: 'dp_payment_confirmed',
+          status: 'completed',
+          completedAt: new Date('2026-01-04T00:00:00Z'),
+          amount: 50000,
+        },
+        {
+          id: 'e6',
+          type: 'production_started',
+          status: 'completed',
+          completedAt: null,
+        },
+        {
+          id: 'e7',
+          type: 'final_invoice_created',
+          status: 'completed',
+          completedAt: new Date('2026-01-18T00:00:00Z'),
+          invoiceId: 'inv-final',
+          invoiceNumber: 'INV-FINAL-1',
+          amount: 50000,
+        },
+        {
+          id: 'e8',
+          type: 'final_payment_confirmed',
+          status: 'completed',
+          completedAt: new Date('2026-01-19T00:00:00Z'),
+          amount: 50000,
+        },
+        {
+          id: 'e9',
+          type: 'production_finished',
+          status: 'completed',
+          completedAt: new Date('2026-01-20T00:00:00Z'),
+        },
+        {
+          id: 'e10',
+          type: 'shipment_confirmed',
+          status: 'completed',
+          completedAt: new Date('2026-01-20T00:00:00Z'),
+        },
+        {
+          id: 'e11',
+          type: 'order_completed',
+          status: 'completed',
+          completedAt: new Date('2026-01-25T00:00:00Z'),
+        },
       ],
     })
     renderProgressView()
-    expect(screen.getByText('Perkembangan Pesanan')).toBeInTheDocument()
+    expect(screen.getByText('Riwayat Pesanan')).toBeInTheDocument()
     expect(screen.getByText('Draft pesanan dibuat')).toBeInTheDocument()
-    expect(screen.getByText('Draft pesanan dikonfirmasi, menunggu review')).toBeInTheDocument()
+    expect(
+      screen.getByText('Draft pesanan dikonfirmasi, menunggu review'),
+    ).toBeInTheDocument()
     expect(screen.getByText('Pesanan disetujui admin')).toBeInTheDocument()
     expect(screen.getByText('Invoice DP dibuat')).toBeInTheDocument()
     expect(screen.getByText('Pembayaran DP dikonfirmasi')).toBeInTheDocument()
     expect(screen.getByText('Produksi dimulai')).toBeInTheDocument()
     expect(screen.getByText('Invoice pelunasan dibuat')).toBeInTheDocument()
-    expect(screen.getByText('Pembayaran pelunasan dikonfirmasi')).toBeInTheDocument()
-    expect(screen.getByText('Produksi selesai, siap dikirim')).toBeInTheDocument()
+    expect(
+      screen.getByText('Pembayaran pelunasan dikonfirmasi'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Produksi selesai, siap dikirim'),
+    ).toBeInTheDocument()
     expect(screen.getByText('Pengiriman dikonfirmasi')).toBeInTheDocument()
     expect(screen.getByText('Selesai')).toBeInTheDocument()
   })
@@ -406,11 +486,18 @@ describe('ProgressView', () => {
   it('does not show product/stage workflow text in the order timeline section', () => {
     mockUseOrderTimeline.mockReturnValue({
       data: [
-        { id: 'e1', type: 'draft_created', status: 'completed', completedAt: new Date('2026-01-01T00:00:00Z') },
+        {
+          id: 'e1',
+          type: 'draft_created',
+          status: 'completed',
+          completedAt: new Date('2026-01-01T00:00:00Z'),
+        },
       ],
     })
     renderProgressView()
-    expect(screen.queryByText('Custom T-Shirt: Cutting')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Custom T-Shirt: Cutting'),
+    ).not.toBeInTheDocument()
   })
 
   it('renders empty state for the order timeline when there are no events', () => {
@@ -425,5 +512,27 @@ describe('ProgressView', () => {
     expect(screen.getByText('Selesai')).toBeInTheDocument()
     expect(screen.getByText('Selesai pada')).toBeInTheDocument()
     expect(screen.queryByText('Siap Kirim')).not.toBeInTheDocument()
+  })
+
+  it('toggles line item timeline visibility when clicking the toggle button', () => {
+    renderProgressView()
+
+    // Find the toggle button
+    const toggleButton = screen.getByRole('button', { name: 'Lihat timeline' })
+    expect(toggleButton).toBeInTheDocument()
+
+    // Click the toggle button to expand
+    fireEvent.click(toggleButton)
+    expect(
+      screen.getByRole('button', { name: 'Sembunyikan timeline' }),
+    ).toBeInTheDocument()
+
+    // Click the toggle button to collapse again
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Sembunyikan timeline' }),
+    )
+    expect(
+      screen.getByRole('button', { name: 'Lihat timeline' }),
+    ).toBeInTheDocument()
   })
 })

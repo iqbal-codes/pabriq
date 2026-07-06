@@ -1,9 +1,8 @@
-import { CalendarClock, ChevronDown } from 'lucide-react'
+import { CalendarClock, ChevronDown, ChevronUp } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
 import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
 import { getVisibleDesignName } from '#/features/orders/line-item-display'
 import { formatCurrency, formatLongDate } from '#/lib/formatters'
 import { cn } from '#/lib/utils'
@@ -139,50 +138,57 @@ export function LineItemTaskCard({
         </div>
       )}
 
-      <div className="border-t border-border">
-        {item.assetIds.length > 0 ? (
-          <div className="px-4 py-3 sm:px-5 sm:py-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {t('itemAttachmentsLabel')}
-            </p>
-            <div className="mt-2">
-              <AssetFileList
-                assetIds={item.assetIds}
-                layout="list"
-                token={token}
-              />
-            </div>
+      {item.assetIds.length > 0 ? (
+        <div className="border-t border-border px-4 py-3 sm:px-5 sm:py-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {t('itemAttachmentsLabel')}
+          </p>
+          <div className="mt-2">
+            <AssetFileList
+              assetIds={item.assetIds}
+              layout="list"
+              token={token}
+            />
           </div>
-        ) : null}
+        </div>
+      ) : null}
 
-        <Button
+      <div
+        className={cn(
+          'grid transition-all duration-200 ease-out',
+          showTimeline
+            ? 'grid-rows-[1fr] border-t border-border'
+            : 'grid-rows-[0fr] border-t border-transparent',
+        )}
+      >
+        <div className="overflow-hidden">
+          <div
+            ref={timelineRef}
+            id={`timeline-${item.id}`}
+            className="px-4 pb-4 pt-4 sm:px-5 sm:pb-5"
+          >
+            <OrderTimeline events={itemEvents} token={token} />
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-border">
+        <button
           type="button"
-          variant="ghost"
           onClick={() => setShowTimeline((prev) => !prev)}
+          className="w-full py-3 hover:bg-muted/5 focus-visible:bg-muted/5 transition-colors focus:outline-none text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5"
           aria-expanded={showTimeline}
           aria-controls={`timeline-${item.id}`}
-          className="w-full justify-between rounded-none py-4 text-sm font-medium text-foreground hover:bg-muted/60"
         >
-          {showTimeline ? t('itemHideTimeline') : t('itemShowTimeline')}
-          <ChevronDown
-            className={cn(
-              'size-4 transition-transform duration-200',
-              showTimeline && 'rotate-180',
-            )}
-          />
-        </Button>
-
-        <div
-          ref={timelineRef}
-          id={`timeline-${item.id}`}
-          className={cn(
-            'grid gap-4 px-4 pb-4 pt-1 sm:px-5 sm:pb-5',
-            'lg:grid-cols-[1fr_320px]',
-            showTimeline ? 'block' : 'hidden',
+          <span>
+            {showTimeline ? t('itemHideTimeline') : t('itemShowTimeline')}
+          </span>
+          {showTimeline ? (
+            <ChevronUp className="size-3.5" />
+          ) : (
+            <ChevronDown className="size-3.5" />
           )}
-        >
-          <OrderTimeline events={itemEvents} token={token} />
-        </div>
+        </button>
       </div>
     </article>
   )

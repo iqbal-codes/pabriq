@@ -60,6 +60,7 @@ export type PortalInvoice = {
   paymentMethodAccountHolder: string | null
   paymentMethodInstructions: string | null
   hasPaymentProof: boolean
+  midtransOrderId: string | null
   shippingFee: number | null
 }
 
@@ -277,6 +278,7 @@ export async function getPortalOrder(
       paymentMethodAccountNumber: paymentMethodsTable.accountNumber,
       paymentMethodAccountHolder: paymentMethodsTable.accountHolder,
       paymentMethodInstructions: paymentMethodsTable.instructions,
+      midtransOrderId: invoicesTable.midtransOrderId,
     })
     .from(invoicesTable)
     .leftJoin(
@@ -347,6 +349,7 @@ export async function getPortalOrder(
     paymentMethodAccountNumber: inv.paymentMethodAccountNumber,
     paymentMethodAccountHolder: inv.paymentMethodAccountHolder,
     paymentMethodInstructions: inv.paymentMethodInstructions,
+    midtransOrderId: inv.midtransOrderId,
     hasPaymentProof: proofSet.has(inv.id),
     shippingFee: shippingFeeByInvoice.get(inv.id) ?? null,
   }))
