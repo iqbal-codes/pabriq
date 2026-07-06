@@ -71,19 +71,21 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## 5. Agent Skills
 
-### Loading codebase skills
+> 🚫 **NON-NEGOTIABLE:** Before touching ANY task, load the relevant skill(s) via `read` with `skill://<name>` URIs. Do this every time, without exception — even if you "already know" the pattern. Skills encode the current codebase conventions; your training data does not.
 
-Use the `skill` tool to load domain-specific knowledge on-demand. These project-local skills are stored under `.agents/skills/` and capture "how we do things here":
+### Skill registry
 
-| Skill | When to load / trigger |
-|---|---|
-| `pabriq-app-v2-foundation` | High-level architecture, project setup, starting dev server, feature folder layout |
-| `pabriq-app-v2-ui` | Frontend, layout shells, TanStack Form, DataTable, Tailwind CSS v4, i18n |
-| `pabriq-app-v2-backend` | createServerFn, session & role checks, API webhooks, server validation |
-| `pabriq-app-v2-data` | Drizzle ORM schemas, database connections, query pooling, migrations |
-| `pabriq-app-v2-testing` | Writing or running Vitest unit/integration tests or Playwright E2E tests |
-| `pabriq-app-v2-conventions` | Code style, Biome rules, TypeScript strictness, named exports, import aliases (`#/`) |
-| `pabriq-app-v2-infra` | Dockerfile, Infisical secrets, environment configurations |
+Project-local skills stored under `.agents/skills/` and available at runtime via `skill://` URIs:
+
+| Skill | URI | When to load |
+|---|---|---|
+| `pabriq-app-v2-foundation` | `skill://pabriq-app-v2-foundation` | High-level architecture, project setup, starting dev server, feature folder layout |
+| `pabriq-app-v2-ui` | `skill://pabriq-app-v2-ui` | Frontend, layout shells, TanStack Form, DataTable, Tailwind CSS v4, i18n |
+| `pabriq-app-v2-backend` | `skill://pabriq-app-v2-backend` | createServerFn, session & role checks, API webhooks, server validation |
+| `pabriq-app-v2-data` | `skill://pabriq-app-v2-data` | Drizzle ORM schemas, database connections, query pooling, migrations |
+| `pabriq-app-v2-testing` | `skill://pabriq-app-v2-testing` | Writing or running Vitest unit/integration tests or Playwright E2E tests |
+| `pabriq-app-v2-conventions` | `skill://pabriq-app-v2-conventions` | Code style, Biome rules, TypeScript strictness, named exports, import aliases (`#/`) |
+| `pabriq-app-v2-infra` | `skill://pabriq-app-v2-infra` | Dockerfile, Infisical secrets, environment configurations |
 
 ## 6. Code Best Practices
 
