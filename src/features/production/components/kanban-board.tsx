@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
-import { useLocale, useTranslations } from 'use-intl'
+import { useTranslations } from 'use-intl'
 import { Separator } from '#/components/ui/separator'
+import { getReadyForProductionLabel } from '#/features/production/ready-for-production-label'
 import type { BoardTask, Stage } from '../model'
 import { KanbanColumn } from './kanban-column'
 
@@ -17,7 +18,6 @@ type Props = {
 
 export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
   const t = useTranslations('production')
-  const locale = useLocale()
   const preProdStages = useMemo(
     () =>
       stages
@@ -35,14 +35,16 @@ export function KanbanBoard({ stages, boardData, onClickCard }: Props) {
   )
 
   const firstProdStageName = prodStages[0]?.name
-  const readyForProductionTitle = useMemo(() => {
-    if (firstProdStageName) {
-      return locale === 'id'
-        ? `Antri ${firstProdStageName}`
-        : `Queue for ${firstProdStageName}`
-    }
-    return t('readyForProduction')
-  }, [firstProdStageName, locale, t])
+  const readyForProductionTitle = useMemo(
+    () =>
+      getReadyForProductionLabel({
+        firstProductionStageName: firstProdStageName,
+        readyForProduction: t('readyForProduction'),
+        readyForProductionWithStage: (values) =>
+          t('readyForProductionQueue', values),
+      }),
+    [firstProdStageName, t],
+  )
 
   return (
     <section

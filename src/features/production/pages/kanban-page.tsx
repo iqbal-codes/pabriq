@@ -29,8 +29,14 @@ export function KanbanPage({ orgId, role }: Props) {
     'stage',
     parseAsString.withDefault(''),
   )
-  const [selectedTaskId, setSelectedTaskId] = useQueryState('task', parseAsString)
-  const [reviewTaskId, setReviewTaskId] = useQueryState('reviewTask', parseAsString)
+  const [selectedTaskId, setSelectedTaskId] = useQueryState(
+    'task',
+    parseAsString,
+  )
+  const [reviewTaskId, setReviewTaskId] = useQueryState(
+    'reviewTask',
+    parseAsString,
+  )
 
   const canApprove = canApproveProductionTask(role)
 

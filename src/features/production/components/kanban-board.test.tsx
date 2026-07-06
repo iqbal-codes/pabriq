@@ -144,6 +144,7 @@ const enMessages = {
     columnTaskCount: '{column}: {count, plural, one {# task} other {# tasks}}',
     needApproval: 'Requires Approval',
     readyForProduction: 'Ready for Production',
+    readyForProductionQueue: 'Queue for {stage}',
     deadlineToday: 'Due today',
     deadlineTomorrow: 'Due tomorrow',
     deadlineDaysLeft: '{days, plural, one {# day left} other {# days left}}',

@@ -29,7 +29,11 @@ vi.mock('nuqs', () => {
     useQueryState: (key: string, defaultValue?: string | null) => {
       const [state, setState] = useState(() => {
         const storeVal = queryStateStore.store[key]
-        return storeVal !== undefined ? storeVal : (typeof defaultValue === 'string' ? defaultValue : null)
+        return storeVal !== undefined
+          ? storeVal
+          : typeof defaultValue === 'string'
+            ? defaultValue
+            : null
       })
 
       useEffect(() => {
@@ -39,7 +43,9 @@ vi.mock('nuqs', () => {
         }
       }, [state])
 
-      const setter = (newVal: string | null | ((prev: string | null) => string | null)) => {
+      const setter = (
+        newVal: string | null | ((prev: string | null) => string | null),
+      ) => {
         const nextVal = typeof newVal === 'function' ? newVal(state) : newVal
         queryStateStore.store[key] = nextVal
         setState(nextVal)
@@ -274,6 +280,7 @@ const enMessages = {
     send: 'Send',
     startProduction: 'Start Pre-Production',
     readyForProduction: 'Ready for Production',
+    readyForProductionQueue: 'Queue for {stage}',
     continueToProduction: 'Continue to Production',
     advanceTo: 'Advance to {stage}',
     completeRequirements: 'Complete Requirements',
