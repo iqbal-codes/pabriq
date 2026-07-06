@@ -5,6 +5,7 @@ import {
   type AssistantToolContext,
   assistantDomains,
   getAssistantBusinessOverview,
+  resolveOrderDraft,
   searchAssistantBusinessRecords,
 } from '#/features/assistant/model'
 
@@ -85,5 +86,62 @@ export const businessOverviewTool = createTool({
   execute: async (_inputData, context) => {
     const toolContext = readAssistantToolContext(context)
     return getAssistantBusinessOverview(toolContext)
+  },
+})
+
+export const resolveOrderDraftTool = createTool({
+  id: 'resolve-order-draft',
+  description:
+    'Resolve free-form product hints and quantities into priced line items for a draft order. Returns resolved products with exact pricing, or lists ambiguous/invalid candidates.',
+  inputSchema: z.object({
+    candidates: z
+      .array(
+        z.object({
+          productHint: z.string().trim().min(1),
+          quantity: z.number().int().positive(),
+        }),
+      )
+      .min(1),
+    customerHint: z.string().trim().min(1).nullable().optional(),
+  }),
+  outputSchema: z.object({
+    status: z.enum(['resolved', 'ambiguous', 'invalid']),
+    lineItems: z
+      .array(
+        z.object({
+          productId: z.string(),
+          productName: z.string(),
+          quantity: z.number(),
+          unitPrice: z.number(),
+          total: z.number(),
+          minQuantity: z.number(),
+        }),
+      )
+      .optional(),
+    missing: z
+      .array(
+        z.object({
+          productHint: z.string(),
+          quantity: z.number(),
+          matchedProductIds: z.array(z.string()),
+        }),
+      )
+      .optional(),
+    customer: z
+      .object({ id: z.string(), name: z.string() })
+      .nullable()
+      .optional(),
+    customerAmbiguous: z
+      .array(z.object({ id: z.string(), name: z.string() }))
+      .optional(),
+    total: z.number(),
+  }),
+  execute: async (inputData, context) => {
+    const toolContext = readAssistantToolContext(context)
+    return resolveOrderDraft({
+      orgId: toolContext.orgId,
+      candidates: inputData.candidates,
+      customerHint: inputData.customerHint ?? null,
+    })
   },
 })

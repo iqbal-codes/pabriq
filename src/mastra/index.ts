@@ -5,11 +5,12 @@ import { mastraStorage } from '#/mastra/model'
 import {
   businessOverviewTool,
   businessSearchTool,
+  resolveOrderDraftTool,
 } from '#/mastra/tools/business-tools'
 
 export const mastra = new Mastra({
   agents: { businessAssistantAgent },
-  tools: { businessSearchTool, businessOverviewTool },
+  tools: { businessSearchTool, businessOverviewTool, resolveOrderDraftTool },
   storage: mastraStorage,
   logger: new PinoLogger({
     name: 'Pabriq Mastra',
