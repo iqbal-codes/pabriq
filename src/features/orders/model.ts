@@ -11,6 +11,7 @@ import {
 } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
+  type AssistantActionPayload,
   addresses as addressesTable,
   assets as assetsTable,
   customers as customersTable,
@@ -919,6 +920,151 @@ export async function createDraftOrder(
       customerId,
       status: 'draft',
       notes: input.notes ?? null,
+      total: orderTotal,
+      orderNumber,
+      orderToken,
+      validUntil,
+      approvedAt: null,
+      approvedBy: null,
+      rejectedAt: null,
+      rejectedBy: null,
+      rejectReason: null,
+      courier: null,
+      trackingNumber: null,
+      shippedAt: null,
+      deliveredAt: null,
+      shippingAddress,
+      createdAt: now,
+      updatedAt: now,
+    },
+    lineItems: items,
+  }
+}
+
+export async function createDraftOrderFromAction(
+  orgId: string,
+  payload: AssistantActionPayload,
+): Promise<CreateDraftOrderResult> {
+  let shippingAddress: ShippingAddress | null = null
+  const customerId = payload.customerId?.trim() || null
+  if (customerId) {
+    const customerRows = await db
+      .select({ id: customersTable.id })
+      .from(customersTable)
+      .where(
+        and(eq(customersTable.id, customerId), eq(customersTable.orgId, orgId)),
+      )
+      .limit(1)
+    if (customerRows.length === 0) throw new Error('Customer not found')
+
+    const custAddr = await getCustomerAddress(customerId, orgId)
+    if (custAddr) {
+      shippingAddress = {
+        areaId: custAddr.areaId ?? '',
+        areaName: custAddr.areaName ?? '',
+        streetAddress: custAddr.streetAddress ?? '',
+      }
+    }
+  }
+
+  const now = new Date()
+  const orderId = generateId()
+  const items: OrderLineItem[] = []
+  const allAddonInserts: Array<{
+    id: string
+    orgId: string
+    lineItemId: string
+    productAddonId: string
+    name: string
+    unitSurcharge: number
+    createdAt: Date
+    updatedAt: Date
+  }> = []
+
+  for (const li of payload.lineItems) {
+    const productRows = await db
+      .select({
+        id: productsTable.id,
+        name: productsTable.name,
+        active: productsTable.active,
+        productionDays: productsTable.productionDays,
+      })
+      .from(productsTable)
+      .where(
+        and(eq(productsTable.id, li.productId), eq(productsTable.orgId, orgId)),
+      )
+      .limit(1)
+    if (productRows.length === 0) throw new Error('Product not found')
+    const product = productRows[0]
+    if (!product.active) throw new Error('Product is not active')
+
+    if (li.quantity <= 0) {
+      throw new Error('Quantity must be greater than zero')
+    }
+    if (li.quantity < li.minQuantity) {
+      throw new Error(`Quantity below minimum of ${li.minQuantity}`)
+    }
+
+    const itemId = generateId()
+    const deadline = addWorkingDays(now, product.productionDays)
+
+    items.push({
+      id: itemId,
+      orgId,
+      orderId,
+      productId: li.productId,
+      quantity: li.quantity,
+      unitPrice: li.unitPrice,
+      total: li.total,
+      productName: li.productName,
+      designName: null,
+      notes: null,
+      productionDays: product.productionDays,
+      deadline,
+      isRepeatOrder: false,
+      manualDeadline: false,
+      selectedAddons: [],
+      createdAt: now,
+      updatedAt: now,
+    })
+  }
+
+  const orderTotal = items.reduce((sum, i) => sum + i.total, 0)
+  const orderNumber = await generateOrderNumber(orgId)
+  const validUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+  const orderToken = crypto.randomUUID().replace(/-/g, '').slice(0, 32)
+
+  await db.insert(ordersTable).values({
+    id: orderId,
+    orgId,
+    customerId,
+    status: 'draft',
+    notes: null,
+    total: orderTotal,
+    orderNumber,
+    orderToken,
+    validUntil,
+    shippingAddress,
+    createdAt: now,
+    updatedAt: now,
+  })
+
+  if (items.length > 0) {
+    const dbItems = items.map(({ selectedAddons: _, ...rest }) => rest)
+    await db.insert(lineItemsTable).values(dbItems)
+  }
+
+  if (allAddonInserts.length > 0) {
+    await db.insert(lineItemAddonsTable).values(allAddonInserts)
+  }
+
+  return {
+    order: {
+      id: orderId,
+      orgId,
+      customerId,
+      status: 'draft',
+      notes: null,
       total: orderTotal,
       orderNumber,
       orderToken,
