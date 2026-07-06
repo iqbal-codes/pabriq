@@ -24,6 +24,7 @@
     "typecheck": "tsc --noEmit",
     "format": "biome format --write .",
     "start": "srvx serve --prod --import ./dist/server/instrument.server.mjs --entry ./dist/server/server.js -s ../client",
+    "start:prod": "node scripts/start-production.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "bun run load-env -- drizzle-kit push",

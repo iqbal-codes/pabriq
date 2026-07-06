@@ -25,14 +25,25 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
+# Add non-root user
+RUN addgroup -S pabriq && adduser -S pabriq -G pabriq
+
 # Copy built application and production dependencies
-COPY --from=builder /app/package.json ./package.json
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
+COPY --chown=pabriq:pabriq --from=builder /app/package.json ./package.json
+COPY --chown=pabriq:pabriq --from=prod-deps /app/node_modules ./node_modules
+COPY --chown=pabriq:pabriq --from=builder /app/dist ./dist
+COPY --chown=pabriq:pabriq --from=builder /app/scripts/start-production.mjs ./scripts/start-production.mjs
 
 # Expose the default port for TanStack Start (usually 3001)
 EXPOSE 3001
 ENV PORT=3001
 ENV HOST=0.0.0.0
 
-CMD ["npm", "run", "start"]
+USER pabriq
+
+STOPSIGNAL SIGTERM
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || '3001') + '/api/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+
+CMD ["npm", "run", "start:prod"]

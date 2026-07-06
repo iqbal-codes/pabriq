@@ -1,3 +1,5 @@
+import { drizzle } from 'drizzle-orm/node-postgres'
+import { Pool } from 'pg'
 import { normalizePostgresConnectionString } from './connection-string'
 import * as schema from './schema'
 
@@ -6,25 +8,31 @@ const MissingDatabaseUrlError = () =>
     'DATABASE_URL is required. Set it in .env.local for dev or .env.test for tests.',
   )
 
-export const db = await (async () => {
-  const databaseUrl = process.env.DATABASE_URL
-  if (!databaseUrl) throw MissingDatabaseUrlError()
+const databaseUrl = process.env.DATABASE_URL
+if (!databaseUrl) throw MissingDatabaseUrlError()
 
-  const { Pool } = await import('pg')
-  const pool = new Pool({
-    connectionString: normalizePostgresConnectionString(databaseUrl),
-    connectionTimeoutMillis: 10000,
-  })
-  try {
-    const client = await pool.connect()
-    client.release()
-    const { drizzle } = await import('drizzle-orm/node-postgres')
-    return drizzle(pool, { schema })
-  } catch (cause) {
-    await pool.end().catch(() => {})
-    throw new Error(
-      `Failed to connect to PostgreSQL at ${databaseUrl.replace(/:.+@/, ':****@')}`,
-      { cause },
-    )
-  }
-})()
+const pool = new Pool({
+  connectionString: normalizePostgresConnectionString(databaseUrl),
+  connectionTimeoutMillis: 10000,
+})
+
+try {
+  const client = await pool.connect()
+  client.release()
+} catch (cause) {
+  await pool.end().catch(() => {})
+  throw new Error(
+    `Failed to connect to PostgreSQL at ${databaseUrl.replace(/:.+@/, ':****@')}`,
+    { cause },
+  )
+}
+
+export const db = drizzle(pool, { schema })
+
+export async function checkDatabaseHealth(): Promise<void> {
+  await pool.query('SELECT 1')
+}
+
+export async function closeDatabasePool(): Promise<void> {
+  await pool.end()
+}
