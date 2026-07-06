@@ -5,7 +5,8 @@ import { listCustomers } from '#/features/customers/model'
 import { listInvoices } from '#/features/invoices/model'
 import { listOrders } from '#/features/orders/model'
 import { listBoardTasks } from '#/features/production/model'
-import { listProducts } from '#/features/products/model'
+import { listBreakpoints, listProducts } from '#/features/products/model'
+import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
 
 export const assistantDomains = [
   'customers',
@@ -48,11 +49,43 @@ export type AssistantOverview = {
   omittedDomains: AssistantDomain[]
 }
 
+export type ResolvedLineItem = {
+  productId: string
+  productName: string
+  quantity: number
+  unitPrice: number
+  total: number
+  minQuantity: number
+}
+
+export type OrderDraftResolution = {
+  status: 'resolved' | 'ambiguous' | 'invalid'
+  lineItems?: ResolvedLineItem[]
+  missing?: Array<{
+    productHint: string
+    quantity: number
+    matchedProductIds: string[]
+  }>
+  customer?: { id: string; name: string } | null
+  customerAmbiguous?: Array<{ id: string; name: string }>
+  total: number
+}
+
+export type AssistantChatMessageMetadata =
+  | {
+      kind: 'order_draft_proposal'
+      actionId: string
+      expiresAt: string
+    }
+  | { kind: 'order_draft_cancelled'; actionId: string }
+  | { kind: 'order_draft_error'; actionId: string; reason: string }
+
 export type AssistantChatMessage = {
   id: string
   role: 'user' | 'assistant'
   content: string
   createdAt: string
+  metadata?: AssistantChatMessageMetadata
 }
 
 export type AssistantMemoryScope = {
@@ -92,17 +125,27 @@ export function normalizeMastraMemoryMessages(
     const createdAt = record.createdAt as string | Date | undefined
     const id = (record.id as string | undefined) ?? crypto.randomUUID()
 
+    const contentObj = record.content as
+      | Record<string, unknown>
+      | undefined
+      | null
+    const metadata = (contentObj?.metadata ??
+      (record as Record<string, unknown>).metadata) as
+      | AssistantChatMessageMetadata
+      | undefined
+
     const text = extractTextContent(record.content)
-    if (!text) continue
+    if (!text && !metadata) continue
 
     result.push({
       id,
       role: role as 'user' | 'assistant',
-      content: text,
+      content: text ?? '',
       createdAt:
         createdAt instanceof Date
           ? createdAt.toISOString()
           : (createdAt ?? new Date().toISOString()),
+      metadata,
     })
   }
 
@@ -352,4 +395,169 @@ export async function getAssistantBusinessOverview(
     activeProductionTasks,
     omittedDomains,
   }
+}
+
+async function resolveProductPricing(params: {
+  orgId: string
+  productId: string
+  quantity: number
+}): Promise<{ unitPrice: number; total: number; minQuantity: number }> {
+  const productRows = await db
+    .select({
+      id: schema.products.id,
+      name: schema.products.name,
+      basePrice: schema.products.basePrice,
+      minQuantity: schema.products.minQuantity,
+      pricingMode: schema.products.pricingMode,
+    })
+    .from(schema.products)
+    .where(
+      and(
+        eq(schema.products.id, params.productId),
+        eq(schema.products.orgId, params.orgId),
+      ),
+    )
+    .limit(1)
+  const product = productRows[0]
+  if (!product) throw new Error('Product not found')
+
+  const breakpointRows = await listBreakpoints(params.productId)
+  const breakpoints: Breakpoint[] = breakpointRows.map((bp) => ({
+    minQuantity: bp.minQuantity,
+    unitPrice: bp.unitPrice,
+  }))
+
+  const hasExplicitAtMinQty = breakpoints.some(
+    (bp) => bp.minQuantity === product.minQuantity,
+  )
+  if (!hasExplicitAtMinQty) {
+    breakpoints.unshift({
+      minQuantity: product.minQuantity,
+      unitPrice: product.basePrice,
+    })
+  }
+
+  const result = calculateUnitPrice({
+    quantity: params.quantity,
+    breakpoints,
+    mode: product.pricingMode as 'interpolated' | 'step',
+  })
+  if ('code' in result) {
+    throw new Error(result.message)
+  }
+
+  return {
+    unitPrice: result.unitPrice.amount,
+    total: result.lineTotal.amount,
+    minQuantity: product.minQuantity,
+  }
+}
+
+export async function resolveOrderDraft(params: {
+  orgId: string
+  candidates: Array<{ productHint: string; quantity: number }>
+  customerHint?: string | null
+}): Promise<OrderDraftResolution> {
+  const lineItems: ResolvedLineItem[] = []
+  const missing: Array<{
+    productHint: string
+    quantity: number
+    matchedProductIds: string[]
+  }> = []
+
+  for (const candidate of params.candidates) {
+    const products = await listProducts({
+      orgId: params.orgId,
+      search: candidate.productHint,
+      activeOnly: true,
+      sortBy: 'name',
+      sortDir: 'asc',
+    })
+
+    if (products.length === 0) {
+      missing.push({
+        productHint: candidate.productHint,
+        quantity: candidate.quantity,
+        matchedProductIds: [],
+      })
+      continue
+    }
+
+    if (products.length > 1) {
+      missing.push({
+        productHint: candidate.productHint,
+        quantity: candidate.quantity,
+        matchedProductIds: products.map((p) => p.id),
+      })
+      continue
+    }
+
+    const product = products[0]
+
+    if (candidate.quantity < product.minQuantity) {
+      missing.push({
+        productHint: candidate.productHint,
+        quantity: candidate.quantity,
+        matchedProductIds: [product.id],
+      })
+      continue
+    }
+
+    if (
+      product.maxProductionQuantity != null &&
+      candidate.quantity > product.maxProductionQuantity
+    ) {
+      missing.push({
+        productHint: candidate.productHint,
+        quantity: candidate.quantity,
+        matchedProductIds: [product.id],
+      })
+      continue
+    }
+
+    const pricing = await resolveProductPricing({
+      orgId: params.orgId,
+      productId: product.id,
+      quantity: candidate.quantity,
+    })
+
+    lineItems.push({
+      productId: product.id,
+      productName: product.name,
+      quantity: candidate.quantity,
+      unitPrice: pricing.unitPrice,
+      total: pricing.total,
+      minQuantity: pricing.minQuantity,
+    })
+  }
+
+  let customer: { id: string; name: string } | null = null
+  let customerAmbiguous: Array<{ id: string; name: string }> | undefined
+
+  if (params.customerHint?.trim()) {
+    const customerResult = await listCustomers({
+      orgId: params.orgId,
+      search: params.customerHint,
+      page: 1,
+      perPage: 3,
+    })
+    if (customerResult.rows.length === 1) {
+      customer = { id: customerResult.rows[0].id, name: customerResult.rows[0].name }
+    } else if (customerResult.rows.length > 1) {
+      customerAmbiguous = customerResult.rows.map((r) => ({ id: r.id, name: r.name }))
+    }
+  }
+
+  const hasInvalid = missing.some((m) => m.matchedProductIds.length === 0)
+  const hasAmbiguous = missing.some((m) => m.matchedProductIds.length > 1)
+
+  if (hasInvalid) {
+    return { status: 'invalid', missing, customer, customerAmbiguous, total: 0 }
+  }
+  if (hasAmbiguous) {
+    return { status: 'ambiguous', missing, customer, customerAmbiguous, total: 0 }
+  }
+
+  const total = lineItems.reduce((sum, li) => sum + li.total, 0)
+  return { status: 'resolved', lineItems, customer, customerAmbiguous, total }
 }
