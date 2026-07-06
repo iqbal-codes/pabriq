@@ -22,8 +22,12 @@ export const serverLoggerMiddleware = createMiddleware({
   } catch (err: unknown) {
     const duration = Date.now() - start
     const message = err instanceof Error ? err.message : String(err)
+    const cause =
+      err instanceof Error && err.cause instanceof Error
+        ? err.cause.message
+        : undefined
     logger.error(
-      { fn: fnName, durationMs: duration, err: message },
+      { fn: fnName, durationMs: duration, err: message, cause },
       'server fn error',
     )
     sentryCaptureException(err)
