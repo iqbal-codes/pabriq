@@ -192,7 +192,9 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
 
                   <FormActions>
                     <form.AppForm>
-                      <form.SubmitButton isPending={completeProduction.isPending}>
+                      <form.SubmitButton
+                        isPending={completeProduction.isPending}
+                      >
                         {invoiceTotal > 0
                           ? t('createInvoiceAndShip')
                           : t('markAsShipped')}
