@@ -1,7 +1,7 @@
 import type { SnapTransactionParameters } from 'midtrans-client'
 import midtransClient from 'midtrans-client'
 
-const { Snap } = midtransClient
+const { Snap, CoreApi } = midtransClient
 
 import { and, desc, eq, ilike, inArray, or, type SQL, sql } from 'drizzle-orm'
 import { db } from '#/db/index'
@@ -36,6 +36,7 @@ export type Invoice = {
   paidAt: Date | null
   paidBy: string | null
   notes: string | null
+  midtransOrderId: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -1112,6 +1113,12 @@ export async function createMidtransTransaction(
     const res = await snap.createTransaction(
       parameter as unknown as SnapTransactionParameters, // Cast required because library type definition is incomplete
     )
+    await db
+      .update(invoicesTable)
+      .set({ midtransOrderId: orderId, updatedAt: new Date() })
+      .where(
+        and(eq(invoicesTable.id, invoiceId), eq(invoicesTable.orgId, orgId)),
+      )
     return {
       token: res.token,
       redirectUrl: res.redirect_url,
@@ -1120,4 +1127,153 @@ export async function createMidtransTransaction(
     const errorMessage = error instanceof Error ? error.message : String(error)
     throw new Error(`Midtrans transaction creation failed: ${errorMessage}`)
   }
+}
+
+export type MidtransTransactionStatus = {
+  transactionStatus: string
+  fraudStatus?: string | null
+  grossAmount: string
+  orderId: string
+  paymentType?: string | null
+  transactionId?: string | null
+  transactionTime?: string | null
+  settlementTime?: string | null
+  raw: Record<string, unknown>
+}
+
+export async function getMidtransTransactionStatus(
+  orderId: string,
+): Promise<MidtransTransactionStatus> {
+  const coreApi = new CoreApi({
+    isProduction: process.env.VITE_MIDTRANS_IS_PRODUCTION === 'true',
+    serverKey: process.env.MIDTRANS_SERVER_KEY ?? '',
+    clientKey: process.env.VITE_MIDTRANS_CLIENT_KEY ?? '',
+  })
+  const res = (await coreApi.transaction.status(orderId)) as Record<
+    string,
+    unknown
+  >
+  return {
+    transactionStatus: String(res.transaction_status ?? ''),
+    fraudStatus:
+      typeof res.fraud_status === 'string' ? res.fraud_status : null,
+    grossAmount: String(res.gross_amount ?? ''),
+    orderId: String(res.order_id ?? orderId),
+    paymentType:
+      typeof res.payment_type === 'string' ? res.payment_type : null,
+    transactionId:
+      typeof res.transaction_id === 'string' ? res.transaction_id : null,
+    transactionTime:
+      typeof res.transaction_time === 'string' ? res.transaction_time : null,
+    settlementTime:
+      typeof res.settlement_time === 'string' ? res.settlement_time : null,
+    raw: res,
+  }
+}
+
+export type ReconcileResult =
+  | { ok: true; confirmed: boolean; reason: 'confirmed' | 'already_paid' | 'not_settled_yet' | 'no_midtrans_order_id' | 'mismatch'; paymentId?: string }
+  | { ok: false; error: string }
+
+/**
+ * Pull-based reconciliation: ask Midtrans Core API for the current transaction
+ * status, and if Midtrans says it's settled/captured-accepted, run the same
+ * confirm flow the webhook does. Idempotent — safe to call repeatedly.
+ *
+ * Used by:
+ *  - the portal client when the post-pay poll times out (webhook never arrived)
+ *  - the operator "Lookup transaction" button on the invoice detail page
+ */
+export async function reconcilePayment(
+  orgId: string,
+  invoiceId: string,
+): Promise<ReconcileResult> {
+  const [invoice] = await db
+    .select({
+      id: invoicesTable.id,
+      orgId: invoicesTable.orgId,
+      status: invoicesTable.status,
+      midtransOrderId: invoicesTable.midtransOrderId,
+      total: invoicesTable.total,
+    })
+    .from(invoicesTable)
+    .where(
+      and(eq(invoicesTable.id, invoiceId), eq(invoicesTable.orgId, orgId)),
+    )
+    .limit(1)
+
+  if (!invoice) {
+    return { ok: false, error: 'Invoice not found' }
+  }
+
+  if (invoice.status === 'paid') {
+    return { ok: true, confirmed: true, reason: 'already_paid' }
+  }
+
+  const orderId = invoice.midtransOrderId
+  if (!orderId) {
+    return { ok: true, confirmed: false, reason: 'no_midtrans_order_id' }
+  }
+
+  let status: MidtransTransactionStatus
+  try {
+    status = await getMidtransTransactionStatus(orderId)
+  } catch (e: unknown) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : 'Midtrans lookup failed',
+    }
+  }
+
+  // Reject if amount doesn't match — never create a payment for the wrong amount.
+  const expectedAmount = String(Math.round(invoice.total))
+  const grossAmount = status.grossAmount.split('.')[0] ?? '0'
+  if (grossAmount !== expectedAmount) {
+    return { ok: true, confirmed: false, reason: 'mismatch' }
+  }
+
+  const isSuccess =
+    status.transactionStatus === 'settlement' ||
+    (status.transactionStatus === 'capture' &&
+      status.fraudStatus === 'accept')
+
+  if (!isSuccess) {
+    return { ok: true, confirmed: false, reason: 'not_settled_yet' }
+  }
+
+  // Idempotency: skip if a confirmed payment with this order_id reference exists.
+  const [existing] = await db
+    .select({ id: paymentsTable.id })
+    .from(paymentsTable)
+    .where(
+      and(
+        eq(paymentsTable.invoiceId, invoiceId),
+        eq(paymentsTable.reference, orderId),
+        eq(paymentsTable.status, 'confirmed'),
+      ),
+    )
+    .limit(1)
+
+  if (existing) {
+    return {
+      ok: true,
+      confirmed: true,
+      reason: 'already_paid',
+      paymentId: existing.id,
+    }
+  }
+
+  const payment = await createPayment(orgId, {
+    invoiceId,
+    amount: Number(status.grossAmount),
+    method: 'payment_gateway',
+    reference: orderId,
+    receivedAt: status.settlementTime
+      ? new Date(status.settlementTime)
+      : new Date(),
+  })
+
+  await confirmPayment(orgId, payment.id, 'midtrans-reconcile')
+
+  return { ok: true, confirmed: true, reason: 'confirmed', paymentId: payment.id }
 }

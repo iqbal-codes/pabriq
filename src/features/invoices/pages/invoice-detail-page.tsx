@@ -1,5 +1,5 @@
 import { Link, useParams } from '@tanstack/react-router'
-import { Printer } from 'lucide-react'
+import { Printer, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useLocale, useTranslations } from 'use-intl'
@@ -27,11 +27,11 @@ import {
   useInvoicePayments,
   useMarkInvoicePaid,
   useOrderForInvoice,
+  useReconcileInvoicePayment,
   useRejectPayment,
   useVoidInvoice,
 } from '#/features/invoices/hooks'
 import { formatCurrency, formatShortDate } from '#/lib/formatters'
-
 export function InvoiceDetailPage() {
   const { id } = useParams({ from: '/_org/invoices/$id/' })
   const t = useTranslations('invoices')
@@ -45,7 +45,7 @@ export function InvoiceDetailPage() {
   const voidInv = useVoidInvoice()
   const confirmPayment = useConfirmPayment()
   const rejectPayment = useRejectPayment()
-
+  const reconcileInvoice = useReconcileInvoicePayment()
   const [recordDialogOpen, setRecordDialogOpen] = useState(false)
   const [rejectDialogId, setRejectDialogId] = useState<string | null>(null)
 
@@ -102,6 +102,23 @@ export function InvoiceDetailPage() {
       setRejectDialogId(null)
     } else {
       toast.error(res.error ?? t('failed'))
+    }
+  }
+
+  const handleReconcile = async () => {
+    const res = await reconcileInvoice.mutateAsync(id)
+    if (!res.ok) {
+      toast.error(res.error ?? t('failed'))
+      return
+    }
+    if (res.status === 'paid') {
+      toast.success(t('reconcilePaid'))
+    } else if (res.status === 'not_settled_yet') {
+      toast.warning(t('reconcileNotSettled'))
+    } else if (res.status === 'no_midtrans_order_id') {
+      toast.info(t('reconcileNoOrderId'))
+    } else if (res.status === 'mismatch') {
+      toast.error(t('reconcileMismatch'))
     }
   }
 
@@ -235,6 +252,18 @@ export function InvoiceDetailPage() {
                 onVoid={handleVoid}
                 isVoiding={voidInv.isPending}
               />
+
+              {invoice.midtransOrderId && invoice.status !== 'paid' && invoice.status !== 'void' ? (
+                <Button
+                  variant="outline"
+                  onClick={handleReconcile}
+                  isLoading={reconcileInvoice.isPending}
+                  className="w-full"
+                >
+                  <RefreshCw className="mr-2 size-4" />
+                  {t('reconcileWithMidtrans')}
+                </Button>
+              ) : null}
             </CardContent>
           </Card>
 

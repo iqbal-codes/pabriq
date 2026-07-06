@@ -465,3 +465,75 @@ export const createSnapTokenFn = createServerFn({ method: 'POST' })
       }
     },
   )
+
+export type ReconcilePaymentResponse =
+  | { ok: true; status: 'paid'; reason: 'confirmed' | 'already_paid'; paymentId?: string }
+  | { ok: true; status: 'not_settled_yet' | 'no_midtrans_order_id' | 'mismatch' }
+  | { ok: false; error: string }
+/**
+ * Portal-side reconciliation: customer calls this when the post-pay poll
+ * times out (webhook never arrived but they did pay). Resolves the org from
+ * the portal token.
+ */
+export const reconcilePortalPaymentFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      invoiceId: z.string(),
+      token: z.string(),
+    }),
+  )
+  .handler(async ({ data }): Promise<ReconcilePaymentResponse> => {
+    try {
+      const portalOrderResult = await getPortalOrder(data.token)
+      if (!portalOrderResult.ok) {
+        return { ok: false, error: 'Invalid token' }
+      }
+      const hasInvoice = portalOrderResult.order.invoices.some(
+        (inv) => inv.id === data.invoiceId,
+      )
+      if (!hasInvoice) {
+        return { ok: false, error: 'Invoice not found in this order' }
+      }
+      const orgId = portalOrderResult.order.orgId
+      const { reconcilePayment } = await import('./model')
+      const result = await reconcilePayment(orgId, data.invoiceId)
+      if (!result.ok) return { ok: false, error: result.error }
+      if (result.confirmed) {
+        return { ok: true, status: 'paid', reason: result.reason === 'confirmed' ? 'confirmed' : 'already_paid', paymentId: result.paymentId }
+      }
+      // result.confirmed is false → reason is one of the not-paid cases
+      return { ok: true, status: result.reason as 'not_settled_yet' | 'no_midtrans_order_id' | 'mismatch' }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
+  })
+
+/**
+ * Operator-side reconciliation: admin clicks "Lookup transaction" on the
+ * invoice detail page. Resolves the org from the authenticated session.
+ */
+export const reconcileInvoicePaymentFn = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ invoiceId: z.string() }))
+  .handler(async ({ data }): Promise<ReconcilePaymentResponse> => {
+    const [orgId, { reconcilePayment }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
+    try {
+      const result = await reconcilePayment(orgId, data.invoiceId)
+      if (!result.ok) return { ok: false, error: result.error }
+      if (result.confirmed) {
+        return { ok: true, status: 'paid', reason: result.reason === 'confirmed' ? 'confirmed' : 'already_paid', paymentId: result.paymentId }
+      }
+      // result.confirmed is false → reason is one of the not-paid cases
+      return { ok: true, status: result.reason as 'not_settled_yet' | 'no_midtrans_order_id' | 'mismatch' }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
+  })

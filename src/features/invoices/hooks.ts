@@ -24,6 +24,7 @@ import {
   listInvoicesFn,
   listPaymentMethodsFn,
   markInvoicePaidFn,
+  reconcileInvoicePaymentFn,
   rejectPaymentFn,
   updatePaymentMethodFn,
   voidInvoiceFn,
@@ -187,5 +188,18 @@ export function useOrderForInvoice(orderId: string | undefined) {
     queryKey: queryKeys.invoices.orderForInvoice(safeOrderId),
     queryFn: () => getOrderForInvoiceFn({ data: { orderId: safeOrderId } }),
     enabled: !!orderId,
+  })
+}
+
+export function useReconcileInvoicePayment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (invoiceId: string) =>
+      reconcileInvoicePaymentFn({ data: { invoiceId } }),
+    onSuccess: () =>
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.invoices.all },
+        { queryKey: queryKeys.notifications.all },
+      ]),
   })
 }
