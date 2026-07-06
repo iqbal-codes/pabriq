@@ -827,6 +827,7 @@ export type Messages = {
     productionStarted: string;
     startProductionFailed: string;
     readyForProduction: string;
+    readyForProductionQueue: string;
     markReadyForProduction: string;
   };
   portal: {
@@ -1024,12 +1025,21 @@ export type Messages = {
     trackShipment: string;
     orderTimelineSectionTitle: string;
     orderTimelineEmpty: string;
-    timelineOrderReceived: string;
+    timelineDraftCreated: string;
+    timelineDraftConfirmed: string;
     timelineOrderApproved: string;
-    timelineOrderCompleted: string;
+    timelineDpInvoiceCreated: string;
     timelinePaymentDpConfirmed: string;
+    timelineProductionStarted: string;
+    timelineFinalInvoiceCreated: string;
     timelinePaymentFinalConfirmed: string;
-    timelineProductionStageReached: string;
+    timelineProductionFinished: string;
+    timelineShipmentConfirmed: string;
+    timelineOrderCompleted: string;
+    timelineStepCompleted: string;
+    timelineStepCurrent: string;
+    timelineStepUpcoming: string;
+    timelineDateUnavailable: string;
   };
   assistant: {
     trigger: string;
@@ -1046,6 +1056,20 @@ export type Messages = {
     assistant: string;
     notConfigured: string;
     genericError: string;
+    proposal: {
+      title: string;
+      subtotal: string;
+      total: string;
+      customer: string;
+      expiresIn: string;
+      proceed: string;
+      cancel: string;
+      cancelled: string;
+      expired: string;
+    };
+    error: {
+      tryAgain: string;
+    };
   };
   notifications: {
     title: string;
