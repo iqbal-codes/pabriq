@@ -625,6 +625,11 @@ export type Messages = {
     paymentProofUploaded: string;
     invoicePaid: string;
     invoiceVoided: string;
+    reconcileWithMidtrans: string;
+    reconcilePaid: string;
+    reconcileNotSettled: string;
+    reconcileNoOrderId: string;
+    reconcileMismatch: string;
     viewPaymentProof: string;
     overdue: string;
     noInvoices: string;
@@ -1024,6 +1029,9 @@ export type Messages = {
     shipmentTracking: string;
     trackShipment: string;
     orderTimelineSectionTitle: string;
+    timelineLastUpdatePrefix: string;
+    timelineExpand: string;
+    timelineCollapse: string;
     orderTimelineEmpty: string;
     timelineDraftCreated: string;
     timelineDraftConfirmed: string;
@@ -1040,6 +1048,8 @@ export type Messages = {
     timelineStepCurrent: string;
     timelineStepUpcoming: string;
     timelineDateUnavailable: string;
+    timelineShowAll: string;
+    timelineShowLess: string;
   };
   assistant: {
     trigger: string;
