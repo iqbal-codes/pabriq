@@ -352,6 +352,7 @@ export const invoices = pgTable(
     paidAt: timestamp('paid_at'),
     paidBy: text('paid_by'),
     notes: text('notes'),
+    midtransOrderId: text('midtrans_order_id'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },

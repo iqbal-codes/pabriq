@@ -1,0 +1,1 @@
+ALTER TABLE "invoices" ADD COLUMN "midtrans_order_id" text;
