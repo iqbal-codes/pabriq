@@ -803,6 +803,9 @@ export type Messages = {
     deadlineOnTime: string;
     deadlineFinishedLate: string;
     taskCreated: string;
+    activityAdvancementRequested: string;
+    activityApproved: string;
+    activityRejected: string;
     noActivity: string;
     tabActive: string;
     tabArchive: string;

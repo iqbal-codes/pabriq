@@ -829,6 +829,9 @@ const en: Messages = {
     deadlineFinishedLate:
       "{days, plural, one {Late by # day} other {Late by # days}}",
     taskCreated: "Task created",
+    activityAdvancementRequested: "Requested advancement to {stage}",
+    activityApproved: "Advancement approved",
+    activityRejected: "Advancement rejected",
     noActivity: "No activity yet",
     tabActive: "Active Tasks",
     tabArchive: "Archive",

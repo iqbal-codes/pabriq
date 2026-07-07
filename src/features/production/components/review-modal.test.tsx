@@ -14,6 +14,8 @@ const enMessages = {
     reviewStageLabel: 'Stage',
     fulfilledRequirements: 'Fulfilled Requirements',
     attachmentCount: '{count, plural, one {# file} other {# files}}',
+    close: 'Close',
+    commentPlaceholder: 'Type a comment...',
   },
 }
 
@@ -34,7 +36,7 @@ describe('ReviewModal', () => {
         />
       </IntlProvider>,
     )
-    expect(screen.getByText('TSK-5')).toBeInTheDocument()
+    expect(screen.getByText(/TSK-5/)).toBeInTheDocument()
     expect(screen.getByText('Approve & Advance')).toBeInTheDocument()
     expect(screen.getByText('Reject')).toBeInTheDocument()
   })

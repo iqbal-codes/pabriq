@@ -19,6 +19,18 @@ beforeEach(() => {
   mutationMocks.saveCommentMutate.mockReset()
   mutationMocks.saveCommentMutate.mockResolvedValue({ ok: true })
 })
+const mocks = vi.hoisted(() => ({
+  getAssetsForLineItemFn: vi.fn(),
+}))
+
+vi.mock('#/features/orders/server', () => ({
+  getAssetsForLineItemFn: mocks.getAssetsForLineItemFn,
+}))
+
+beforeEach(() => {
+  mocks.getAssetsForLineItemFn.mockReset()
+  mocks.getAssetsForLineItemFn.mockResolvedValue([])
+})
 
 const enMessages = {
   production: {
@@ -54,6 +66,10 @@ const enMessages = {
     in_progress: 'In Progress',
     pending_approval: 'Pending Approval',
     completed: 'Completed',
+  },
+  portal: {
+    timelineQueue: 'Queue',
+    timelineTransition: '{from} Completed -> {to}',
   },
 }
 
@@ -220,7 +236,7 @@ describe('TaskDetailModal', () => {
   })
   it('shows activity content', () => {
     renderModal()
-    expect(screen.getByText('Started Design')).toBeInTheDocument()
+    expect(screen.getByText('Queue Completed -> Design')).toBeInTheDocument()
   })
 
   it('shows Request Review for final active stage with needApproval', () => {

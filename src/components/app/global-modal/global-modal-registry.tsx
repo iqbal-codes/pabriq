@@ -1,4 +1,6 @@
+import { useRouteContext } from '@tanstack/react-router'
 import { lazy, useMemo } from 'react'
+import { useTranslations } from 'use-intl'
 import { usePaymentMethods } from '#/features/invoices/hooks'
 import type { PaymentMethod } from '#/features/invoices/model'
 import type { Role } from '#/features/permissions/model'
@@ -8,6 +10,7 @@ import {
   useTaskDetail,
   useTaskMutations,
 } from '#/features/production/hooks'
+import { getReadyForProductionLabel } from '#/features/production/ready-for-production-label'
 import { useGlobalModal } from '#/hooks/use-global-overlay'
 
 export interface GlobalOverlayProps {
@@ -109,6 +112,7 @@ function TaskDetailModalWrapper({
 }: GlobalOverlayProps) {
   const { openModal } = useGlobalModal()
   // Route context is guaranteed since the container mounts inside _org layout
+  const ctx = useRouteContext({ from: '/_org' }) as { org: { id: string } }
   const canApprove = canApproveProductionTask('owner' as Role)
 
   if (!id) return null
@@ -118,7 +122,7 @@ function TaskDetailModalWrapper({
       open={open}
       onOpenChange={onOpenChange}
       taskId={id}
-      orgId=""
+      orgId={ctx.org.id}
       canApprove={canApprove}
       onReview={(taskId) => openModal('review-task', taskId)}
     />
@@ -126,6 +130,7 @@ function TaskDetailModalWrapper({
 }
 
 function ReviewModalWrapper({ open, onOpenChange, id }: GlobalOverlayProps) {
+  const pt = useTranslations('portal')
   const { data: task } = useTaskDetail(id ?? '')
   const { data: stages } = useStages()
   const { approveAdvance, rejectAdvance } = useTaskMutations()
@@ -157,10 +162,18 @@ function ReviewModalWrapper({ open, onOpenChange, id }: GlobalOverlayProps) {
     const next = boardStages[idx + 1]
     if (next) return next.name
     if (task.board === 'pre_production') {
-      return 'Ready for Production'
+      const firstProdStage = allActiveStages.find(
+        (s) => s.active && s.board === 'production',
+      )
+      return getReadyForProductionLabel({
+        firstProductionStageName: firstProdStage?.name,
+        readyForProduction: pt('timelineReadyForProduction'),
+        readyForProductionWithStage: (values) =>
+          pt('timelineReadyForProductionWithStage', values),
+      })
     }
     return ''
-  }, [task, allActiveStages, getBoardStages])
+  }, [task, allActiveStages, getBoardStages, pt])
 
   const reviewRequirementResponses = useMemo(() => {
     if (!task) return undefined

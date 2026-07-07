@@ -3,6 +3,7 @@ import { useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar'
 import type { Stage, TaskActivity } from '#/features/production/model'
+import { getReadyForProductionLabel } from '#/features/production/ready-for-production-label'
 
 const systemActivityIconMap: Record<string, React.ReactNode> = {
   stage_transition: (
@@ -49,6 +50,7 @@ export function ActivityRow({
   taskContext?: Record<string, unknown> | null
 }): React.ReactElement {
   const t = useTranslations('production')
+  const pt = useTranslations('portal')
   const fromName = activity.fromStageId
     ? stageNameMap.get(activity.fromStageId)
     : null
@@ -66,19 +68,63 @@ export function ActivityRow({
   const user = actorMap.get(activity.actorId)
 
   function getDescription(): string {
+    const formattedFrom = fromName ?? pt('timelineQueue')
+
     switch (activity.type) {
-      case 'board_transition':
-      case 'stage_transition':
-        if (!fromName && !toName) return t('taskCreated')
-        if (!toName) return `Completed from ${fromName}`
-        if (!fromName) return `Started ${toName}`
-        return `${fromName} → ${toName}`
+      case 'board_transition': {
+        const boardLabel =
+          data?.fromBoard === 'pre_production'
+            ? pt('timelineReadyForProduction')
+            : data?.fromBoard
+              ? String(data.fromBoard).charAt(0).toUpperCase() +
+                String(data.fromBoard).slice(1).replace(/_/g, ' ')
+              : null
+        const effectiveFrom = fromName ?? boardLabel ?? pt('timelineQueue')
+        if (toName) {
+          return pt('timelineTransition', {
+            from: effectiveFrom,
+            to: toName,
+          })
+        }
+        return toName ?? effectiveFrom ?? ''
+      }
+      case 'stage_transition': {
+        if (!fromName && !toName) return pt('timelineQueued')
+
+        // Task completed last pre-production stage → show "Ready for Production"
+        if (!toName && data?.readyForProduction) {
+          const firstProductionStageName = stages?.find(
+            (s) => s.active && s.board === 'production',
+          )?.name
+          return pt('timelineTransition', {
+            from: fromName ?? pt('timelineQueue'),
+            to: getReadyForProductionLabel({
+              firstProductionStageName,
+              readyForProduction: pt('timelineReadyForProduction'),
+              readyForProductionWithStage: (values) =>
+                pt('timelineReadyForProductionWithStage', values),
+            }),
+          })
+        }
+
+        if (!toName) {
+          return pt('timelineTransition', {
+            from: formattedFrom,
+            to: pt('timelineCompleted'),
+          })
+        }
+
+        return pt('timelineTransition', {
+          from: formattedFrom,
+          to: toName,
+        })
+      }
       case 'advancement_requested':
-        return `Requested advancement to ${toName ?? 'next stage'}`
+        return t('activityAdvancementRequested', { stage: toName ?? '' })
       case 'approved':
-        return 'Advancement approved'
+        return t('activityApproved')
       case 'rejected':
-        return 'Advancement rejected'
+        return t('activityRejected')
       default:
         return activity.type
     }

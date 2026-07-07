@@ -763,7 +763,7 @@ const id: Messages = {
     requirementOptional: "Opsional",
     uploadFile: "Unggah Berkas",
     requestReview: "Minta Review",
-    reviewAdvancement: "Review Kemajuan",
+    reviewAdvancement: "Review Lanjutan",
     approve: "Setujui & Lanjutkan",
     approveOrder: "Setujui Pesanan",
     reject: "Tolak",
@@ -832,6 +832,9 @@ const id: Messages = {
     deadlineFinishedLate:
       "{days, plural, one {Lebih lambat # hari} other {Lebih lambat # hari}}",
     taskCreated: "Tugas dibuat",
+    activityAdvancementRequested: "Mengajukan kemajuan ke {stage}",
+    activityApproved: "Kemajuan disetujui",
+    activityRejected: "Kemajuan ditolak",
     noActivity: "Belum ada aktivitas",
     tabActive: "Tugas Aktif",
     tabArchive: "Arsip",

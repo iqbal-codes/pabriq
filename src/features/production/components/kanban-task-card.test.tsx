@@ -242,7 +242,7 @@ describe('KanbanTaskCard', () => {
       const badge = screen
         .getByText('Early by 2 days')
         .closest('[data-slot="badge"]')
-      expect(badge?.className).toContain('text-success')
+      expect(badge?.className).toContain('bg-success')
     })
 
     it('renders on-time label with accent color on the final production stage', () => {
@@ -260,7 +260,7 @@ describe('KanbanTaskCard', () => {
         { showDeadlineOutcome: true },
       )
       const badge = screen.getByText('On time').closest('[data-slot="badge"]')
-      expect(badge?.className).toContain('text-brand-accent')
+      expect(badge?.className).toContain('bg-brand-accent')
     })
 
     it('renders late label with destructive color on the final production stage', () => {
@@ -280,7 +280,7 @@ describe('KanbanTaskCard', () => {
       const badge = screen
         .getByText('Late by 2 days')
         .closest('[data-slot="badge"]')
-      expect(badge?.className).toContain('text-destructive')
+      expect(badge?.className).toContain('bg-destructive')
     })
 
     it('uses completed updatedAt for done-card outcome timing', () => {

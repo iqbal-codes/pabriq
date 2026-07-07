@@ -56,13 +56,29 @@ function getDeadlineClasses(
   showDeadlineOutcome: boolean,
 ): string {
   if (showDeadlineOutcome) {
-    if (daysFromNow > 0) return 'text-success'
-    if (daysFromNow === 0) return 'text-brand-accent'
-    return 'text-destructive'
+    if (daysFromNow > 0) return 'bg-success text-white border-transparent'
+    if (daysFromNow === 0)
+      return 'bg-brand-accent text-white border-transparent'
+    return 'bg-destructive text-white border-transparent'
   }
-  if (daysFromNow < 0) return 'text-destructive'
-  if (daysFromNow <= 1) return 'text-warning'
-  return 'text-muted-foreground'
+  // Overdue
+  if (daysFromNow < 0) {
+    return 'bg-destructive text-white border-transparent font-semibold animate-pulse'
+  }
+  // Today
+  if (daysFromNow === 0) {
+    return 'bg-destructive text-white border-transparent font-medium'
+  }
+  // Tomorrow or day after (near deadline: 1-2 days)
+  if (daysFromNow <= 2) {
+    return 'bg-orange-600 dark:bg-orange-500 text-white border-transparent'
+  }
+  // Mid deadline: 3-5 days
+  if (daysFromNow <= 5) {
+    return 'bg-amber-500 text-white border-transparent'
+  }
+  // Long time: > 5 days
+  return 'bg-success text-white border-transparent'
 }
 
 export function KanbanTaskCard({
@@ -102,7 +118,7 @@ export function KanbanTaskCard({
 
   return (
     <Card
-      className={`gap-0! py-0! ${isInteractive ? 'cursor-pointer hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50' : ''} ${isPendingApproval ? 'border-warning/60' : ''}`}
+      className={`gap-0! py-0! ${isInteractive ? 'cursor-pointer hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50' : ''} ${isPendingApproval ? 'border-warning/60' : ''} ${taskData.priority ? 'bg-red-50/70 border-red-200 dark:bg-red-950/20 dark:border-red-900/60' : ''}`}
       onClick={isInteractive ? () => onClick(taskData.id) : undefined}
       role={isInteractive ? 'button' : undefined}
       tabIndex={isInteractive ? 0 : undefined}
@@ -117,14 +133,38 @@ export function KanbanTaskCard({
             {taskData.taskNumber || '-'}
           </span>
           <div className="flex items-center gap-1 shrink-0">
-            {isPendingApproval ? (
-              <Badge variant="warning" className="text-[10px]">
-                {pt('needReview')}
+            {taskData.priority ? (
+              <Badge variant="destructive" className="text-[10px]">
+                {pt('priorityBadge')}
               </Badge>
             ) : null}
-            {taskData.priority ? (
-              <Badge variant="warning" className="text-[10px]">
-                {pt('priorityBadge')}
+            {deadline ? (
+              <Badge
+                variant="outline"
+                className={cn(
+                  'shrink-0 text-[10px] gap-1',
+                  getDeadlineClasses(deadline.dayDelta, showDeadlineOutcome),
+                )}
+                title={pt('deadlineLabel', { date: deadline.dateLabel })}
+              >
+                <Clock className="size-3" />
+                {showDeadlineOutcome
+                  ? deadline.dayDelta > 0
+                    ? pt('deadlineFinishedEarly', { days: deadline.dayDelta })
+                    : deadline.dayDelta === 0
+                      ? pt('deadlineOnTime')
+                      : pt('deadlineFinishedLate', {
+                          days: -deadline.dayDelta,
+                        })
+                  : deadline.dayDelta < 0
+                    ? pt('deadlineDaysOverdue', { days: -deadline.dayDelta })
+                    : deadline.dayDelta === 0
+                      ? pt('deadlineToday')
+                      : deadline.dayDelta === 1
+                        ? pt('deadlineTomorrow')
+                        : pt('deadlineDaysLeft', {
+                            days: deadline.dayDelta,
+                          })}
               </Badge>
             ) : null}
           </div>
@@ -142,33 +182,9 @@ export function KanbanTaskCard({
           <p className="text-xs text-muted-foreground truncate">
             {quantity ? `${quantity} ${ct('pcs')}` : ''}
           </p>
-          {deadline ? (
-            <Badge
-              variant="outline"
-              className={cn(
-                'shrink-0 text-[10px] gap-1 border-current',
-                getDeadlineClasses(deadline.dayDelta, showDeadlineOutcome),
-              )}
-              title={pt('deadlineLabel', { date: deadline.dateLabel })}
-            >
-              <Clock className="size-3" />
-              {showDeadlineOutcome
-                ? deadline.dayDelta > 0
-                  ? pt('deadlineFinishedEarly', { days: deadline.dayDelta })
-                  : deadline.dayDelta === 0
-                    ? pt('deadlineOnTime')
-                    : pt('deadlineFinishedLate', {
-                        days: -deadline.dayDelta,
-                      })
-                : deadline.dayDelta < 0
-                  ? pt('deadlineDaysOverdue', { days: -deadline.dayDelta })
-                  : deadline.dayDelta === 0
-                    ? pt('deadlineToday')
-                    : deadline.dayDelta === 1
-                      ? pt('deadlineTomorrow')
-                      : pt('deadlineDaysLeft', {
-                          days: deadline.dayDelta,
-                        })}
+          {isPendingApproval ? (
+            <Badge variant="warning" className="text-[10px] shrink-0">
+              {pt('needReview')}
             </Badge>
           ) : null}
         </div>
