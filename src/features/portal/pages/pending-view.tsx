@@ -1,10 +1,8 @@
-import { CheckCircle2 } from 'lucide-react'
 import { useLocale, useTranslations } from 'use-intl'
 import { Badge } from '#/components/ui/badge'
 import { CustomerInfoCard } from '#/features/portal/components/customer-info-card'
 import { ShippingAddressCard } from '#/features/portal/components/shipping-address-card'
 import { formatLongDate } from '#/lib/formatters'
-import { PortalContactButton } from '../components/portal-contact-button'
 import { PortalOrderSummary } from '../components/portal-order-summary'
 import type { PortalOrder } from '../model'
 

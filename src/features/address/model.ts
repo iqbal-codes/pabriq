@@ -311,13 +311,21 @@ export async function calculateShippingRates(
 
     const rates: ShippingRate[] = rawRates
       .filter(
-        (r) => r.courier_code && r.courier_service_code && (r.price ?? 0) > 0,
+        (
+          r,
+        ): r is typeof r & {
+          courier_code: string
+          courier_service_code: string
+        } =>
+          Boolean(r.courier_code) &&
+          Boolean(r.courier_service_code) &&
+          (r.price ?? 0) > 0,
       )
       .map((r) => ({
-        courierCode: r.courier_code!,
-        courierName: r.courier_name ?? r.courier_code!,
-        serviceCode: r.courier_service_code!,
-        serviceName: r.courier_service_name ?? r.courier_service_code!,
+        courierCode: r.courier_code,
+        courierName: r.courier_name ?? r.courier_code,
+        serviceCode: r.courier_service_code,
+        serviceName: r.courier_service_name ?? r.courier_service_code,
         description: r.description ?? null,
         price: r.price ?? r.shipping_fee ?? 0,
         estimatedDays: r.duration ?? null,

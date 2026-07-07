@@ -42,9 +42,6 @@ const config = defineConfig(({ mode }) => {
       ? { name: 'neon-launchpad-disabled' }
       : neon
   return {
-    resolve: {
-      tsconfigPaths: true,
-    },
     build: {
       target: 'es2022',
     },

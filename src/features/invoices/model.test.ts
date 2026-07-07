@@ -711,11 +711,10 @@ describe('listInvoices', () => {
       total: 50,
       createdAt: now,
     })
-
     const result = await listInvoices({ orgId: org1Id })
+
     const row = result.rows.find((r) => r.id === invoice.id)
-    expect(row).toBeDefined()
-    expect(row!.shippingFee).toBe(50)
+    expect(row).toMatchObject({ shippingFee: 50 })
   })
 
   it('returns shippingFee as 0 when no shipping line items exist', async () => {
@@ -750,11 +749,10 @@ describe('listInvoices', () => {
       dueDate: '2026-06-01',
       lineItems: [{ description: 'Item', quantity: 2, unitPrice: 25 }],
     })
-
     const result = await listInvoices({ orgId: org1Id })
+
     const row = result.rows.find((r) => r.id === invoice.id)
-    expect(row).toBeDefined()
-    expect(row!.shippingFee).toBe(0)
+    expect(row).toMatchObject({ shippingFee: 0 })
   })
 })
 

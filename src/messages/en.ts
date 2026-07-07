@@ -25,7 +25,7 @@ const en: Messages = {
     logOut: "Log out",
   },
   app: {
-    title: "Admin Console",
+    title: "AKZ Production",
     retry: "Retry",
     language: "Language",
     english: "English",

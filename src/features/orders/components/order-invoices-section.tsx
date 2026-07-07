@@ -31,13 +31,13 @@ type Props = {
 export function OrderInvoicesSection({
   orderInvoices,
   invoicePayments,
-}: Props): React.ReactElement {
+}: Props): React.ReactElement | null {
   const it = useTranslations('invoices')
   const pt = useTranslations('portal')
   const [expanded, setExpanded] = useState(false)
 
   const visibleInvoices = orderInvoices.filter((inv) => inv.status !== 'void')
-  if (visibleInvoices.length === 0) return <></>
+  if (visibleInvoices.length === 0) return null
 
   const initialCount = Math.min(2, visibleInvoices.length)
   const remainingCount = visibleInvoices.length - initialCount

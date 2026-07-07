@@ -297,6 +297,17 @@ export function PdfAddressBlock(props: {
 }): React.ReactElement {
   const { styles, title, name, addressLines, align = 'left' } = props
   const isRight = align === 'right'
+  const addressLinesWithKeys = (() => {
+    const seen = new Map<string, number>()
+
+    return addressLines.map((line) => {
+      const occurrence = seen.get(line) ?? 0
+      seen.set(line, occurrence + 1)
+
+      return { key: `${line}:${occurrence}`, line }
+    })
+  })()
+
   return (
     <View style={styles.addressCol}>
       <Text
@@ -317,9 +328,9 @@ export function PdfAddressBlock(props: {
       >
         {name}
       </Text>
-      {addressLines.map((line, i) => (
+      {addressLinesWithKeys.map(({ key, line }) => (
         <Text
-          key={i}
+          key={key}
           style={
             isRight
               ? [styles.addressLine, styles.addressRight]

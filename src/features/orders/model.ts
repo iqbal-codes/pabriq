@@ -1663,11 +1663,19 @@ export async function adjustOrderQuantity(
   })
 }
 
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue }
+
 export type OrderHistoryEvent = {
   id: string
   action: string
   actorId: string
-  details: Record<string, unknown>
+  details: Record<string, JsonValue>
   createdAt: Date
 }
 
@@ -1697,7 +1705,7 @@ export async function listOrderHistoryEvents(
     id: row.id,
     action: row.action,
     actorId: row.actorId,
-    details: (row.details ?? {}) as Record<string, unknown>,
+    details: (row.details ?? {}) as Record<string, JsonValue>,
     createdAt: row.createdAt,
   }))
 }

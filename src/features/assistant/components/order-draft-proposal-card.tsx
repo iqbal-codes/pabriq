@@ -85,11 +85,31 @@ export function OrderDraftProposalCard({
     )
   }
 
-  if (!data || !data.payload) {
+  if (!data?.payload) {
     return null
   }
 
   const { payload } = data
+  const lineItemsWithKeys = (() => {
+    const seen = new Map<string, number>()
+
+    return payload.lineItems.map((lineItem) => {
+      const baseKey = [
+        lineItem.productId,
+        lineItem.productName,
+        lineItem.quantity,
+        lineItem.unitPrice,
+        lineItem.total,
+      ].join(':')
+      const occurrence = seen.get(baseKey) ?? 0
+      seen.set(baseKey, occurrence + 1)
+
+      return {
+        key: `${baseKey}:${occurrence}`,
+        lineItem,
+      }
+    })
+  })()
 
   return (
     <div className="rounded-lg border bg-card p-3 text-sm space-y-2 max-w-full">
@@ -105,20 +125,17 @@ export function OrderDraftProposalCard({
       </div>
 
       <div className="space-y-1">
-        {payload.lineItems.map((li, i) => (
-          <div
-            key={`${li.productId}-${i}`}
-            className="flex justify-between text-xs"
-          >
+        {lineItemsWithKeys.map(({ key, lineItem }) => (
+          <div key={key} className="flex justify-between text-xs">
             <span>
-              {li.productName} × {li.quantity}
+              {lineItem.productName} × {lineItem.quantity}
             </span>
             <span className="font-mono">
               {new Intl.NumberFormat('id-ID', {
                 style: 'currency',
                 currency: 'IDR',
                 minimumFractionDigits: 0,
-              }).format(li.total)}
+              }).format(lineItem.total)}
             </span>
           </div>
         ))}

@@ -25,12 +25,22 @@ import {
 import { useOrdersList } from '#/features/orders/hooks'
 
 function TableSkeleton({ columns }: { columns: number }) {
+  const rowKeys = [
+    'skeleton-row-1',
+    'skeleton-row-2',
+    'skeleton-row-3',
+  ] as const
+  const cellKeys = Array.from(
+    { length: columns },
+    (_, cellIndex) => `skeleton-cell-${cellIndex + 1}`,
+  )
+
   return (
     <>
-      {Array.from({ length: 3 }).map((_, i) => (
-        <TableRow key={`skeleton-${i}`}>
-          {Array.from({ length: columns }).map((_, j) => (
-            <TableCell key={`cell-${j}`}>
+      {rowKeys.map((rowKey) => (
+        <TableRow key={rowKey}>
+          {cellKeys.map((cellKey) => (
+            <TableCell key={`${rowKey}-${cellKey}`}>
               <Skeleton className="h-4 w-full" />
             </TableCell>
           ))}

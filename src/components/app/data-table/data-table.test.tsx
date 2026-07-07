@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '#/components/ui/tooltip'
@@ -294,7 +294,10 @@ describe('DataTable - inline filters', () => {
       .getAllByText('Status')
       .find((el) => el.closest('[data-slot="popover-trigger"]'))
     expect(filterButton).toBeDefined()
-    await user.click(filterButton!)
+    if (!filterButton) {
+      throw new Error('Expected filter trigger button')
+    }
+    await user.click(filterButton)
     const allOption = await screen.findByText('All', {}, { timeout: 2000 })
     expect(allOption).toBeDefined()
   })

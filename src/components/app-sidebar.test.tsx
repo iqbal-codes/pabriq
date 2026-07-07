@@ -33,13 +33,15 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
 
 describe('AppSidebar', () => {
   it('renders standard navigation items and excludes invoices', () => {
+    const appSidebarProps = {
+      user: { name: 'John Doe', email: 'john@example.com', avatar: '' },
+      org: { name: 'My Workshop', slug: 'my-workshop', logo: null },
+      role: 'owner' as const,
+    }
+
     render(
       <TestWrapper>
-        <AppSidebar
-          user={{ name: 'John Doe', email: 'john@example.com', avatar: '' }}
-          org={{ name: 'My Workshop', slug: 'my-workshop', logo: null }}
-          role="owner"
-        />
+        <AppSidebar {...appSidebarProps} />
       </TestWrapper>,
     )
 

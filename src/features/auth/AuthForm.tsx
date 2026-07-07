@@ -1,4 +1,4 @@
-import { Link, useRouter } from '@tanstack/react-router'
+import { useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { useAppForm } from '#/components/app/form'
@@ -125,17 +125,6 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
                 {isSignUp ? t('signUp') : t('signIn')}
               </form.SubmitButton>
             </form.AppForm>
-
-            <p className="text-center text-sm text-muted-foreground">
-              {isSignUp ? t('alreadyHaveAccount') : t('needAccount')}{' '}
-              <Link
-                to={isSignUp ? '/sign-in' : '/sign-up'}
-                search={{ redirect: redirectTo }}
-                className="font-medium text-foreground underline underline-offset-4"
-              >
-                {isSignUp ? t('signIn') : t('createOne')}
-              </Link>
-            </p>
           </form>
         </CardContent>
       </Card>

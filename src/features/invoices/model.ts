@@ -1,9 +1,6 @@
+import { and, desc, eq, ilike, inArray, or, type SQL, sql } from 'drizzle-orm'
 import type { SnapTransactionParameters } from 'midtrans-client'
 import midtransClient from 'midtrans-client'
-
-const { Snap, CoreApi } = midtransClient
-
-import { and, desc, eq, ilike, inArray, or, type SQL, sql } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   assets as assetsTable,
@@ -16,8 +13,15 @@ import {
   payments as paymentsTable,
 } from '#/db/schema'
 import { formatProductDesignLabel } from '#/features/orders/line-item-display'
-import type { SortState } from '#/lib/sorting'
-import { buildOrderBy, type SortColumnMap } from '#/lib/sorting'
+import { buildOrderBy, type SortColumnMap, type SortState } from '#/lib/sorting'
+
+const { Snap, CoreApi } = midtransClient
+
+type CoreApiWithTransaction = {
+  transaction: {
+    status(transactionId: string): Promise<Record<string, unknown>>
+  }
+}
 
 export type Invoice = {
   id: string
@@ -1309,7 +1313,7 @@ export async function getMidtransTransactionStatus(
     isProduction: process.env.VITE_MIDTRANS_IS_PRODUCTION === 'true',
     serverKey: process.env.MIDTRANS_SERVER_KEY ?? '',
     clientKey: process.env.VITE_MIDTRANS_CLIENT_KEY ?? '',
-  })
+  }) as unknown as CoreApiWithTransaction
   const res = (await coreApi.transaction.status(orderId)) as Record<
     string,
     unknown

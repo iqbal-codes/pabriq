@@ -405,5 +405,5 @@ export function getSchemaForPath(
     }
   }
 
-  return current
+  return current as z.ZodTypeAny | null
 }
