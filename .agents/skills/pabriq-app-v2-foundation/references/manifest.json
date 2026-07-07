@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repo_path": "/Users/efishery/Documents/workspace/projects/pabriq-app-v2",
   "slug": "pabriq-app-v2",
-  "generated_at": "2026-07-04T16:22:34.469Z",
+  "generated_at": "2026-07-07T01:08:59.953480Z",
   "generator": "codebase-skills",
   "output_dir": "/Users/efishery/.claude/skills",
   "catalog": {
@@ -30,7 +30,7 @@
       {
         "domain": "conventions",
         "skill": "pabriq-app-v2-conventions",
-        "reason": "meaningful conventions configured: biome.json, tsconfig.json (strict, verbatimModuleSyntax), AGENTS.md, .sandcastle/CODING_STANDARDS.md"
+        "reason": "meaningful conventions configured: biome.json, tsconfig.json (strict, verbatimModuleSyntax), AGENTS.md"
       },
       {
         "domain": "data",
@@ -40,7 +40,7 @@
       {
         "domain": "infra",
         "skill": "pabriq-app-v2-infra",
-        "reason": "infra present: Dockerfile (multi-stage), .infisical.json, scripts/infisical-run.sh, instrument.server.mjs (Sentry), .sandcastle/Dockerfile"
+        "reason": "infra present: Dockerfile (multi-stage), .infisical.json, scripts/infisical-run.sh, instrument.server.mjs (Sentry)"
       }
     ],
     "skipped": [
@@ -59,7 +59,7 @@
       "domain": "foundation",
       "name": "pabriq-app-v2-foundation",
       "path": "pabriq-app-v2-foundation/SKILL.md",
-      "generated_hash": "sha256:e77dd9f921deb47f0554dff3452a0dcc6dbe152a884bc3e3590076a4bba59ea3",
+      "generated_hash": "sha256:9743daa4bfe9d14eeae2b7024714325c37c6bc787a76429dc69dfe50d9c76858",
       "watches": [
         "package.json",
         "tsconfig.json",
@@ -76,7 +76,7 @@
       "domain": "ui",
       "name": "pabriq-app-v2-ui",
       "path": "pabriq-app-v2-ui/SKILL.md",
-      "generated_hash": "sha256:72f8fa532e00804d3f977aeedf3b875526bcf8a7493168e55ed1a31ad54ca4df",
+      "generated_hash": "sha256:83f9a9ad83eb42043b26f6f92be3b65fe21a2d7b92480d902349e93ad5cc9c8c",
       "watches": [
         "src/components/**",
         "src/routes/**",
@@ -93,7 +93,7 @@
       "domain": "backend",
       "name": "pabriq-app-v2-backend",
       "path": "pabriq-app-v2-backend/SKILL.md",
-      "generated_hash": "sha256:818e0a4b299b0489e8936dc9b0f7bc0a9a3656995cd828df9e2ff22f3368b341",
+      "generated_hash": "sha256:63083f29d5098f380ee361fa28f28d737a6981706b3d85fe27476fb79d208e43",
       "watches": [
         "src/features/*/server.ts",
         "src/features/*/model.ts",
@@ -112,7 +112,7 @@
       "domain": "testing",
       "name": "pabriq-app-v2-testing",
       "path": "pabriq-app-v2-testing/SKILL.md",
-      "generated_hash": "sha256:f419007ee47606c874048e576c5b5ea93f9169d49461b39531975d38cf1a725c",
+      "generated_hash": "sha256:3c4d255f42a0066ad3a343c116a51856907d7893b287d92b0a9a5e28a487a619",
       "watches": [
         "src/**/*.test.ts",
         "src/**/*.test.tsx",
@@ -128,19 +128,13 @@
       "name": "pabriq-app-v2-conventions",
       "path": "pabriq-app-v2-conventions/SKILL.md",
       "generated_hash": "sha256:761b7df69dda638a6168d3780905b4ff18714a7371132bb05329ebe0652ff70a",
-      "watches": [
-        "biome.json",
-        "tsconfig.json",
-        "AGENTS.md",
-        ".sandcastle/CODING_STANDARDS.md",
-        "package.json"
-      ]
+      "watches": ["biome.json", "tsconfig.json", "AGENTS.md", "package.json"]
     },
     {
       "domain": "data",
       "name": "pabriq-app-v2-data",
       "path": "pabriq-app-v2-data/SKILL.md",
-      "generated_hash": "sha256:fe565f5522bbb8778344c28cacb6f0cabf8a781cbda2eacd8c88176043bc27b8",
+      "generated_hash": "sha256:d69317e3b650ed3fe0b67654df4d803f757799cf98ef7cb71d6285f29683de5d",
       "watches": [
         "src/db/**",
         "src/features/*/model.ts",
@@ -155,7 +149,7 @@
       "domain": "infra",
       "name": "pabriq-app-v2-infra",
       "path": "pabriq-app-v2-infra/SKILL.md",
-      "generated_hash": "sha256:c8f2266d6a1d4c4825a3da699a64cc74a55ff36e114f30a25cd0327817449537",
+      "generated_hash": "sha256:a369e1b043be2f3e3086ad89d5ae959f29f86b4ed6aa606e966a74b6c2493818",
       "watches": [
         "Dockerfile",
         ".dockerignore",
@@ -163,8 +157,6 @@
         "scripts/infisical-run.sh",
         "instrument.server.mjs",
         ".env.example",
-        ".sandcastle/Dockerfile",
-        ".sandcastle/CODING_STANDARDS.md",
         "package.json",
         "src/sw.ts",
         "src/tanstack-serwist-plugin.ts",
@@ -174,37 +166,37 @@
     }
   ],
   "fingerprints": {
-    "package.json": "sha256:d99f7c5989557567af9e7f695d80730c5116957f579e78bfca293b3817ed109f",
+    "package.json": "sha256:b779980c7f42fdca144f4b9d25e7eceeeaa4e11bbdaa0a62cc57afcfc006e18d",
     "tsconfig.json": "sha256:4fdf8c608077c230f5e3fc195dc575684895ef01736ee29e8bb89e76ed60e3b6",
-    "biome.json": "sha256:acc0799f8a90ad646888c0ae6f81d2589ccf749cddc7a2224c64b8f83553fae4",
-    "vite.config.ts": "sha256:bdd56fa4ce0b142d7c0226db942c27880f679267136441e57259d44dc2b256ce",
+    "biome.json": "sha256:4c4d170373cf80d1d01f3e89118ccb0f38838839a1a8645dd2dbc7e073a023a1",
+    "vite.config.ts": "sha256:ad1bdee85d6fd231d82feefaea26bf72dbd62ef02772ace31fb0ec0f92222c9b",
     "vitest.config.ts": "sha256:6efd9b7a1ce8648dbc453615781996ace6d24978b985b2827549e4ac0442c030",
     "drizzle.config.ts": "sha256:619af4ef3edbbd4c64ef30b08dc22c54603e7e6b0c88b2493b599aff2afa1fae",
     "playwright.config.ts": "sha256:acc003e28a4f73df4cf1fb6b3a9b4b212592c4d8845e21c2cc94c7f4b891751c",
-    "Dockerfile": "sha256:5d25e54803eff002606367b470b9a43aa5169f613b04fbbfb6fafd773b736c9f",
-    "AGENTS.md": "sha256:b221cbd8ea3a63a1ec86d6e56de97bf3c90efa2d33199fea8e65919eb467160a",
-    "src/db/schema.ts": "sha256:b2bee24503c3bb111f4bec8c7d4f730ad962da9b80a271037568b3dbfc50f4ad",
-    "src/db/index.ts": "sha256:685da82030ff9a0a33174a9185eff4f39466369aeffde03c7dc0a01c83e00d12",
+    "Dockerfile": "sha256:e9f18084ea8be7cfc7ad7ff1d601556bd1d5f36946cd2eb6ff7da8f7764bd51b",
+    "AGENTS.md": "sha256:7379c00fd230f0aed77309efe982f711b9991f268a082643d08b02a44594093c",
+    "src/db/schema.ts": "sha256:8f3ebad56d377f5166c3caf4d4481e84636ef661611fd359abc8fcb02c663948",
+    "src/db/index.ts": "sha256:1161b1cba7ad789d9fa643cdfc0a31f25e47f8a9c22bb615b71bf0826a0cdaf5",
     "src/lib/auth.ts": "sha256:1500eec7aff3dcf1db3e04dd9f9fa838ee4ff694ea4c02bb7e1cca30cff20d06",
     "src/lib/auth-session.ts": "sha256:5700fc37bd1825dd97dc9798ec7bc9dc01e925d618d2cd87fe8d8b1c0fdaf2b1",
-    "src/lib/query-keys.ts": "sha256:f6a67e29fb20d906a8b1d95271c03a18789ab520349fddd0f9edf1d6dbb93e0f",
-    "src/routes/__root.tsx": "sha256:63df1e737040b0e235e6236687504e50c848f9a579502ce8f14d07a578ff70d5",
-    "src/routes/_org.tsx": "sha256:f59c7ed83b9e38a40c46a35b65f8e0e886e45411873616008843fb87cd33a9cb",
-    "src/styles.css": "sha256:3df76b4924183abf38e06c76ec5a4d0547efa18e21cce0b84813c79c30206860",
-    "src/components/app/**": "sha256:3bc430f655c38a97ca853b78873d5e0303ee5b9639113e3f816c7daacaaa621c",
-    "src/features/*/model.ts": "sha256:03efcfad66b9fa3eb9e532d5aa40ee840d6a1218397eb8f8e5fc2ad0e880c2e3",
-    "src/features/*/server.ts": "sha256:298f7dc0dcbb9df1b03932801f124d1c2d947dd198dc491fe2597830f9320873",
-    "src/features/*/hooks.ts": "sha256:c4e5297a14da55903ff914b5adb8799dfc225cf34d643981c4a9de16a5762284",
-    "src/db/**": "sha256:290f62ffc64c70cbf08024edda9c67be02d27346c6007a9aae928d8e5df815d8",
-    "src/lib/**": "sha256:40a7e521e6c7234ce92764a3671de08e050d85c250902bbfa4ec91fef685d1c6",
-    "src/messages/**": "sha256:657e239eb375df427c5960884bde1431bd6bfda4755026e48af0ab9d01bcb522",
-    "src/routes/**": "sha256:9198182e2266726376cd8e200eac5ca38df799c28ab451372e5025c19307b2ce",
-    "drizzle/**": "sha256:4960fded267957b1b99edb9e31abe7b5b86f3243adc3c0743c1cd026adf03d10",
+    "src/lib/query-keys.ts": "sha256:8d6326d374c20bcecbe6ef47fd6bec682097da8cd3a9ffe173b22486ba1288dc",
+    "src/routes/__root.tsx": "sha256:5fb1dda2f316b3369f3ebbef78c288d10ea2522706a2e0dbb397b57f3d6500b5",
+    "src/routes/_org.tsx": "sha256:56ff41229aaeb3e00dc6550d923e0a084e80370c644b1bb6058476be39e7804e",
+    "src/styles.css": "sha256:497d47bff809943e1003f6067f41fe05310832ff94b4f9a0c7548b55b213214c",
+    "src/components/app/**": "sha256:8ac677dbe2d643c430a3c61e5e89ce1a79b882fbda4b134f603bcfd241891f30",
+    "src/features/*/model.ts": "sha256:85a3b80885325501f2739b34d176c7683c681ca8eabf8f4b78f0c1c238733572",
+    "src/features/*/server.ts": "sha256:0059ada81d90a24f2095cc79b5bc34c5ac128b19992d332c22d5d05c950ce85d",
+    "src/features/*/hooks.ts": "sha256:02e8863dbb2e29d969f24b01a5ac76b1fea1b6f2ff95b5f19c583d70d440b2b2",
+    "src/db/**": "sha256:9b645e74f697b8cc7e63e0abbec82fa80333bc7376d4f4697413d3c2b1690beb",
+    "src/lib/**": "sha256:db8950e50017fffac24affcf5a5b0c1d43a2c460864f1eaca281df0d699e375f",
+    "src/messages/**": "sha256:a5a2134726e654e713dff3700bff596e00b2fdd358101298fa6fceafa798433a",
+    "src/routes/**": "sha256:bce1487de8bbfdf64757e4e1f5dfc2fe1abe1ab003d6221d101e3f649a0cb9a0",
+    "drizzle/**": "sha256:1748226095fa618b207236b5006c793a87cf27fd1d5fbfac967fb55ef913e290",
     "e2e/**": "sha256:55f4aefd9dbab02ce6ab19d636a1b8bfa600949b7137e554133b485fc09fa97c",
     "docs/agents/**": "sha256:3861c39674362f226fe071b03507e6610ad46b60150d0fa7133bdacdcac6723f",
-    "src/sw.ts": "sha256:63810d256586d8468a7432f1ef35cd6293edf9e91be3d2a58205ef40eb2ec3e6",
-    "src/tanstack-serwist-plugin.ts": "sha256:c7ac8a876bd46c9977a0682296223962fc4d64540f03d49a4cc6dd90b0ed5af9",
-    "public/manifest.json": "sha256:c88c5b08203b301fd452dfad210b2fd4b81d8bf074b13c9849ac73a465dd6bf5"
+    "src/sw.ts": "sha256:53e05a8b82cacc07fcda47909fbb3119a5e3c03a5f95a4d67b609e89be1671f7",
+    "src/tanstack-serwist-plugin.ts": "sha256:afc6493e6d449cf47504ff6784f82d82616fd56742b17a4f6305d0d6c1f8a989",
+    "public/manifest.json": "sha256:ae83cc7f4db1df8edf9c11ccc1c8a671ca0d40ab4a5684053f58387463acdbec"
   },
   "fingerprints_glob": [
     "package.json",

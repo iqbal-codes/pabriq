@@ -2,7 +2,7 @@
 
 > Single source of truth for this codebase's stack, architecture, and tooling.
 > Domain skills (pabriq-app-v2-ui, pabriq-app-v2-backend, ...) reference this and add specifics.
-> Generated 2026-07-04; refresh with `codebase-skills sync`.
+> Generated 2026-07-07; refresh with `codebase-skills sync`.
 
 ## Identity
 - **Name**: pabriq-app-v2
@@ -34,10 +34,9 @@
 
 ## Architecture
 
-TanStack Start full-stack React app. Server functions (`createServerFn`) handle all data access — no raw `fetch` for internal APIs. Each feature follows a `model.ts` (pure logic + DB queries) → `server.ts` (createServerFn wrappers with org resolution) → `hooks.ts` (TanStack Query hooks) pattern. Auth uses Better Auth with organization plugin; every business table has an `orgId` FK filtered from the session. Routes are file-based under `src/routes/`, with `_org.tsx` guarding authenticated org-scoped pages. UI uses shadcn/ui primitives wrapped by a custom form system and DataTable.
+TanStack Start full-stack React app. Server functions (`createServerFn`) handle all data access — no raw `fetch` for internal APIs. Each feature follows a `model.ts` (pure logic + DB queries) → `server.ts` (createServerFn wrappers with org resolution) → `hooks.ts` (TanStack Query hooks) pattern. Auth uses Better Auth with organization plugin; every business table has an `orgId` FK filtered from the session. Protected pages are guarded by `_org.tsx` layout and include a `RoutePendingOverlay` for transitions, a `NotificationBell` for real-time updates, and a `FloatingAssistant` integrating Mastra AI agents.
 
 Data flow: Route loader → createServerFn → org resolution from session → Drizzle query → Postgres → typed response → TanStack Query → React components.
-
 ## Folder map
 
 ```
@@ -58,7 +57,7 @@ src/
     production/       — Production stages, tasks, kanban, spawner
     members/          — Org member management
     settings/         — Org settings, profiles
-    portal/           — Public customer portal (token-based)
+    portal/           — Public customer portal (token-based, multi-step milestones)
     assets/           — File upload to R2
     documents/        — PDF generation (invoices, orders)
     dashboard/        — Dashboard analytics
@@ -66,7 +65,8 @@ src/
     permissions/      — Role-based permission guards
     auth/             — Auth helpers (org listing, auth form)
     admin/            — Admin operations
-    assistant/        — AI assistant (Mastra integration)
+    assistant/        — AI assistant (Mastra integration, assistantActions)
+    notifications/    — Org/user-scoped notifications and bell component
     address/          — Address + Biteship area search
   hooks/              — Shared React hooks
   lib/                — Utilities (auth, query-keys, r2, rls, logger, formatters, sorting)
@@ -119,9 +119,9 @@ All from `package.json` scripts. **MUST use `bun run`, never invoke tools direct
 | `bun run db:generate` | script | Generate Drizzle migrations |
 | `bun run db:migrate` | script | Apply migrations |
 | `bun run db:push` | script | Push schema directly (dev only) |
-| `bun run db:studio` | script | Open Drizzle Studio |
-| `bun run format` | script | Biome format --write |
-
+│ `bun run db:studio` │ script │ Open Drizzle Studio │
+│ `bun run start:prod` │ script │ Start production server using `scripts/start-production.mjs` │
+│ `bun run format` │ script │ Biome format --write │
 **Pre-commit pipeline**: `bun run check && bun run typecheck && bun run test`. For route/server changes: also `bun run build`.
 
 ## Conventions (summary)
@@ -172,8 +172,11 @@ All from `package.json` scripts. **MUST use `bun run`, never invoke tools direct
 - `src/lib/rls.ts` — Application-level RLS helpers
 - `src/lib/sorting.ts` — Sort column map and encoding
 - `src/lib/validation-schemas.ts` — Shared Zod schemas
-- `src/lib/server-logger-middleware.ts` — Server function logging + Sentry
+- `src/lib/server-logger-middleware.ts` — Server function logging + Sentry with error cause
 - `src/lib/r2.ts` — Cloudflare R2 client
+- `src/mastra/index.ts` — Mastra AI assistant configuration, agents, tools
+- `src/components/app/route-pending-overlay.tsx` — Transition loader overlay
+- `scripts/start-production.mjs` — Production start wrapper script
 - `src/messages/en.ts` — English translations (~40KB)
 - `src/messages/id.ts` — Indonesian translations
 - `src/messages/types.ts` — Message type definitions
@@ -196,6 +199,6 @@ All from `package.json` scripts. **MUST use `bun run`, never invoke tools direct
 ## Open questions
 
 - `orgFilter` from `src/lib/rls.ts` is documented but the codebase uses `eq(table.orgId, orgId)` directly everywhere. Verify whether `orgFilter` should be adopted or deprecated.
-- Mastra integration (`src/mastra/`) is relatively new. Agent patterns may evolve.
+- Mastra integration (`src/mastra/`) is fully established with agents, memory/storage, and custom tools (`businessSearchTool`, `businessOverviewTool`, `resolveOrderDraftTool`) linked to a floating assistant panel.
 - The `@/*` alias exists alongside `#/` for shadcn/ui compatibility. Both map to `./src/`. Convention is `#/` for authored code.
 - Production deployment details beyond Dockerfile not found in-repo. Verify deploy process.

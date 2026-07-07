@@ -1,128 +1,212 @@
 ---
 name: pabriq-app-v2-conventions
-description: Cross-cutting coding conventions in the pabriq-app-v2 codebase: import aliases (#/), feature module structure (model/server/hooks), error handling (discriminated unions), file naming (kebab-case files, PascalCase exports), and query key patterns. Use whenever adding or editing files, functions, types, or modules in pabriq-app-v2 to stay consistent with existing patterns.
+description: Code style, Biome rules, TypeScript strictness, named exports, import aliases (`#/`), naming conventions, error handling patterns, and file organization in the pabriq-app-v2 codebase. Use whenever the user adds or edits files, functions, types, or modules in pabriq-app-v2 to stay consistent with existing patterns.
 ---
 
 # pabriq-app-v2 — Conventions
 
-The cross-cutting coding conventions that apply across all domains in this codebase. This skill covers naming, imports, exports, module structure, and error handling — the patterns every contributor hits regardless of what they're building.
+Cross-cutting coding conventions enforced by Biome, TypeScript, and project-level rules in this codebase.
 
-> Read `../pabriq-app-v2-foundation/references/codebase-profile.md` first for the stack, architecture, and tooling context. This skill adds the conventions-specific details.
+> Read `../pabriq-app-v2-foundation/references/codebase-profile.md` first for the stack, architecture, and tooling context. This skill adds the convention-specific details.
 
-## Where things live
+## Biome Configuration
 
-- Config files: `biome.json` (formatter/linter), `tsconfig.json` (TypeScript), `package.json` (import aliases, scripts)
-- Feature modules: `src/features/<name>/` — each feature follows a consistent internal structure
-- Shared utilities: `src/lib/` (auth, query keys, sorting, validation, etc.)
-- Components: `src/components/app/` (app-level), `src/components/ui/` (shadcn primitives)
+Biome is the sole linter and formatter. From `biome.json`:
 
-## How we do conventions here
+| Setting | Value |
+|---|---|
+| Indent | 2 spaces |
+| Quotes | Single quotes |
+| Semicolons | `asNeeded` (no semicolons) |
+| Linter rules | `recommended` set |
+| CSS | Tailwind directives enabled |
+| Excluded | `node_modules`, `.agents`, `.output`, `dist`, `bun.lock`, `src/components/ui`, `src/routeTree.gen.ts` |
 
-### Import aliases: `#/` prefix maps to `./src/`
+Run `bun run check` to lint + format-check, `bun run format` to auto-fix. `src/components/ui` is excluded because those are generated shadcn/ui primitives — never hand-edit them.
 
-All internal imports use the `#/` prefix, configured in `package.json` `"imports"` and `"paths"` in `tsconfig.json`. Never use relative `../` chains for cross-module imports.
+## TypeScript Strictness
 
-> from `src/features/customers/hooks.ts`
+From `tsconfig.json`:
+
+| Flag | Value | Meaning |
+|---|---|---|
+| `strict` | `true` | All strict checks enabled |
+| `verbatimModuleSyntax` | `true` | `import type` required for type-only bindings |
+| `noUnusedLocals` | `true` | Unused variables are errors |
+| `noUnusedParameters` | `true` | Unused parameters are errors |
+| `noFallthroughCasesInSwitch` | `true` | No implicit fallthrough |
+| `noUncheckedSideEffectImports` | `true` | Side-effect imports must resolve |
+| `moduleResolution` | `bundler` | Bundler-style resolution |
+
+TypeScript rules source: `docs/agents/rules/typescript.md`
+
+## Import Conventions
+
+### Internal imports: `#/` prefix
+
+All authored imports MUST use the `#/` alias, which maps to `./src/*`:
+
 ```ts
-import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
-import { queryKeys } from '#/lib/query-keys'
-import type { CustomerInput, ListCustomersParams } from './model'
+import { db } from '#/db/index'
+import { createProduct } from '#/features/products/model'
+import type { Role } from '#/features/permissions/model'
+import { cn } from '#/lib/utils'
 ```
-Why: `#/` provides stable, absolute-ish paths that survive file moves; relative `./` only within the same feature directory.
 
-### Feature module structure: model → server → hooks
+The `@/*` alias also maps to `./src/*` but is reserved for shadcn/ui generated components (`components.json`). Use `#/` for all authored code.
 
-Every feature follows the same three-layer convention:
+### Type-only imports
 
-- `model.ts` — pure domain logic, types, Drizzle queries. No framework coupling.
-- `server.ts` — TanStack Start `createServerFn` wrappers. Resolves auth, delegates to model, returns discriminated unions.
-- `hooks.ts` — React Query hooks (`useQuery`, `useMutation`) wrapping server functions. One hook per data operation.
+`verbatimModuleSyntax` is enforced. Use `import type` for type-only bindings:
 
-> from `src/features/customers/server.ts`
 ```ts
-export const createCustomerFn = createServerFn({ method: 'POST' })
-  .inputValidator((input: CustomerInput) => input)
-  .handler(
-    async ({ data }): Promise<{ ok: true; id: string } | { ok: false; error: string }> => {
-      const orgId = await resolveOrgId()
-      try {
-        const id = await createCustomer({ ...data, orgId })
-        return { ok: true, id }
-      } catch (e) {
-        return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' }
-      }
-    },
-  )
+import type { PageAction } from './page-shell-types'
+import type { Product } from '#/features/products/model'
 ```
-Why: this layering keeps model logic testable without server context, and server functions thin.
 
-### Error handling: discriminated union return types
+Omit `import React` unless actually used — React 19 JSX transform is configured (`"jsx": "react-jsx"`).
 
-Server functions never throw to the client. They return `{ ok: true, ...data } | { ok: false, error: string }`. The `ok` discriminant lets callers narrow safely.
+### Dynamic imports for server boundaries
 
-> from `src/features/customers/server.ts`
+Server functions MUST dynamically import `auth` and `db` inside handlers, not at module level. This prevents bundling server-only code into client bundles:
+
 ```ts
-async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
-  const orgId = await resolveOrgId()
-  try {
-    await updateCustomer(data.id, orgId, data)
-    return { ok: true }
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' }
-  }
+export async function resolveOrgId(): Promise<string> {
+  const [{ getRequestHeaders }, { auth }, { db }, { member }, { eq }] =
+    await Promise.all([
+      import('@tanstack/react-start/server'),
+      import('#/lib/auth'),
+      import('#/db/index'),
+      import('#/db/schema'),
+      import('drizzle-orm'),
+    ])
+  // ...
 }
 ```
-Why: keeps error propagation explicit and consistent; callers pattern-match on `ok` instead of try/catch.
 
-### Query key hierarchy: centralized factory
+## Naming Conventions
 
-All query keys live in `src/lib/query-keys.ts` as a single exported object. Each domain has `all → lists() → list(filters)` and `all → details() → detail(id)` tiers, typed with `as const`.
+| What | Convention | Example |
+|---|---|---|
+| Components | PascalCase filename, one per file | `PageHeader` in `page-header.tsx` |
+| Functions | camelCase verb phrases | `createProduct`, `resolveOrgId`, `formatPhone` |
+| Types / Interfaces | PascalCase | `OrgContextResult`, `SessionUser`, `ProductRow` |
+| Boolean variables | `is*`, `has*`, `can*` prefix | `isActive`, `canManageProducts` |
+| i18n keys | camelCase namespaced keys | `products.createSuccess`, `orders.approveConfirm` |
+| Files | kebab-case | `page-header.tsx`, `auth-session.ts`, `query-keys.ts` |
 
-> from `src/lib/query-keys.ts`
+## Export Style
+
+Named exports everywhere. No default exports in authored code:
+
 ```ts
-export const queryKeys = {
-  customers: {
-    all: ['customers'] as const,
-    lists: () => [...queryKeys.customers.all, 'list'] as const,
-    list: (filters: { orgId: string; search?: string }) =>
-      [...queryKeys.customers.lists(), filters] as const,
-    details: () => [...queryKeys.customers.all, 'detail'] as const,
-    detail: (id: string) => [...queryKeys.customers.details(), id] as const,
-  },
-}
+// Components — named export
+export function PageHeader({ title, ... }: PageHeaderProps) { ... }
+
+// Server functions — named export
+export const getCurrentSession = createServerFn({ method: 'GET' }).handler(...)
+export async function resolveOrgId(): Promise<string> { ... }
+
+// Types — named export
+export type OrgContextResult = { ... }
 ```
-Why: one place to update when adding a new query shape; hierarchical keys enable precise cache invalidation.
 
-## Naming conventions
+## Error Handling
 
-- **Files**: kebab-case for everything — `status-badge.tsx`, `query-keys.ts`, `create-invoice-modal.tsx`
-- **Components**: PascalCase function names — `StatusBadge`, `PageContent`, `ForbiddenPage`
-- **Functions/variables**: camelCase — `listCustomers`, `createCustomerFn`, `resolveOrgId`
-- **Types/interfaces**: PascalCase — `CustomerInput`, `ListOrdersParams`, `CreateDraftOrderResult`
-- **Constants**: UPPER_SNAKE_CASE — `ORDER_CREATION_READINESS_TOTAL`
+Use discriminated unions for fallible operations, not exceptions:
 
-## Export style
+> from `src/lib/auth-session.ts`
 
-- Named exports everywhere. No default exports in the codebase.
-- Server functions use `export const` with `createServerFn` chaining.
-- Types exported alongside their consumers (co-located in `model.ts`).
+```ts
+export type OrgContextResult =
+  | {
+      ok: true
+      session: AuthSession
+      org: OrgInfo
+      role: Role
+    }
+  | {
+      ok: false
+      reason: 'unauthenticated'
+    }
+  | {
+      ok: false
+      reason: 'no-org'
+      session: AuthSession
+    }
+```
 
-## Conventions observed
+Convention: `{ ok: true, data: T } | { ok: false, error: string }` for API responses. Validate input at every server boundary with `.inputValidator()` and Zod schemas for mutations. Never swallow errors — surface them with meaningful messages.
 
-- Biome enforces: 2-space indentation, single quotes, semicolons only as needed (`biome.json`).
-- TypeScript strict mode with `noUnusedLocals`, `noUnusedParameters`, `verbatimModuleSyntax`.
-- Feature files are co-located: `model.test.ts` sits next to `model.ts`; component tests next to components.
-- Route files in `src/routes/` follow TanStack Router's file-based convention with kebab-case names.
+## File Organization
+
+### Feature module blueprint
+
+Every feature lives in `src/features/<name>/` with this structure:
+
+- `model.ts` — Pure logic + DB queries (Drizzle). Types, functions, no server imports.
+- `server.ts` — `createServerFn` wrappers with org resolution. Calls into `model.ts`.
+- `hooks.ts` — TanStack Query hooks that call server functions.
+
+### Component structure
+
+- shadcn/ui primitives in `src/components/ui/` (generated, never hand-edited).
+- App-level reusable components in `src/components/app/`.
+- One component per file, PascalCase filename.
+
+### Co-located tests
+
+Test files sit next to the file they test with `.test.ts` / `.test.tsx` extension:
+
+```
+src/lib/auth-session.ts          → (tests in feature model tests)
+src/features/products/model.ts   → src/features/products/model.test.ts
+src/components/app/form/form.tsx → src/components/app/form/form.test.tsx
+```
+
+## Allowed Exceptions
+
+These are the only acceptable deviations from the strict rules above:
+
+- `any` in `src/routeTree.gen.ts` — autogenerated, not authored.
+- `as SQL` in Drizzle query building when ORM type inference doesn't narrow unions.
+- Route context casts (`Record<string, unknown>`) in TanStack Router route decoration.
+- `catch (err: unknown)` at external boundaries — but MUST narrow before use.
+- `as T` in Drizzle return-row casting where DDL guarantees the shape.
+
+## Verification Pipeline
+
+```bash
+bun run check       # Biome: format + lint
+bun run typecheck   # tsc --noEmit
+bun run test        # vitest run --passWithNoTests
+bun run build       # vite build (for route/server changes)
+```
+
+All four MUST pass before commit. Run `bun run build` when changes touch server functions, routes, or imports — build catches errors `tsc` may miss.
+
+## Commands
+
+- Lint + format check: `bun run check`
+- Auto-format: `bun run format`
+- Typecheck: `bun run typecheck`
+- Tests: `bun run test`
+- E2E tests: `bun run test:e2e`
+- Full pre-commit: `bun run check && bun run typecheck && bun run test`
 
 ## Anti-patterns to avoid
 
-- No `../` relative imports across feature boundaries — use `#/` aliases instead.
-- No default exports — the codebase uses named exports everywhere.
-- No throwing from server functions — always return `{ ok: false, error: string }`.
-- No ad-hoc query keys — always go through `queryKeys` in `src/lib/query-keys.ts`.
-- No framework imports in `model.ts` — keep it pure; server functions in `server.ts` handle auth and middleware.
+- **No default exports** — the codebase uses named exports everywhere. Source confirms this; some docs say "default export" for components but actual code contradicts it.
+- **No `any` in authored code** — exceptions listed above are narrow and documented.
+- **No non-null assertions (`!`)** — use type narrowing or optional chaining instead.
+- **No `useSearchParams`** — use nuqs (`useQueryState`) for URL state.
+- **No raw `fetch` for internal APIs** — use `createServerFn`.
+- **No hand-editing `src/components/ui/`** — these are generated shadcn/ui primitives.
+- **No module-level `auth`/`db` imports in server functions** — dynamic import inside handlers only.
+- **No `// biome-ignore` to silence type errors** — fix the type instead.
 
 ## Gaps / verify
 
-- Component file naming is overwhelmingly kebab-case, but `src/components/app/AuthForm.tsx` uses PascalCase — this appears to be an exception. Verify before adopting PascalCase for component filenames.
-- The `src/components/ui/` directory (shadcn primitives) is excluded from Biome linting (`biome.json` excludes `!src/components/ui`). Conventions there are managed by the shadcn generator, not by this project's rules.
+- `AGENTS.md` §6 and `.sandcastle/CODING_STANDARDS.md` both say "Components: default export" but actual source files (`page-header.tsx`, `status-badge.tsx`, `confirm-dialog.tsx`) all use named exports. The named export pattern is the observed convention; the docs are stale on this point.
+- The `@/*` alias coexists with `#/` for shadcn/ui compatibility. Both map to `./src/*`. Convention is `#/` for all authored code; verify any new file uses the correct alias.
+- `orgFilter` from `src/lib/rls.ts` is documented but the codebase uses `eq(table.orgId, orgId)` directly. Verify whether `orgFilter` should be adopted or deprecated.

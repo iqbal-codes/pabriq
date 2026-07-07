@@ -108,7 +108,7 @@ bun run check              # Biome lint + format
 bun run typecheck          # TypeScript check
 bun run test               # Vitest (staging DB via load-env-test)
 bun run test:e2e           # Playwright E2E
-```
+bun run start:prod        # Start production server wrapper
 
 **Critical safety**: NEVER run `vitest` directly. Always `bun run test`. The vitest.config.ts has a safety check that aborts if `VITEST_FROM_SCRIPT` is not set — this prevents accidental production DB access.
 
@@ -123,5 +123,5 @@ Key env vars: `DATABASE_URL` (required), `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`
 ## Gaps / verify
 
 - `orgFilter` from `src/lib/rls.ts` is documented but unused — codebase uses `eq(table.orgId, orgId)` directly.
-- Mastra AI integration is new and evolving.
+- Mastra AI assistant features (floating chat panel, order draft proposals, and business overview/search tools) are now wired up.
 - Production deployment process beyond Dockerfile not documented in-repo.

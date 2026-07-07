@@ -24,10 +24,12 @@ UI layer for a manufacturing SaaS (TanStack Start SSR + React 19). All user-faci
 
 - **PageShell**: `PageHeader` + `PageContent` from `src/components/app/page-shell/` — use for every workspace page.
 - **useAppForm**: Custom TanStack Form wrapper from `src/components/app/form/form-context.tsx` — use for all forms.
+- **FormSheet**: Slide-out drawer wrapper from `src/components/app/form/form-sheet.tsx` — use for all creation/editing forms.
 - **DataTable**: Wrapped TanStack Table from `src/components/app/data-table/` — use for all list/table UIs.
 - **ConfirmDialog**: From `src/components/confirm-dialog.tsx` — destructive action confirmation, never `window.confirm`.
 - **StatusBadge**: From `src/components/status-badge.tsx` — entity status display with i18n.
 - **withForm**: Reusable field group composition from `src/components/app/form/`.
+- **FormActions (align="stacked")**: Stacked buttons that stretch to full-width on mobile and align-end row on desktop.
 
 Full pattern catalog: `references/ui-patterns.md`.
 
@@ -82,36 +84,48 @@ return (
 ```
 Why: `DataTable` handles loading/empty/error/refetching states, mobile cards, column visibility, and filter panels — don't build from scratch.
 
-### Form pattern with useAppForm
+### Form sheet pattern (create / edit)
 
-All forms use `useAppForm` (created via `createFormHook`) with field components registered in `src/components/app/form/form-context.tsx`. Zod validators go in `validators.onChange` and `validators.onSubmit`.
+Creation and editing forms use `FormSheet` and slide out from the right, keeping the parent list page in context. Forms are validated with Zod, and form actions are placed in `FormActions` at the bottom with `align="stacked"`.
 
-> from `src/features/orders/pages/create-order-page.tsx`
+> from `src/features/customers/components/customer-form-sheet.tsx`
 ```tsx
-const form = useAppForm({
-  defaultValues: defaultOrderValues(),
-  validators: { onChange: orderFormSchema, onSubmit: orderFormSchema },
-  onSubmit: async ({ value }) => {
-    const result = await createOrder.mutateAsync({ ... })
-    toast.success(t('orderCreated'))
-  },
-})
+function CustomerFormSheetInner({ mode, onOpenChange, onSaved, customer }) {
+  const t = useTranslations('customers')
+  const form = useAppForm({
+    defaultValues: { name: customer?.name ?? '', email: customer?.email ?? '' },
+    validators: { onChange: customerFormSchema, onSubmit: customerFormSchema },
+    onSubmit: async ({ value }) => {
+      const result = mode.type === 'edit' 
+        ? await updateCustomer.mutateAsync({ ...value, id: customer.id })
+        : await createCustomer.mutateAsync(value)
+      if (result.ok) {
+        toast.success(t('saved'))
+        onSaved()
+      }
+    }
+  })
 
-return (
-  <PageContent>
-    <PageHeader
-      title={t('createOrder')}
-      backAction={{ label: ct('back'), href: '/orders' }}
-      primaryAction={{ label: t('save'), isLoading: isSubmitting, onClick: () => form.handleSubmit() }}
-    />
-    <FormRoot form={form}>
-      <OrderFormFields form={form} ... />
-    </FormRoot>
-  </PageContent>
-)
+  return (
+    <FormSheet open={true} onOpenChange={onOpenChange} title={title}>
+      <FormRoot form={form} className="flex min-h-0 flex-1 flex-col space-y-0">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+          <CustomerFormFields form={form} />
+        </div>
+        <FormActions align="stacked" className="border-t bg-background px-5 py-4">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            {ct('cancel')}
+          </Button>
+          <form.AppForm>
+            <form.SubmitButton>{submitLabel}</form.SubmitButton>
+          </form.AppForm>
+        </FormActions>
+      </FormRoot>
+    </FormSheet>
+  )
+}
 ```
-Why: `useAppForm` registers project-specific field components (`field.TextField`, `field.SelectField`, etc.) so forms are type-safe and consistent.
-
+Why: Slide-out sheets keep search and filter states on the list page intact and make the application feel fast and SPA-like. The `align="stacked"` ensures buttons are full-width and easily tappable on mobile while converting to row buttons on desktop.
 ### Form field components
 
 Field components wrap shadcn primitives with validation, labels, and error display. Available fields: `TextField`, `EmailField`, `PasswordField`, `TextareaField`, `NumberField`, `PhoneField`, `SelectField`, `ComboboxField`, `AddressField`, `AreaSearchField`, `PhotoUploadField`, `FileUploadField`, `RadioCardField`, `RadioGroupField`, `DateField`, `CheckboxGroupField`.
@@ -174,7 +188,7 @@ Why: Multiple namespaces per component is normal — `status`, `dataTable`, `com
 - Typecheck: `bun run typecheck`
 - Lint + format check: `bun run check`
 - Run all tests: `bun run test`
-- Run single test file: `bun run vitest run src/features/customers/pages/list.test.tsx`
+- Run single test file: `bun run test src/features/customers/pages/customers-list-page.test.tsx`
 
 ## Conventions observed
 

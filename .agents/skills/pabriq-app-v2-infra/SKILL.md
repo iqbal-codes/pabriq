@@ -13,8 +13,10 @@ Infrastructure layer for pabriq-app-v2: Docker builds, secret management (Infisi
 
 | Concern | Path | Purpose |
 |---|---|---|
-| App Dockerfile | `Dockerfile` | Multi-stage build: bun build → prod deps → node runtime |
+| App Dockerfile | `Dockerfile` | Multi-stage build: bun build → prod deps → node runtime with non-root user |
 | Docker ignore | `.dockerignore` | Excludes node_modules, .git, dist, env files |
+| Production start wrapper | `scripts/start-production.mjs` | Graceful SIGTERM/SIGINT signal forwarding process wrapper |
+| API routes (health) | `src/routes/api/ready.ts`, `src/routes/api/healthz.ts` | Docker health and readiness checks |
 | Infisical config | `.infisical.json` | Workspace ID for local `infisical run` |
 | Infisical script | `scripts/infisical-run.sh` | Machine Identity auth for CI/agents |
 | Sentry init | `instrument.server.mjs` | Server-side Sentry instrumentation |
@@ -30,11 +32,11 @@ Infrastructure layer for pabriq-app-v2: Docker builds, secret management (Infisi
 
 ## Dockerfile — Multi-stage build
 
-Three-stage build optimized for cache and minimal runtime image:
+Three-stage build optimized for cache, minimal runtime image, and non-root execution safety:
 
 **Stage 1 — Builder** (bun:1.3.10-alpine): installs all deps, copies source, runs `bun run build`.
 **Stage 2 — Prod deps** (bun:1.3.10-alpine): installs production-only deps.
-**Stage 3 — Runner** (node:20-alpine): copies built artifacts + prod deps, runs `npm run start`.
+**Stage 3 — Runner** (node:20-alpine): creates non-root user `pabriq`, copies built artifacts + prod deps + start-production wrapper, sets STOPSIGNAL SIGTERM, and exposes port 3001.
 
 > from `Dockerfile`
 
@@ -57,24 +59,35 @@ RUN bun install --frozen-lockfile --production
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=builder /app/package.json ./package.json
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-EXPOSE 3000
-ENV PORT=3000
+
+# Add non-root user
+RUN addgroup -S pabriq && adduser -S pabriq -G pabriq
+
+# Copy built application and production dependencies
+COPY --chown=pabriq:pabriq --from=builder /app/package.json ./package.json
+COPY --chown=pabriq:pabriq --from=prod-deps /app/node_modules ./node_modules
+COPY --chown=pabriq:pabriq --from=builder /app/dist ./dist
+COPY --chown=pabriq:pabriq --from=builder /app/scripts/start-production.mjs ./scripts/start-production.mjs
+
+EXPOSE 3001
+ENV PORT=3001
 ENV HOST=0.0.0.0
-CMD ["npm", "run", "start"]
+
+USER pabriq
+
+STOPSIGNAL SIGTERM
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || '3001') + '/api/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+
+CMD ["npm", "run", "start:prod"]
 ```
 
 Key details:
-- Build step runs `vite build` then copies `instrument.server.mjs` into `dist/server` (the `build` script: `vite build && cp instrument.server.mjs dist/server`).
-- Production start uses `srvx serve --prod --import ./dist/server/instrument.server.mjs --entry ./dist/server/server.js -s ../client`.
-- The runner uses Node 20 (not Bun) because srvx serves with Node in production.
-- `--frozen-lockfile` ensures reproducible installs; `--production` in stage 2 strips devDeps.
-
-## .dockerignore
-
-Excludes `node_modules`, `.git`, `.github`, `dist`, `.env*`, test artifacts, `.worktree`, `.impeccable`, `bun.lockb`, and logs from the Docker build context. Prevents leaking secrets and bloat.
+- Production start uses `"start:prod": "node scripts/start-production.mjs"`.
+- `scripts/start-production.mjs` handles graceful SIGTERM/SIGINT signal forwarding to `npm run start` and configures a grace shutdown period (default 10s via `SHUTDOWN_GRACE_MS`).
+- Health checks fetch `/api/ready` on the exposed port (3001).
+- Non-root user execution prevents container breakout risks.
 
 ## Infisical secret management
 
@@ -281,6 +294,7 @@ A detailed phased plan exists at `docs/plans/offline-first-implementation-plan.m
 | `MIDTRANS_SERVER_KEY` | Midtrans server key | Payments |
 | `VITE_MIDTRANS_CLIENT_KEY` | Midtrans client key (exposed to browser) | Payments |
 | `VITE_MIDTRANS_IS_PRODUCTION` | Toggle Midtrans prod mode | Payments |
+| `SHUTDOWN_GRACE_MS` | Graceful shutdown grace period in ms (default 10000) | start-production wrapper |
 
 Variables prefixed `VITE_` are bundled into client JS by Vite. All others are server-only.
 
@@ -341,6 +355,7 @@ All infra-adjacent commands from `package.json`:
 |---|---|
 | `bun run build` | `vite build && cp instrument.server.mjs dist/server` — builds app + copies Sentry init |
 | `bun run start` | `srvx serve --prod --import ./dist/server/instrument.server.mjs --entry ./dist/server/server.js -s ../client` — production server |
+| `bun run start:prod` | `node scripts/start-production.mjs` — starts srvx via graceful process wrapper |
 | `bun run dev` | Dev server with Sentry instrumentation on port 3001 |
 | `bun run dev:infisical` | Dev with Infisical secrets (local interactive auth) |
 | `bun run dev:agent` | Dev with Infisical Machine Identity (for agents) |
@@ -351,6 +366,8 @@ All infra-adjacent commands from `package.json`:
 
 - Build uses Bun, runtime uses Node — don't conflate the two.
 - `--frozen-lockfile` on all installs; never mutate lockfile in Docker.
+- Production container runs as non-root user `pabriq` for security.
+- Container relies on SIGTERM forwarding wrapper `start-production.mjs` for graceful stops.
 - Secrets are NEVER in `.env` files committed to git; `.env` and `.env.*` are gitignored.
 - `instrument.server.mjs` is a flat ES module with no bundler — loaded via `--import` flag.
 - Sentry is optional at runtime (warns and skips if DSN missing).
@@ -363,6 +380,7 @@ All infra-adjacent commands from `package.json`:
 ## Anti-patterns to avoid
 
 - Do NOT bake secrets into the Docker image — use Infisical or env vars at runtime.
+- Do NOT run containers as `root` user in production — execute under `pabriq` user.
 - Do NOT use `bun` in the production Dockerfile CMD — the runner stage uses Node 20 with srvx.
 - Do NOT add devDependencies to the prod-deps stage — only `--production` install.
 - Do NOT skip the Sentry `--import` flag in production — without it, errors won't be captured.
@@ -373,7 +391,7 @@ All infra-adjacent commands from `package.json`:
 
 ## Gaps / verify
 
-- Production deployment beyond the Dockerfile is not documented in-repo. The profile's open questions note: "Production deployment details beyond Dockerfile not found in-repo. Verify deploy process."
+- Production deployment is optimized for Dokploy deployment via Dockerfile + start:prod script.
 - No `.github/workflows` directory found — CI/CD pipeline is managed outside the repo or in a private CI system.
 - Sentry sampling rates are all 1.0 — should be tuned before high-traffic production.
 - The `start` script references `srvx` which is not listed in `package.json` dependencies — verify it's bundled by Vite or available at runtime.
