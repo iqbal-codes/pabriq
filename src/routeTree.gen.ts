@@ -27,21 +27,19 @@ import { Route as OrgSettingsIndexRouteImport } from './routes/_org/settings/ind
 import { Route as OrgProductsIndexRouteImport } from './routes/_org/products/index'
 import { Route as OrgProductionIndexRouteImport } from './routes/_org/production/index'
 import { Route as OrgOrdersIndexRouteImport } from './routes/_org/orders/index'
-import { Route as OrgInvoicesIndexRouteImport } from './routes/_org/invoices/index'
 import { Route as OrgCustomersIndexRouteImport } from './routes/_org/customers/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as OrgSettingsProfileRouteImport } from './routes/_org/settings/profile'
 import { Route as OrgSettingsProductionStagesRouteImport } from './routes/_org/settings/production-stages'
 import { Route as OrgSettingsPaymentMethodsRouteImport } from './routes/_org/settings/payment-methods'
 import { Route as OrgSettingsMembersRouteImport } from './routes/_org/settings/members'
+import { Route as OrgSettingsInvoicingRouteImport } from './routes/_org/settings/invoicing'
 import { Route as OrgSettingsGeneralRouteImport } from './routes/_org/settings/general'
 import { Route as OrgProductsNewRouteImport } from './routes/_org/products/new'
 import { Route as OrgOrdersNewRouteImport } from './routes/_org/orders/new'
-import { Route as OrgInvoicesNewRouteImport } from './routes/_org/invoices/new'
 import { Route as OrgCustomersNewRouteImport } from './routes/_org/customers/new'
 import { Route as OrgProductsIdIndexRouteImport } from './routes/_org/products/$id/index'
 import { Route as OrgOrdersIdIndexRouteImport } from './routes/_org/orders/$id/index'
-import { Route as OrgInvoicesIdIndexRouteImport } from './routes/_org/invoices/$id/index'
 import { Route as OrgCustomersIdIndexRouteImport } from './routes/_org/customers/$id/index'
 import { Route as OrgOrdersIdEditRouteImport } from './routes/_org/orders/$id/edit'
 import { Route as OrgCustomersIdEditRouteImport } from './routes/_org/customers/$id/edit'
@@ -139,11 +137,6 @@ const OrgOrdersIndexRoute = OrgOrdersIndexRouteImport.update({
   path: '/orders/',
   getParentRoute: () => OrgRoute,
 } as any)
-const OrgInvoicesIndexRoute = OrgInvoicesIndexRouteImport.update({
-  id: '/invoices/',
-  path: '/invoices/',
-  getParentRoute: () => OrgRoute,
-} as any)
 const OrgCustomersIndexRoute = OrgCustomersIndexRouteImport.update({
   id: '/customers/',
   path: '/customers/',
@@ -176,6 +169,11 @@ const OrgSettingsMembersRoute = OrgSettingsMembersRouteImport.update({
   path: '/members',
   getParentRoute: () => OrgSettingsRouteRoute,
 } as any)
+const OrgSettingsInvoicingRoute = OrgSettingsInvoicingRouteImport.update({
+  id: '/invoicing',
+  path: '/invoicing',
+  getParentRoute: () => OrgSettingsRouteRoute,
+} as any)
 const OrgSettingsGeneralRoute = OrgSettingsGeneralRouteImport.update({
   id: '/general',
   path: '/general',
@@ -191,11 +189,6 @@ const OrgOrdersNewRoute = OrgOrdersNewRouteImport.update({
   path: '/orders/new',
   getParentRoute: () => OrgRoute,
 } as any)
-const OrgInvoicesNewRoute = OrgInvoicesNewRouteImport.update({
-  id: '/invoices/new',
-  path: '/invoices/new',
-  getParentRoute: () => OrgRoute,
-} as any)
 const OrgCustomersNewRoute = OrgCustomersNewRouteImport.update({
   id: '/customers/new',
   path: '/customers/new',
@@ -209,11 +202,6 @@ const OrgProductsIdIndexRoute = OrgProductsIdIndexRouteImport.update({
 const OrgOrdersIdIndexRoute = OrgOrdersIdIndexRouteImport.update({
   id: '/orders/$id/',
   path: '/orders/$id/',
-  getParentRoute: () => OrgRoute,
-} as any)
-const OrgInvoicesIdIndexRoute = OrgInvoicesIdIndexRouteImport.update({
-  id: '/invoices/$id/',
-  path: '/invoices/$id/',
   getParentRoute: () => OrgRoute,
 } as any)
 const OrgCustomersIdIndexRoute = OrgCustomersIdIndexRouteImport.update({
@@ -271,17 +259,16 @@ export interface FileRoutesByFullPath {
   '/order/$token': typeof OrderTokenRoute
   '/operator/': typeof OperatorIndexRoute
   '/customers/new': typeof OrgCustomersNewRoute
-  '/invoices/new': typeof OrgInvoicesNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
   '/products/new': typeof OrgProductsNewRoute
   '/settings/general': typeof OrgSettingsGeneralRoute
+  '/settings/invoicing': typeof OrgSettingsInvoicingRoute
   '/settings/members': typeof OrgSettingsMembersRoute
   '/settings/payment-methods': typeof OrgSettingsPaymentMethodsRoute
   '/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/settings/profile': typeof OrgSettingsProfileRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/customers/': typeof OrgCustomersIndexRoute
-  '/invoices/': typeof OrgInvoicesIndexRoute
   '/orders/': typeof OrgOrdersIndexRoute
   '/production/': typeof OrgProductionIndexRoute
   '/products/': typeof OrgProductsIndexRoute
@@ -289,7 +276,6 @@ export interface FileRoutesByFullPath {
   '/customers/$id/edit': typeof OrgCustomersIdEditRoute
   '/orders/$id/edit': typeof OrgOrdersIdEditRoute
   '/customers/$id/': typeof OrgCustomersIdIndexRoute
-  '/invoices/$id/': typeof OrgInvoicesIdIndexRoute
   '/orders/$id/': typeof OrgOrdersIdIndexRoute
   '/products/$id/': typeof OrgProductsIdIndexRoute
   '/api/documents/invoices/$id/pdf': typeof ApiDocumentsInvoicesIdPdfRoute
@@ -310,17 +296,16 @@ export interface FileRoutesByTo {
   '/': typeof OrgIndexRoute
   '/operator': typeof OperatorIndexRoute
   '/customers/new': typeof OrgCustomersNewRoute
-  '/invoices/new': typeof OrgInvoicesNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
   '/products/new': typeof OrgProductsNewRoute
   '/settings/general': typeof OrgSettingsGeneralRoute
+  '/settings/invoicing': typeof OrgSettingsInvoicingRoute
   '/settings/members': typeof OrgSettingsMembersRoute
   '/settings/payment-methods': typeof OrgSettingsPaymentMethodsRoute
   '/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/settings/profile': typeof OrgSettingsProfileRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/customers': typeof OrgCustomersIndexRoute
-  '/invoices': typeof OrgInvoicesIndexRoute
   '/orders': typeof OrgOrdersIndexRoute
   '/production': typeof OrgProductionIndexRoute
   '/products': typeof OrgProductsIndexRoute
@@ -328,7 +313,6 @@ export interface FileRoutesByTo {
   '/customers/$id/edit': typeof OrgCustomersIdEditRoute
   '/orders/$id/edit': typeof OrgOrdersIdEditRoute
   '/customers/$id': typeof OrgCustomersIdIndexRoute
-  '/invoices/$id': typeof OrgInvoicesIdIndexRoute
   '/orders/$id': typeof OrgOrdersIdIndexRoute
   '/products/$id': typeof OrgProductsIdIndexRoute
   '/api/documents/invoices/$id/pdf': typeof ApiDocumentsInvoicesIdPdfRoute
@@ -353,17 +337,16 @@ export interface FileRoutesById {
   '/_org/': typeof OrgIndexRoute
   '/operator/': typeof OperatorIndexRoute
   '/_org/customers/new': typeof OrgCustomersNewRoute
-  '/_org/invoices/new': typeof OrgInvoicesNewRoute
   '/_org/orders/new': typeof OrgOrdersNewRoute
   '/_org/products/new': typeof OrgProductsNewRoute
   '/_org/settings/general': typeof OrgSettingsGeneralRoute
+  '/_org/settings/invoicing': typeof OrgSettingsInvoicingRoute
   '/_org/settings/members': typeof OrgSettingsMembersRoute
   '/_org/settings/payment-methods': typeof OrgSettingsPaymentMethodsRoute
   '/_org/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/_org/settings/profile': typeof OrgSettingsProfileRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_org/customers/': typeof OrgCustomersIndexRoute
-  '/_org/invoices/': typeof OrgInvoicesIndexRoute
   '/_org/orders/': typeof OrgOrdersIndexRoute
   '/_org/production/': typeof OrgProductionIndexRoute
   '/_org/products/': typeof OrgProductsIndexRoute
@@ -371,7 +354,6 @@ export interface FileRoutesById {
   '/_org/customers/$id/edit': typeof OrgCustomersIdEditRoute
   '/_org/orders/$id/edit': typeof OrgOrdersIdEditRoute
   '/_org/customers/$id/': typeof OrgCustomersIdIndexRoute
-  '/_org/invoices/$id/': typeof OrgInvoicesIdIndexRoute
   '/_org/orders/$id/': typeof OrgOrdersIdIndexRoute
   '/_org/products/$id/': typeof OrgProductsIdIndexRoute
   '/api/documents/invoices/$id/pdf': typeof ApiDocumentsInvoicesIdPdfRoute
@@ -396,17 +378,16 @@ export interface FileRouteTypes {
     | '/order/$token'
     | '/operator/'
     | '/customers/new'
-    | '/invoices/new'
     | '/orders/new'
     | '/products/new'
     | '/settings/general'
+    | '/settings/invoicing'
     | '/settings/members'
     | '/settings/payment-methods'
     | '/settings/production-stages'
     | '/settings/profile'
     | '/api/auth/$'
     | '/customers/'
-    | '/invoices/'
     | '/orders/'
     | '/production/'
     | '/products/'
@@ -414,7 +395,6 @@ export interface FileRouteTypes {
     | '/customers/$id/edit'
     | '/orders/$id/edit'
     | '/customers/$id/'
-    | '/invoices/$id/'
     | '/orders/$id/'
     | '/products/$id/'
     | '/api/documents/invoices/$id/pdf'
@@ -435,17 +415,16 @@ export interface FileRouteTypes {
     | '/'
     | '/operator'
     | '/customers/new'
-    | '/invoices/new'
     | '/orders/new'
     | '/products/new'
     | '/settings/general'
+    | '/settings/invoicing'
     | '/settings/members'
     | '/settings/payment-methods'
     | '/settings/production-stages'
     | '/settings/profile'
     | '/api/auth/$'
     | '/customers'
-    | '/invoices'
     | '/orders'
     | '/production'
     | '/products'
@@ -453,7 +432,6 @@ export interface FileRouteTypes {
     | '/customers/$id/edit'
     | '/orders/$id/edit'
     | '/customers/$id'
-    | '/invoices/$id'
     | '/orders/$id'
     | '/products/$id'
     | '/api/documents/invoices/$id/pdf'
@@ -477,17 +455,16 @@ export interface FileRouteTypes {
     | '/_org/'
     | '/operator/'
     | '/_org/customers/new'
-    | '/_org/invoices/new'
     | '/_org/orders/new'
     | '/_org/products/new'
     | '/_org/settings/general'
+    | '/_org/settings/invoicing'
     | '/_org/settings/members'
     | '/_org/settings/payment-methods'
     | '/_org/settings/production-stages'
     | '/_org/settings/profile'
     | '/api/auth/$'
     | '/_org/customers/'
-    | '/_org/invoices/'
     | '/_org/orders/'
     | '/_org/production/'
     | '/_org/products/'
@@ -495,7 +472,6 @@ export interface FileRouteTypes {
     | '/_org/customers/$id/edit'
     | '/_org/orders/$id/edit'
     | '/_org/customers/$id/'
-    | '/_org/invoices/$id/'
     | '/_org/orders/$id/'
     | '/_org/products/$id/'
     | '/api/documents/invoices/$id/pdf'
@@ -651,13 +627,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgOrdersIndexRouteImport
       parentRoute: typeof OrgRoute
     }
-    '/_org/invoices/': {
-      id: '/_org/invoices/'
-      path: '/invoices'
-      fullPath: '/invoices/'
-      preLoaderRoute: typeof OrgInvoicesIndexRouteImport
-      parentRoute: typeof OrgRoute
-    }
     '/_org/customers/': {
       id: '/_org/customers/'
       path: '/customers'
@@ -700,6 +669,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgSettingsMembersRouteImport
       parentRoute: typeof OrgSettingsRouteRoute
     }
+    '/_org/settings/invoicing': {
+      id: '/_org/settings/invoicing'
+      path: '/invoicing'
+      fullPath: '/settings/invoicing'
+      preLoaderRoute: typeof OrgSettingsInvoicingRouteImport
+      parentRoute: typeof OrgSettingsRouteRoute
+    }
     '/_org/settings/general': {
       id: '/_org/settings/general'
       path: '/general'
@@ -721,13 +697,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgOrdersNewRouteImport
       parentRoute: typeof OrgRoute
     }
-    '/_org/invoices/new': {
-      id: '/_org/invoices/new'
-      path: '/invoices/new'
-      fullPath: '/invoices/new'
-      preLoaderRoute: typeof OrgInvoicesNewRouteImport
-      parentRoute: typeof OrgRoute
-    }
     '/_org/customers/new': {
       id: '/_org/customers/new'
       path: '/customers/new'
@@ -747,13 +716,6 @@ declare module '@tanstack/react-router' {
       path: '/orders/$id'
       fullPath: '/orders/$id/'
       preLoaderRoute: typeof OrgOrdersIdIndexRouteImport
-      parentRoute: typeof OrgRoute
-    }
-    '/_org/invoices/$id/': {
-      id: '/_org/invoices/$id/'
-      path: '/invoices/$id'
-      fullPath: '/invoices/$id/'
-      preLoaderRoute: typeof OrgInvoicesIdIndexRouteImport
       parentRoute: typeof OrgRoute
     }
     '/_org/customers/$id/': {
@@ -810,6 +772,7 @@ declare module '@tanstack/react-router' {
 
 interface OrgSettingsRouteRouteChildren {
   OrgSettingsGeneralRoute: typeof OrgSettingsGeneralRoute
+  OrgSettingsInvoicingRoute: typeof OrgSettingsInvoicingRoute
   OrgSettingsMembersRoute: typeof OrgSettingsMembersRoute
   OrgSettingsPaymentMethodsRoute: typeof OrgSettingsPaymentMethodsRoute
   OrgSettingsProductionStagesRoute: typeof OrgSettingsProductionStagesRoute
@@ -819,6 +782,7 @@ interface OrgSettingsRouteRouteChildren {
 
 const OrgSettingsRouteRouteChildren: OrgSettingsRouteRouteChildren = {
   OrgSettingsGeneralRoute: OrgSettingsGeneralRoute,
+  OrgSettingsInvoicingRoute: OrgSettingsInvoicingRoute,
   OrgSettingsMembersRoute: OrgSettingsMembersRoute,
   OrgSettingsPaymentMethodsRoute: OrgSettingsPaymentMethodsRoute,
   OrgSettingsProductionStagesRoute: OrgSettingsProductionStagesRoute,
@@ -833,18 +797,15 @@ interface OrgRouteChildren {
   OrgSettingsRouteRoute: typeof OrgSettingsRouteRouteWithChildren
   OrgIndexRoute: typeof OrgIndexRoute
   OrgCustomersNewRoute: typeof OrgCustomersNewRoute
-  OrgInvoicesNewRoute: typeof OrgInvoicesNewRoute
   OrgOrdersNewRoute: typeof OrgOrdersNewRoute
   OrgProductsNewRoute: typeof OrgProductsNewRoute
   OrgCustomersIndexRoute: typeof OrgCustomersIndexRoute
-  OrgInvoicesIndexRoute: typeof OrgInvoicesIndexRoute
   OrgOrdersIndexRoute: typeof OrgOrdersIndexRoute
   OrgProductionIndexRoute: typeof OrgProductionIndexRoute
   OrgProductsIndexRoute: typeof OrgProductsIndexRoute
   OrgCustomersIdEditRoute: typeof OrgCustomersIdEditRoute
   OrgOrdersIdEditRoute: typeof OrgOrdersIdEditRoute
   OrgCustomersIdIndexRoute: typeof OrgCustomersIdIndexRoute
-  OrgInvoicesIdIndexRoute: typeof OrgInvoicesIdIndexRoute
   OrgOrdersIdIndexRoute: typeof OrgOrdersIdIndexRoute
   OrgProductsIdIndexRoute: typeof OrgProductsIdIndexRoute
 }
@@ -853,18 +814,15 @@ const OrgRouteChildren: OrgRouteChildren = {
   OrgSettingsRouteRoute: OrgSettingsRouteRouteWithChildren,
   OrgIndexRoute: OrgIndexRoute,
   OrgCustomersNewRoute: OrgCustomersNewRoute,
-  OrgInvoicesNewRoute: OrgInvoicesNewRoute,
   OrgOrdersNewRoute: OrgOrdersNewRoute,
   OrgProductsNewRoute: OrgProductsNewRoute,
   OrgCustomersIndexRoute: OrgCustomersIndexRoute,
-  OrgInvoicesIndexRoute: OrgInvoicesIndexRoute,
   OrgOrdersIndexRoute: OrgOrdersIndexRoute,
   OrgProductionIndexRoute: OrgProductionIndexRoute,
   OrgProductsIndexRoute: OrgProductsIndexRoute,
   OrgCustomersIdEditRoute: OrgCustomersIdEditRoute,
   OrgOrdersIdEditRoute: OrgOrdersIdEditRoute,
   OrgCustomersIdIndexRoute: OrgCustomersIdIndexRoute,
-  OrgInvoicesIdIndexRoute: OrgInvoicesIdIndexRoute,
   OrgOrdersIdIndexRoute: OrgOrdersIdIndexRoute,
   OrgProductsIdIndexRoute: OrgProductsIdIndexRoute,
 }

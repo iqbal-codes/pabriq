@@ -1,6 +1,7 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
 import NotFound from '#/components/not-found'
+import { rewriteAppUrlInput, rewriteAppUrlOutput } from '#/lib/domain-routing'
 import { getContext } from './integrations/tanstack-query/root-provider'
 import { routeTree } from './routeTree.gen'
 
@@ -10,6 +11,10 @@ export function getRouter() {
   const router = createTanStackRouter({
     routeTree,
     context,
+    rewrite: {
+      input: ({ url }) => rewriteAppUrlInput(url),
+      output: ({ url }) => rewriteAppUrlOutput(url),
+    },
     scrollRestoration: true,
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0,
