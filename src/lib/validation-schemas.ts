@@ -93,15 +93,22 @@ const orderLineItemFormSchema = z
     path: ['deadline'],
   })
 
-export const orderFormSchema = z.object({
-  customerId: z.string(),
-  notes: z.string(),
-  address: z.object({
-    areaId: z.string(),
-    areaName: z.string(),
-    streetAddress: z.string(),
-  }),
-  lineItems: z
-    .array(orderLineItemFormSchema)
-    .min(1, 'Add at least one product'),
-})
+export const orderFormSchema = z
+  .object({
+    customerId: z.string(),
+    notes: z.string(),
+    address: z.object({
+      areaId: z.string(),
+      areaName: z.string(),
+      streetAddress: z.string(),
+    }),
+    deadline: z.string(),
+    manualDeadline: z.boolean(),
+    lineItems: z
+      .array(orderLineItemFormSchema)
+      .min(1, 'Add at least one product'),
+  })
+  .refine((form) => !form.manualDeadline || form.deadline.length > 0, {
+    message: 'Order deadline is required',
+    path: ['deadline'],
+  })

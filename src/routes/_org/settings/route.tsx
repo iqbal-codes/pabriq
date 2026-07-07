@@ -26,30 +26,37 @@ function SettingsLayout() {
         ? 'stages'
         : pathname.includes('/settings/payment-methods')
           ? 'paymentMethods'
-          : 'general'
+          : pathname.includes('/settings/invoicing')
+            ? 'invoicing'
+            : 'general'
 
   return (
     <PageContent>
       <Tabs value={activeTab} className="w-full">
-        <TabsList>
-          <TabsTrigger value="general" asChild>
-            <Link to="/settings/general">{t('general')}</Link>
-          </TabsTrigger>
-          <TabsTrigger value="members" asChild>
-            <Link to="/settings/members">{st('members')}</Link>
-          </TabsTrigger>
-          <TabsTrigger value="profile" asChild>
-            <Link to="/settings/profile">{st('profile')}</Link>
-          </TabsTrigger>
-          <TabsTrigger value="stages" asChild>
-            <Link to="/settings/production-stages">
-              {pt('stageManagement')}
-            </Link>
-          </TabsTrigger>
-          <TabsTrigger value="paymentMethods" asChild>
-            <Link to="/settings/payment-methods">{st('paymentMethods')}</Link>
-          </TabsTrigger>
-        </TabsList>
+        <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+          <TabsList variant="line">
+            <TabsTrigger value="general" asChild>
+              <Link to="/settings/general">{t('general')}</Link>
+            </TabsTrigger>
+            <TabsTrigger value="profile" asChild>
+              <Link to="/settings/profile">{st('profile')}</Link>
+            </TabsTrigger>
+            <TabsTrigger value="members" asChild>
+              <Link to="/settings/members">{st('members')}</Link>
+            </TabsTrigger>
+            <TabsTrigger value="stages" asChild>
+              <Link to="/settings/production-stages">
+                {pt('stageManagement')}
+              </Link>
+            </TabsTrigger>
+            <TabsTrigger value="paymentMethods" asChild>
+              <Link to="/settings/payment-methods">{st('paymentMethods')}</Link>
+            </TabsTrigger>
+            <TabsTrigger value="invoicing" asChild>
+              <Link to="/settings/invoicing">{st('invoicing')}</Link>
+            </TabsTrigger>
+          </TabsList>
+        </div>
       </Tabs>
       <div className="mt-6">
         <Outlet />

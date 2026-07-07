@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { eq } from 'drizzle-orm'
-import { resolveOrgId } from '#/lib/auth-session'
+import { resolveOrgId } from '#/lib/auth-session-server'
 
 type OrgSettings = {
   name: string
@@ -10,6 +10,7 @@ type OrgSettings = {
   email: string | null
   address: { areaId: string; areaName: string; streetAddress: string } | null
   logoAssetId: string | null
+  lateFeePerDay: number
 }
 
 export const getOrgSettingsFn = createServerFn({ method: 'GET' }).handler(
@@ -37,6 +38,7 @@ export const getOrgSettingsFn = createServerFn({ method: 'GET' }).handler(
         phone: organizationProfiles.phone,
         email: organizationProfiles.email,
         logoAssetId: organizationProfiles.logoAssetId,
+        lateFeePerDay: organizationProfiles.lateFeePerDay,
         areaId: addresses.areaId,
         areaName: addresses.areaName,
         streetAddress: addresses.streetAddress,
@@ -59,6 +61,7 @@ export const getOrgSettingsFn = createServerFn({ method: 'GET' }).handler(
           }
         : null,
       logoAssetId: profile?.logoAssetId ?? null,
+      lateFeePerDay: profile?.lateFeePerDay ?? 0,
     }
   },
 )
@@ -69,6 +72,7 @@ export type UpdateOrgSettingsInput = {
   email?: string | null
   address?: { areaId: string; areaName: string; streetAddress: string } | null
   logoAssetId?: string | null
+  lateFeePerDay?: number
 }
 
 async function upsertOrgAddress(
@@ -130,7 +134,8 @@ export const updateOrgSettingsFn = createServerFn({ method: 'POST' })
           data.phone !== undefined ||
           data.email !== undefined ||
           data.address !== undefined ||
-          data.logoAssetId !== undefined
+          data.logoAssetId !== undefined ||
+          data.lateFeePerDay !== undefined
         ) {
           const [{ db }, { organizationProfiles }] = await Promise.all([
             import('#/db/index'),
@@ -161,6 +166,11 @@ export const updateOrgSettingsFn = createServerFn({ method: 'POST' })
           }
           if (data.logoAssetId !== undefined)
             updateData.logoAssetId = data.logoAssetId ?? null
+          if (data.lateFeePerDay !== undefined)
+            updateData.lateFeePerDay = Math.max(
+              0,
+              Math.trunc(data.lateFeePerDay),
+            )
 
           if (existing) {
             await db

@@ -2,7 +2,6 @@
 
 import { Link, useLocation } from '@tanstack/react-router'
 import {
-  FileText,
   GalleryVerticalEnd,
   KanbanSquare,
   LayoutDashboard,
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
+import { LanguageToggle, ThemeToggle } from '#/components/app/header-controls'
 import { NavUser } from '#/components/nav-user'
 import {
   Sidebar,
@@ -33,7 +33,6 @@ type NavItem = {
     | 'orders'
     | 'customers'
     | 'products'
-    | 'invoices'
     | 'production'
     | 'settings'
   href: string
@@ -45,7 +44,6 @@ const allNavItems: NavItem[] = [
   { key: 'orders', href: '/orders', icon: ShoppingCart },
   { key: 'customers', href: '/customers', icon: Users },
   { key: 'products', href: '/products', icon: Package },
-  { key: 'invoices', href: '/invoices', icon: FileText },
   { key: 'production', href: '/production', icon: KanbanSquare },
   { key: 'settings', href: '/settings/general', icon: Settings2 },
 ]
@@ -54,14 +52,9 @@ function getVisibleNavItems(role: Role): NavItem[] {
   return allNavItems.filter((item) => {
     if (item.key === 'production') return canViewProduction(role)
     if (
-      [
-        'customers',
-        'products',
-        'invoices',
-        'settings',
-        'dashboard',
-        'orders',
-      ].includes(item.key)
+      ['customers', 'products', 'settings', 'dashboard', 'orders'].includes(
+        item.key,
+      )
     ) {
       return role === 'owner' || role === 'admin'
     }
@@ -151,6 +144,15 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
+        <div className="flex items-center justify-between px-3 py-1 md:hidden border-b border-sidebar-border mb-1">
+          <span className="text-xs text-sidebar-foreground/75 font-medium">
+            {t('settings')}
+          </span>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <LanguageToggle />
+          </div>
+        </div>
         <NavUser user={user} />
       </SidebarFooter>
       <SidebarRail />
