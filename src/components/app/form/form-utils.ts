@@ -4,13 +4,13 @@ export function stripNonDigits(value: NumericDisplayValue): string {
   return String(value).replace(/\D/g, '')
 }
 
-const PHONE_GROUP = /^(\d{0,4})(\d{0,4})(\d{0,4})/
+const PHONE_GROUP = /^(\d{0,3})(\d{0,4})(\d{0,4})(\d{0,4})/
 
 export function formatPhone(displayValue: string): string {
   const digits = stripNonDigits(displayValue)
   const match = digits.match(PHONE_GROUP)
   if (!match) return digits
-  const parts = [match[1], match[2], match[3]].filter(Boolean)
+  const parts = [match[1], match[2], match[3], match[4]].filter(Boolean)
   return parts.join('-')
 }
 
