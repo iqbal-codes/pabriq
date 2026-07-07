@@ -5,6 +5,7 @@ import {
   ilike,
   inArray,
   isNull,
+  ne,
   or,
   type SQL,
   sql,
@@ -12,6 +13,7 @@ import {
 import { db } from '#/db/index'
 import {
   type AssistantActionPayload,
+  activityEvents as activityEventsTable,
   addresses as addressesTable,
   assets as assetsTable,
   customers as customersTable,
@@ -21,6 +23,7 @@ import {
   orders as ordersTable,
   organizationProfiles as organizationProfilesTable,
   paymentMethods as paymentMethodsTable,
+  payments as paymentsTable,
   productAddons as productAddonsTable,
   productionStages as productionStagesTable,
   productionTasks as productionTasksTable,
@@ -32,7 +35,8 @@ import { getCustomerAddress } from '#/features/address/model'
 import { normalizeDesignName } from '#/features/orders/line-item-display'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
 import { spawnQueuedPreProductionTasksForOrder } from '#/features/production/task-spawn-helpers'
-import { listBreakpoints } from '#/features/products/model'
+import { type DbClient, listBreakpoints } from '#/features/products/model'
+import { rewriteFinalInvoiceFromOrder } from '#/features/invoices/model'
 import { addWorkingDays } from '#/lib/date-utils'
 import { buildOrderBy, type SortColumnMap, type SortState } from '#/lib/sorting'
 
@@ -55,6 +59,8 @@ export type Order = {
   trackingNumber: string | null
   shippedAt: Date | null
   deliveredAt: Date | null
+  deadline: Date | null
+  manualDeadline: boolean
   shippingAddress: ShippingAddress | null
   createdAt: Date
   updatedAt: Date
@@ -108,17 +114,20 @@ export type LineItemInput = {
   deadline?: Date
   manualDeadline?: boolean
 }
-
 export type CreateDraftOrderInput = {
   customerId: string | null
   notes?: string
   lineItems: LineItemInput[]
+  deadline?: Date
+  manualDeadline?: boolean
 }
 
 export type UpdateDraftOrderInput = {
   customerId: string | null
   notes?: string
   lineItems: LineItemInput[]
+  deadline?: Date
+  manualDeadline?: boolean
 }
 
 export type CreateDraftOrderResult = {
@@ -160,6 +169,7 @@ export type OrderRow = {
   createdAt: Date
   paymentStatus: string
   dueDate: string | null
+  deadline: Date | null
   maxDeadline: Date | null
   deliveredAt: Date | null
   shippedAt: Date | null
@@ -182,6 +192,23 @@ export type ListOrdersResult = {
 
 function generateId(): string {
   return crypto.randomUUID()
+}
+function getOrderDeadline(
+  items: OrderLineItem[],
+  input: { deadline?: Date; manualDeadline?: boolean },
+): { deadline: Date | null; manualDeadline: boolean } {
+  if (input.manualDeadline === true) {
+    if (!input.deadline) throw new Error('Order deadline required')
+    return { deadline: input.deadline, manualDeadline: true }
+  }
+  const maxItemDeadline =
+    items.length > 0
+      ? items.reduce(
+          (latest, item) => (item.deadline > latest ? item.deadline : latest),
+          items[0].deadline,
+        )
+      : null
+  return { deadline: maxItemDeadline ?? null, manualDeadline: false }
 }
 
 const ORDER_CREATION_READINESS_TOTAL = 4
@@ -286,14 +313,17 @@ async function generateOrderNumber(orgId: string): Promise<string> {
   return `${prefix}${String(nextNum).padStart(3, '0')}`
 }
 
-async function computeLineItemPricing(input: {
-  orgId: string
-  productId: string
-  quantity: number
-  manualUnitPrice?: number
-  isRepeatOrder?: boolean
-  addonIds?: string[]
-}): Promise<{
+async function computeLineItemPricing(
+  client: DbClient,
+  input: {
+    orgId: string
+    productId: string
+    quantity: number
+    manualUnitPrice?: number
+    isRepeatOrder?: boolean
+    addonIds?: string[]
+  },
+): Promise<{
   unitPrice: number
   total: number
   selectedAddons: Array<{
@@ -302,7 +332,7 @@ async function computeLineItemPricing(input: {
     unitSurcharge: number
   }>
 }> {
-  const productRows = await db
+  const productRows = await client
     .select({
       basePrice: productsTable.basePrice,
       minQuantity: productsTable.minQuantity,
@@ -318,7 +348,7 @@ async function computeLineItemPricing(input: {
   if (!product) throw new Error('Product not found')
 
   // Load breakpoints
-  const breakpointRows = await listBreakpoints(input.productId)
+  const breakpointRows = await listBreakpoints(input.productId, client)
   const breakpoints: Breakpoint[] = breakpointRows.map((bp) => ({
     minQuantity: bp.minQuantity,
     unitPrice: bp.unitPrice,
@@ -343,7 +373,7 @@ async function computeLineItemPricing(input: {
   }> = []
   let addonSurcharge = 0
   if (input.addonIds && input.addonIds.length > 0) {
-    const addonRows = await db
+    const addonRows = await client
       .select({
         id: productAddonsTable.id,
         name: productAddonsTable.name,
@@ -478,6 +508,7 @@ export async function listOrders(
         createdAt: ordersTable.createdAt,
         deliveredAt: ordersTable.deliveredAt,
         shippedAt: ordersTable.shippedAt,
+        deadline: ordersTable.deadline,
         maxDeadline: deadlineAggs.maxDeadline,
       })
       .from(ordersTable)
@@ -827,7 +858,7 @@ export async function createDraftOrder(
       throw new Error('Manual deadline required')
     }
 
-    const pricing = await computeLineItemPricing({
+    const pricing = await computeLineItemPricing(db, {
       orgId,
       productId: li.productId,
       quantity: li.quantity,
@@ -888,6 +919,7 @@ export async function createDraftOrder(
   const orderNumber = await generateOrderNumber(orgId)
   const validUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
   const orderToken = crypto.randomUUID().replace(/-/g, '').slice(0, 32)
+  const orderDeadline = getOrderDeadline(items, input)
 
   await db.insert(ordersTable).values({
     id: orderId,
@@ -900,6 +932,8 @@ export async function createDraftOrder(
     orderToken,
     validUntil,
     shippingAddress,
+    deadline: orderDeadline.deadline,
+    manualDeadline: orderDeadline.manualDeadline,
     createdAt: now,
     updatedAt: now,
   })
@@ -933,6 +967,8 @@ export async function createDraftOrder(
       trackingNumber: null,
       shippedAt: null,
       deliveredAt: null,
+      deadline: orderDeadline.deadline,
+      manualDeadline: orderDeadline.manualDeadline,
       shippingAddress,
       createdAt: now,
       updatedAt: now,
@@ -1033,6 +1069,7 @@ export async function createDraftOrderFromAction(
   const orderNumber = await generateOrderNumber(orgId)
   const validUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
   const orderToken = crypto.randomUUID().replace(/-/g, '').slice(0, 32)
+  const orderDeadline = getOrderDeadline(items, {})
 
   await db.insert(ordersTable).values({
     id: orderId,
@@ -1045,6 +1082,8 @@ export async function createDraftOrderFromAction(
     orderToken,
     validUntil,
     shippingAddress,
+    deadline: orderDeadline.deadline,
+    manualDeadline: orderDeadline.manualDeadline,
     createdAt: now,
     updatedAt: now,
   })
@@ -1078,6 +1117,8 @@ export async function createDraftOrderFromAction(
       trackingNumber: null,
       shippedAt: null,
       deliveredAt: null,
+      deadline: orderDeadline.deadline,
+      manualDeadline: orderDeadline.manualDeadline,
       shippingAddress,
       createdAt: now,
       updatedAt: now,
@@ -1215,7 +1256,7 @@ export async function updateDraftOrder(
   }> = []
 
   for (const li of input.lineItems) {
-    const pricing = await computeLineItemPricing({
+    const pricing = await computeLineItemPricing(db, {
       orgId,
       productId: li.productId,
       quantity: li.quantity,
@@ -1275,6 +1316,7 @@ export async function updateDraftOrder(
   }
 
   const orderTotal = items.reduce((sum, i) => sum + i.total, 0)
+  const orderDeadline = getOrderDeadline(items, input)
 
   await db
     .update(ordersTable)
@@ -1282,6 +1324,8 @@ export async function updateDraftOrder(
       customerId,
       notes: input.notes ?? null,
       total: orderTotal,
+      deadline: orderDeadline.deadline,
+      manualDeadline: orderDeadline.manualDeadline,
       updatedAt: now,
     })
     .where(eq(ordersTable.id, id))
@@ -1301,10 +1345,361 @@ export async function updateDraftOrder(
       customerId,
       notes: input.notes ?? null,
       total: orderTotal,
+      deadline: orderDeadline.deadline,
+      manualDeadline: orderDeadline.manualDeadline,
       updatedAt: now,
     } as Order,
     lineItems: items,
   }
+}
+
+export type AdjustOrderQuantityInput = {
+  orderId: string
+  lineItemId: string
+  quantity: number
+  reason: string
+  actorId: string
+}
+
+export type AdjustOrderQuantityResult = {
+  order: Order
+  lineItem: OrderLineItem
+  finalInvoiceId: string | null
+  overpaidAmount: number
+}
+
+export async function adjustOrderQuantity(
+  orgId: string,
+  input: AdjustOrderQuantityInput,
+): Promise<AdjustOrderQuantityResult> {
+  return db.transaction(async (tx) => {
+    // 1. Read the order
+    const orderRows = await tx
+      .select({
+        id: ordersTable.id,
+        orgId: ordersTable.orgId,
+        status: ordersTable.status,
+        total: ordersTable.total,
+      })
+      .from(ordersTable)
+      .where(
+        and(eq(ordersTable.id, input.orderId), eq(ordersTable.orgId, orgId)),
+      )
+      .limit(1)
+
+    if (orderRows.length === 0) throw new Error('Order not found')
+    const order = orderRows[0]
+
+    // 2. Allow only approved/in_progress/production orders
+    const allowedStatuses = ['approved', 'in_progress', 'production']
+    if (!allowedStatuses.includes(order.status)) {
+      throw new Error('Only approved or production orders can be adjusted')
+    }
+
+    // 3. Read the target line item
+    const lineItemRows = await tx
+      .select()
+      .from(lineItemsTable)
+      .where(
+        and(
+          eq(lineItemsTable.id, input.lineItemId),
+          eq(lineItemsTable.orderId, input.orderId),
+          eq(lineItemsTable.orgId, orgId),
+        ),
+      )
+      .limit(1)
+
+    if (lineItemRows.length === 0) throw new Error('Order line item not found')
+    const lineItem = lineItemRows[0]
+
+    // 4. Validate reason
+    const reason = input.reason.trim()
+    if (!reason) throw new Error('Adjustment reason is required')
+
+    // 5. Validate quantity
+    if (!Number.isInteger(input.quantity) || input.quantity < 1) {
+      throw new Error('Quantity must be greater than zero')
+    }
+
+    // 6. Read product row
+    const productRows = await tx
+      .select({
+        id: productsTable.id,
+        minQuantity: productsTable.minQuantity,
+        maxQuantity: productsTable.maxQuantity,
+        repeatOrderMinQuantity: productsTable.repeatOrderMinQuantity,
+      })
+      .from(productsTable)
+      .where(eq(productsTable.id, lineItem.productId))
+      .limit(1)
+
+    if (productRows.length === 0) throw new Error('Product not found')
+    const product = productRows[0]
+
+    // 7. Enforce minimum quantity
+    if (lineItem.isRepeatOrder && product.repeatOrderMinQuantity != null) {
+      if (input.quantity < product.repeatOrderMinQuantity) {
+        throw new Error(
+          `Quantity below repeat order minimum of ${product.repeatOrderMinQuantity}`,
+        )
+      }
+    } else {
+      if (input.quantity < product.minQuantity) {
+        throw new Error(`Quantity below minimum of ${product.minQuantity}`)
+      }
+    }
+
+    // 8. Enforce max quantity
+    if (product.maxQuantity != null && input.quantity > product.maxQuantity) {
+      throw new Error(`Max quantity is ${product.maxQuantity}`)
+    }
+
+    // 9. Final invoice detection
+    const nonVoidInvoiceRows = await tx
+      .select({
+        id: invoicesTable.id,
+        status: invoicesTable.status,
+        createdAt: invoicesTable.createdAt,
+      })
+      .from(invoicesTable)
+      .where(
+        and(
+          eq(invoicesTable.orderId, input.orderId),
+          eq(invoicesTable.orgId, orgId),
+        ),
+      )
+      .orderBy(desc(invoicesTable.createdAt))
+
+    const nonVoidInvoices = nonVoidInvoiceRows.filter(
+      (inv) => inv.status !== 'void',
+    )
+
+    // Determine if a paid invoice exists (any non-void invoice that is paid)
+    const hasPaidInvoice = nonVoidInvoices.some((inv) => inv.status === 'paid')
+
+    // Final invoice = newest non-void invoice after at least one paid non-void invoice exists
+    let finalInvoice: (typeof nonVoidInvoices)[number] | null = null
+    if (hasPaidInvoice && nonVoidInvoices.length > 0) {
+      // The newest non-void invoice is the final one
+      finalInvoice = nonVoidInvoices[0] ?? null
+    }
+
+    let finalInvoiceId: string | null = null
+    let overpaidAmount = 0
+
+    if (finalInvoice) {
+      if (finalInvoice.status === 'paid') {
+        throw new Error('Cannot adjust quantity after final invoice is paid')
+      }
+
+      // Check for pending payments on the final invoice
+      const pendingPayments = await tx
+        .select({ id: paymentsTable.id })
+        .from(paymentsTable)
+        .where(
+          and(
+            eq(paymentsTable.invoiceId, finalInvoice.id),
+            eq(paymentsTable.orgId, orgId),
+            eq(paymentsTable.status, 'pending'),
+          ),
+        )
+        .limit(1)
+
+      if (pendingPayments.length > 0) {
+        throw new Error(
+          'Cannot adjust quantity while final invoice has a pending payment',
+        )
+      }
+
+      finalInvoiceId = finalInvoice.id
+    }
+
+    // 10. Compute new pricing
+    const addonRows = await tx
+      .select({ productAddonId: lineItemAddonsTable.productAddonId })
+      .from(lineItemAddonsTable)
+      .where(eq(lineItemAddonsTable.lineItemId, input.lineItemId))
+
+    const addonIds = addonRows
+      .map((a) => a.productAddonId)
+      .filter((id): id is string => id !== null)
+
+    const oldQuantity = lineItem.quantity
+    const oldUnitPrice = lineItem.unitPrice
+    const oldLineTotal = lineItem.total
+
+    const pricing = await computeLineItemPricing(tx, {
+      orgId,
+      productId: lineItem.productId,
+      quantity: input.quantity,
+      isRepeatOrder: lineItem.isRepeatOrder,
+      addonIds: addonIds.length > 0 ? addonIds : undefined,
+    })
+
+    // Update the line item
+    const now = new Date()
+    const [updatedLineItem] = await tx
+      .update(lineItemsTable)
+      .set({
+        quantity: input.quantity,
+        unitPrice: pricing.unitPrice,
+        total: pricing.total,
+        updatedAt: now,
+      })
+      .where(eq(lineItemsTable.id, input.lineItemId))
+      .returning()
+
+    // 11. Recompute order total
+    const allLineItems = await tx
+      .select({ total: lineItemsTable.total })
+      .from(lineItemsTable)
+      .where(eq(lineItemsTable.orderId, input.orderId))
+
+    const newOrderTotal = allLineItems.reduce((sum, li) => sum + li.total, 0)
+    const oldOrderTotal = order.total
+
+    await tx
+      .update(ordersTable)
+      .set({ total: newOrderTotal, updatedAt: now })
+      .where(eq(ordersTable.id, input.orderId))
+
+    // 12. Sync production task quantities
+    const activeTasks = await tx
+      .select({
+        id: productionTasksTable.id,
+        context: productionTasksTable.context,
+      })
+      .from(productionTasksTable)
+      .where(
+        and(
+          eq(productionTasksTable.lineItemId, input.lineItemId),
+          eq(productionTasksTable.orgId, orgId),
+          eq(productionTasksTable.orderId, input.orderId),
+          ne(productionTasksTable.status, 'completed'),
+          isNull(productionTasksTable.archivedAt),
+        ),
+      )
+
+    for (const task of activeTasks) {
+      if (task.context && typeof task.context === 'object') {
+        await tx
+          .update(productionTasksTable)
+          .set({
+            context: { ...task.context, quantity: input.quantity },
+            updatedAt: now,
+          })
+          .where(eq(productionTasksTable.id, task.id))
+      }
+    }
+
+    // 13. Rewrite final invoice if present
+    if (finalInvoiceId) {
+      const paymentRows = await tx
+        .select({ amount: paymentsTable.amount, status: paymentsTable.status })
+        .from(paymentsTable)
+        .where(
+          and(
+            eq(paymentsTable.invoiceId, finalInvoiceId),
+            eq(paymentsTable.orgId, orgId),
+          ),
+        )
+
+      const paidAmount = paymentRows
+        .filter((p) => p.status === 'confirmed')
+        .reduce((sum, p) => sum + p.amount, 0)
+
+      const rewriteResult = await rewriteFinalInvoiceFromOrder(tx, {
+        orgId,
+        orderId: input.orderId,
+        invoiceId: finalInvoiceId,
+        paidAmount,
+      })
+
+      overpaidAmount = rewriteResult.overpaidAmount
+    }
+
+    // 14. Insert activity event
+    await tx.insert(activityEventsTable).values({
+      id: crypto.randomUUID(),
+      orgId,
+      actorId: input.actorId,
+      targetType: 'order',
+      targetId: input.orderId,
+      action: 'quantity_adjusted',
+      details: {
+        lineItemId: input.lineItemId,
+        productName: lineItem.productName,
+        designName: lineItem.designName,
+        oldQuantity,
+        newQuantity: input.quantity,
+        oldUnitPrice,
+        newUnitPrice: pricing.unitPrice,
+        oldLineTotal,
+        newLineTotal: pricing.total,
+        oldOrderTotal,
+        newOrderTotal,
+        reason,
+        pricingBasis: 'repriced_by_quantity',
+        finalInvoiceId,
+        finalInvoiceRewritten: finalInvoiceId !== null,
+        overpaidAmount,
+      },
+      createdAt: now,
+    })
+
+    // Read updated order for return
+    const [updatedOrder] = await tx
+      .select()
+      .from(ordersTable)
+      .where(eq(ordersTable.id, input.orderId))
+      .limit(1)
+
+    return {
+      order: updatedOrder as Order,
+      lineItem: updatedLineItem as unknown as OrderLineItem,
+      finalInvoiceId,
+      overpaidAmount,
+    }
+  })
+}
+
+export type OrderHistoryEvent = {
+  id: string
+  action: string
+  actorId: string
+  details: Record<string, unknown>
+  createdAt: Date
+}
+
+export async function listOrderHistoryEvents(
+  orderId: string,
+  orgId: string,
+): Promise<OrderHistoryEvent[]> {
+  const rows = await db
+    .select({
+      id: activityEventsTable.id,
+      action: activityEventsTable.action,
+      actorId: activityEventsTable.actorId,
+      details: activityEventsTable.details,
+      createdAt: activityEventsTable.createdAt,
+    })
+    .from(activityEventsTable)
+    .where(
+      and(
+        eq(activityEventsTable.targetType, 'order'),
+        eq(activityEventsTable.targetId, orderId),
+        eq(activityEventsTable.orgId, orgId),
+      ),
+    )
+    .orderBy(desc(activityEventsTable.createdAt))
+
+  return rows.map((row) => ({
+    id: row.id,
+    action: row.action,
+    actorId: row.actorId,
+    details: (row.details ?? {}) as Record<string, unknown>,
+    createdAt: row.createdAt,
+  }))
 }
 
 export async function approveOrder(
@@ -1390,6 +1785,16 @@ export async function advanceOrderStatus(
       .update(ordersTable)
       .set({ status: 'in_progress', updatedAt: now })
       .where(eq(ordersTable.id, id))
+    await db.insert(activityEventsTable).values({
+      id: crypto.randomUUID(),
+      orgId,
+      actorId: _actorId,
+      targetType: 'order',
+      targetId: id,
+      action: 'production_started',
+      details: {},
+      createdAt: now,
+    })
   } else if (order.status === 'in_progress') {
     await db
       .update(ordersTable)
@@ -1470,5 +1875,91 @@ export async function markShipped(
           isNull(productionTasksTable.archivedAt),
         ),
       )
+  })
+}
+export type LateFeeCalculation = {
+  daysLate: number
+  lateFee: number
+  lateFeePerDay: number
+  deadline: Date | null
+  completionDate: Date
+}
+
+export async function computeLateFee(
+  orderId: string,
+  orgId: string,
+  completionDate = new Date(),
+): Promise<LateFeeCalculation> {
+  const orderRows = await db
+    .select({ id: ordersTable.id, deadline: ordersTable.deadline })
+    .from(ordersTable)
+    .where(and(eq(ordersTable.id, orderId), eq(ordersTable.orgId, orgId)))
+    .limit(1)
+
+  if (orderRows.length === 0) throw new Error('Order not found')
+  const { deadline } = orderRows[0]
+
+  const profileRows = await db
+    .select({ lateFeePerDay: organizationProfilesTable.lateFeePerDay })
+    .from(organizationProfilesTable)
+    .where(eq(organizationProfilesTable.orgId, orgId))
+    .limit(1)
+
+  const lateFeePerDay = profileRows[0]?.lateFeePerDay ?? 0
+
+  if (!deadline || lateFeePerDay <= 0) {
+    return { daysLate: 0, lateFee: 0, lateFeePerDay, deadline, completionDate }
+  }
+
+  const deadlineDay = new Date(
+    deadline.getFullYear(),
+    deadline.getMonth(),
+    deadline.getDate(),
+  )
+  const completionDay = new Date(
+    completionDate.getFullYear(),
+    completionDate.getMonth(),
+    completionDate.getDate(),
+  )
+  const daysLate = Math.max(
+    0,
+    Math.floor((completionDay.getTime() - deadlineDay.getTime()) / 86_400_000),
+  )
+  const lateFee = daysLate * lateFeePerDay
+
+  return { daysLate, lateFee, lateFeePerDay, deadline, completionDate }
+}
+
+export function capLateFee(lateFee: number, maxDeduction: number): number {
+  return Math.min(lateFee, maxDeduction)
+}
+
+export async function logLateFeeApplied(params: {
+  orgId: string
+  orderId: string
+  actorId: string
+  invoiceId: string
+  daysLate: number
+  lateFee: number
+  lateFeePerDay: number
+  deadline: Date
+  completionDate: Date
+}): Promise<void> {
+  await db.insert(activityEventsTable).values({
+    id: generateId(),
+    orgId: params.orgId,
+    targetType: 'order',
+    targetId: params.orderId,
+    action: 'late_fee_applied',
+    details: {
+      invoiceId: params.invoiceId,
+      daysLate: params.daysLate,
+      lateFee: params.lateFee,
+      lateFeePerDay: params.lateFeePerDay,
+      deadline: params.deadline.toISOString(),
+      completionDate: params.completionDate.toISOString(),
+    },
+    actorId: params.actorId,
+    createdAt: params.completionDate,
   })
 }

@@ -25,6 +25,8 @@ function makeOrder(status: string): GetOrderResult {
       trackingNumber: null,
       shippedAt: null,
       deliveredAt: null,
+      deadline: null,
+      manualDeadline: false,
       shippingAddress: null,
       createdAt: new Date(),
       updatedAt: new Date(),

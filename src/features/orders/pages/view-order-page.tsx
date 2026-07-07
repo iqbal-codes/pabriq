@@ -6,6 +6,7 @@ import {
   FileText,
   Link2,
   Printer,
+  Settings2,
   Truck,
   XCircle,
 } from 'lucide-react'
@@ -28,6 +29,7 @@ import { OrderInvoicesSection } from '#/features/orders/components/order-invoice
 import { OrderLineItemsCard } from '#/features/orders/components/order-line-items-card'
 import { OrderStatusBadge } from '#/features/orders/components/order-status-badge'
 import { RejectReasonDialog } from '#/features/orders/components/reject-reason-dialog'
+import { OrderHistoryCard } from '#/features/orders/components/order-history-card'
 import { RejectedReasonBanner } from '#/features/orders/components/rejected-reason-banner'
 import { useOrderDerivedState } from '#/features/orders/components/use-order-derived-state'
 import { useOrderMutations } from '#/features/orders/components/use-order-mutations'
@@ -37,6 +39,12 @@ import {
 } from '#/features/orders/components/view-order-utils'
 import { useOrder } from '#/features/orders/hooks'
 import { useTasksByOrderId } from '#/features/production/hooks'
+import { OrderQuantityAdjustmentModal } from '#/features/orders/components/order-quantity-adjustment-modal'
+import {
+  canAdjustConfirmedOrder,
+  type Role,
+} from '#/features/permissions/model'
+import { useProductsList } from '#/features/products/hooks'
 
 function CopyButton({ text }: { text: string }) {
   return (
@@ -54,13 +62,14 @@ function CopyButton({ text }: { text: string }) {
 export function ViewOrderPage() {
   const { id } = useParams({ from: '/_org/orders/$id/' })
   const ctx = useRouteContext({ from: '/_org/orders/$id/' }) as {
-    org: { id: string }
+    org: { id: string; role: Role }
   }
   const { data } = useOrder({ id, orgId: ctx.org.id })
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
   const [completeProductionModalOpen, setCompleteProductionModalOpen] =
     useState(false)
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+  const [adjustQuantityOpen, setAdjustQuantityOpen] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
   const t = useTranslations('orders')
   const ct = useTranslations('common')
@@ -76,6 +85,11 @@ export function ViewOrderPage() {
   })
   const { data: tasksData } = useTasksByOrderId(id)
   const { data: paymentMethods } = usePaymentMethods()
+  const { data: productsData } = useProductsList({
+    orgId: ctx.org.id,
+    perPage: 200,
+  })
+  const products = productsData?.rows ?? []
   const orderInvoices = invoicesData?.rows ?? []
   const shippingFee = orderInvoices
     .filter((invoice) => invoice.status !== 'void')
@@ -213,6 +227,26 @@ export function ViewOrderPage() {
       label: t('reject'),
       icon: XCircle,
       onClick: () => setRejectDialogOpen(true),
+    })
+  }
+  // Check for paid final invoice: newest non-void after at least one paid non-void
+  const nonVoidInvoices = orderInvoices.filter((inv) => inv.status !== 'void')
+  const hasPaidInvoice = nonVoidInvoices.some((inv) => inv.status === 'paid')
+  const sortedByCreatedAt = [...nonVoidInvoices].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  )
+  const hasPaidFinalInvoice =
+    hasPaidInvoice && sortedByCreatedAt[0]?.status === 'paid'
+
+  if (
+    canAdjustConfirmedOrder(ctx.org.role) &&
+    ['approved', 'in_progress', 'production'].includes(order.status) &&
+    !hasPaidFinalInvoice
+  ) {
+    secondaryActions.push({
+      label: t('adjustQuantity'),
+      icon: Settings2,
+      onClick: () => setAdjustQuantityOpen(true),
     })
   }
 
@@ -353,6 +387,7 @@ export function ViewOrderPage() {
               </div>
             </CardContent>
           </Card>
+          <OrderHistoryCard orderId={order.id} />
 
           {/* Customer Details Card */}
           <Card>
@@ -515,6 +550,26 @@ export function ViewOrderPage() {
           customerId: order.customerId,
           customerName,
           shippingAddress,
+        }}
+      />
+
+      <OrderQuantityAdjustmentModal
+        open={adjustQuantityOpen}
+        onOpenChange={setAdjustQuantityOpen}
+        orderId={order.id}
+        lineItems={lineItems.map((li) => ({
+          id: li.id,
+          productId: li.productId,
+          productName: li.productName,
+          designName: li.designName,
+          quantity: li.quantity,
+          unitPrice: li.unitPrice,
+          total: li.total,
+          isRepeatOrder: li.isRepeatOrder,
+        }))}
+        products={products}
+        onSuccess={() => {
+          setAdjustQuantityOpen(false)
         }}
       />
     </PageContent>

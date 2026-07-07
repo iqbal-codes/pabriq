@@ -1,5 +1,4 @@
-import { Link } from '@tanstack/react-router'
-import { Eye, Printer } from 'lucide-react'
+import { Printer } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
 import { StatusBadge } from '#/components/status-badge'
@@ -54,17 +53,12 @@ export function OrderInvoicesCard({
                     <div className="flex items-center gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <Link
-                            to="/invoices/$id"
-                            params={{ id: inv.id }}
-                            className="font-medium text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded truncate"
-                          >
+                          <span className="font-medium text-sm text-foreground truncate">
                             {inv.invoiceNumber}
-                          </Link>
+                          </span>
                           <StatusBadge status={inv.status} />
                         </div>
                       </div>
-
                       {/* Right: total + icon actions */}
                       <div className="flex items-center gap-2">
                         <div className="text-right mr-1">
@@ -85,16 +79,6 @@ export function OrderInvoicesCard({
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>{it('printInvoice')}</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon-sm" asChild>
-                              <Link to="/invoices/$id" params={{ id: inv.id }}>
-                                <Eye className="size-3.5" />
-                              </Link>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>{it('viewInvoice')}</TooltipContent>
                         </Tooltip>
                       </div>
                     </div>

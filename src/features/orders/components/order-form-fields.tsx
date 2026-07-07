@@ -7,6 +7,7 @@ import { AssetImage } from '#/components/app/asset-image'
 import { FormGrid, FormSection, withForm } from '#/components/app/form'
 import { firstError, formatNumber } from '#/components/app/form/form-utils'
 import { Button } from '#/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import type { CustomerRow } from '#/features/customers/model'
 import { getCustomerFn } from '#/features/customers/server'
 import type { ProductRow } from '#/features/products/model'
@@ -88,123 +89,178 @@ export const OrderFormFields = withForm({
           }, 0)
 
           return (
-            <>
-              <FormSection title={t('summary')}>
-                <FormGrid columns={1}>
-                  <div className="flex items-end gap-2">
-                    <div className="flex-1">
-                      <form.AppField name="customerId">
+            <div className="space-y-6">
+              <FormSection title={t('summary')} titleHidden>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">{t('summary')}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <FormGrid columns={1}>
+                      <div className="flex items-end gap-2">
+                        <div className="flex-1">
+                          <form.AppField name="customerId">
+                            {(field) => (
+                              <field.ComboboxField
+                                label={t('customer')}
+                                placeholder={t('customer')}
+                                options={customerOptions}
+                                itemRender={(option) => {
+                                  const customer =
+                                    option as unknown as CustomerRow
+                                  return (
+                                    <div className="flex flex-row items-center gap-2">
+                                      <AssetImage
+                                        assetId={customer.photoAssetId}
+                                        assetKind="image"
+                                        className="rounded-full"
+                                      />
+                                      <div className="flex flex-col">
+                                        <span>{customer.name}</span>
+                                        <span className="text-muted-foreground">
+                                          {customer.phone}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )
+                                }}
+                              />
+                            )}
+                          </form.AppField>
+                        </div>
+                        <CreateCustomerDialog
+                          onSelect={handleCustomerSelect}
+                          trigger={
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="shrink-0"
+                            >
+                              <UserPlus className="size-4" />
+                            </Button>
+                          }
+                        />
+                      </div>
+                      <form.AppField name="notes">
                         {(field) => (
-                          <field.ComboboxField
-                            label={t('customer')}
-                            placeholder={t('customer')}
-                            options={customerOptions}
-                            itemRender={(option) => {
-                              const customer = option as unknown as CustomerRow
-                              return (
-                                <div className="flex flex-row items-center gap-2">
-                                  <AssetImage
-                                    assetId={customer.photoAssetId}
-                                    assetKind="image"
-                                    className="rounded-full"
-                                  />
-                                  <div className="flex flex-col">
-                                    <span>{customer.name}</span>
-                                    <span className="text-muted-foreground">
-                                      {customer.phone}
-                                    </span>
-                                  </div>
-                                </div>
-                              )
-                            }}
+                          <field.TextareaField label={t('notes')} optional />
+                        )}
+                      </form.AppField>
+                      <form.AppField name="address">
+                        {(field) => (
+                          <field.AddressField
+                            label={pt('shippingAddress')}
+                            optional
                           />
                         )}
                       </form.AppField>
-                    </div>
-                    <CreateCustomerDialog
-                      onSelect={handleCustomerSelect}
-                      trigger={
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          className="shrink-0"
-                        >
-                          <UserPlus className="size-4" />
-                        </Button>
-                      }
-                    />
-                  </div>
-                  <form.AppField name="notes">
-                    {(field) => (
-                      <field.TextareaField label={t('notes')} optional />
-                    )}
-                  </form.AppField>
-                  <form.AppField name="address">
-                    {(field) => (
-                      <field.AddressField
-                        label={pt('shippingAddress')}
-                        optional
-                      />
-                    )}
-                  </form.AppField>
-                </FormGrid>
-              </FormSection>
-
-              <FormSection
-                title={t('lineItems')}
-                action={
-                  <ProductSelectDialog
-                    products={products}
-                    onSelect={handleAddProduct}
-                    trigger={
-                      <Button type="button" variant="outline" size="sm">
-                        <Plus className="mr-1 size-4" />
-                        {t('addItem')}
-                      </Button>
-                    }
-                  />
-                }
-              >
-                <form.AppField name="lineItems" mode="array">
-                  {(field) => {
-                    const error = firstError(field.state.meta.errors)
-                    return (
-                      <>
-                        {lineItems.map((item, i) => (
-                          <OrderLineItemRow
-                            key={item.id}
-                            form={form}
-                            index={i}
-                            item={item}
-                            products={products}
-                          />
-                        ))}
-
-                        {error && (
-                          <p className="mt-2 text-sm text-destructive font-medium">
-                            {error}
-                          </p>
-                        )}
-
-                        {lineItems.length > 0 && (
-                          <div className="flex justify-end border-t pt-4">
-                            <div className="text-right">
-                              <span className="text-sm text-muted-foreground">
-                                {t('orderTotal')}
-                              </span>
-                              <p className="text-xl font-semibold">
-                                Rp {formatNumber(total)}
-                              </p>
-                            </div>
+                      <form.AppField name="manualDeadline">
+                        {(field) => (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id="manualDeadline"
+                              checked={field.state.value}
+                              onChange={(e) =>
+                                field.handleChange(e.target.checked)
+                              }
+                              className="size-4"
+                            />
+                            <label
+                              htmlFor="manualDeadline"
+                              className="text-sm font-medium"
+                            >
+                              {t('manualOrderDeadline')}
+                            </label>
                           </div>
                         )}
-                      </>
-                    )
-                  }}
-                </form.AppField>
+                      </form.AppField>
+                      <form.Subscribe
+                        selector={(state) => ({
+                          manualDeadline: state.values.manualDeadline,
+                        })}
+                      >
+                        {({ manualDeadline }) =>
+                          manualDeadline ? (
+                            <form.AppField name="deadline">
+                              {(field) => (
+                                <field.DateField label={t('orderDeadline')} />
+                              )}
+                            </form.AppField>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              {t('orderDeadlineAutoDescription')}
+                            </p>
+                          )
+                        }
+                      </form.Subscribe>
+                    </FormGrid>
+                  </CardContent>
+                </Card>
               </FormSection>
-            </>
+
+              <FormSection title={t('lineItems')} titleHidden>
+                <Card>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">
+                        {t('lineItems')}
+                      </CardTitle>
+                      <ProductSelectDialog
+                        products={products}
+                        onSelect={handleAddProduct}
+                        trigger={
+                          <Button type="button" variant="outline" size="sm">
+                            <Plus className="mr-1 size-4" />
+                            {t('addItem')}
+                          </Button>
+                        }
+                      />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <form.AppField name="lineItems" mode="array">
+                      {(field) => {
+                        const error = firstError(field.state.meta.errors)
+                        return (
+                          <>
+                            {lineItems.map((item, i) => (
+                              <OrderLineItemRow
+                                key={item.id}
+                                form={form}
+                                index={i}
+                                item={item}
+                                products={products}
+                              />
+                            ))}
+
+                            {error && (
+                              <p className="mt-2 text-sm text-destructive font-medium">
+                                {error}
+                              </p>
+                            )}
+
+                            {lineItems.length > 0 && (
+                              <div className="flex justify-end border-t pt-4">
+                                <div className="text-right">
+                                  <span className="text-sm text-muted-foreground">
+                                    {t('orderTotal')}
+                                  </span>
+                                  <p className="text-xl font-semibold">
+                                    Rp {formatNumber(total)}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )
+                      }}
+                    </form.AppField>
+                  </CardContent>
+                </Card>
+              </FormSection>
+            </div>
           )
         }}
       </form.Subscribe>

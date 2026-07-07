@@ -93,6 +93,8 @@ function TestOrderLineItemRow() {
         areaName: '',
         streetAddress: '',
       },
+      deadline: '',
+      manualDeadline: false,
       lineItems: [lineItem],
     },
     onSubmit: vi.fn(),

@@ -1,6 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import { resolveOrgId } from '#/lib/auth-session'
+import { resolveOrgId } from '#/lib/auth-session-server'
+import {
+  canAdjustConfirmedOrder,
+  type Role,
+} from '#/features/permissions/model'
 import type { MutationResult } from '#/lib/server-results'
 import type {
   CreateDraftOrderInput,
@@ -54,6 +58,8 @@ export const createDraftOrderFn = createServerFn({ method: 'POST' })
       customerId: data.customerId,
       notes: data.notes,
       lineItems: data.lineItems,
+      deadline: data.deadline,
+      manualDeadline: data.manualDeadline,
     })
   })
 
@@ -75,6 +81,8 @@ export const updateDraftOrderFn = createServerFn({ method: 'POST' })
       customerId: data.customerId,
       notes: data.notes,
       lineItems: data.lineItems,
+      deadline: data.deadline,
+      manualDeadline: data.manualDeadline,
     })
   })
 
@@ -225,7 +233,8 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
       },
       { eq, and },
       { createInvoice },
-      { markShipped },
+      { computeLateFee, capLateFee, logLateFeeApplied, markShipped },
+      { auth },
     ] = await Promise.all([
       resolveOrgId(),
       import('#/db/index'),
@@ -233,7 +242,12 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
       import('drizzle-orm'),
       import('#/features/invoices/model'),
       import('./model'),
+      import('#/lib/auth'),
     ])
+
+    const headers = getRequestHeaders()
+    const session = await auth.api.getSession({ headers })
+    const userId = session?.user.id ?? 'unknown'
 
     const tasks = await db
       .select({ id: productionTasks.id, status: productionTasks.status })
@@ -306,10 +320,15 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
     const invoicedAmount = paidInvoices.reduce((sum, inv) => sum + inv.total, 0)
     const remainingAmount = Math.max(0, order.total - invoicedAmount)
     const shippingAmount = data.shippingFee ?? 0
-    const invoiceTotal = remainingAmount + shippingAmount
+
+    // Compute late fee
+    const now = new Date()
+    const lateFeeCalc = await computeLateFee(data.id, orgId, now)
+    const maxDeduction = remainingAmount + shippingAmount
+    const cappedLateFee = capLateFee(lateFeeCalc.lateFee, maxDeduction)
 
     // 4. Create final invoice when there is unpaid order balance or shipping
-    if (invoiceTotal > 0) {
+    if (remainingAmount + shippingAmount > 0) {
       if (!data.invoiceDueDate || !data.invoicePaymentMethodId) {
         throw new Error(
           'Due date and payment method are required to create the final invoice',
@@ -321,7 +340,7 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
           ? Math.round((remainingAmount / order.total) * 10_000) / 100
           : 0
 
-      await createInvoice(orgId, {
+      const invoiceResult = await createInvoice(orgId, {
         orderId: data.id,
         customerId,
         customerName,
@@ -333,7 +352,26 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
         shippingFee: shippingAmount > 0 ? shippingAmount : undefined,
         shippingFeeDescription:
           shippingAmount > 0 ? data.shippingFeeDescription : undefined,
+        lateFee: cappedLateFee > 0 ? cappedLateFee : undefined,
+        lateFeeDays: cappedLateFee > 0 ? lateFeeCalc.daysLate : undefined,
+        lateFeePerDay:
+          cappedLateFee > 0 ? lateFeeCalc.lateFeePerDay : undefined,
       })
+
+      // Log activity event for late fee
+      if (cappedLateFee > 0 && lateFeeCalc.deadline) {
+        await logLateFeeApplied({
+          orgId,
+          orderId: data.id,
+          actorId: userId,
+          invoiceId: invoiceResult.invoice.id,
+          daysLate: lateFeeCalc.daysLate,
+          lateFee: cappedLateFee,
+          lateFeePerDay: lateFeeCalc.lateFeePerDay,
+          deadline: lateFeeCalc.deadline,
+          completionDate: now,
+        })
+      }
     }
 
     // 5. Mark order as shipped (in_delivery)
@@ -365,4 +403,59 @@ export const startProductionFn = createServerFn({ method: 'POST' })
         error: e instanceof Error ? e.message : 'Unknown error',
       }
     }
+  })
+
+export const adjustOrderQuantityFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (input: {
+      orderId: string
+      lineItemId: string
+      quantity: number
+      reason: string
+    }) => input,
+  )
+  .handler(async ({ data }): Promise<MutationResult> => {
+    const [orgId, { auth }, { adjustOrderQuantity }] = await Promise.all([
+      resolveOrgId(),
+      import('#/lib/auth'),
+      import('./model'),
+    ])
+    const headers = getRequestHeaders()
+    const session = await auth.api.getSession({ headers })
+    if (!session) return { ok: false, error: 'Not authenticated' }
+
+    // Get user's role
+    const { db } = await import('#/db/index')
+    const { member } = await import('#/db/schema')
+    const { eq } = await import('drizzle-orm')
+    const memberships = await db
+      .select({ role: member.role })
+      .from(member)
+      .where(eq(member.userId, session.user.id))
+      .limit(1)
+
+    const role = memberships[0]?.role
+    if (!role || !canAdjustConfirmedOrder(role as Role)) {
+      return { ok: false, error: 'Not authorized' }
+    }
+
+    try {
+      await adjustOrderQuantity(orgId, { ...data, actorId: session.user.id })
+      return { ok: true }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
+  })
+
+export const listOrderHistoryEventsFn = createServerFn({ method: 'GET' })
+  .inputValidator((input: { orderId: string }) => input)
+  .handler(async ({ data }) => {
+    const [orgId, { listOrderHistoryEvents }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
+    return listOrderHistoryEvents(data.orderId, orgId) as Promise<any>
   })

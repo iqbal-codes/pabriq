@@ -12,11 +12,13 @@ import type {
   OrderCreationReadiness,
 } from './model'
 import {
+  adjustOrderQuantityFn,
   advanceOrderStatusFn,
   completeProductionFn,
   createDraftOrderFn,
   getOrderCreationReadinessFn,
   getOrderFn,
+  listOrderHistoryEventsFn,
   listOrdersFn,
   updateDraftOrderFn,
 } from './server'
@@ -62,6 +64,8 @@ export function useUpdateDraftOrder() {
       orgId: string
       customerId: string | null
       notes?: string
+      deadline?: Date
+      manualDeadline?: boolean
       lineItems: Array<{
         id?: string
         productId: string
@@ -69,6 +73,10 @@ export function useUpdateDraftOrder() {
         unitPrice?: number
         designName?: string
         notes?: string
+        addonIds?: string[]
+        isRepeatOrder?: boolean
+        deadline?: Date
+        manualDeadline?: boolean
       }>
     }) => updateDraftOrderFn({ data: input }),
     onSuccess: (_data, variables) =>
@@ -112,5 +120,32 @@ export function useAdvanceOrderStatus() {
         { queryKey: queryKeys.orders.lists() },
         { queryKey: queryKeys.orders.detail(variables.id) },
       ]),
+  })
+}
+
+export function useAdjustOrderQuantity() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: {
+      orderId: string
+      lineItemId: string
+      quantity: number
+      reason: string
+    }) => adjustOrderQuantityFn({ data: input }),
+    onSuccess: (_data, variables) =>
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.orders.lists() },
+        { queryKey: queryKeys.orders.detail(variables.orderId) },
+        { queryKey: queryKeys.invoices.all },
+        { queryKey: queryKeys.production.all },
+        { queryKey: queryKeys.portal.all },
+      ]),
+  })
+}
+
+export function useOrderHistoryEvents(orderId: string) {
+  return useQuery({
+    queryKey: queryKeys.orders.history(orderId),
+    queryFn: () => listOrderHistoryEventsFn({ data: { orderId } }),
   })
 }

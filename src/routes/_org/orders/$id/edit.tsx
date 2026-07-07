@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { EditOrderPage } from '#/features/orders/pages/edit-order-page'
+import { OrdersListPage } from '#/features/orders/pages/orders-list-page'
 
 export const Route = createFileRoute('/_org/orders/$id/edit')({
   beforeLoad: () => ({
@@ -7,5 +7,8 @@ export const Route = createFileRoute('/_org/orders/$id/edit')({
     parentBreadcrumbs: [{ label: 'orders', href: '/orders' }],
     pageTitle: 'editOrder',
   }),
-  component: EditOrderPage,
+  component: () => {
+    const { id } = Route.useParams()
+    return <OrdersListPage sheet={{ type: 'edit', id }} />
+  },
 })

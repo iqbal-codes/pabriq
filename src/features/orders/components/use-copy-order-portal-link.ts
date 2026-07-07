@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import { generateOrderTokenFn } from '#/features/portal/server'
+import { buildPortalUrl } from '#/lib/domain-routing'
 import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 import { queryKeys } from '#/lib/query-keys'
 
@@ -41,7 +42,7 @@ export function useCopyOrderPortalLink(): {
         token = result.token
       }
 
-      const url = `${window.location.origin}/order/${token}`
+      const url = buildPortalUrl(token)
       await navigator.clipboard.writeText(url)
       toast.success(t('linkCopied'))
     } catch {

@@ -1,4 +1,4 @@
-import { useRouteContext } from '@tanstack/react-router'
+import { useNavigate, useRouteContext } from '@tanstack/react-router'
 import { ShoppingCart } from 'lucide-react'
 import { parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
@@ -11,6 +11,10 @@ import {
 } from '#/components/app/data-table'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
+import {
+  OrderFormSheet,
+  type OrderFormSheetMode,
+} from '#/features/orders/components/order-form-sheet'
 import { OrderRowActions } from '#/features/orders/components/order-table-actions'
 import {
   getOrderColumns,
@@ -20,8 +24,9 @@ import {
 } from '#/features/orders/components/order-table-columns'
 import { useOrdersList } from '#/features/orders/hooks'
 
-export function OrdersListPage() {
-  const ctx = useRouteContext({ from: '/_org/orders/' }) as {
+export function OrdersListPage({ sheet }: { sheet?: OrderFormSheetMode } = {}) {
+  const navigate = useNavigate()
+  const ctx = useRouteContext({ from: '/_org' }) as {
     org: { id: string }
   }
   const t = useTranslations('orders')
@@ -154,6 +159,23 @@ export function OrdersListPage() {
         onClearFilters={handleClearAllFilters}
         rowActions={(row) => <OrderRowActions row={row} />}
       />
+      {sheet && (
+        <OrderFormSheet
+          mode={sheet}
+          orgId={ctx.org.id}
+          open={Boolean(sheet)}
+          onOpenChange={(open) => {
+            if (!open) navigate({ to: '/orders' })
+          }}
+          onSaved={(orderId) => {
+            if (orderId) {
+              navigate({ to: '/orders/$id', params: { id: orderId } })
+            } else {
+              navigate({ to: '/orders' })
+            }
+          }}
+        />
+      )}
     </PageContent>
   )
 }

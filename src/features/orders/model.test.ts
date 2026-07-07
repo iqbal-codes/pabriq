@@ -1,7 +1,8 @@
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '#/db/index'
 import {
+  activityEvents as activityEventsTable,
   addresses as addressesTable,
   pricingBreakpoints as breakpointsTable,
   customers as customersTable,
@@ -16,6 +17,7 @@ import {
   productionTasks as tasksTable,
 } from '#/db/schema'
 import {
+  adjustOrderQuantity,
   createDraftOrder,
   getOrder,
   getOrderCreationReadiness,
@@ -23,7 +25,6 @@ import {
   markShipped,
   updateDraftOrder,
 } from './model'
-
 const org1Id = '00000000-0000-0000-0000-000000000001'
 const org2Id = '00000000-0000-0000-0000-000000000002'
 
@@ -1209,5 +1210,293 @@ describe('listOrders payment status aggregation', () => {
     expect(rowsMap.get('order-shipped-open-fee')?.paymentStatus).toBe(
       'partially_paid',
     )
+  })
+})
+describe('adjustOrderQuantity', () => {
+  it('reprices line item and updates order total', async () => {
+    const now = new Date()
+
+    // Seed product with breakpoints
+    await db.insert(productsTable).values([
+      {
+        id: 'adj-prod-1',
+        orgId: org1Id,
+        name: 'Adjust Product',
+        active: true,
+        basePrice: 20,
+        minQuantity: 1,
+        pricingMode: 'step',
+        productionDays: 3,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(breakpointsTable).values([
+      {
+        id: 'adj-bp-1',
+        orgId: org1Id,
+        productId: 'adj-prod-1',
+        minQuantity: 1,
+        unitPrice: 20,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: 'adj-bp-2',
+        orgId: org1Id,
+        productId: 'adj-prod-1',
+        minQuantity: 100,
+        unitPrice: 15,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    // Seed approved order with line item
+    await db.insert(ordersTable).values([
+      {
+        id: 'adj-order-1',
+        orgId: org1Id,
+        status: 'approved',
+        total: 2000,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(lineItemsTable).values([
+      {
+        id: 'adj-li-1',
+        orgId: org1Id,
+        orderId: 'adj-order-1',
+        productId: 'adj-prod-1',
+        productName: 'Adjust Product',
+        quantity: 100,
+        unitPrice: 15,
+        total: 1500,
+        productionDays: 3,
+        deadline: new Date(),
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    const result = await adjustOrderQuantity(org1Id, {
+      orderId: 'adj-order-1',
+      lineItemId: 'adj-li-1',
+      quantity: 10,
+      reason: 'Customer reduced order',
+      actorId: 'actor-1',
+    })
+
+    // Line item repriced: 10 units at basePrice=20
+    expect(result.lineItem.quantity).toBe(10)
+    expect(result.lineItem.unitPrice).toBe(20)
+    expect(result.lineItem.total).toBe(200)
+
+    // Order total updated
+    expect(result.order.total).toBe(200)
+
+    // Activity event inserted
+    const events = await db
+      .select()
+      .from(activityEventsTable)
+      .where(
+        and(
+          eq(activityEventsTable.targetId, 'adj-order-1'),
+          eq(activityEventsTable.action, 'quantity_adjusted'),
+        ),
+      )
+    expect(events).toHaveLength(1)
+    expect(events[0].details).toMatchObject({
+      oldQuantity: 100,
+      newQuantity: 10,
+      reason: 'Customer reduced order',
+    })
+  })
+
+  it('blocks in_delivery orders', async () => {
+    const now = new Date()
+    await db.insert(productsTable).values([
+      {
+        id: 'adj-prod-2',
+        orgId: org1Id,
+        name: 'Product 2',
+        active: true,
+        basePrice: 10,
+        minQuantity: 1,
+        productionDays: 1,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(ordersTable).values([
+      {
+        id: 'adj-order-2',
+        orgId: org1Id,
+        status: 'in_delivery',
+        total: 100,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(lineItemsTable).values([
+      {
+        id: 'adj-li-2',
+        orgId: org1Id,
+        orderId: 'adj-order-2',
+        productId: 'adj-prod-2',
+        productName: 'Product 2',
+        quantity: 10,
+        unitPrice: 10,
+        total: 100,
+        productionDays: 1,
+        deadline: new Date(),
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    await expect(
+      adjustOrderQuantity(org1Id, {
+        orderId: 'adj-order-2',
+        lineItemId: 'adj-li-2',
+        quantity: 5,
+        reason: 'Test',
+        actorId: 'actor-1',
+      }),
+    ).rejects.toThrow('Only approved or production orders can be adjusted')
+  })
+
+  it('enforces repeat-order minimum', async () => {
+    const now = new Date()
+    await db.insert(productsTable).values([
+      {
+        id: 'adj-prod-3',
+        orgId: org1Id,
+        name: 'Repeat Product',
+        active: true,
+        basePrice: 10,
+        minQuantity: 1,
+        repeatOrderMinQuantity: 50,
+        repeatOrderUnitPrice: 8,
+        productionDays: 1,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(ordersTable).values([
+      {
+        id: 'adj-order-3',
+        orgId: org1Id,
+        status: 'approved',
+        total: 500,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(lineItemsTable).values([
+      {
+        id: 'adj-li-3',
+        orgId: org1Id,
+        orderId: 'adj-order-3',
+        productId: 'adj-prod-3',
+        productName: 'Repeat Product',
+        quantity: 100,
+        unitPrice: 8,
+        total: 800,
+        productionDays: 1,
+        deadline: new Date(),
+        isRepeatOrder: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    await expect(
+      adjustOrderQuantity(org1Id, {
+        orderId: 'adj-order-3',
+        lineItemId: 'adj-li-3',
+        quantity: 10,
+        reason: 'Below minimum',
+        actorId: 'actor-1',
+      }),
+    ).rejects.toThrow('Quantity below repeat order minimum of 50')
+  })
+
+  it('syncs active production task quantity', async () => {
+    const now = new Date()
+    await db.insert(productsTable).values([
+      {
+        id: 'adj-prod-4',
+        orgId: org1Id,
+        name: 'Task Product',
+        active: true,
+        basePrice: 25,
+        minQuantity: 1,
+        productionDays: 2,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(ordersTable).values([
+      {
+        id: 'adj-order-4',
+        orgId: org1Id,
+        status: 'production',
+        total: 500,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(lineItemsTable).values([
+      {
+        id: 'adj-li-4',
+        orgId: org1Id,
+        orderId: 'adj-order-4',
+        productId: 'adj-prod-4',
+        productName: 'Task Product',
+        quantity: 20,
+        unitPrice: 25,
+        total: 500,
+        productionDays: 2,
+        deadline: new Date(),
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(tasksTable).values([
+      {
+        id: 'adj-task-1',
+        orgId: org1Id,
+        orderId: 'adj-order-4',
+        lineItemId: 'adj-li-4',
+        board: 'production',
+        status: 'in_progress',
+        context: {
+          productName: 'Task Product',
+          customerName: 'Test',
+          requirements: null,
+          quantity: 20,
+        },
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    await adjustOrderQuantity(org1Id, {
+      orderId: 'adj-order-4',
+      lineItemId: 'adj-li-4',
+      quantity: 30,
+      reason: 'Increased order',
+      actorId: 'actor-1',
+    })
+
+    const task = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.id, 'adj-task-1'))
+      .limit(1)
+
+    expect(task[0].context).toMatchObject({ quantity: 30 })
   })
 })

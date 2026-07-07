@@ -79,7 +79,7 @@ describe('useCopyOrderPortalLink', () => {
     })
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      `${window.location.origin}/order/token-1`,
+      'http://portal.localhost:3000/token-1',
     )
     expect(mockGenerateOrderTokenFn).not.toHaveBeenCalled()
     expect(toast.success).toHaveBeenCalledWith('Copied')
@@ -104,7 +104,7 @@ describe('useCopyOrderPortalLink', () => {
       data: { orderId: 'order-1' },
     })
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      `${window.location.origin}/order/new-token-99`,
+      'http://portal.localhost:3000/new-token-99',
     )
     expect(toast.success).toHaveBeenCalledWith('Copied')
     expect(toast.error).not.toHaveBeenCalled()
@@ -132,7 +132,7 @@ describe('useCopyOrderPortalLink', () => {
     })
 
     expect(writeTextMock).toHaveBeenCalledWith(
-      `${window.location.origin}/order/token-1`,
+      'http://portal.localhost:3000/token-1',
     )
     expect(toast.error).toHaveBeenCalledWith('Could not copy')
     expect(toast.success).not.toHaveBeenCalled()

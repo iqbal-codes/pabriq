@@ -56,13 +56,14 @@ export function OrderRowActions({ row }: { row: OrderRow }) {
           tooltip={t('openPortalLink')}
           aria-label={t('openPortalLink')}
         >
-          <a
-            href={`/order/${row.orderToken}`}
+          <Link
+            to="/order/$token"
+            params={{ token: row.orderToken }}
             target="_blank"
             rel="noopener noreferrer"
           >
             <ExternalLink className="size-4" />
-          </a>
+          </Link>
         </Button>
       )}
     </div>

@@ -4,6 +4,8 @@ export type OrderFormValues = {
   customerId: string
   notes: string
   address: ShippingAddress
+  deadline: string
+  manualDeadline: boolean
   lineItems: Array<{
     id: string
     productId: string
@@ -27,5 +29,7 @@ export const defaultOrderValues = (): OrderFormValues => ({
     areaName: '',
     streetAddress: '',
   },
+  deadline: '',
+  manualDeadline: false,
   lineItems: [],
 })

@@ -6,7 +6,6 @@ export const Route = createFileRoute('/_org/orders/')({
   beforeLoad: () => ({
     breadcrumb: 'orders',
     pageTitle: 'orders',
-    primaryAction: { label: 'createOrder', href: '/orders/new' },
   }),
   component: OrdersListPage,
 })

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { CreateOrderPage } from '#/features/orders/pages/create-order-page'
+import { OrdersListPage } from '#/features/orders/pages/orders-list-page'
 
 export const Route = createFileRoute('/_org/orders/new')({
   beforeLoad: () => ({
@@ -7,5 +7,5 @@ export const Route = createFileRoute('/_org/orders/new')({
     pageTitle: 'createOrder',
     parentBreadcrumbs: [{ label: 'orders', href: '/orders' }],
   }),
-  component: CreateOrderPage,
+  component: () => <OrdersListPage sheet={{ type: 'create' }} />,
 })

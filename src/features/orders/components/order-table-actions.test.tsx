@@ -51,6 +51,7 @@ const draftRowWithToken: OrderRow = {
   createdAt: new Date('2024-01-15'),
   paymentStatus: 'unpaid',
   dueDate: null,
+  deadline: null,
   maxDeadline: null,
   deliveredAt: null,
   shippedAt: null,
@@ -106,6 +107,11 @@ describe('OrderRowActions', () => {
     expect(
       screen.getByRole('link', { name: 'Open Portal Link' }),
     ).toBeInTheDocument()
+  })
+  it('open portal link navigates via internal route, not a full URL', () => {
+    renderActions(draftRowWithToken)
+    const link = screen.getByRole('link', { name: 'Open Portal Link' })
+    expect(link).toHaveAttribute('href', '/order/$token')
   })
 
   it('open portal link is absent when orderToken is null', () => {
