@@ -245,6 +245,8 @@ const en: Messages = {
       "Payment methods make invoices actionable for customers from the first order.",
     orderDeadline: "Order deadline",
     manualOrderDeadline: "Set order deadline manually",
+    manualOrderDeadlineDescription:
+      "Enable to set a custom deadline for the entire order instead of per line item.",
     orderDeadlineAutoDescription:
       "When disabled, the order deadline follows the latest line item deadline.",
     orderDeadlineRequired: "Order deadline is required",
@@ -734,6 +736,7 @@ const en: Messages = {
   },
   production: {
     title: "Production",
+    close: "Close",
     kanbanTab: "Kanban",
     listTab: "List",
     stagesTab: "Stages",
@@ -958,6 +961,7 @@ const en: Messages = {
     timelineStatusCompleted: "Completed",
     timelineStatusWaitingApproval: "Awaiting approval",
     timelineReadyForProduction: "DP Payment",
+    timelineReadyForProductionWithStage: "Queue for {stage}",
 
     progressOverview: "At a glance",
     progressStatusApprovedHelp:
@@ -1202,6 +1206,22 @@ const en: Messages = {
     noOrgDescription:
       "Your account is not a member of any organization. Contact your administrator or sign out.",
     theme: "Theme",
+  },
+  dateField: {
+    pickDate: "Pick a date",
+    pickDateRange: "Pick a date range",
+    selectDate: "Select date",
+    startDate: "Start date",
+    endDate: "End date",
+    clear: "Clear",
+    today: "Today",
+    yesterday: "Yesterday",
+    tomorrow: "Tomorrow",
+    nextWeek: "Next Week",
+    last7Days: "Last 7 Days",
+    last30Days: "Last 30 Days",
+    thisMonth: "This Month",
+    lastMonth: "Last Month",
   },
 };
 

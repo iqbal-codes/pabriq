@@ -323,6 +323,7 @@ export type Messages = {
     setupMissionHelpPayment: string;
     orderDeadline: string;
     manualOrderDeadline: string;
+    manualOrderDeadlineDescription: string;
     orderDeadlineAutoDescription: string;
     orderDeadlineRequired: string;
     adjustQuantity: string;
@@ -712,6 +713,7 @@ export type Messages = {
   };
   production: {
     title: string;
+    close: string;
     kanbanTab: string;
     listTab: string;
     stagesTab: string;
@@ -928,6 +930,7 @@ export type Messages = {
     timelineStatusCompleted: string;
     timelineStatusWaitingApproval: string;
     timelineReadyForProduction: string;
+    timelineReadyForProductionWithStage: string;
 
     progressOverview: string;
     progressStatusApprovedHelp: string;
@@ -1139,5 +1142,21 @@ export type Messages = {
     noOrgTitle: string;
     noOrgDescription: string;
     theme: string;
+  };
+  dateField: {
+    pickDate: string;
+    pickDateRange: string;
+    selectDate: string;
+    startDate: string;
+    endDate: string;
+    clear: string;
+    today: string;
+    yesterday: string;
+    tomorrow: string;
+    nextWeek: string;
+    last7Days: string;
+    last30Days: string;
+    thisMonth: string;
+    lastMonth: string;
   };
 };

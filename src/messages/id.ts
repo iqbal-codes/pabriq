@@ -202,7 +202,7 @@ const id: Messages = {
     overdueDeadline: "Terlambat",
     completedAt: "Selesai Pada",
     hargaNego: "Harga Negosiasi",
-    repeatOrder: "Pesanan Ulang",
+    repeatOrder: "Repeat Order",
     addons: "Addon",
     manualDeadline: "Tenggat Manual",
     manualDeadlineRequired:
@@ -246,11 +246,14 @@ const id: Messages = {
       "Metode pembayaran membuat invoice langsung bisa ditindaklanjuti pelanggan sejak pesanan pertama.",
     orderDeadline: "Deadline pesanan",
     manualOrderDeadline: "Atur deadline pesanan manual",
+    manualOrderDeadlineDescription:
+      "Aktifkan untuk mengatur deadline custom untuk seluruh pesanan, bukan per item.",
     orderDeadlineAutoDescription:
       "Jika nonaktif, deadline pesanan mengikuti deadline item paling akhir.",
     orderDeadlineRequired: "Deadline pesanan wajib diisi",
     adjustQuantity: "Sesuaikan Jumlah",
-    adjustQuantityDescription: "Ubah jumlah item pesanan. Total pesanan dan harga akan dihitung ulang.",
+    adjustQuantityDescription:
+      "Ubah jumlah item pesanan. Total pesanan dan harga akan dihitung ulang.",
     selectLineItem: "Pilih Item Pesanan",
     currentQuantity: "Jumlah Saat Ini",
     newQuantity: "Jumlah Baru",
@@ -569,7 +572,7 @@ const id: Messages = {
     editProduct: "Edit Produk",
     advancedSettings: "Harga & Konfigurasi Lanjutan",
     advancedSettingsDescription:
-      "Konfigurasikan pesanan ulang, tingkatan harga volume, dan addon",
+      "Konfigurasikan Repeat Order, tingkatan harga volume, dan addon",
     basePricingLimits: "Harga Dasar & Batas Kuantitas",
     pricing: {
       title: "Harga",
@@ -588,10 +591,10 @@ const id: Messages = {
     negotiateAboveQuantity: "Negosiasi Di Atas Kuantitas",
     negotiateAboveQuantityDescription:
       "Pesanan yang melebihi kuantitas ini akan memicu negosiasi manual, bukan harga satuan standar.",
-    repeatOrderUnitPrice: "Harga Satuan Pesanan Ulang",
+    repeatOrderUnitPrice: "Harga Satuan Repeat Order",
     repeatOrderUnitPriceDescription:
       "Harga satuan khusus untuk pesanan berulang dari pelanggan.",
-    repeatOrderMinQuantity: "Min. Kuantitas Pesanan Ulang",
+    repeatOrderMinQuantity: "Min. Kuantitas Repeat Order",
     repeatOrderMinQuantityDescription:
       "Kuantitas minimum untuk mendapatkan harga pesanan berulang.",
     maxProductionQuantity: "Maks. Kuantitas Produksi",
@@ -735,6 +738,7 @@ const id: Messages = {
   },
   production: {
     title: "Produksi",
+    close: "Tutup",
     kanbanTab: "Kanban",
     listTab: "Daftar",
     stagesTab: "Tahapan",
@@ -959,6 +963,7 @@ const id: Messages = {
     timelineStatusCompleted: "Selesai",
     timelineStatusWaitingApproval: "Menunggu persetujuan",
     timelineReadyForProduction: "Pembayaran DP",
+    timelineReadyForProductionWithStage: "Antrian {stage}",
 
     progressOverview: "Ringkasan cepat",
     progressStatusApprovedHelp:
@@ -1205,6 +1210,22 @@ const id: Messages = {
     noOrgDescription:
       "Akun Anda belum menjadi anggota organisasi mana pun. Hubungi administrator atau keluar.",
     theme: "Tema",
+  },
+  dateField: {
+    pickDate: "Pilih tanggal",
+    pickDateRange: "Pilih rentang tanggal",
+    selectDate: "Pilih tanggal",
+    startDate: "Tanggal mulai",
+    endDate: "Tanggal selesai",
+    clear: "Bersihkan",
+    today: "Hari Ini",
+    yesterday: "Kemarin",
+    tomorrow: "Besok",
+    nextWeek: "Minggu Depan",
+    last7Days: "7 Hari Terakhir",
+    last30Days: "30 Hari Terakhir",
+    thisMonth: "Bulan Ini",
+    lastMonth: "Bulan Lalu",
   },
 };
 
