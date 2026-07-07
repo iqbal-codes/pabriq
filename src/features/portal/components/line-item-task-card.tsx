@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
 import { Badge } from '#/components/ui/badge'
 import { getVisibleDesignName } from '#/features/orders/line-item-display'
+import { getReadyForProductionLabel } from '#/features/production/ready-for-production-label'
 import { formatCurrency, formatLongDate } from '#/lib/formatters'
 import { cn } from '#/lib/utils'
 import type { OrderTaskEvent, PortalLineItem } from '../model'
@@ -13,6 +14,7 @@ function getItemStatus(
   events: OrderTaskEvent[],
   fallbackStageName: string | null,
   t: (key: string, params?: Record<string, string>) => string,
+  productionFirstStageName?: string | null,
 ): string | null {
   if (events.length === 0) return fallbackStageName
   const latest = events[0]
@@ -29,6 +31,17 @@ function getItemStatus(
   if (latest.type === 'created' && latest.toStageName) {
     return t('timelineStatusInProgress', { stage: latest.toStageName })
   }
+  if (
+    latest.type === 'stage_transition' &&
+    latest.metadata?.readyForProduction
+  ) {
+    return getReadyForProductionLabel({
+      firstProductionStageName: productionFirstStageName ?? undefined,
+      readyForProduction: t('timelineReadyForProduction'),
+      readyForProductionWithStage: (values) =>
+        t('timelineReadyForProductionWithStage', values),
+    })
+  }
   return fallbackStageName
 }
 
@@ -37,13 +50,14 @@ type LineItemTaskCardProps = {
   events: OrderTaskEvent[]
   defaultExpanded?: boolean
   token?: string
+  productionFirstStageName?: string | null
 }
-
 export function LineItemTaskCard({
   item,
   events,
   defaultExpanded = false,
   token,
+  productionFirstStageName,
 }: LineItemTaskCardProps) {
   const t = useTranslations('portal')
   const locale = useLocale()
@@ -71,6 +85,7 @@ export function LineItemTaskCard({
     itemEvents,
     item.currentStageName,
     t as (key: string, params?: Record<string, string>) => string,
+    productionFirstStageName,
   )
 
   const deadlineLabel = item.deadline
@@ -82,12 +97,12 @@ export function LineItemTaskCard({
       <div className="grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:gap-4 sm:p-5">
         <div className="min-w-0">
           <h3 className="flex flex-wrap items-center gap-2 text-base font-semibold leading-tight">
+            <span className="min-w-0 truncate">{item.productName}</span>
             {statusText ? (
               <Badge variant="secondary" className="capitalize shrink-0">
                 {statusText}
               </Badge>
             ) : null}
-            <span className="min-w-0 truncate">{item.productName}</span>
             {getVisibleDesignName(item.designName, item.productName) && (
               <span className="block w-full text-xs font-normal text-muted-foreground mt-1">
                 {getVisibleDesignName(item.designName, item.productName)}
@@ -167,7 +182,11 @@ export function LineItemTaskCard({
             id={`timeline-${item.id}`}
             className="px-4 pb-4 pt-4 sm:px-5 sm:pb-5"
           >
-            <OrderTimeline events={itemEvents} token={token} />
+            <OrderTimeline
+              events={itemEvents}
+              token={token}
+              firstProductionStageName={productionFirstStageName ?? undefined}
+            />
           </div>
         </div>
       </div>

@@ -1294,13 +1294,10 @@ const ORDER_PRODUCING_STATUSES = new Set([
   'completed',
 ])
 
-export async function getOrderTimeline(
-  token: string,
+export async function getOrderTimelineByOrderId(
+  orderId: string,
+  orgId: string,
 ): Promise<OrderTimelineEvent[]> {
-  const orderResult = await getPortalOrder(token)
-  if (!orderResult.ok) throw new Error('Invalid token')
-  const order = orderResult.order
-
   const [orderRow, rawInvoices] = await Promise.all([
     db
       .select({
@@ -1314,7 +1311,7 @@ export async function getOrderTimeline(
         trackingNumber: orders.trackingNumber,
       })
       .from(orders)
-      .where(and(eq(orders.id, order.id), eq(orders.orgId, order.orgId)))
+      .where(and(eq(orders.id, orderId), eq(orders.orgId, orgId)))
       .limit(1)
       .then((r) => r[0]),
     db
@@ -1329,10 +1326,7 @@ export async function getOrderTimeline(
       })
       .from(invoicesTable)
       .where(
-        and(
-          eq(invoicesTable.orderId, order.id),
-          eq(invoicesTable.orgId, order.orgId),
-        ),
+        and(eq(invoicesTable.orderId, orderId), eq(invoicesTable.orgId, orgId)),
       )
       .orderBy(asc(invoicesTable.createdAt)),
   ])
@@ -1351,7 +1345,7 @@ export async function getOrderTimeline(
           .from(paymentsTable)
           .where(
             and(
-              eq(paymentsTable.orgId, order.orgId),
+              eq(paymentsTable.orgId, orgId),
               inArray(paymentsTable.invoiceId, invoiceIds),
             ),
           )
@@ -1367,7 +1361,7 @@ export async function getOrderTimeline(
     .where(
       and(
         eq(activityEvents.targetType, 'order'),
-        eq(activityEvents.targetId, order.id),
+        eq(activityEvents.targetId, orderId),
         inArray(activityEvents.action, [
           'draft_confirmed',
           'production_started',
@@ -1526,7 +1520,7 @@ export async function getOrderTimeline(
         : 'upcoming'
 
     const event: OrderTimelineEvent = {
-      id: `${type}-${order.id}`,
+      id: `${type}-${orderId}`,
       type,
       status: timelineStatus,
       completedAt: isCompleted ? completedDates[i] : null,
@@ -1567,4 +1561,13 @@ export async function getOrderTimeline(
     )
 
   return events.concat(quantityAdjustedEvents)
+}
+
+export async function getOrderTimeline(
+  token: string,
+): Promise<OrderTimelineEvent[]> {
+  const orderResult = await getPortalOrder(token)
+  if (!orderResult.ok) throw new Error('Invalid token')
+  const order = orderResult.order
+  return getOrderTimelineByOrderId(order.id, order.orgId)
 }

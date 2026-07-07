@@ -169,6 +169,7 @@ export function ProgressView({
               item={item}
               events={safeTaskTimelineEvents}
               token={token}
+              productionFirstStageName={order.productionFirstStageName}
             />
           ))}
         </div>

@@ -3,12 +3,13 @@ import { useLocale, useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
 import { formatShortDate } from '#/lib/formatters'
 import { cn } from '#/lib/utils'
+import { getReadyForProductionLabel } from '#/features/production/ready-for-production-label'
 import type { OrderTaskEvent } from '../model'
-
 type Props = {
   events: OrderTaskEvent[]
   className?: string
   token?: string
+  firstProductionStageName?: string
 }
 
 function getIcon(event: OrderTaskEvent): React.ReactNode {
@@ -76,7 +77,12 @@ function RequirementResponses({
   )
 }
 
-export function OrderTimeline({ events, className, token }: Props) {
+export function OrderTimeline({
+  events,
+  className,
+  token,
+  firstProductionStageName,
+}: Props) {
   const t = useTranslations('portal')
   const locale = useLocale()
   const sortedEvents = [...events].sort(
@@ -98,7 +104,12 @@ export function OrderTimeline({ events, className, token }: Props) {
       if (!toName && metadata?.readyForProduction) {
         return t('timelineTransition', {
           from: fromName ?? t('timelineQueue'),
-          to: t('timelineReadyForProduction'),
+          to: getReadyForProductionLabel({
+            firstProductionStageName,
+            readyForProduction: t('timelineReadyForProduction'),
+            readyForProductionWithStage: (values) =>
+              t('timelineReadyForProductionWithStage', values),
+          }),
         })
       }
       return t('timelineTransition', {
