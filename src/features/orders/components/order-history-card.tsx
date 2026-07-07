@@ -2,8 +2,8 @@ import {
   CheckCircle2,
   Clock,
   Factory,
-  Package,
   type LucideIcon,
+  Package,
 } from 'lucide-react'
 import { useLocale } from 'use-intl'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'

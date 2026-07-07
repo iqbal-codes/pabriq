@@ -370,7 +370,10 @@ export function fieldValidator(schema: z.ZodTypeAny) {
   }
 }
 
-export function getSchemaForPath(schema: unknown, path: string): any {
+export function getSchemaForPath(
+  schema: unknown,
+  path: string,
+): z.ZodTypeAny | null {
   if (!schema) return null
   const normalizedPath = path.replace(/\[\d+\]/g, '')
   const segments = normalizedPath.split('.').filter(Boolean)

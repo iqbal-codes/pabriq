@@ -4,12 +4,12 @@ import { useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
 import { StatusBadge } from '#/components/status-badge'
 import { Button } from '#/components/ui/button'
-import type { InvoiceRow } from '#/features/invoices/model'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '#/components/ui/tooltip'
+import type { InvoiceRow } from '#/features/invoices/model'
 import { currencyFormatter } from './view-order-utils'
 
 function getInvoiceBadgeType(

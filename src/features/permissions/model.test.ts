@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  canAdjustConfirmedOrder,
   canAdvanceProductionTask,
   canApproveOrders,
   canApproveProductionTask,
   canCreateOrders,
   canManageCustomers,
-  canAdjustConfirmedOrder,
   canManageInvoices,
   canManageMembers,
   canManageProducts,

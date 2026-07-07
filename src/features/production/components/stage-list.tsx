@@ -1,12 +1,12 @@
 import { useTranslations } from 'use-intl'
 import type { DataTableLabels } from '#/components/app/data-table'
 import { DataTable } from '#/components/app/data-table'
+import { useGlobalModal } from '#/hooks/use-global-overlay'
 import {
   StageReorderActions,
   StageRowActions,
   useStageColumns,
 } from '../components/stage-columns'
-import { useGlobalModal } from '#/hooks/use-global-overlay'
 import { useStageMutations } from '../hooks'
 import type { Stage } from '../model'
 

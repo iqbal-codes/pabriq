@@ -4,11 +4,12 @@ import {
   consumeOrderDraftProposalFn,
   getProposalFn,
   loadAssistantChatFn,
-  proposeOrderDraftFn,
+  type proposeOrderDraftFn,
   sendAssistantMessageFn,
 } from '#/features/assistant/server'
 import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 import { queryKeys } from '#/lib/query-keys'
+
 export type {
   AssistantChatMessage,
   AssistantChatMessageMetadata,

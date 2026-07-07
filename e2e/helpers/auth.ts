@@ -1,4 +1,4 @@
-import { type Page, expect } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
 
 /** Set locale cookie to avoid language selector prompts */
 export async function setLocale(page: Page, locale = 'en') {

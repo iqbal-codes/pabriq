@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   ArrowRight,
   Banknote,
@@ -10,6 +9,7 @@ import {
   PackageCheck,
   PartyPopper,
 } from 'lucide-react'
+import { useState } from 'react'
 import { useLocale, useTranslations } from 'use-intl'
 import { formatShortDate } from '#/lib/formatters'
 import { cn } from '#/lib/utils'

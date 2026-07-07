@@ -30,13 +30,13 @@ import {
   products as productsTable,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
-import type { AssetMetadata } from '#/features/assets/server'
 import { getCustomerAddress } from '#/features/address/model'
+import type { AssetMetadata } from '#/features/assets/server'
+import { rewriteFinalInvoiceFromOrder } from '#/features/invoices/model'
 import { normalizeDesignName } from '#/features/orders/line-item-display'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
 import { spawnQueuedPreProductionTasksForOrder } from '#/features/production/task-spawn-helpers'
 import { type DbClient, listBreakpoints } from '#/features/products/model'
-import { rewriteFinalInvoiceFromOrder } from '#/features/invoices/model'
 import { addWorkingDays } from '#/lib/date-utils'
 import { buildOrderBy, type SortColumnMap, type SortState } from '#/lib/sorting'
 

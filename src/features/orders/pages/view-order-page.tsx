@@ -27,7 +27,6 @@ import { OrderQuantityAdjustmentModal } from '#/features/orders/components/order
 import { OrderStatusBadge } from '#/features/orders/components/order-status-badge'
 import { RejectReasonDialog } from '#/features/orders/components/reject-reason-dialog'
 import { RejectedReasonBanner } from '#/features/orders/components/rejected-reason-banner'
-import { OrderFlowTimeline } from '#/features/portal/components/order-flow-timeline'
 import { useOrderDerivedState } from '#/features/orders/components/use-order-derived-state'
 import { useOrderMutations } from '#/features/orders/components/use-order-mutations'
 import {
@@ -35,11 +34,12 @@ import {
   dateFormatter,
 } from '#/features/orders/components/view-order-utils'
 import { useOrder, useOrderAdminTimeline } from '#/features/orders/hooks'
-import { useTasksByOrderId } from '#/features/production/hooks'
 import {
   canAdjustConfirmedOrder,
   type Role,
 } from '#/features/permissions/model'
+import { OrderFlowTimeline } from '#/features/portal/components/order-flow-timeline'
+import { useTasksByOrderId } from '#/features/production/hooks'
 import { useProductsList } from '#/features/products/hooks'
 
 export function ViewOrderPage() {

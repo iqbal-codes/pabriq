@@ -5,8 +5,6 @@ import { Button } from '#/components/ui/button'
 import {
   type AssistantChatMessageMetadata,
   type AssistantChatScope,
-} from '#/features/assistant/hooks'
-import {
   useCancelOrderDraftProposal,
   useConsumeOrderDraftProposal,
   useGetProposal,

@@ -1,5 +1,5 @@
-import { z } from 'zod'
 import { parseAsString, useQueryState } from 'nuqs'
+import { z } from 'zod'
 
 export const globalOverlaySearchSchema = z.object({
   modal: z.string().nullable().optional(),

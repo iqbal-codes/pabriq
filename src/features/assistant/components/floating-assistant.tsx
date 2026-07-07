@@ -10,12 +10,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from '#/components/ui/sheet'
+import { OrderDraftProposalCard } from '#/features/assistant/components/order-draft-proposal-card'
 import {
   type AssistantChatMessage,
   useAssistantChatHistory,
   useSendAssistantMessage,
 } from '#/features/assistant/hooks'
-import { OrderDraftProposalCard } from '#/features/assistant/components/order-draft-proposal-card'
+
 type FloatingAssistantProps = {
   orgId: string
   userId: string

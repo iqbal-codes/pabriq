@@ -1,10 +1,11 @@
 import { ArrowRight, CheckCircle2, File } from 'lucide-react'
 import { useLocale, useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
+import { getReadyForProductionLabel } from '#/features/production/ready-for-production-label'
 import { formatShortDate } from '#/lib/formatters'
 import { cn } from '#/lib/utils'
-import { getReadyForProductionLabel } from '#/features/production/ready-for-production-label'
 import type { OrderTaskEvent } from '../model'
+
 type Props = {
   events: OrderTaskEvent[]
   className?: string
