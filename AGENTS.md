@@ -156,10 +156,23 @@ The test files contain `TRUNCATE ... CASCADE` statements that clear database tab
 # ✅ CORRECT - uses load-env-test which loads staging environment
 bun run test
 
+# ✅ CORRECT - run only the test file you changed (preferred for most tasks)
+bun run test -- src/features/products/model.test.ts
+
 # ❌ WRONG - may use wrong database, will now fail with safety error
 vitest run
 npx vitest run
 ```
+
+### Targeted testing over full suite
+
+**Always run only the test files relevant to your changes.** The full test suite (`bun run test` with no arguments) is slow because integration tests hit a real database. Running the full suite when you only changed one feature file wastes time and increases the chance of hitting unrelated flaky tests.
+
+- Changed a model file? → `bun run test -- src/features/<name>/model.test.ts`
+- Changed a component? → `bun run test -- src/components/<name>.test.tsx`
+- Changed a utility? → `bun run test -- src/lib/<name>.test.ts`
+- Touched routes or server functions? → Run `bun run build` first, then targeted tests for affected features.
+- Final handoff or pre-commit? → Run the full suite `bun run test` to catch regressions across features.
 
 ## 8. Non-Negotiable Project Rules (Legacy)
 
