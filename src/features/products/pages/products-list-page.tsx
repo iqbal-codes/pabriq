@@ -1,4 +1,4 @@
-import { Link, useRouteContext } from '@tanstack/react-router'
+import { Link, useNavigate, useRouteContext } from '@tanstack/react-router'
 import { Package, Pencil, Trash2 } from 'lucide-react'
 import { parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useMemo, useState } from 'react'
@@ -20,6 +20,10 @@ import { PageHeader } from '#/components/app/page-shell/page-header'
 import { ConfirmDialog } from '#/components/confirm-dialog'
 import { StatusBadge } from '#/components/status-badge'
 import { Button } from '#/components/ui/button'
+import {
+  ProductFormSheet,
+  type ProductFormSheetMode,
+} from '#/features/products/components/product-form-sheet'
 import { useDeleteProduct, useProductsList } from '#/features/products/hooks'
 import type { ProductRow } from '#/features/products/server'
 
@@ -40,8 +44,13 @@ function formatPrice(
   return fmt(basePrice)
 }
 
-export function ProductsListPage() {
-  const ctx = useRouteContext({ from: '/_org/products/' }) as {
+export function ProductsListPage({
+  sheet,
+}: {
+  sheet?: ProductFormSheetMode
+} = {}) {
+  const navigate = useNavigate()
+  const ctx = useRouteContext({ from: '/_org' }) as {
     org: { id: string }
   }
   const t = useTranslations('products')
@@ -273,6 +282,16 @@ export function ProductsListPage() {
         variant="destructive"
         onConfirm={handleConfirmDelete}
       />
+      {sheet && (
+        <ProductFormSheet
+          mode={sheet}
+          open={Boolean(sheet)}
+          onOpenChange={(open) => {
+            if (!open) navigate({ to: '/products' })
+          }}
+          onSaved={() => navigate({ to: '/products' })}
+        />
+      )}
     </PageContent>
   )
 }

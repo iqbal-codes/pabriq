@@ -4,7 +4,7 @@ import {
   pricingBreakpoints as breakpointsTable,
   products as productsTable,
 } from '#/db/schema'
-import { resolveOrgId } from '#/lib/auth-session'
+import { resolveOrgId } from '#/lib/auth-session-server'
 import type { MutationResult } from '#/lib/server-results'
 import { buildOrderBy, type SortColumnMap } from '#/lib/sorting'
 import type {

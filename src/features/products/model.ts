@@ -5,6 +5,8 @@ import {
   pricingBreakpoints as breakpointsTable,
   products as productsTable,
 } from '#/db/schema'
+
+export type DbClient = Pick<typeof db, 'select'>
 export type Product = {
   id: string
   orgId: string
@@ -366,8 +368,9 @@ export async function createBreakpoint(
 
 export async function listBreakpoints(
   productId: string,
+  client: DbClient = db,
 ): Promise<PricingBreakpoint[]> {
-  const rows = await db
+  const rows = await client
     .select()
     .from(breakpointsTable)
     .where(eq(breakpointsTable.productId, productId))
