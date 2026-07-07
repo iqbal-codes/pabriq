@@ -1,17 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
+import { XIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '#/components/ui/dialog'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '#/components/ui/sheet'
 import { useMembers } from '#/features/members/hooks'
 import { getAssetsForLineItemFn } from '#/features/orders/server'
 import {
@@ -77,12 +76,9 @@ export function TaskDetailModal({
     return map
   }, [members])
 
-  if (taskLoading || !task) return null
-
-  const ctx = task.context as Record<
-    string,
-    string | number | boolean | null
-  > | null
+  const ctx = task
+    ? (task.context as Record<string, string | number | boolean | null> | null)
+    : null
   const productName = ctx?.productName ?? ''
   const designName = ctx?.designName ?? ''
   const customerName = ctx?.customerName ?? ''
@@ -91,10 +87,10 @@ export function TaskDetailModal({
   const spec = ctx?.requirements ?? ''
 
   const boardStages = (stages ?? [])
-    .filter((s) => s.active && s.board === task.board)
+    .filter((s) => s.active && s.board === task?.board)
     .sort((a, b) => a.orderIndex - b.orderIndex)
 
-  const currentStageIndex = task.stageId
+  const currentStageIndex = task?.stageId
     ? boardStages.findIndex((s) => s.id === task.stageId)
     : -1
   const currentStage =
@@ -105,21 +101,19 @@ export function TaskDetailModal({
   const hasRequirements =
     currentStage !== null && currentStage.requirements?.length > 0
 
-  const actionButtonClassName =
-    'bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95 font-semibold text-sm transition-colors cursor-pointer'
   const footerAction =
-    task.status === 'queued' && nextStage ? (
+    task?.status === 'queued' && nextStage ? (
       <Button
-        className={actionButtonClassName}
+        className="w-full"
         onClick={handleAdvanceClick}
         isLoading={advanceTask.isPending}
         disabled={advanceTask.isPending}
       >
         {t('advanceTo', { stage: nextStage.name })}
       </Button>
-    ) : task.status === 'in_progress' && (nextStage || isAtLastBoardStage) ? (
+    ) : task?.status === 'in_progress' && (nextStage || isAtLastBoardStage) ? (
       <Button
-        className={actionButtonClassName}
+        className="w-full"
         onClick={handleAdvanceClick}
         isLoading={advanceTask.isPending}
         disabled={advanceTask.isPending}
@@ -132,9 +126,9 @@ export function TaskDetailModal({
               ? t('done')
               : t('advanceTo', { stage: nextStage?.name })}
       </Button>
-    ) : task.status === 'pending_approval' && canApprove && onReview ? (
+    ) : task?.status === 'pending_approval' && canApprove && onReview ? (
       <Button
-        className={actionButtonClassName}
+        className="w-full"
         onClick={() => onReview(taskId)}
         disabled={advanceTask.isPending}
       >
@@ -179,87 +173,136 @@ export function TaskDetailModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-screen overflow-hidden flex flex-col p-0 bg-background border border-border rounded-xl">
-        {showRequirementForm &&
-        currentStage?.requirements &&
-        currentStage.requirements.length > 0 ? (
-          <div className="flex-1 overflow-y-auto p-6 min-h-0 space-y-4">
-            <RequirementForm
-              taskId={taskId}
-              requirements={currentStage.requirements}
-              onCancel={() => setShowRequirementForm(false)}
-              onSubmit={handleAdvance}
-              isSubmitting={advanceTask.isPending}
-            />
-          </div>
-        ) : (
-          <>
-            <DialogHeader className="p-6 pb-4 bg-muted/10 space-y-3 border-b">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-xs font-semibold text-muted-foreground bg-muted px-2.5 py-1 rounded border border-border">
-                  {task.taskNumber}
-                </span>
-                {currentStage && <Badge>{currentStage.name}</Badge>}
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-lg p-0 gap-0"
+        showCloseButton={false}
+        aria-describedby={undefined}
+      >
+        {/* Loading skeleton */}
+        {taskLoading && (
+          <div className="flex flex-col h-full">
+            <SheetHeader className="px-5 pt-5 pb-4 border-b space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="h-5 w-16 rounded bg-muted animate-pulse" />
+                <div className="h-5 w-20 rounded-full bg-muted animate-pulse" />
               </div>
-              <div className="space-y-1">
-                <DialogTitle className="text-xl font-bold tracking-tight text-foreground sm:text-2xl text-left">
-                  {productName || t('taskDetail')}
-                </DialogTitle>
-                {designName && (
-                  <p className="text-sm font-medium text-muted-foreground text-left">
-                    {t('designName')}:{' '}
-                    <span className="text-foreground font-semibold">
-                      {designName}
-                    </span>
-                  </p>
-                )}
-              </div>
-            </DialogHeader>
-
-            <div className="flex-1 flex flex-col min-h-0 bg-background">
-              <Tabs
-                defaultValue="details"
-                className="flex-1 flex flex-col min-h-0 w-full"
-              >
-                <div className="border-b border-border bg-muted/5 shrink-0">
-                  <TabsList
-                    variant="line"
-                    className="w-full justify-start border-0 bg-transparent p-0 rounded-none h-10 gap-6"
-                  >
-                    <TabsTrigger value="details">{t('taskDetail')}</TabsTrigger>
-                    <TabsTrigger value="activity">{t('activity')}</TabsTrigger>
-                  </TabsList>
+              <div className="h-6 w-48 rounded bg-muted animate-pulse" />
+            </SheetHeader>
+            <div className="flex-1 p-5 space-y-6">
+              <div className="space-y-3">
+                <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="h-10 rounded bg-muted animate-pulse" />
+                  <div className="h-10 rounded bg-muted animate-pulse" />
                 </div>
-                <TabsContent
-                  value="details"
-                  className="space-y-6 pt-4 focus-visible:outline-none flex-1 overflow-y-auto px-6 pb-6 min-h-0"
+              </div>
+              <div className="space-y-3">
+                <div className="h-4 w-28 rounded bg-muted animate-pulse" />
+                <div className="h-20 rounded bg-muted animate-pulse" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Requirement form mode */}
+        {!taskLoading &&
+          task &&
+          showRequirementForm &&
+          currentStage?.requirements &&
+          currentStage.requirements.length > 0 && (
+            <div className="flex flex-col h-full">
+              <SheetHeader className="px-5 pt-5 pb-4 border-b">
+                <SheetTitle>{t('taskDetail')}</SheetTitle>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto p-5 min-h-0">
+                <RequirementForm
+                  taskId={taskId}
+                  requirements={currentStage.requirements}
+                  onCancel={() => setShowRequirementForm(false)}
+                  onSubmit={handleAdvance}
+                  isSubmitting={advanceTask.isPending}
+                />
+              </div>
+            </div>
+          )}
+
+        {/* Main content */}
+        {!taskLoading && task && !showRequirementForm && (
+          <div className="flex flex-col h-full">
+            {/* Header */}
+            <SheetHeader className="px-5 pt-5 pb-4 border-b space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-semibold text-muted-foreground bg-muted px-2.5 py-1 rounded border border-border">
+                    {task.taskNumber}
+                  </span>
+                  {currentStage && <Badge>{currentStage.name}</Badge>}
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={t('close')}
+                  className="-mr-1 shrink-0"
+                  onClick={() => onOpenChange(false)}
                 >
-                  {/* Task Meta Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6 text-sm">
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <XIcon className="size-4" aria-hidden="true" />
+                </Button>
+              </div>
+              <SheetTitle className="text-lg font-semibold tracking-tight text-left leading-snug">
+                {productName || t('taskDetail')}
+              </SheetTitle>
+              {designName && (
+                <p className="text-sm text-muted-foreground text-left">
+                  {t('designName')}:{' '}
+                  <span className="text-foreground font-medium">
+                    {designName}
+                  </span>
+                </p>
+              )}
+            </SheetHeader>
+
+            {/* Primary action */}
+            {footerAction && (
+              <div className="px-5 py-3 border-b bg-muted/30">
+                {footerAction}
+              </div>
+            )}
+
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              <div className="p-5 space-y-6">
+                {/* Key details */}
+                <section className="space-y-3">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    {t('taskDetail')}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="space-y-1">
+                      <span className="text-xs text-muted-foreground">
                         {t('orderLabel')}
                       </span>
                       <div>
-                        <span className="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2.5 py-1 rounded border border-border inline-block">
+                        <span className="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border inline-block">
                           {orderNumber}
                         </span>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <div className="space-y-1">
+                      <span className="text-xs text-muted-foreground">
                         {t('customerLabel')}
                       </span>
-                      <p className="font-semibold text-foreground">
+                      <p className="font-medium text-foreground">
                         {customerName || '-'}
                       </p>
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <div className="space-y-1">
+                      <span className="text-xs text-muted-foreground">
                         {t('quantityLabel')}
                       </span>
-                      <p className="font-semibold text-foreground">
+                      <p className="font-medium text-foreground">
                         {quantity}{' '}
                         <span className="text-xs font-normal text-muted-foreground">
                           pcs
@@ -267,87 +310,90 @@ export function TaskDetailModal({
                       </p>
                     </div>
                   </div>
+                </section>
 
-                  {spec && (
-                    <div className="space-y-2 pt-2">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        {t('specification')}
-                      </span>
-                      <div className="bg-card border border-border rounded-lg p-4 text-sm text-foreground/95 leading-relaxed whitespace-pre-wrap">
-                        {spec}
-                      </div>
+                {/* Specification */}
+                {spec && (
+                  <section className="space-y-2">
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      {t('specification')}
+                    </h3>
+                    <div className="bg-card border border-border rounded-lg p-3.5 text-sm text-foreground/95 leading-relaxed whitespace-pre-wrap">
+                      {spec}
                     </div>
+                  </section>
+                )}
+
+                {/* Attachments */}
+                {lineItemAssets && lineItemAssets.length > 0 && (
+                  <section className="space-y-3">
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      {t('attachments')}
+                    </h3>
+                    <AssetFileList
+                      assetIds={lineItemAssets.map((a) => a.id)}
+                      layout="grid"
+                      showSize
+                    />
+                  </section>
+                )}
+
+                {/* Activity */}
+                <section className="space-y-3">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    {t('activity')}
+                  </h3>
+                  {(!activities || activities.length === 0) && (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      {t('noActivity')}
+                    </p>
                   )}
-
-                  {lineItemAssets && lineItemAssets.length > 0 && (
-                    <div className="space-y-3 pt-2">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        {t('attachments')}
-                      </span>
-                      <AssetFileList
-                        assetIds={lineItemAssets.map((a) => a.id)}
-                        layout="grid"
-                        showSize
-                      />
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent
-                  value="activity"
-                  className="focus-visible:outline-none flex flex-col flex-1 min-h-0"
-                >
-                  <div className="space-y-3 flex-1 overflow-y-auto min-h-0 p-6 pb-2">
-                    {(!activities || activities.length === 0) && (
-                      <p className="text-sm text-muted-foreground text-center py-12">
-                        {t('noActivity')}
-                      </p>
-                    )}
-                    {activities?.map((act) => (
-                      <ActivityRow
-                        key={act.id}
-                        activity={act}
-                        stageNameMap={stageNameMap}
-                        actorMap={actorMap}
-                        stages={stages}
-                        taskContext={
-                          task.context as Record<string, unknown> | null
-                        }
-                      />
-                    ))}
-                  </div>
-
-                  <div className="p-6 pt-0 shrink-0">
-                    <div className="flex gap-2 items-center bg-background p-2 border border-input rounded-lg focus-within:ring-2 focus-within:ring-ring/40 focus-within:border-ring transition-all">
-                      <input
-                        type="text"
-                        placeholder={t('commentPlaceholder')}
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        className="flex-1 ml-2.5 border-0 bg-transparent py-1.5 text-sm outline-none placeholder:text-muted-foreground text-foreground min-w-0"
-                      />
-                      <Button
-                        size="sm"
-                        className="h-8 px-4 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95 transition-colors shrink-0 cursor-pointer"
-                        onClick={handleSendComment}
-                        isLoading={saveComment.isPending}
-                        disabled={!commentText.trim() || saveComment.isPending}
-                      >
-                        {t('send')}
-                      </Button>
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-              {footerAction && (
-                <DialogFooter className="shrink-0 border-t border-border px-6 py-4">
-                  {footerAction}
-                </DialogFooter>
-              )}
+                  {activities?.map((act) => (
+                    <ActivityRow
+                      key={act.id}
+                      activity={act}
+                      stageNameMap={stageNameMap}
+                      actorMap={actorMap}
+                      stages={stages}
+                      taskContext={
+                        task.context as Record<string, unknown> | null
+                      }
+                    />
+                  ))}
+                </section>
+              </div>
             </div>
-          </>
+
+            {/* Comment composer — pinned to bottom */}
+            <div className="shrink-0 border-t p-4">
+              <div className="flex gap-2 items-center bg-background p-2 border border-input rounded-lg focus-within:ring-2 focus-within:ring-ring/40 focus-within:border-ring transition-all">
+                <input
+                  type="text"
+                  placeholder={t('commentPlaceholder')}
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSendComment()
+                    }
+                  }}
+                  className="flex-1 ml-2 border-0 bg-transparent py-1.5 text-sm outline-none placeholder:text-muted-foreground text-foreground min-w-0"
+                />
+                <Button
+                  size="sm"
+                  className="h-8 px-4 text-xs font-semibold shrink-0 cursor-pointer"
+                  onClick={handleSendComment}
+                  isLoading={saveComment.isPending}
+                  disabled={!commentText.trim() || saveComment.isPending}
+                >
+                  {t('send')}
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }

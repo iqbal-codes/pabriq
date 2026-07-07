@@ -44,6 +44,7 @@ const enMessages = {
     pendingApproval: 'Pending Approval',
     statusCompleted: 'Completed',
     attachments: 'Attachments',
+    close: 'Close',
     noActivity: 'No activity yet',
     openTask: 'Open task {task}',
     columnTaskCount: '{column}: {count, plural, one {# task} other {# tasks}}',
@@ -202,10 +203,9 @@ describe('TaskDetailModal', () => {
     expect(screen.getByText(/Acme Corp/)).toBeInTheDocument()
     expect(screen.getByText(/500/)).toBeInTheDocument()
   })
-
-  it('renders Details and Activity tabs', () => {
+  it('renders task detail and activity sections', () => {
     renderModal()
-    expect(screen.getAllByText('Task Detail').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('Task Detail')).toBeInTheDocument()
     expect(screen.getByText('Activity')).toBeInTheDocument()
   })
 
@@ -218,10 +218,8 @@ describe('TaskDetailModal', () => {
     renderModal('task-queued')
     expect(screen.getByText('Advance to Design')).toBeInTheDocument()
   })
-
-  it('shows activity tab content', async () => {
+  it('shows activity content', () => {
     renderModal()
-    await userEvent.click(screen.getByText('Activity'))
     expect(screen.getByText('Started Design')).toBeInTheDocument()
   })
 
@@ -256,23 +254,19 @@ describe('TaskDetailModal', () => {
       error: 'Failed to comment',
     })
     renderModal()
-    await userEvent.click(screen.getByText('Activity'))
     const input = screen.getByPlaceholderText('Type a comment...')
     await userEvent.type(input, 'Hello world')
     await userEvent.click(screen.getByText('Send'))
     await waitFor(() => expect(input).toHaveValue('Hello world'))
   })
-
   it('clears comment when save comment succeeds', async () => {
     mutationMocks.saveCommentMutate.mockResolvedValue({ ok: true })
     renderModal()
-    await userEvent.click(screen.getByText('Activity'))
     const input = screen.getByPlaceholderText('Type a comment...')
     await userEvent.type(input, 'Hello world')
     await userEvent.click(screen.getByText('Send'))
     await waitFor(() => expect(input).toHaveValue(''))
   })
-
   it('shows Request Review for in_progress task at needApproval stage', () => {
     renderModal('task-approval')
     expect(screen.getByText('Request Review')).toBeInTheDocument()
