@@ -1,5 +1,7 @@
+import type { ComponentProps } from 'react'
+import { fieldContext } from '#/components/app/form/form-context-base'
+import { NumberField } from '#/components/app/form/number-field'
 import { Button } from '#/components/ui/button'
-import { Input } from '#/components/ui/input'
 
 const QUICK_PERCENTAGES = [30, 50, 100] as const
 
@@ -18,28 +20,35 @@ export function InvoiceAmountInput({
 }: InvoiceAmountInputProps) {
   const maxAmount = Math.max(0, Math.round(baseAmount * 100) / 100)
 
+  const fakeField = {
+    name: 'amount',
+    state: {
+      value,
+      meta: {
+        errors: [],
+      },
+    },
+    handleChange: (val: number) => {
+      onChange(Math.min(maxAmount, val))
+    },
+    handleBlur: () => {},
+  }
+
   return (
-    <div className="space-y-2">
-      <div className="relative max-w-48">
-        <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-muted-foreground">
+    <div className="space-y-2" data-aria-label={ariaLabel}>
+      <div className="relative [&_input]:pl-10 [&_.mt-1]:mt-0 [&_label]:sr-only">
+        <span className="pointer-events-none absolute inset-y-0 left-3 z-10 flex items-center text-sm text-muted-foreground">
           Rp
         </span>
-        <Input
-          aria-label={ariaLabel}
-          inputMode="numeric"
-          type="text"
-          value={value === 0 ? '' : String(value)}
-          placeholder="0"
-          onChange={(event) => {
-            const digits = event.target.value.replace(/\D/g, '')
-            if (digits.length === 0) {
-              onChange(0)
-              return
-            }
-            onChange(Math.min(maxAmount, Number(digits)))
-          }}
-          className="pl-10"
-        />
+        <fieldContext.Provider
+          value={
+            fakeField as unknown as ComponentProps<
+              typeof fieldContext.Provider
+            >['value']
+          }
+        >
+          <NumberField label={ariaLabel} placeholder="0" />
+        </fieldContext.Provider>
       </div>
       <div className="flex flex-wrap gap-2">
         {QUICK_PERCENTAGES.map((percentage) => {

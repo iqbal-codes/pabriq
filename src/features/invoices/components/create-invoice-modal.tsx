@@ -124,9 +124,12 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
         // pickup: no shipping fields
       }
 
+      const baseTotal = hasPaidInvoices ? order.remainingAmount : customAmount
+
       const result = await createInvoice.mutateAsync({
         orderId: order.id,
         percentage: effectivePct,
+        customProductTotal: baseTotal,
         customerId: order.customerId ?? '',
         customerName: order.customerName ?? '',
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
@@ -216,9 +219,6 @@ export function CreateInvoiceModal({ open, onOpenChange, order }: Props) {
                           value={customAmount}
                           onChange={setCustomAmount}
                         />
-                        <p className="text-lg font-bold">
-                          {currencyFormatter.format(invoiceTotal)}
-                        </p>
                       </div>
                     ) : (
                       <div className="space-y-1">

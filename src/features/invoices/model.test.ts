@@ -199,6 +199,99 @@ describe('createInvoice', () => {
     expect(result.invoice.orderId).toBe('order-1')
     expect(result.lineItems).toHaveLength(1)
   })
+  it('creates an order-linked invoice with customProductTotal', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values([
+      {
+        id: 'cust-3',
+        orgId: org1Id,
+        name: 'Down Payment Customer',
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(paymentMethodsTable).values([
+      {
+        id: 'pm-1',
+        orgId: org1Id,
+        name: 'BCA Transfer',
+        type: 'bank_transfer',
+        isDefault: true,
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(productsTable).values([
+      {
+        id: 'prod-1',
+        orgId: org1Id,
+        name: 'T-Shirt',
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(ordersTable).values([
+      {
+        id: 'order-dp',
+        orgId: org1Id,
+        customerId: 'cust-3',
+        status: 'approved',
+        total: 1027800,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+    await db.insert(orderLineItemsTable).values([
+      {
+        id: 'li-dp-1',
+        orgId: org1Id,
+        orderId: 'order-dp',
+        productId: 'prod-1',
+        quantity: 6000,
+        unitPrice: 100,
+        total: 600000,
+        designName: 'Design A',
+        productionDays: 5,
+        deadline: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000),
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: 'li-dp-2',
+        orgId: org1Id,
+        orderId: 'order-dp',
+        productId: 'prod-1',
+        quantity: 4278,
+        unitPrice: 100,
+        total: 427800,
+        designName: 'Design B',
+        productionDays: 5,
+        deadline: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000),
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    const result = await createInvoice(org1Id, {
+      orderId: 'order-dp',
+      customerId: 'cust-3',
+      customerName: 'Down Payment Customer',
+      paymentMethodId: 'pm-1',
+      dueDate: '2026-07-01',
+      percentage: 97.3,
+      customProductTotal: 1000000,
+      lineItems: [],
+    })
+
+    expect(result.invoice.total).toBe(1000000)
+    expect(result.invoice.percentage).toBe(97.3)
+    expect(result.invoice.subtotal).toBe(1027800)
+    expect(result.invoice.orderId).toBe('order-dp')
+    expect(result.lineItems).toHaveLength(2)
+  })
 
   it('generates unique invoice numbers per org', async () => {
     const now = new Date()

@@ -77,6 +77,7 @@ export type CreateInvoiceInput = {
     unitPrice: number
   }>
   percentage?: number
+  customProductTotal?: number
   dueDate: string
   issuedDate?: string
   paymentMethodId?: string | null
@@ -283,7 +284,10 @@ export async function createInvoice(
     }
 
     const subtotal = items.reduce((sum, i) => sum + i.total, 0)
-    const productTotal = order.total * (percentage / 100)
+    const productTotal =
+      input.customProductTotal !== undefined
+        ? input.customProductTotal
+        : order.total * (percentage / 100)
     const shippingFee = input.shippingFee ?? 0
     const lateFee = Math.max(0, input.lateFee ?? 0)
     const invoiceTotal = productTotal + shippingFee - lateFee
