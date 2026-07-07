@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { resolveOrgId } from '#/lib/auth-session'
+import { resolveOrgId } from '#/lib/auth-session-server'
 import type {
   Customer,
   CustomerInput,

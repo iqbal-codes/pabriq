@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { CreateCustomerPage } from '#/features/customers/pages/create-customer-page'
+import { CustomersListPage } from '#/features/customers/pages/customers-list-page'
 
 export const Route = createFileRoute('/_org/customers/new')({
   beforeLoad: () => ({
@@ -7,5 +7,5 @@ export const Route = createFileRoute('/_org/customers/new')({
     parentBreadcrumbs: [{ label: 'customers', href: '/customers' }],
     pageTitle: 'createCustomer',
   }),
-  component: CreateCustomerPage,
+  component: () => <CustomersListPage sheet={{ type: 'create' }} />,
 })

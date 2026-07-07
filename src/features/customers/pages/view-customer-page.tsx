@@ -209,13 +209,9 @@ export function ViewCustomerPage() {
                         invoices.map((inv) => (
                           <TableRow key={inv.id}>
                             <TableCell>
-                              <Link
-                                to="/invoices/$id"
-                                params={{ id: inv.id }}
-                                className="font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-                              >
+                              <span className="font-medium text-foreground">
                                 {inv.invoiceNumber}
-                              </Link>
+                              </span>
                             </TableCell>
                             <TableCell>
                               {dateFormatter.format(inv.createdAt)}

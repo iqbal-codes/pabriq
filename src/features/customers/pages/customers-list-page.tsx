@@ -1,4 +1,4 @@
-import { Link, useRouteContext } from '@tanstack/react-router'
+import { Link, useNavigate, useRouteContext } from '@tanstack/react-router'
 import { Eye, Pencil, Trash2, Users } from 'lucide-react'
 import { parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useMemo, useState } from 'react'
@@ -20,11 +20,19 @@ import { PageHeader } from '#/components/app/page-shell/page-header'
 import { ConfirmDialog } from '#/components/confirm-dialog'
 import { StatusBadge } from '#/components/status-badge'
 import { Button } from '#/components/ui/button'
+import {
+  CustomerFormSheet,
+  type CustomerFormSheetMode,
+} from '#/features/customers/components/customer-form-sheet'
 import { useCustomersList, useDeleteCustomer } from '#/features/customers/hooks'
 import type { CustomerRow } from '#/features/customers/model'
-
-export function CustomersListPage() {
-  const ctx = useRouteContext({ from: '/_org/customers/' }) as {
+export function CustomersListPage({
+  sheet,
+}: {
+  sheet?: CustomerFormSheetMode
+} = {}) {
+  const navigate = useNavigate()
+  const ctx = useRouteContext({ from: '/_org' }) as {
     org: { id: string }
   }
   const t = useTranslations('customers')
@@ -268,6 +276,16 @@ export function CustomersListPage() {
         variant="destructive"
         onConfirm={handleConfirmDelete}
       />
+      {sheet && (
+        <CustomerFormSheet
+          mode={sheet}
+          open={Boolean(sheet)}
+          onOpenChange={(open) => {
+            if (!open) navigate({ to: '/customers' })
+          }}
+          onSaved={() => navigate({ to: '/customers' })}
+        />
+      )}
     </PageContent>
   )
 }
