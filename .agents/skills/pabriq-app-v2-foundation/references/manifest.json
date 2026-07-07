@@ -2,9 +2,9 @@
   "schema_version": 1,
   "repo_path": "/Users/efishery/Documents/workspace/projects/pabriq-app-v2",
   "slug": "pabriq-app-v2",
-  "generated_at": "2026-07-07T01:08:59.953480Z",
+  "generated_at": "2026-07-07T12:30:00Z",
   "generator": "codebase-skills",
-  "output_dir": "/Users/efishery/.claude/skills",
+  "output_dir": "/Users/efishery/Documents/workspace/projects/pabriq-app-v2/.agents/skills",
   "catalog": {
     "generated": [
       {
@@ -35,7 +35,7 @@
       {
         "domain": "data",
         "skill": "pabriq-app-v2-data",
-        "reason": "distinct data layer: src/db/schema.ts (~30 Drizzle tables), src/db/index.ts, drizzle.config.ts, drizzle/ migrations"
+        "reason": "distinct data layer: src/db/schema.ts (~30+ Drizzle tables), src/db/index.ts, drizzle.config.ts, drizzle/ migrations"
       },
       {
         "domain": "infra",
@@ -76,7 +76,7 @@
       "domain": "ui",
       "name": "pabriq-app-v2-ui",
       "path": "pabriq-app-v2-ui/SKILL.md",
-      "generated_hash": "sha256:83f9a9ad83eb42043b26f6f92be3b65fe21a2d7b92480d902349e93ad5cc9c8c",
+      "generated_hash": "sha256:2aeeb2eca8d6b0ea0ce22b7abc5212920f48c10a22412b26c2787a4e30caaf8e",
       "watches": [
         "src/components/**",
         "src/routes/**",
@@ -93,7 +93,7 @@
       "domain": "backend",
       "name": "pabriq-app-v2-backend",
       "path": "pabriq-app-v2-backend/SKILL.md",
-      "generated_hash": "sha256:63083f29d5098f380ee361fa28f28d737a6981706b3d85fe27476fb79d208e43",
+      "generated_hash": "sha256:1c3e6338ca10de17682dcc54ec470173420c776e52b6dc3967293020c8c65a6c",
       "watches": [
         "src/features/*/server.ts",
         "src/features/*/model.ts",
@@ -112,7 +112,7 @@
       "domain": "testing",
       "name": "pabriq-app-v2-testing",
       "path": "pabriq-app-v2-testing/SKILL.md",
-      "generated_hash": "sha256:3c4d255f42a0066ad3a343c116a51856907d7893b287d92b0a9a5e28a487a619",
+      "generated_hash": "sha256:66a81170ba32c026865b224156d9ac35de2c3ac52324c0b0c8e64ed9ee3e9589",
       "watches": [
         "src/**/*.test.ts",
         "src/**/*.test.tsx",
@@ -134,7 +134,7 @@
       "domain": "data",
       "name": "pabriq-app-v2-data",
       "path": "pabriq-app-v2-data/SKILL.md",
-      "generated_hash": "sha256:d69317e3b650ed3fe0b67654df4d803f757799cf98ef7cb71d6285f29683de5d",
+      "generated_hash": "sha256:cc50dc5d9e93519e7e6f248dcd4cfc63764b987055918816283efefe26b4472a",
       "watches": [
         "src/db/**",
         "src/features/*/model.ts",
@@ -175,24 +175,24 @@
     "playwright.config.ts": "sha256:acc003e28a4f73df4cf1fb6b3a9b4b212592c4d8845e21c2cc94c7f4b891751c",
     "Dockerfile": "sha256:e9f18084ea8be7cfc7ad7ff1d601556bd1d5f36946cd2eb6ff7da8f7764bd51b",
     "AGENTS.md": "sha256:7379c00fd230f0aed77309efe982f711b9991f268a082643d08b02a44594093c",
-    "src/db/schema.ts": "sha256:8f3ebad56d377f5166c3caf4d4481e84636ef661611fd359abc8fcb02c663948",
+    "src/db/schema.ts": "sha256:8d1f5c33ff7a67b3b1db7b6cd233716fda991edbe451724229fc5edfbb5da902",
     "src/db/index.ts": "sha256:1161b1cba7ad789d9fa643cdfc0a31f25e47f8a9c22bb615b71bf0826a0cdaf5",
     "src/lib/auth.ts": "sha256:1500eec7aff3dcf1db3e04dd9f9fa838ee4ff694ea4c02bb7e1cca30cff20d06",
-    "src/lib/auth-session.ts": "sha256:5700fc37bd1825dd97dc9798ec7bc9dc01e925d618d2cd87fe8d8b1c0fdaf2b1",
-    "src/lib/query-keys.ts": "sha256:8d6326d374c20bcecbe6ef47fd6bec682097da8cd3a9ffe173b22486ba1288dc",
+    "src/lib/auth-session.ts": "sha256:16fefbacc7059d47c042e162a58d07e21999a10b09e70ae0a3107a86623d7420",
+    "src/lib/query-keys.ts": "sha256:1f51251734d5f4f545370aeb82414289d9469383fa63bd56d11033ebcd3577ea",
     "src/routes/__root.tsx": "sha256:5fb1dda2f316b3369f3ebbef78c288d10ea2522706a2e0dbb397b57f3d6500b5",
-    "src/routes/_org.tsx": "sha256:56ff41229aaeb3e00dc6550d923e0a084e80370c644b1bb6058476be39e7804e",
+    "src/routes/_org.tsx": "sha256:8476eb9ac64e4d2486ab9271a5aa49fa090e85146504cd0a5f0c44ad6e985b42",
     "src/styles.css": "sha256:497d47bff809943e1003f6067f41fe05310832ff94b4f9a0c7548b55b213214c",
-    "src/components/app/**": "sha256:8ac677dbe2d643c430a3c61e5e89ce1a79b882fbda4b134f603bcfd241891f30",
-    "src/features/*/model.ts": "sha256:85a3b80885325501f2739b34d176c7683c681ca8eabf8f4b78f0c1c238733572",
-    "src/features/*/server.ts": "sha256:0059ada81d90a24f2095cc79b5bc34c5ac128b19992d332c22d5d05c950ce85d",
-    "src/features/*/hooks.ts": "sha256:02e8863dbb2e29d969f24b01a5ac76b1fea1b6f2ff95b5f19c583d70d440b2b2",
-    "src/db/**": "sha256:9b645e74f697b8cc7e63e0abbec82fa80333bc7376d4f4697413d3c2b1690beb",
-    "src/lib/**": "sha256:db8950e50017fffac24affcf5a5b0c1d43a2c460864f1eaca281df0d699e375f",
-    "src/messages/**": "sha256:a5a2134726e654e713dff3700bff596e00b2fdd358101298fa6fceafa798433a",
-    "src/routes/**": "sha256:bce1487de8bbfdf64757e4e1f5dfc2fe1abe1ab003d6221d101e3f649a0cb9a0",
-    "drizzle/**": "sha256:1748226095fa618b207236b5006c793a87cf27fd1d5fbfac967fb55ef913e290",
-    "e2e/**": "sha256:55f4aefd9dbab02ce6ab19d636a1b8bfa600949b7137e554133b485fc09fa97c",
+    "src/components/app/**": "sha256:acdfac6f0fbf49def8d1ca66645283535d1167c35c551dbd3f1fb11d5bdfd7b8",
+    "src/features/*/model.ts": "sha256:e2d4a4d08d1cd54929070360d71f5dfa55b56c869e85209e82d585aa861a3967",
+    "src/features/*/server.ts": "sha256:1fd63b52654d888c78814f11ba39d4c284cd0e5b46565ca9a40f5808f174924a",
+    "src/features/*/hooks.ts": "sha256:798264591f69c43ba01084859018f1c627e25a7bee293033659c452fe188fd35",
+    "src/db/**": "sha256:1a482d0511b4be3a9d419f467674eadb7c44448f95c103ee462c0cb436e73853",
+    "src/lib/**": "sha256:76032f6442abae521f4d680765f62b2c498ba53af82ef69330867805c0261be2",
+    "src/messages/**": "sha256:b5758edb2fd01c1b70ca824bcb49a09f07e5556ae66a709e8ce8e9070395c646",
+    "src/routes/**": "sha256:e032bc74218f9d2fb7ffb634438b060be910216968d0887f20cea6c8955ea507",
+    "drizzle/**": "sha256:b81f899cdfac8013f1f0e484fa7678591ebea85ebaf3a016d2dd7c69e62084d9",
+    "e2e/**": "sha256:0c437ea515f4be60b1662bab7d67c3a43d323209d0f89d1ba83cdf10705820a7",
     "docs/agents/**": "sha256:3861c39674362f226fe071b03507e6610ad46b60150d0fa7133bdacdcac6723f",
     "src/sw.ts": "sha256:53e05a8b82cacc07fcda47909fbb3119a5e3c03a5f95a4d67b609e89be1671f7",
     "src/tanstack-serwist-plugin.ts": "sha256:afc6493e6d449cf47504ff6784f82d82616fd56742b17a4f6305d0d6c1f8a989",
@@ -230,5 +230,19 @@
     "src/sw.ts",
     "src/tanstack-serwist-plugin.ts",
     "public/manifest.json"
-  ]
+  ],
+  "git_state": {
+    "head_commit": "216c996765b23c2826c2c9f5190300545e2c64c8",
+    "dirty": true,
+    "dirty_files": [
+      ".agents/skills/pabriq-app-v2-backend/SKILL.md",
+      ".agents/skills/pabriq-app-v2-backend/references/backend-patterns.md",
+      ".agents/skills/pabriq-app-v2-data/SKILL.md",
+      ".agents/skills/pabriq-app-v2-data/references/data-patterns.md",
+      ".agents/skills/pabriq-app-v2-foundation/references/codebase-profile.md",
+      ".agents/skills/pabriq-app-v2-testing/SKILL.md",
+      ".agents/skills/pabriq-app-v2-ui/SKILL.md",
+      ".agents/skills/pabriq-app-v2-ui/references/ui-patterns.md"
+    ]
+  }
 }

@@ -48,7 +48,7 @@
 ### Org resolution — resolveOrgId
 
 - **Use when**: Any server function needs the current user's organization ID.
-- **Prefer**: `resolveOrgId()` from `#/lib/auth-session`.
+- **Prefer**: `resolveOrgId()` from `#/lib/auth-session-server`.
 - **Canonical examples**:
   - `src/features/customers/server.ts` — simple org resolution pattern
   - `src/features/products/server.ts` — parallelized with model import
@@ -58,9 +58,11 @@
   - Call `resolveOrgId()` inside the handler, not from input
   - Use `Promise.all([resolveOrgId(), import('./model')])` to parallelize
   - Accept `orgId` in input type only as a pass-through (server re-derives it)
+  - Import from `#/lib/auth-session-server` in server.ts files
 - **Avoid**:
   - Using `data.orgId` from client input as the source of truth
   - Creating a second org resolution pattern (there is only one)
+  - Importing `resolveOrgId` from `#/lib/auth-session` (the client module does not export it)
 
 ### Org context — resolveOrgContext
 
@@ -214,3 +216,33 @@
   - Re-verify transaction state from the gateway (Midtrans Snap API) during reconciliation, never trust client state.
 - **Avoid**:
   - Storing raw client signatures without verifying them against gateway tokens.
+### Auth-session module separation
+
+- **Use when**: Any server-only code needs `resolveOrgId`; any client-safe code needs `getCurrentSession` or `resolveOrgContext`.
+- **Prefer**: Import `resolveOrgId` from `#/lib/auth-session-server` in server functions; import `getCurrentSession`, `resolveOrgContext`, and type definitions from `#/lib/auth-session` in route guards and client-safe code.
+- **Canonical examples**:
+  - `src/lib/auth-session-server.ts` — `resolveOrgId()` (server-only, uses dynamic imports internally)
+  - `src/lib/auth-session.ts` — `getCurrentSession` (createServerFn wrapper), `resolveOrgContext()`, `AuthSession`, `OrgContextResult` types
+- **Why**: Separating server-only code from client-safe code prevents server-only modules (auth, DB driver) from being bundled into client code by Vite.
+- **Do**:
+  - Import `resolveOrgId` from `#/lib/auth-session-server` in `src/features/*/server.ts`
+  - Import `resolveOrgContext` / `getCurrentSession` from `#/lib/auth-session` in route guards
+  - Use dynamic imports inside `resolveOrgId` to avoid bundling server modules
+- **Avoid**:
+  - Importing `resolveOrgId` from `#/lib/auth-session` (the client module does not export it)
+  - Mixing server-only and client-safe auth helpers in the same file
+
+### Cross-feature model calls
+
+- **Use when**: A server function in one feature needs to call a model function from another feature (e.g., order timeline for admin views).
+- **Prefer**: Dynamic-import the other feature's model function inside the handler.
+- **Canonical examples**:
+  - `src/features/orders/server.ts` — `getOrderAdminTimelineFn` imports `getOrderTimelineByOrderId` from `#/features/portal/model`
+  - `src/features/portal/model.ts` — `getOrderTimeline()` delegates to `getOrderTimelineByOrderId()` (same module, token-based wrapper)
+- **Why**: Cross-feature calls are rare but legitimate. Dynamic-import keeps the dependency lazy and avoids circular imports.
+- **Do**:
+  - Use `const { fn } = await import('#/features/other-feature/model')` inside the handler
+  - Keep the import path explicit with `#/` prefix for clarity
+- **Avoid**:
+  - Top-level imports of other feature modules in server.ts files
+  - Creating thin re-export wrappers to avoid the dynamic import

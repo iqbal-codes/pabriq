@@ -2,7 +2,7 @@
 
 > Single source of truth for this codebase's stack, architecture, and tooling.
 > Domain skills (pabriq-app-v2-ui, pabriq-app-v2-backend, ...) reference this and add specifics.
-> Generated 2026-07-07; refresh with `codebase-skills sync`.
+> Generated 2026-07-07; last synced 2026-07-07.
 
 ## Identity
 - **Name**: pabriq-app-v2
@@ -42,21 +42,21 @@ Data flow: Route loader → createServerFn → org resolution from session → D
 ```
 src/
   components/
-    app/              — Reusable app-level components (page-shell, form, data-table, asset-upload)
+    app/              — Reusable app-level components (page-shell, form, data-table, asset-upload, global-modal, sidebar)
     ui/               — 57 shadcn/ui primitives (generated, not hand-edited)
     customized/       — Customized UI components
   db/
     index.ts          — Drizzle client (pg Pool)
-    schema.ts         — All table definitions (~30 tables)
+    schema.ts         — All table definitions (~30+ tables)
     connection-string.ts
   features/           — Domain modules (model.ts + server.ts + hooks.ts)
     products/         — Product catalog, pricing breakpoints, addons
-    orders/           — Order lifecycle, line items, approvals
-    invoices/         — Invoice generation, payments, line items
+    orders/           — Order lifecycle, line items, approvals, history
+    invoices/         — Invoice generation, payments, late fees
     customers/        — Customer management
     production/       — Production stages, tasks, kanban, spawner
     members/          — Org member management
-    settings/         — Org settings, profiles
+    settings/         — Org settings, profiles, invoicing config
     portal/           — Public customer portal (token-based, multi-step milestones)
     assets/           — File upload to R2
     documents/        — PDF generation (invoices, orders)
@@ -68,11 +68,11 @@ src/
     assistant/        — AI assistant (Mastra integration, assistantActions)
     notifications/    — Org/user-scoped notifications and bell component
     address/          — Address + Biteship area search
-  hooks/              — Shared React hooks
-  lib/                — Utilities (auth, query-keys, r2, rls, logger, formatters, sorting)
+  hooks/              — Shared React hooks (useDataTable, useGlobalOverlay)
+  lib/                — Utilities (auth, auth-session, query-keys, r2, rls, logger, formatters, sorting, domain-routing)
   messages/           — i18n translations (en.ts, id.ts, types.ts)
   routes/             — File-based routes
-    _org/             — Protected org layout (dashboard, products, orders, invoices, customers, production, settings)
+    _org/             — Protected org layout (notifications, global overlay)
     api/              — API routes (midtrans notifications, auth, documents)
     operator/         — Operator portal
     sign-in.tsx, sign-up.tsx, onboarding.tsx, invite/
@@ -90,14 +90,14 @@ docs/
   PRD.md              — Product requirements document
   specs/              — Feature specifications
   agents/             — Agent rules and boilerplate docs
-    boilerplate/      — 15 boilerplate reference docs
+    boilerplate/      — 15+ boilerplate reference docs
     rules/            — 8 rules docs
   plans/              — Implementation plans
   adr/                — Architecture decision records
 scripts/
   infisical-run.sh    — Infisical Machine Identity auth script
 e2e/                  — Playwright E2E tests
-drizzle/              — Migration files (27+ migrations)
+drizzle/              — Migration files (30+ migrations)
 .sandcastle/          — Agent sandbox configs (Dockerfile, CODING_STANDARDS.md)
 ```
 
@@ -146,6 +146,7 @@ All from `package.json` scripts. **MUST use `bun run`, never invoke tools direct
 | **PageShell** (PageHeader + PageContent) | Any workspace page | `src/components/app/page-shell/` | Building page layout from scratch |
 | **useAppForm** | Any form | `src/components/app/form/` | Raw shadcn Input + Label forms |
 | **DataTable** | Any table/list UI | `src/components/app/data-table/` | Raw TanStack Table setup |
+| **FormSheet** | Modal/sheet create/edit forms | `src/components/app/form/form-sheet.tsx` + `<feature>-form-sheet.tsx` feature variants | Full-page form pages |
 | **createServerFn** | Any server operation | `src/features/*/server.ts` | Raw `fetch` or API routes |
 | **queryKeys factory** | TanStack Query keys | `src/lib/query-keys.ts` | Inline string arrays |
 | **permission guards** | Role-based UI/logic | `src/features/permissions/model.ts` | Inline role checks |
@@ -153,8 +154,7 @@ All from `package.json` scripts. **MUST use `bun run`, never invoke tools direct
 | **ConfirmDialog** | Destructive action confirmation | `src/components/confirm-dialog.tsx` | window.confirm |
 | **withForm** | Reusable field groups | `src/components/app/form/` (see form-system.md) | Duplicating field layouts |
 | **serverLoggerMiddleware** | Server function logging | `src/lib/server-logger-middleware.ts` | Manual console.log |
-| **orgFilter** | Org-scoped queries | `src/lib/rls.ts` | (currently unused; eq(orgId) is the pattern) |
-| **resolveOrgId / resolveOrgContext** | Server-side org resolution | `src/lib/auth-session.ts` | Manual session + membership lookup |
+| **resolveOrgId / resolveOrgContext** | Server-side org resolution | `src/lib/auth-session.ts` + `src/lib/auth-session-server.ts` | Manual session + membership lookup |
 | **validationSchemas** | Shared Zod schemas | `src/lib/validation-schemas.ts` | Inline schema definitions |
 | **SortColumnMap** | Server-side sorting | `src/lib/sorting.ts` | Custom sort implementations |
 
@@ -166,6 +166,12 @@ All from `package.json` scripts. **MUST use `bun run`, never invoke tools direct
 - `src/db/schema.ts` — All Drizzle table definitions (~30 tables)
 - `src/db/index.ts` — Drizzle client instantiation (pg Pool)
 - `src/lib/auth.ts` — Better Auth server setup
+- `src/lib/auth-session-server.ts` — Shared auth-session module for server-side use (import-safe separation from client auth-session)
+- `src/lib/domain-routing.ts` — Domain-based org routing utility (subdomain → org ID mapping)
+- `src/hooks/use-global-overlay.ts` — URL-driven overlay state via nuqs (dialog/sheet open state, search params schema)
+- `src/components/app/global-modal/global-modal-container.tsx` — Centralized overlay container registered in _org.tsx layout
+- `src/components/app/global-modal/global-modal-registry.tsx` — Overlay registry mapping overlay IDs to component renderers
+- `src/components/app/form/form-sheet.tsx` — Shared FormSheet component for create/edit operations in dialog/sheet
 - `src/lib/auth-client.ts` — Better Auth client
 - `src/lib/auth-session.ts` — Session/org resolution helpers
 - `src/lib/query-keys.ts` — Query key factory

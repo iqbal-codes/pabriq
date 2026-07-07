@@ -95,6 +95,35 @@
   - `for (const id of ids) { await db.select().where(eq(table.id, id)) }` — N queries
   - Trusting small loops will stay small
 
+### Real-valued amount columns (lateFee pattern)
+
+- **Use when**: Adding monetary or fee columns that default to zero
+- **Prefer**: `real()` type with `.notNull().default(0)` for non-nullable amounts, `integer()` with `.notNull().default(0)` for whole-number fees
+- **Canonical examples**:
+  - `src/db/schema.ts:357` — `lateFee: real('late_fee').notNull().default(0)` on invoices
+  - `src/db/schema.ts:218` — `lateFeePerDay: integer('late_fee_per_day').notNull().default(0)` on organization_profiles
+- **Do**:
+  - Use `real()` for decimal monetary values (e.g., `lateFee`, `total`)
+  - Use `integer()` for whole-number configs (e.g., `lateFeePerDay`)
+  - Clamp to non-negative in model logic: `Math.max(0, input.lateFee ?? 0)`
+  - Add a corresponding migration via `bun run db:generate`
+- **Avoid**:
+  - `numeric()` unless you need arbitrary precision (Drizzle's `real` is sufficient for most amounts)
+  - Negative defaults for fee columns
+
+### Optional timestamp columns (deadline pattern)
+
+- **Use when**: A timestamp that may not always be set (e.g., deadlines, shipped dates)
+- **Prefer**: `timestamp('...')` with no `.notNull()` and no `.default()`
+- **Canonical examples**:
+  - `src/db/schema.ts:246` — `deadline: timestamp('deadline')` on orders (nullable, set conditionally)
+  - `src/db/schema.ts:247` — `manualDeadline: boolean('manual_deadline').notNull().default(false)` as a companion flag
+- **Do**:
+  - Pair nullable timestamps with a boolean flag when the value's origin matters (auto vs. manual)
+  - Use `deadline: timestamp('deadline')` without `.notNull()` for optional scheduling
+- **Avoid**:
+  - `.defaultNow()` on optional timestamps (that makes them always-set)
+  - Forgetting the companion boolean when distinguishing auto-set vs. manual-set values
 ### ID generation
 
 - **Use when**: Creating any new record
@@ -154,7 +183,7 @@
 
 | File | Purpose |
 |---|---|
-| `src/db/schema.ts` | All table definitions (~30 tables) |
+| `src/db/schema.ts` | All table definitions (~30 tables, ~591 lines) |
 | `src/db/index.ts` | DB client (pg Pool → Drizzle) |
 | `drizzle.config.ts` | Drizzle Kit config |
 | `src/lib/sorting.ts` | `buildOrderBy`, `SortColumnMap`, sort encode/decode |

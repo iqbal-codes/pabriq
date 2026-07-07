@@ -36,10 +36,23 @@
 - **Do**:
   - Define `breadcrumb`, `pageTitle`, `primaryAction` in route `beforeLoad` for mobile header integration.
   - Use `PageHeader` for desktop heading with optional `backAction`, `primaryAction`, `secondaryActions`.
+  - Use `mobileVisible` prop on detail pages where actions must be accessible on mobile.
   - Wrap page body in `<PageContent>`.
 - **Avoid**:
   - Building page layout from scratch with raw `<div>` + `<h1>`.
   - Putting `PageHeader` inside `PageContent` (they're siblings).
+  - Using `mobileVisible` on list pages (the mobile header reads from route context automatically).
+
+### Mobile-responsive PageHeader
+- **Use when**: Detail pages where header actions (approve, edit, delete) must be reachable on mobile.
+- **Prefer**: `<PageHeader ... mobileVisible />` — renders header as `flex` on all breakpoints instead of `hidden md:flex`.
+- **Canonical examples**:
+  - `src/features/orders/pages/view-order-page.tsx:233-245` — order detail with `mobileVisible`, back link, primary + secondary actions.
+- **Do**:
+  - Set `mobileVisible` when the page is a detail/edit view with actionable header buttons.
+  - Omit `mobileVisible` (default `false`) for list pages where the mobile header is handled by route context.
+- **Avoid**:
+  - Using `mobileVisible` on every page — list pages get their mobile header from `beforeLoad` metadata.
 
 ### Form creation with useAppForm
 - **Use when**: Any form (create, edit, settings, onboarding).
@@ -63,15 +76,52 @@
 - **Prefer**: `FormSheet` from `#/components/app/form/form-sheet.tsx` wrapping the feature's form sheet component.
 - **Canonical examples**:
   - `src/features/customers/components/customer-form-sheet.tsx` — handles create/edit modes, loading query, and save mutator.
+  - `src/features/products/components/product-form-sheet.tsx` — product form variant.
+  - `src/features/orders/components/order-form-sheet.tsx` — order form variant with array fields.
   - `src/routes/_org/customers/new.tsx` — route mounting list page with sheet type `create`.
   - `src/routes/_org/customers/$id/edit.tsx` — route mounting list page with sheet type `edit`.
 - **Do**:
   - Model modes with discriminated union: `{ type: 'create' } | { type: 'edit'; id: string }`.
   - Control sheet visibility by mounting conditioned on the `sheet` parameter of the page component.
   - Use `navigate({ to: '/entities' })` on close or saved callbacks to return to the parent list.
+  - Place `FormActions` at the bottom with `align="stacked"` and `border-t` separator.
 - **Avoid**:
   - Routing to dedicated full pages for simple create/edit forms.
   - Overwriting search, filter, and pagination URL states when opening creation forms.
+
+### Global overlay system (modals + sheets)
+- **Use when**: Cross-page dialogs or sheets that must survive navigation and support deep-linking.
+- **Prefer**: `useGlobalModal()` / `useGlobalSheet()` from `#/hooks/use-global-overlay` + registry in `#/components/app/global-modal/global-modal-registry.tsx`.
+- **Canonical examples**:
+  - `src/components/app/global-modal/global-modal-container.tsx` — centralized container mounted in `_org.tsx`.
+  - `src/components/app/global-modal/global-modal-registry.tsx` — `GLOBAL_MODALS` registry mapping string keys to lazy-loaded components.
+  - `src/hooks/use-global-overlay.ts` — `useGlobalModal()` and `useGlobalSheet()` hooks.
+- **Do**:
+  - Register new overlays in `GLOBAL_MODALS` with a kebab-case key and a lazy-loaded wrapper component.
+  - Call `openModal('invite-member')` or `openSheet('task-detail', taskId)` from any component.
+  - The container renders the active overlay with `<Suspense>` and handles close via URL state.
+  - Use `ModalComponentWrapper` pattern: accept `{ open, onOpenChange, id }` props, resolve data deps internally.
+- **Avoid**:
+  - Managing modal/sheet open state with `useState` in parent components for cross-page overlays.
+  - Passing overlay components as children — use the registry pattern instead.
+  - Directly mutating URL search params for overlay state — use the hooks.
+
+### DateField (calendar picker)
+- **Use when**: Date selection in forms (single date or date range).
+- **Prefer**: `DateField` from `#/components/app/form/date-field.tsx` via `form.AppField`.
+- **Canonical examples**:
+  - `src/components/app/form/date-field.tsx` — full implementation with calendar, presets, dropdowns.
+  - `src/components/app/form/date-field.test.tsx` — test patterns.
+- **Do**:
+  - Use `mode="single"` (default) for one date, `mode="range"` for start/end range.
+  - Use `enableDropdowns` (default `true`) for year/month navigation dropdowns.
+  - Use `presets={true}` for built-in shortcuts or `presets={[{ label: 'Next Friday', value: nextFriday }]}` for custom.
+  - Use `valueFormat="string"` (default) for `"YYYY-MM-DD"` strings or `valueFormat="date"` for `Date` objects.
+  - Use `calendarProps` to pass through Calendar component props (e.g. `numberOfMonths`).
+- **Avoid**:
+  - Building custom date pickers with raw `<input type="date">`.
+  - Using `valueFormat="date"` unless the backend or downstream logic specifically needs `Date` objects.
+
 ### Array fields (dynamic lists)
 - **Use when**: Forms with repeatable field groups (line items, addresses, tags).
 - **Prefer**: `form.AppField` with `mode="array"` and indexed field names.
@@ -158,6 +208,34 @@
   - Use `hasActiveFilters` + `onClearFilters` props on `DataTable` for the clear-all button.
 - **Avoid**:
   - Building custom filter UI outside the DataTable filter system.
+
+### Extracted page sections (detail pages)
+- **Use when**: Complex detail pages with multiple domain sections (order details, line items, invoices, timeline).
+- **Prefer**: Extract each section into a standalone component under `src/features/*/components/`.
+- **Canonical examples**:
+  - `src/features/orders/components/order-detail-section.tsx` — customer info, shipping, payment summary.
+  - `src/features/orders/components/order-line-items-card.tsx` — line items with deadlines, production stage, assets.
+  - `src/features/orders/components/order-invoices-section.tsx` — invoice list with expand/collapse, payment info.
+- **Do**:
+  - Each section owns its own i18n namespaces, data formatting, and layout.
+  - Pass only the data the section needs — no leaking parent state.
+  - Use `className` prop for layout overrides from the parent.
+  - Compose sections in the page with `space-y-6` gap.
+- **Avoid**:
+  - Monolithic detail pages that render everything inline.
+  - Passing entire parent component state as props to sections.
+
+### `getReadyForProductionLabel` for production stage display
+- **Use when**: Displaying "Ready for Production" with the first production stage name.
+- **Prefer**: `getReadyForProductionLabel` from `#/features/production/ready-for-production-label`.
+- **Canonical examples**:
+  - `src/features/orders/components/order-line-items-card.tsx` — production stage badge in line item rows.
+  - `src/features/portal/components/line-item-task-card.tsx` — portal line item display.
+- **Do**:
+  - Pass `firstProductionStageName`, `readyForProduction` (i18n key), and `readyForProductionWithStage` (i18n key with `{stage}` placeholder).
+  - When `firstProductionStageName` is undefined, falls back to `readyForProduction`.
+- **Avoid**:
+  - Hardcoding stage name logic in component render — use the utility.
 
 ### i18n in tests
 - **Use when**: Any test rendering a component that uses `useTranslations()`.

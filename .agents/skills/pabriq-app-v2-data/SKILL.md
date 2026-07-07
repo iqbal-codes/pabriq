@@ -5,31 +5,33 @@ description: How the data layer works in the pabriq-app-v2 codebase: schemas liv
 
 # pabriq-app-v2 — Data Layer
 
-The data layer is Drizzle ORM on PostgreSQL. All table definitions live in a single `src/db/schema.ts` file (~30 tables), the DB client is a pg Pool in `src/db/index.ts`, and feature-level queries live in `src/features/*/model.ts`. Server functions in `src/features/*/server.ts` call model functions with org resolution.
+The data layer is Drizzle ORM on PostgreSQL (Neon). All table definitions live in a single `src/db/schema.ts` file (~591 lines, ~30+ tables), the DB client is a pg Pool in `src/db/index.ts`, and feature-level queries live in `src/features/*/model.ts`. Server functions in `src/features/*/server.ts` call model functions with org resolution.
 
 > Read `../pabriq-app-v2-foundation/references/codebase-profile.md` first for the stack, architecture, and tooling context. This skill adds data-layer specifics.
 
 ## Where things live
 
-- **Schema definitions**: `src/db/schema.ts` — all tables in one file, ~590 lines
-- **DB client**: `src/db/index.ts` — pg Pool → Drizzle instance, exported as `db`
-- **Connection string normalization**: `src/db/connection-string.ts`
-- **Drizzle config**: `drizzle.config.ts` — dialect: postgresql, schema: `./src/db/schema.ts`, output: `./drizzle`
-- **Migrations**: `drizzle/` — generated SQL files, 29 migrations
-- **Feature models**: `src/features/*/model.ts` — pure logic + DB queries per domain
-- **Server functions**: `src/features/*/server.ts` — `createServerFn` wrappers with org resolution
-- **Sorting utility**: `src/lib/sorting.ts` — `buildOrderBy`, `SortColumnMap`, encode/decode
-- **RLS helpers**: `src/lib/rls.ts` — `setCurrentOrg`, `resetCurrentOrg`, `orgFilter` (documented but currently unused; codebase uses `eq(orgId, ...)` directly)
-- **Query keys**: `src/lib/query-keys.ts` — TanStack Query key factory
-- **Validation schemas**: `src/lib/validation-schemas.ts` — shared Zod schemas
+| Path | Purpose |
+|---|---|
+| `src/db/schema.ts` | All pgTable definitions (~30 tables, ~591 lines) |
+| `src/db/index.ts` | pg Pool → Drizzle instance, exported as `db` |
+| `src/db/connection-string.ts` | Connection string normalization |
+| `drizzle.config.ts` | Drizzle Kit config: dialect `postgresql`, schema `./src/db/schema.ts`, output `./drizzle` |
+| `drizzle/` | Generated migration SQL files (32 migrations) |
+| `drizzle/meta/_journal.json` | Migration journal (ordered apply list) |
+| `src/features/*/model.ts` | Pure logic + DB queries per domain |
+| `src/features/*/server.ts` | `createServerFn` wrappers with org resolution |
+| `src/lib/sorting.ts` | `buildOrderBy`, `SortColumnMap`, `encodeSort`/`decodeSort` |
+| `src/lib/query-keys.ts` | TanStack Query key factory |
+| `src/lib/validation-schemas.ts` | Shared Zod schemas |
 
 ## Schema conventions
 
-### Core patterns (non-negotiable)
+### Core template (non-negotiable)
 
-Every business table follows this template — `orgId` FK, UUID PK via `crypto.randomUUID()`, and timezone-aware timestamps:
+Every business table follows this pattern — `orgId` FK, UUID PK, timezone-aware timestamps:
 
-> from `src/db/schema.ts` (customers table, line 123)
+> from `src/db/schema.ts` (customers table)
 ```typescript
 export const customers = pgTable('customers', {
   id: text('id').primaryKey(),
@@ -43,55 +45,53 @@ export const customers = pgTable('customers', {
 })
 ```
 
-For AI actions, the `assistantActions` table captures pending/completed proposals from the AI assistant:
+### Recent schema additions (migration 0030)
 
-> from `src/db/schema.ts` (line 547)
+> from `src/db/schema.ts` and `drizzle/0030_violet_rhodey.sql`
+
+**organization_profiles** — `lateFeePerDay`:
 ```typescript
-export const assistantActions = pgTable(
-  'assistant_actions',
-  {
-    id: text('id').primaryKey(),
-    orgId: text('org_id').notNull().references(() => organization.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull(),
-    threadId: text('thread_id').notNull(),
-    kind: text('kind').notNull(),
-    status: text('status').notNull().default('pending'),
-    payload: json('payload').$type<AssistantActionPayload>().notNull(),
-    resultOrderId: text('result_order_id'),
-    expiresAt: timestamp('expires_at').notNull(),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
-    updatedAt: timestamp('updated_at').notNull().defaultNow(),
-  }
-)
+lateFeePerDay: integer('late_fee_per_day').notNull().default(0),
+```
+
+**orders** — `deadline` + `manualDeadline`:
+```typescript
+deadline: timestamp('deadline'),
+manualDeadline: boolean('manual_deadline').notNull().default(false),
+```
+
+**invoices** — `lateFee`:
+```typescript
+lateFee: real('late_fee').notNull().default(0),
 ```
 
 ### Naming conventions
 
 - **JS export names**: camelCase (`customers`, `products`, `orderLineItems`)
 - **DB table names**: snake_case (`customers`, `products`, `order_line_items`)
-- **Column JS names**: camelCase (`createdAt`, `orgId`, `basePrice`)
-- **Column DB names**: snake_case (`created_at`, `org_id`, `base_price`)
+- **Column JS names**: camelCase (`createdAt`, `orgId`, `basePrice`, `lateFeePerDay`)
+- **Column DB names**: snake_case (`created_at`, `org_id`, `base_price`, `late_fee_per_day`)
 - **Primary keys**: always `text('id').primaryKey()` — IDs are `crypto.randomUUID()` strings
 - **Foreign keys**: `text('..._id').references(() => otherTable.id, { onDelete: '...' })`
 
 ### Common column types
 
-| Pattern | Type | Example |
+| Pattern | Drizzle type | Example |
 |---|---|---|
-| ID / FK / text | `text()` | `id`, `orgId`, `name`, `midtransOrderId` |
-| Boolean flag | `boolean().notNull().default(true)` | `active`, `isWni` |
-| Integer amount | `integer().notNull().default(0)` | `basePrice`, `productionDays` |
-| Decimal amount | `real().notNull().default(0)` | `total` on orders |
-| JSON blob | `json()` | `shippingAddress` on orders, `payload` on assistantActions |
+| ID / FK / text | `text()` | `id`, `orgId`, `name` |
+| Boolean flag | `boolean().notNull().default(true)` | `active`, `manualDeadline` |
+| Integer amount | `integer().notNull().default(0)` | `basePrice`, `lateFeePerDay` |
+| Decimal amount | `real().notNull().default(0)` | `total` on orders, `lateFee` on invoices |
+| JSON blob | `json()` | `shippingAddress`, `payload` |
 | Timestamp | `timestamp('...').notNull().defaultNow()` | `createdAt`, `updatedAt` |
-| Optional timestamp | `timestamp('...')` (no default, nullable) | `deletedAt`, `shippedAt` |
+| Optional timestamp | `timestamp('...')` (nullable) | `deletedAt`, `shippedAt`, `deadline` |
 | Status enum | `text().notNull().default('draft')` | `status` on orders |
 
 ### Indexes
 
 Defined as the third argument to `pgTable`:
 
-> from `src/db/schema.ts` (invoices, line 327)
+> from `src/db/schema.ts` (invoices)
 ```typescript
 export const invoices = pgTable(
   'invoices',
@@ -102,11 +102,11 @@ export const invoices = pgTable(
 )
 ```
 
-Use `index()` for standard B-tree, `uniqueIndex()` for uniqueness constraints. Index naming: `idx_{table}_{columns}`.
+Use `index()` for standard B-tree, `uniqueIndex()` for uniqueness. Index naming: `idx_{table}_{columns}`.
 
 ## How queries work
 
-### The data flow
+### Data flow
 
 ```
 Route loader → createServerFn → org resolution from session → model function → Drizzle query → Postgres
@@ -116,9 +116,9 @@ Server functions in `src/features/*/server.ts` call model functions in `src/feat
 
 ### Org scoping (mandatory)
 
-Every business table query MUST filter by `orgId`. The org ID is resolved server-side from the session:
+Every business table query MUST filter by `orgId`:
 
-> from `src/features/customers/model.ts` (listCustomers, line 137)
+> from `src/features/customers/model.ts` (listCustomers)
 ```typescript
 const conditions: SQL[] = [
   eq(customersTable.orgId, params.orgId),
@@ -126,13 +126,13 @@ const conditions: SQL[] = [
 ]
 ```
 
-**Never** trust a client-provided `orgId` for data access. The `server.ts` layer resolves it from the session before calling model functions.
+**Never** trust a client-provided `orgId`. The `server.ts` layer resolves it from the session.
 
 ### Column narrowing (mandatory)
 
-Always select only the columns you need — never `db.select().from(table)`:
+Always select only the columns you need:
 
-> from `src/features/customers/model.ts` (listCustomers, line 174)
+> from `src/features/customers/model.ts` (listCustomers)
 ```typescript
 const [rows, countResult] = await Promise.all([
   db
@@ -140,10 +140,7 @@ const [rows, countResult] = await Promise.all([
       id: customersTable.id,
       name: customersTable.name,
       email: customersTable.email,
-      phone: customersTable.phone,
-      active: customersTable.active,
-      photoAssetId: customersTable.photoAssetId,
-      createdAt: customersTable.createdAt,
+      // ... display columns only
     })
     .from(customersTable)
     .where(allConditions)
@@ -159,7 +156,7 @@ const [rows, countResult] = await Promise.all([
 
 ### Pagination pattern
 
-All list queries follow the same shape — parallel data + count queries via `Promise.all`, with `limit`/`offset`:
+All list queries: parallel data + count via `Promise.all`, with `limit`/`offset`:
 
 ```typescript
 const page = params.page ?? 1
@@ -176,25 +173,27 @@ return { rows, totalRows: Number(countResult[0]?.count ?? 0) }
 
 ### Sort integration
 
-- Models define a `SortColumnMap` and use `buildOrderBy` from `#/lib/sorting`:
+Models define a `SortColumnMap` and use `buildOrderBy` from `#/lib/sorting`:
 
-> from `src/features/customers/model.ts` (line 130)
+> from `src/lib/sorting.ts`
 ```typescript
-const CUSTOMER_SORT_COLUMNS = {
-  name: customersTable.name,
-  email: customersTable.email,
-  createdAt: customersTable.createdAt,
-  active: customersTable.active,
+import { buildOrderBy, type SortColumnMap } from '#/lib/sorting'
+
+const SORT_COLUMNS = {
+  name: table.name,
+  createdAt: table.createdAt,
 } satisfies SortColumnMap
+
+const orderBy = buildOrderBy(params.sort, SORT_COLUMNS, desc(table.createdAt))
 ```
 
-Then: `const orderBy = buildOrderBy(params.sort, CUSTOMER_SORT_COLUMNS, desc(table.createdAt))`
+`buildOrderBy` accepts `SortState | null | undefined`, a `SortColumnMap`, and a fallback SQL expression. Returns an `asc()`/`desc()` or `sql` fragment with nulls handling.
 
 ### Soft delete pattern
 
-Several tables use `deletedAt` for soft deletes. Queries filter with `isNull(table.deletedAt)`. Deletions set `deletedAt` and `updatedAt`:
+Queries filter with `isNull(table.deletedAt)`. Deletions set both `deletedAt` and `updatedAt`:
 
-> from `src/features/customers/model.ts` (deleteCustomer, line 336)
+> from `src/features/customers/model.ts` (deleteCustomer)
 ```typescript
 await db
   .update(customersTable)
@@ -202,15 +201,35 @@ await db
   .where(and(eq(customersTable.id, id), eq(customersTable.orgId, orgId)))
 ```
 
+### Portal model refactoring
+
+`src/features/portal/model.ts` separates timeline logic into two functions:
+
+- `getOrderTimelineByOrderId(orderId, orgId)` — standalone export, queries order + invoices + payments directly with org scoping
+- `getOrderTimeline(token)` — thin wrapper that resolves the token to an order, then delegates to `getOrderTimelineByOrderId`
+
+This allows backend code (e.g., server functions) to build timelines without a portal token.
+
+### Invoice creation with custom product total
+
+> from `src/features/invoices/model.ts` (createInvoice)
+```typescript
+export async function createInvoice(
+  orgId: string,
+  input: CreateInvoiceInput,
+): Promise<CreateInvoiceResult> {
+```
+
+`CreateInvoiceInput` accepts an optional `customProductTotal?: number` — when provided, it overrides the computed `order.total * (percentage / 100)`. The `lateFee` field is clamped to non-negative: `Math.max(0, input.lateFee ?? 0)`.
+
 ## Search patterns
 
 | Pattern | Index type | Drizzle | Min chars |
 |---|---|---|---|
 | Prefix (`term%`) | B-tree | `ilike(col, \`${term}%\`)` | none |
 | Anywhere (`%term%`) | GIN + pg_trgm | `ilike(col, \`%${term}%\`)` | 3 |
-| Full-text (stemming) | GIN on tsvector | `sql\`to_tsvector @@ to_tsquery\`` | 3 |
 
-Current codebase uses `%term%` with `ilike` for name/email/phone searches. Any substring search (`%term%`) **requires** `pg_trgm` + GIN index — otherwise it causes full sequential scans. Enforce minimum 3 characters in `.inputValidator()`.
+Current codebase uses `%term%` with `ilike` for name/email/phone searches. Any substring search (`%term%`) **requires** `pg_trgm` + GIN index. Enforce minimum 3 characters in `.inputValidator()`.
 
 ## Batch operations (N+1 prevention)
 
@@ -227,31 +246,30 @@ bun run db:push       # Push schema directly (dev only, never production)
 bun run db:studio     # Open Drizzle Studio for inspection
 ```
 
-Migrations live in `drizzle/` as numbered SQL files. Generated by Drizzle Kit (`drizzle.config.ts`). Never alter schema outside Drizzle — always generate and apply migrations.
-
-## RLS (application-level)
-
-The codebase provides RLS helpers in `src/lib/rls.ts` (`setCurrentOrg`, `resetCurrentOrg`, `orgFilter`), but **currently unused** — the established pattern is filtering directly with `eq(table.orgId, orgId)`. See Open Questions in the foundation profile for the decision on whether to adopt or remove `orgFilter`.
+Migrations live in `drizzle/` as numbered SQL files (currently 32). Generated by Drizzle Kit (`drizzle.config.ts`). Never alter schema outside Drizzle — always generate and apply migrations.
 
 ## Commands
 
-- Generate migrations: `bun run db:generate`
-- Apply migrations: `bun run db:migrate`
-- Push schema (dev): `bun run db:push`
-- Open Drizzle Studio: `bun run db:studio`
-- Typecheck: `bun run typecheck`
-- Run model tests: `bun run test` (requires `DATABASE_URL` pointing to staging DB)
+| Command | Purpose |
+|---|---|
+| `bun run db:generate` | Generate Drizzle migration from `src/db/schema.ts` changes |
+| `bun run db:migrate` | Apply pending migrations from `drizzle/` |
+| `bun run db:push` | Push schema directly (dev only, never production) |
+| `bun run db:studio` | Open Drizzle Studio |
+| `bun run typecheck` | TypeScript type check |
+| `bun run test` | Vitest (requires `DATABASE_URL` pointing to staging DB) |
 
 ## Conventions observed
 
 - All tables defined in `src/db/schema.ts` — single file, no split across modules
 - Import `db` from `#/db/index` only — never raw `pg` Pool or direct `drizzle-orm/node-postgres`
-- Use Drizzle query builder — no raw SQL strings except in RLS helpers and inline sub-selects
+- Use Drizzle query builder — no raw SQL strings except in inline sub-selects within `select()` projections
 - `crypto.randomUUID()` for all new record IDs
 - `import type` for type-only imports (`verbatimModuleSyntax`)
-- `#/` import alias for all internal paths
+- `#/` import alias for all internal paths (except shadcn/ui which uses `@/`)
 - `SortColumnMap` + `buildOrderBy` for server-side sorting
 - Discriminated unions `{ ok: true, data: T } | { ok: false, error: string }` for mutation results
+- Soft delete: set `deletedAt` + `updatedAt`, filter reads with `isNull(table.deletedAt)`
 
 ## Anti-patterns to avoid
 
@@ -262,12 +280,13 @@ The codebase provides RLS helpers in `src/lib/rls.ts` (`setCurrentOrg`, `resetCu
 - `db:push` in production
 - Importing `db` from any path other than `#/db/index`
 - Mixing raw SQL in model functions (exception: inline sub-selects in `select()` projections)
+- `db.select()` calls without column narrowing — new queries MUST narrow columns
 
 ## Gaps / verify
 
-- `src/lib/rls.ts` is documented in boilerplate (`docs/agents/boilerplate/database.md`) but the file does not appear to exist in `src/lib/`. The codebase uses `eq(table.orgId, orgId)` directly. Verify whether `rls.ts` was removed or moved.
-- Some `db.select()` calls in older models (e.g., `getCustomer`) still use `select()` without column narrowing. New queries MUST narrow columns.
-- The `ilike` search pattern (`%term%`) is used without visible `pg_trgm` GIN indexes in the schema. Verify whether these indexes exist in migrations or need to be added.
+- `src/lib/rls.ts` was documented in boilerplate but does not exist. The codebase uses `eq(table.orgId, orgId)` directly everywhere. The `orgFilter` helper should be considered deprecated.
+- Some older model functions may still use `select()` without column narrowing. New queries MUST narrow columns.
+- The `ilike` search pattern (`%term%`) is used without visible `pg_trgm` GIN indexes in the schema — verify whether these exist in migrations or need to be added.
 - The `@/*` alias exists alongside `#/` for shadcn/ui compatibility. Data layer code MUST use `#/` exclusively.
 
 ## References

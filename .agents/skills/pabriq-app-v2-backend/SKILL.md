@@ -1,6 +1,6 @@
 ---
 name: pabriq-app-v2-backend
-description: How backend work is done in the pabriq-app-v2 codebase: server functions live in src/features/*/server.ts and call model functions in src/features/*/model.ts using Drizzle ORM; session/org resolution uses Better Auth via src/lib/auth-session.ts; raw HTTP API routes live in src/routes/api/. Use whenever the user adds or edits server functions, model queries, API routes, auth logic, or backend data access in pabriq-app-v2, even if they don't say 'backend'.
+description: How backend work is done in the pabriq-app-v2 codebase: server functions live in src/features/*/server.ts and call model functions in src/features/*/model.ts using Drizzle ORM; session/org resolution uses Better Auth via src/lib/auth-session-server.ts; raw HTTP API routes live in src/routes/api/. Use whenever the user adds or edits server functions, model queries, API routes, auth logic, or backend data access in pabriq-app-v2, even if they don't say 'backend'.
 ---
 
 # pabriq-app-v2 — Backend
@@ -18,7 +18,8 @@ All server-side business logic lives in `src/features/*/server.ts` (TanStack Sta
 | TanStack Query hooks | `src/features/*/hooks.ts` |
 | Auth server setup | `src/lib/auth.ts` |
 | Auth client | `src/lib/auth-client.ts` |
-| Session / org resolution | `src/lib/auth-session.ts` |
+| Org resolution (server-only) | `src/lib/auth-session-server.ts` |
+| Session / org context (client-safe) | `src/lib/auth-session.ts` |
 | Org listing + creation | `src/features/auth/org.ts` |
 | Permission guards | `src/features/permissions/model.ts` |
 | DB schema (all tables) | `src/db/schema.ts` |
@@ -67,41 +68,40 @@ Key rules:
 - `.handler()` must have an explicit return type (never `Promise<any>`)
 - Dynamic-import `auth` and `db` inside the handler (avoids bundling server code client-side)
 
-### Org resolution
+### Auth-session module separation
 
-Every server function that touches business data MUST resolve the org from the authenticated session. The client-provided `orgId` is re-verified against the DB membership table.
+Server-only code lives in `src/lib/auth-session-server.ts`. Client-safe code (with `createServerFn`) lives in `src/lib/auth-session.ts`. This split prevents server-only imports from being bundled into client code.
 
-> from `src/lib/auth-session.ts`
+> from `src/lib/auth-session-server.ts`
 ```typescript
+// Resolves org ID from Better Auth session — dynamic-imports auth, db, schema
 export async function resolveOrgId(): Promise<string> {
   const [{ getRequestHeaders }, { auth }, { db }, { member }, { eq }] =
     await Promise.all([
       import('@tanstack/react-start/server'),
-      import('#/lib/auth'),
-      import('#/db/index'),
-      import('#/db/schema'),
-      import('drizzle-orm'),
+      import('#/lib/auth'), import('#/db/index'),
+      import('#/db/schema'), import('drizzle-orm'),
     ])
   const headers = getRequestHeaders()
   const session = await auth.api.getSession({ headers })
   if (!session) throw new Error('Not authenticated')
-
-  const memberships = await db
-    .select({ orgId: member.organizationId })
-    .from(member)
-    .where(eq(member.userId, session.user.id))
-    .limit(1)
-
-  if (memberships.length === 0) throw new Error('No organization')
+  // ... queries member table for first org membership
   return memberships[0].orgId
 }
 ```
 
-Three helpers exist — use the right one:
-- `resolveOrgId()` — returns the org ID string; throws on failure. Use in server functions.
-- `resolveOrgContext()` — returns discriminated union with session + org + role. Use in route guards.
-- `getCurrentSession()` — returns the raw Better Auth session or null. Use for lightweight session checks.
+> from `src/lib/auth-session.ts`
+```typescript
+export const getCurrentSession = createServerFn({ method: 'GET' }).handler(async () => { ... })
+export async function resolveOrgContext(): Promise<OrgContextResult> {
+  // Returns { ok: true, session, org, role } | { ok: false, reason: 'unauthenticated' | 'no-org', session? }
+}
+```
 
+**Import rules:**
+- `src/features/*/server.ts` → import `resolveOrgId` from `#/lib/auth-session-server`
+- `src/routes/_org.tsx` and other route guards → import `resolveOrgContext` from `#/lib/auth-session`
+- Never import `resolveOrgId` from `#/lib/auth-session` (it lives in the `-server` module now)
 ### Dynamic imports pattern
 
 Server functions always dynamic-import `auth`, `db`, and other server-only modules inside the handler. This prevents server code from being bundled into client code.
@@ -125,6 +125,22 @@ const [orgId, { getProduct }] = await Promise.all([
   import('./model'),
 ])
 return getProduct(data.id, orgId)
+```
+
+### Cross-feature model calls
+
+Server functions can import model functions from other features when needed (e.g., order timeline for admin views):
+
+> from `src/features/orders/server.ts`
+```typescript
+export const getOrderAdminTimelineFn = createServerFn({ method: 'GET' })
+  .inputValidator((input: { orderId: string; orgId: string }) => input)
+  .handler(async ({ data }) => {
+    const { getOrderTimelineByOrderId } = await import(
+      '#/features/portal/model'
+    )
+    return getOrderTimelineByOrderId(data.orderId, data.orgId)
+  })
 ```
 
 ### Validation with Zod
@@ -152,43 +168,34 @@ Mutations return `MutationResult` (or equivalent). Never throw to the caller fro
 export type MutationResult = { ok: true } | { ok: false; error: string }
 ```
 
-Typical mutation error handling:
+Pattern: `try { await fn(); return { ok: true } } catch (e) { return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' } }`
+
+### Model-layer domain types
+
+Model functions define their own input/output types co-located in `model.ts`. Optional fields with clear defaults enable flexible inputs:
+
+> from `src/features/invoices/model.ts`
 ```typescript
-try {
-  await createItem({ ...data, orgId })
-  return { ok: true }
-} catch (e) {
-  return {
-    ok: false,
-    error: e instanceof Error ? e.message : 'Unknown error',
-  }
+export type CreateInvoiceInput = {
+  orderId?: string
+  customerId: string
+  lineItems: Array<{ description: string; quantity: number; unitPrice: number }>
+  percentage?: number
+  customProductTotal?: number  // overrides calculated product total
+  dueDate: string
+  // ...
 }
 ```
 
 ### Server logger middleware
 
-Attach `serverLoggerMiddleware` to server functions that need duration logging and Sentry error reporting. The middleware logs functions and captures exceptions with error causes.
+Attach `serverLoggerMiddleware` to server functions that need duration logging and Sentry error reporting. See `src/lib/server-logger-middleware.ts` for the full implementation.
 
 > from `src/lib/server-logger-middleware.ts`
 ```typescript
-export const serverLoggerMiddleware = createMiddleware({
-  type: 'function',
-}).server(async ({ next, serverFnMeta }) => {
-  const fnName = serverFnMeta?.name ?? 'unknown'
-  const start = Date.now()
-  try {
-    const result = await next()
-    const duration = Date.now() - start
-    logger.info({ fn: fnName, durationMs: duration }, 'server fn complete')
-    return result
-  } catch (err: unknown) {
-    const duration = Date.now() - start
-    const message = err instanceof Error ? err.message : String(err)
-    logger.error({ fn: fnName, durationMs: duration, err: message }, 'server fn error')
-    sentryCaptureException(err)
-    throw err
-  }
-})
+// Wraps handler: logs fn name + duration on success, logs error + captures to Sentry on failure
+export const serverLoggerMiddleware = createMiddleware({ type: 'function' })
+  .server(async ({ next, serverFnMeta }) => { ... })
 ```
 
 Usage:
@@ -197,28 +204,22 @@ export const myFn = createServerFn({ method: 'GET' })
   .middleware([serverLoggerMiddleware])
   .handler(async ({ data }) => { ... })
 ```
-
 ### Column narrowing
 
-Always select only the columns you need. Never use `db.select().from(table)`.
+Always select only the columns you need. Never use `db.select().from(table)`. Parallelize data + count queries:
 
 > from `src/features/products/server.ts`
 ```typescript
 const [rows, countResult] = await Promise.all([
-  db.select({
-    id: productsTable.id,
-    name: productsTable.name,
-    active: productsTable.active,
-    basePrice: productsTable.basePrice,
-    createdAt: productsTable.createdAt,
-  }).from(productsTable).where(allConditions).orderBy(orderBy).limit(perPage).offset(offset),
+  db.select({ id: productsTable.id, name: productsTable.name })
+    .from(productsTable).where(allConditions).orderBy(orderBy).limit(perPage).offset(offset),
   db.select({ count: sql<number>`count(*)` }).from(productsTable).where(allConditions),
 ])
 ```
 
 ### Sort column maps
 
-Server-side sorting uses `buildOrderBy` with a `SortColumnMap` from `src/lib/sorting.ts`. Define a map of allowed sort columns per feature, then pass it to `buildOrderBy`.
+Server-side sorting uses `buildOrderBy` with a `SortColumnMap` from `src/lib/sorting.ts`:
 
 > from `src/features/products/server.ts`
 ```typescript
@@ -227,6 +228,60 @@ const PRODUCT_SORT_COLUMNS = {
   createdAt: { expression: productsTable.createdAt, nulls: 'last' },
   basePrice: productsTable.basePrice,
 } satisfies SortColumnMap
+```
+
+### Query key factory
+
+All TanStack Query keys use the centralized `queryKeys` factory from `src/lib/query-keys.ts`. Keys follow an `all → lists → list(filters)` / `all → details → detail(id)` hierarchy.
+
+> from `src/lib/query-keys.ts`
+```typescript
+export const queryKeys = {
+  products: {
+    all: ['products'] as const,
+    lists: () => [...queryKeys.products.all, 'list'] as const,
+    list: (filters: { orgId: string; search?: string }) =>
+      [...queryKeys.products.lists(), filters] as const,
+    details: () => [...queryKeys.products.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.products.details(), id] as const,
+    // domain-specific sub-keys: breakpoints, addons, pricing
+  },
+  orders: {
+    all: ['orders'] as const,
+    lists: () => [...queryKeys.orders.all, 'list'] as const,
+    list: (filters: { orgId: string; status?: string }) =>
+      [...queryKeys.orders.lists(), filters] as const,
+    details: () => [...queryKeys.orders.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.orders.details(), id] as const,
+    creationReadiness: () => [...queryKeys.orders.all, 'creation-readiness'] as const,
+    history: (id: string) => [...queryKeys.orders.details(), id, 'history'] as const,
+    adminTimeline: (id: string) => [...queryKeys.orders.details(), id, 'admin-timeline'] as const,
+  },
+  // Same pattern for: invoices, portal, production, address, notifications, assistant
+}
+```
+
+Domains: `products`, `customers`, `orders`, `assets`, `invoices`, `portal`, `address`, `production`, `notifications`, `assistant`. When adding a new domain, follow the hierarchy. Include filter params in the key for automatic cache separation.
+### Permission guards
+
+Role-based access checks use pure functions from `src/features/permissions/model.ts`. The `Role` type is `'owner' | 'admin' | 'member'`.
+
+> from `src/features/permissions/model.ts`
+```typescript
+// Owner/admin only: canManageMembers, canManageProducts, canApproveOrders,
+// canManageInvoices, canManageCustomers, canManageStages, canManageSettings, etc.
+// All roles: canCreateOrders, canViewProduction, canAdvanceProductionTask
+export function canManageMembers(role: Role): boolean { return role === 'owner' || role === 'admin' }
+export function canCreateOrders(role: Role): boolean { return role === 'owner' || role === 'admin' || role === 'member' }
+```
+
+Usage in server functions:
+```typescript
+import { canApproveOrders } from '#/features/permissions/model'
+const role = org.role as Role
+if (!canApproveOrders(role)) {
+  return { ok: false, error: 'Insufficient permissions' }
+}
 ```
 
 ### Route guards
@@ -278,14 +333,22 @@ export const reconcileInvoicePaymentFn = createServerFn({ method: 'POST' })
 
 ## Commands
 
-- Dev server: `bun run dev`
-- Build: `bun run build`
-- Start production: `bun run start:prod`
-- Typecheck: `bun run typecheck`
-- DB generate migration: `bun run db:generate`
-- DB migrate: `bun run db:migrate`
-- DB push (dev only): `bun run db:push`
-- DB studio: `bun run db:studio`
+All from `package.json` scripts. **MUST use `bun run`, never invoke tools directly.**
+
+| Command | Notes |
+|---|---|
+| `bun run dev` | Dev server on port 3001 |
+| `bun run build` | Vite build |
+| `bun run start:prod` | Production server |
+| `bun run typecheck` | `tsc --noEmit` |
+| `bun run check` | Biome lint + format check |
+| `bun run db:generate` | Generate Drizzle migrations |
+| `bun run db:migrate` | Apply migrations |
+| `bun run db:push` | Push schema directly (dev only) |
+| `bun run db:studio` | Open Drizzle Studio |
+| `bun run test` | Vitest (staging DB) |
+
+**Pre-commit pipeline**: `bun run check && bun run typecheck && bun run test`. For route/server changes: also `bun run build`.
 
 ## Conventions observed
 
@@ -297,6 +360,8 @@ export const reconcileInvoicePaymentFn = createServerFn({ method: 'POST' })
 - Zod schemas in `src/lib/validation-schemas.ts` for shared validation; inline schemas for feature-specific
 - `SortColumnMap` + `buildOrderBy` for all server-side sorting
 - `queryKeys` factory from `src/lib/query-keys.ts` for all TanStack Query keys
+- Import `resolveOrgId` from `#/lib/auth-session-server` in server functions (never from `#/lib/auth-session`)
+- Import `resolveOrgContext` / `getCurrentSession` from `#/lib/auth-session` in route guards
 - Biome style: single quotes, no semicolons (ASI), 2-space indent
 - All internal imports use `#/` prefix alias
 
@@ -311,6 +376,7 @@ export const reconcileInvoicePaymentFn = createServerFn({ method: 'POST' })
 - **Never import `auth` or `db` at file top level** — dynamic import inside handler only
 - **Never return thrown errors from mutations** — catch and return `{ ok: false, error }`
 - **No `@/*` alias** for authored code — use `#/` (reserve `@/*` for shadcn/ui compatibility)
+- **Never import `resolveOrgId` from `#/lib/auth-session`** — use `#/lib/auth-session-server` (the client module does not export it)
 
 ## Gaps / verify
 
