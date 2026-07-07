@@ -1,10 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import { resolveOrgId } from '#/lib/auth-session-server'
 import {
   canAdjustConfirmedOrder,
   type Role,
 } from '#/features/permissions/model'
+import { resolveOrgId } from '#/lib/auth-session-server'
 import type { MutationResult } from '#/lib/server-results'
 import type {
   CreateDraftOrderInput,
@@ -346,6 +346,7 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
         customerName,
         lineItems: [],
         percentage: remainingPercentage,
+        customProductTotal: remainingAmount,
         dueDate: data.invoiceDueDate,
         paymentMethodId: data.invoicePaymentMethodId,
         notes: data.invoiceNotes,
@@ -458,4 +459,13 @@ export const listOrderHistoryEventsFn = createServerFn({ method: 'GET' })
       import('./model'),
     ])
     return listOrderHistoryEvents(data.orderId, orgId) as Promise<any>
+  })
+
+export const getOrderAdminTimelineFn = createServerFn({ method: 'GET' })
+  .inputValidator((input: { orderId: string; orgId: string }) => input)
+  .handler(async ({ data }) => {
+    const { getOrderTimelineByOrderId } = await import(
+      '#/features/portal/model'
+    )
+    return getOrderTimelineByOrderId(data.orderId, data.orgId)
   })

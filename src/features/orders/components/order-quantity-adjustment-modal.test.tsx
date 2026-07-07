@@ -21,6 +21,7 @@ const messages = {
       'Adjust the quantity for a line item in this order.',
     selectLineItem: 'Select Line Item',
     currentQuantity: 'Current Quantity',
+    unitPrice: 'Unit Price',
     newQuantity: 'New Quantity',
     adjustmentReason: 'Reason for Adjustment',
     adjustmentReasonPlaceholder: 'Enter reason...',
@@ -75,6 +76,7 @@ function renderModal(lineItems = defaultLineItems, products = defaultProducts) {
           open
           onOpenChange={onOpenChange}
           orderId="order-1"
+          selectedLineItemId="li-1"
           lineItems={lineItems}
           products={products}
           onSuccess={onSuccess}

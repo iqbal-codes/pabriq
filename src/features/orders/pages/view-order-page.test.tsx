@@ -64,6 +64,12 @@ vi.mock('#/features/orders/hooks', () => ({
       shippingAddress: null,
     },
   }),
+  useOrderAdminTimeline: () => ({ data: [] }),
+  useOrderHistoryEvents: () => ({
+    data: [],
+    isLoading: false,
+  }),
+  useAdjustOrderQuantity: () => ({ mutateAsync: vi.fn() }),
 }))
 
 vi.mock('#/features/invoices/hooks', () => ({
@@ -81,6 +87,12 @@ vi.mock('#/features/invoices/hooks', () => ({
 vi.mock('#/features/production/hooks', () => ({
   useTasksByOrderId: () => ({
     data: [],
+  }),
+}))
+
+vi.mock('#/features/products/hooks', () => ({
+  useProductsList: () => ({
+    data: { rows: [], total: 0 },
   }),
 }))
 
@@ -122,6 +134,10 @@ vi.mock('#/features/orders/components/order-line-items-card', () => ({
   OrderLineItemsCard: () => <div data-testid="order-line-items-card" />,
 }))
 
+vi.mock('#/features/portal/components/order-flow-timeline', () => ({
+  OrderFlowTimeline: () => <div data-testid="order-flow-timeline" />,
+}))
+
 vi.mock('#/features/orders/components/order-invoices-section', () => ({
   OrderInvoicesSection: () => <div data-testid="order-invoices-section" />,
 }))
@@ -146,6 +162,10 @@ vi.mock('#/features/invoices/components/create-invoice-modal', () => ({
 
 vi.mock('#/features/orders/components/complete-production-modal', () => ({
   CompleteProductionModal: () => null,
+}))
+
+vi.mock('#/features/orders/components/order-quantity-adjustment-modal', () => ({
+  OrderQuantityAdjustmentModal: () => null,
 }))
 
 vi.mock('#/components/app/avatar-photo', () => ({
@@ -226,6 +246,7 @@ const messages = {
   production: {
     courier: 'Courier',
     trackingNumber: 'Tracking Number',
+    copyTrackingNumber: 'Copy',
     shipmentFee: 'Shipment Fee',
     markAsShipped: 'Mark as Shipped',
     startOrderProduction: 'Start Production',
@@ -281,7 +302,8 @@ describe('ViewOrderPage – shipping card', () => {
 
     renderPage()
 
-    expect(screen.getByText('Shipment Fee')).toBeInTheDocument()
+    // Use regex matcher for text that may include a trailing colon in the rendered component
+    expect(screen.getByText(/Shipment Fee/)).toBeInTheDocument()
     expect(screen.getByText(/50\.000/)).toBeInTheDocument()
   })
 

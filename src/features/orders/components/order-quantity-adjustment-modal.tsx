@@ -11,11 +11,13 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
-import type { ProductRow } from '#/features/products/model'
 import { useAdjustOrderQuantity } from '#/features/orders/hooks'
+import type { ProductRow } from '#/features/products/model'
+import { currencyFormatter } from './view-order-utils'
 
 type LineItem = {
   id: string
@@ -27,11 +29,11 @@ type LineItem = {
   total: number
   isRepeatOrder: boolean
 }
-
 type OrderQuantityAdjustmentModalProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   orderId: string
+  selectedLineItemId: string | null
   lineItems: LineItem[]
   products: ProductRow[]
   onSuccess: () => void
@@ -41,6 +43,7 @@ export function OrderQuantityAdjustmentModal({
   open,
   onOpenChange,
   orderId,
+  selectedLineItemId,
   lineItems,
   products,
   onSuccess,
@@ -48,17 +51,12 @@ export function OrderQuantityAdjustmentModal({
   const t = useTranslations('orders')
   const adjustQuantity = useAdjustOrderQuantity()
 
-  const lineItemOptions = lineItems.map((item) => ({
-    value: item.id,
-    label: item.designName
-      ? `${item.productName} - ${item.designName} (qty: ${item.quantity})`
-      : `${item.productName} (qty: ${item.quantity})`,
-  }))
+  const selectedLineItem = lineItems.find((li) => li.id === selectedLineItemId)
 
   const form = useAppForm({
     defaultValues: {
-      lineItemId: lineItems[0]?.id ?? '',
-      newQuantity: lineItems[0]?.quantity ?? 1,
+      lineItemId: selectedLineItemId ?? '',
+      newQuantity: selectedLineItem?.quantity ?? 1,
       reason: '',
     },
     onSubmit: async ({ value }) => {
@@ -140,9 +138,7 @@ export function OrderQuantityAdjustmentModal({
     },
   })
 
-  const selectedLineItem = lineItems.find(
-    (li) => li.id === form.state.values.lineItemId,
-  )
+  // selectedLineItem is resolved above
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -152,56 +148,61 @@ export function OrderQuantityAdjustmentModal({
             <Settings2 className="size-5" />
             {t('adjustQuantity')}
           </DialogTitle>
-          <p className="text-sm text-muted-foreground">
+          <DialogDescription>
             {t('adjustQuantityDescription')}
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         <FormRoot form={form}>
-          <FormSection title={t('selectLineItem')}>
-            <FormGrid columns={1}>
-              <form.AppField name="lineItemId">
-                {(field) => (
-                  <field.SelectField
-                    label={t('selectLineItem')}
-                    options={lineItemOptions}
-                    placeholder={t('selectLineItem')}
-                  />
-                )}
-              </form.AppField>
-            </FormGrid>
-          </FormSection>
-
-          {selectedLineItem && (
-            <FormSection title={t('currentQuantity')}>
-              <FormGrid columns={1}>
-                <div>
-                  <p className="text-sm font-medium">{t('currentQuantity')}</p>
-                  <p className="text-2xl font-bold font-mono mt-1">
-                    {selectedLineItem.quantity}
+          <div className="space-y-4">
+            {selectedLineItem && (
+              <div className="rounded-lg border border-border bg-muted/20 p-4">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
+                  {t('selectLineItem')}
+                </span>
+                <p className="text-sm font-semibold text-foreground">
+                  {selectedLineItem.productName}
+                </p>
+                {selectedLineItem.designName && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {selectedLineItem.designName}
                   </p>
-                </div>
-              </FormGrid>
-            </FormSection>
-          )}
-
-          <FormSection title={t('newQuantity')}>
-            <FormGrid columns={1}>
-              <form.AppField name="newQuantity">
-                {(field) => <field.NumberField label={t('newQuantity')} />}
-              </form.AppField>
-
-              <form.AppField name="reason">
-                {(field) => (
-                  <field.TextareaField
-                    label={t('adjustmentReason')}
-                    placeholder={t('adjustmentReasonPlaceholder')}
-                  />
                 )}
-              </form.AppField>
-            </FormGrid>
-          </FormSection>
+                <div className="mt-3 grid grid-cols-2 gap-4 border-t border-border/50 pt-3">
+                  <div>
+                    <span className="text-xs text-muted-foreground block">
+                      {t('currentQuantity')}
+                    </span>
+                    <span className="text-lg font-bold font-mono mt-0.5 block text-foreground">
+                      {selectedLineItem.quantity}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground block">
+                      {t('unitPrice')}
+                    </span>
+                    <span className="text-lg font-semibold font-mono mt-0.5 block text-foreground">
+                      {currencyFormatter.format(selectedLineItem.unitPrice)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <FormGrid columns={1}>
+            <form.AppField name="newQuantity">
+              {(field) => <field.NumberField label={t('newQuantity')} />}
+            </form.AppField>
 
+            <form.AppField name="reason">
+              {(field) => (
+                <field.TextareaField
+                  label={t('adjustmentReason')}
+                  placeholder={t('adjustmentReasonPlaceholder')}
+                />
+              )}
+            </form.AppField>
+          </FormGrid>
           <FormActions>
             <form.AppForm>
               <form.SubmitButton isPending={adjustQuantity.isPending}>

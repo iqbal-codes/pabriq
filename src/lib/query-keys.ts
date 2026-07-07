@@ -54,6 +54,8 @@ export const queryKeys = {
       [...queryKeys.orders.all, 'creation-readiness'] as const,
     history: (id: string) =>
       [...queryKeys.orders.details(), id, 'history'] as const,
+    adminTimeline: (id: string) =>
+      [...queryKeys.orders.details(), id, 'admin-timeline'] as const,
   },
   assets: {
     all: ['assets'] as const,

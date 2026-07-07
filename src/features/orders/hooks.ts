@@ -16,6 +16,7 @@ import {
   advanceOrderStatusFn,
   completeProductionFn,
   createDraftOrderFn,
+  getOrderAdminTimelineFn,
   getOrderCreationReadinessFn,
   getOrderFn,
   listOrderHistoryEventsFn,
@@ -147,5 +148,11 @@ export function useOrderHistoryEvents(orderId: string) {
   return useQuery({
     queryKey: queryKeys.orders.history(orderId),
     queryFn: () => listOrderHistoryEventsFn({ data: { orderId } }),
+  })
+}
+export function useOrderAdminTimeline(orderId: string, orgId: string) {
+  return useQuery({
+    queryKey: queryKeys.orders.adminTimeline(orderId),
+    queryFn: () => getOrderAdminTimelineFn({ data: { orderId, orgId } }),
   })
 }

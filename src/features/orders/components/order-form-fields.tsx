@@ -8,6 +8,7 @@ import { FormGrid, FormSection, withForm } from '#/components/app/form'
 import { firstError, formatNumber } from '#/components/app/form/form-utils'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import { Switch } from '#/components/ui/switch'
 import type { CustomerRow } from '#/features/customers/model'
 import { getCustomerFn } from '#/features/customers/server'
 import type { ProductRow } from '#/features/products/model'
@@ -157,22 +158,20 @@ export const OrderFormFields = withForm({
                       </form.AppField>
                       <form.AppField name="manualDeadline">
                         {(field) => (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              id="manualDeadline"
+                          <div className="flex items-center justify-between rounded-lg border p-3">
+                            <div className="space-y-0.5">
+                              <span className="text-sm font-medium">
+                                {t('manualOrderDeadline')}
+                              </span>
+                              <p className="text-xs text-muted-foreground">
+                                {t('manualOrderDeadlineDescription')}
+                              </p>
+                            </div>
+                            <Switch
+                              aria-label={t('manualOrderDeadline')}
                               checked={field.state.value}
-                              onChange={(e) =>
-                                field.handleChange(e.target.checked)
-                              }
-                              className="size-4"
+                              onCheckedChange={field.handleChange}
                             />
-                            <label
-                              htmlFor="manualDeadline"
-                              className="text-sm font-medium"
-                            >
-                              {t('manualOrderDeadline')}
-                            </label>
                           </div>
                         )}
                       </form.AppField>
@@ -242,7 +241,7 @@ export const OrderFormFields = withForm({
                             )}
 
                             {lineItems.length > 0 && (
-                              <div className="flex justify-end border-t pt-4">
+                              <div className="flex justify-end border-t pt-2 mt-4">
                                 <div className="text-right">
                                   <span className="text-sm text-muted-foreground">
                                     {t('orderTotal')}

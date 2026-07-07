@@ -12,8 +12,8 @@ type PageHeaderProps = {
   primaryAction?: PageAction
   secondaryActions?: PageAction[]
   className?: string
+  mobileVisible?: boolean
 }
-
 export function PageHeader({
   title,
   description,
@@ -21,11 +21,15 @@ export function PageHeader({
   primaryAction,
   secondaryActions,
   className,
+  mobileVisible = false,
 }: PageHeaderProps) {
   return (
     <div
       className={cn(
-        'hidden md:flex md:items-center md:justify-between mb-6',
+        mobileVisible
+          ? 'flex flex-col gap-4 md:flex-row md:items-start md:justify-between'
+          : 'hidden md:flex md:items-center md:justify-between',
+        'mb-6',
         className,
       )}
     >
