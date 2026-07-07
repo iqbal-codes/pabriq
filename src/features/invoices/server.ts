@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import { getPortalOrder } from '#/features/portal/model'
-import { resolveOrgId } from '#/lib/auth-session'
+import { resolveOrgId } from '#/lib/auth-session-server'
 import type { MutationResult } from '#/lib/server-results'
 import type {
   CreateInvoiceInput,
@@ -467,8 +467,16 @@ export const createSnapTokenFn = createServerFn({ method: 'POST' })
   )
 
 export type ReconcilePaymentResponse =
-  | { ok: true; status: 'paid'; reason: 'confirmed' | 'already_paid'; paymentId?: string }
-  | { ok: true; status: 'not_settled_yet' | 'no_midtrans_order_id' | 'mismatch' }
+  | {
+      ok: true
+      status: 'paid'
+      reason: 'confirmed' | 'already_paid'
+      paymentId?: string
+    }
+  | {
+      ok: true
+      status: 'not_settled_yet' | 'no_midtrans_order_id' | 'mismatch'
+    }
   | { ok: false; error: string }
 /**
  * Portal-side reconciliation: customer calls this when the post-pay poll
@@ -499,10 +507,21 @@ export const reconcilePortalPaymentFn = createServerFn({ method: 'POST' })
       const result = await reconcilePayment(orgId, data.invoiceId)
       if (!result.ok) return { ok: false, error: result.error }
       if (result.confirmed) {
-        return { ok: true, status: 'paid', reason: result.reason === 'confirmed' ? 'confirmed' : 'already_paid', paymentId: result.paymentId }
+        return {
+          ok: true,
+          status: 'paid',
+          reason: result.reason === 'confirmed' ? 'confirmed' : 'already_paid',
+          paymentId: result.paymentId,
+        }
       }
       // result.confirmed is false → reason is one of the not-paid cases
-      return { ok: true, status: result.reason as 'not_settled_yet' | 'no_midtrans_order_id' | 'mismatch' }
+      return {
+        ok: true,
+        status: result.reason as
+          | 'not_settled_yet'
+          | 'no_midtrans_order_id'
+          | 'mismatch',
+      }
     } catch (e) {
       return {
         ok: false,
@@ -526,10 +545,21 @@ export const reconcileInvoicePaymentFn = createServerFn({ method: 'POST' })
       const result = await reconcilePayment(orgId, data.invoiceId)
       if (!result.ok) return { ok: false, error: result.error }
       if (result.confirmed) {
-        return { ok: true, status: 'paid', reason: result.reason === 'confirmed' ? 'confirmed' : 'already_paid', paymentId: result.paymentId }
+        return {
+          ok: true,
+          status: 'paid',
+          reason: result.reason === 'confirmed' ? 'confirmed' : 'already_paid',
+          paymentId: result.paymentId,
+        }
       }
       // result.confirmed is false → reason is one of the not-paid cases
-      return { ok: true, status: result.reason as 'not_settled_yet' | 'no_midtrans_order_id' | 'mismatch' }
+      return {
+        ok: true,
+        status: result.reason as
+          | 'not_settled_yet'
+          | 'no_midtrans_order_id'
+          | 'mismatch',
+      }
     } catch (e) {
       return {
         ok: false,

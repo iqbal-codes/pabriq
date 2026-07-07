@@ -30,6 +30,7 @@ export type Invoice = {
   percentage: number | null
   subtotal: number
   total: number
+  lateFee: number
   dueDate: string
   issuedDate: string
   paymentMethodId: string | null
@@ -40,11 +41,10 @@ export type Invoice = {
   createdAt: Date
   updatedAt: Date
 }
-
 export type InvoiceLineItem = {
   id: string
   invoiceId: string
-  lineType: 'product' | 'shipping' | 'fee' | 'discount' | 'tax'
+  lineType: 'product' | 'shipping' | 'fee' | 'discount' | 'tax' | 'cashback'
   description: string
   quantity: number
   unitPrice: number
@@ -84,6 +84,9 @@ export type CreateInvoiceInput = {
   shippingFee?: number
   shippingFeeDescription?: string
   courier?: string
+  lateFee?: number
+  lateFeeDays?: number
+  lateFeePerDay?: number
 }
 
 export type CreateInvoiceResult = {
@@ -282,7 +285,8 @@ export async function createInvoice(
     const subtotal = items.reduce((sum, i) => sum + i.total, 0)
     const productTotal = order.total * (percentage / 100)
     const shippingFee = input.shippingFee ?? 0
-    const invoiceTotal = productTotal + shippingFee
+    const lateFee = Math.max(0, input.lateFee ?? 0)
+    const invoiceTotal = productTotal + shippingFee - lateFee
 
     // Add shipping fee line item if provided
     if (input.shippingFee && input.shippingFee > 0) {
@@ -298,6 +302,20 @@ export async function createInvoice(
       })
     }
 
+    // Add cashback line item if late fee applies
+    if (lateFee > 0) {
+      items.push({
+        id: generateId(),
+        invoiceId,
+        lineType: 'cashback',
+        description: `Late Delivery Cashback (${input.lateFeeDays ?? 0} days × Rp ${input.lateFeePerDay ?? 0})`,
+        quantity: 1,
+        unitPrice: -lateFee,
+        total: -lateFee,
+        createdAt: now,
+      })
+    }
+
     await db.insert(invoicesTable).values({
       id: invoiceId,
       orgId,
@@ -308,7 +326,8 @@ export async function createInvoice(
       status: 'unpaid',
       percentage,
       subtotal,
-      total: Math.round(invoiceTotal * 100) / 100,
+      total: Math.max(0, Math.round(invoiceTotal * 100) / 100),
+      lateFee,
       dueDate: input.dueDate,
       issuedDate: input.issuedDate ?? new Date().toISOString().split('T')[0],
       paymentMethodId: input.paymentMethodId || null,
@@ -352,6 +371,7 @@ export async function createInvoice(
       percentage: null,
       subtotal,
       total: subtotal,
+      lateFee: 0,
       dueDate: input.dueDate,
       issuedDate: input.issuedDate ?? new Date().toISOString().split('T')[0],
       paymentMethodId: input.paymentMethodId || null,
@@ -1035,6 +1055,143 @@ export async function updateInvoice(
   return updated as Invoice
 }
 
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+type InvoiceRewriteClient = Pick<
+  DbTransaction,
+  'select' | 'insert' | 'delete' | 'update'
+>
+
+export async function rewriteFinalInvoiceFromOrder(
+  client: InvoiceRewriteClient,
+  params: {
+    orgId: string
+    orderId: string
+    invoiceId: string
+    paidAmount: number
+  },
+): Promise<{
+  invoiceId: string
+  total: number
+  percentage: number
+  overpaidAmount: number
+}> {
+  const { orgId, orderId, invoiceId, paidAmount } = params
+
+  // 1. Read the target invoice
+  const invoiceRows = await client
+    .select({
+      id: invoicesTable.id,
+      orderId: invoicesTable.orderId,
+      status: invoicesTable.status,
+    })
+    .from(invoicesTable)
+    .where(
+      and(
+        eq(invoicesTable.id, invoiceId),
+        eq(invoicesTable.orgId, orgId),
+        eq(invoicesTable.orderId, orderId),
+      ),
+    )
+    .limit(1)
+
+  if (invoiceRows.length === 0) throw new Error('Final invoice not found')
+  const invoiceRow = invoiceRows[0]
+  if (invoiceRow.status === 'paid')
+    throw new Error('Cannot rewrite paid final invoice')
+  if (invoiceRow.status === 'void')
+    throw new Error('Cannot rewrite void final invoice')
+
+  // 2. Read current order and line items
+  const [orderRow, orderItemRows] = await Promise.all([
+    client
+      .select({ total: ordersTable.total })
+      .from(ordersTable)
+      .where(and(eq(ordersTable.id, orderId), eq(ordersTable.orgId, orgId)))
+      .limit(1)
+      .then((r) => r[0]),
+    client
+      .select()
+      .from(orderLineItemsTable)
+      .where(eq(orderLineItemsTable.orderId, orderId)),
+  ])
+
+  if (!orderRow) throw new Error('Order not found')
+
+  // 3. Build product invoice lines from current order lines
+  const now = new Date()
+  const productLines = orderItemRows.map((oi) => ({
+    id: crypto.randomUUID(),
+    invoiceId,
+    lineType: 'product' as const,
+    description: formatProductDesignLabel(oi.productName, oi.designName),
+    quantity: oi.quantity,
+    unitPrice: oi.unitPrice,
+    taxPercent: 0,
+    total: oi.total,
+    createdAt: now,
+  }))
+
+  // 4. Read existing non-product invoice lines before deleting
+  const existingNonProductLines = await client
+    .select()
+    .from(lineItemsTable)
+    .where(and(eq(lineItemsTable.invoiceId, invoiceId)))
+    .then((rows) => rows.filter((r) => r.lineType !== 'product'))
+
+  const preservedNonProductLines = existingNonProductLines.map((line) => ({
+    id: crypto.randomUUID(),
+    invoiceId,
+    lineType: line.lineType,
+    description: line.description,
+    quantity: line.quantity,
+    unitPrice: line.unitPrice,
+    taxPercent: line.taxPercent,
+    total: line.total,
+    createdAt: now,
+  }))
+
+  // 5. Delete all existing lines and insert rebuilt lines
+  await client
+    .delete(lineItemsTable)
+    .where(eq(lineItemsTable.invoiceId, invoiceId))
+
+  const allLines = [...productLines, ...preservedNonProductLines]
+  if (allLines.length > 0) {
+    await client.insert(lineItemsTable).values(allLines)
+  }
+
+  // 6. Compute new totals
+  const productSubtotal = productLines.reduce((sum, l) => sum + l.total, 0)
+  const nonProductTotal = preservedNonProductLines.reduce(
+    (sum, l) => sum + l.total,
+    0,
+  )
+  const remainingProductAmount = Math.max(0, orderRow.total - paidAmount)
+  const overpaidAmount = Math.max(0, paidAmount - orderRow.total)
+  const newTotal = Math.max(
+    0,
+    Math.round((remainingProductAmount + nonProductTotal) * 100) / 100,
+  )
+  const newSubtotal = Math.round(productSubtotal * 100) / 100
+  const percentage =
+    orderRow.total > 0
+      ? Math.round((remainingProductAmount / orderRow.total) * 10_000) / 100
+      : 0
+
+  // 7. Update invoice totals
+  await client
+    .update(invoicesTable)
+    .set({
+      percentage,
+      subtotal: newSubtotal,
+      total: newTotal,
+      updatedAt: now,
+    })
+    .where(eq(invoicesTable.id, invoiceId))
+
+  return { invoiceId, total: newTotal, percentage, overpaidAmount }
+}
+
 function isValidEmail(email: string | null | undefined): email is string {
   if (!email) return false
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -1155,12 +1312,10 @@ export async function getMidtransTransactionStatus(
   >
   return {
     transactionStatus: String(res.transaction_status ?? ''),
-    fraudStatus:
-      typeof res.fraud_status === 'string' ? res.fraud_status : null,
+    fraudStatus: typeof res.fraud_status === 'string' ? res.fraud_status : null,
     grossAmount: String(res.gross_amount ?? ''),
     orderId: String(res.order_id ?? orderId),
-    paymentType:
-      typeof res.payment_type === 'string' ? res.payment_type : null,
+    paymentType: typeof res.payment_type === 'string' ? res.payment_type : null,
     transactionId:
       typeof res.transaction_id === 'string' ? res.transaction_id : null,
     transactionTime:
@@ -1172,7 +1327,17 @@ export async function getMidtransTransactionStatus(
 }
 
 export type ReconcileResult =
-  | { ok: true; confirmed: boolean; reason: 'confirmed' | 'already_paid' | 'not_settled_yet' | 'no_midtrans_order_id' | 'mismatch'; paymentId?: string }
+  | {
+      ok: true
+      confirmed: boolean
+      reason:
+        | 'confirmed'
+        | 'already_paid'
+        | 'not_settled_yet'
+        | 'no_midtrans_order_id'
+        | 'mismatch'
+      paymentId?: string
+    }
   | { ok: false; error: string }
 
 /**
@@ -1197,9 +1362,7 @@ export async function reconcilePayment(
       total: invoicesTable.total,
     })
     .from(invoicesTable)
-    .where(
-      and(eq(invoicesTable.id, invoiceId), eq(invoicesTable.orgId, orgId)),
-    )
+    .where(and(eq(invoicesTable.id, invoiceId), eq(invoicesTable.orgId, orgId)))
     .limit(1)
 
   if (!invoice) {
@@ -1234,8 +1397,7 @@ export async function reconcilePayment(
 
   const isSuccess =
     status.transactionStatus === 'settlement' ||
-    (status.transactionStatus === 'capture' &&
-      status.fraudStatus === 'accept')
+    (status.transactionStatus === 'capture' && status.fraudStatus === 'accept')
 
   if (!isSuccess) {
     return { ok: true, confirmed: false, reason: 'not_settled_yet' }
@@ -1275,5 +1437,10 @@ export async function reconcilePayment(
 
   await confirmPayment(orgId, payment.id, 'midtrans-reconcile')
 
-  return { ok: true, confirmed: true, reason: 'confirmed', paymentId: payment.id }
+  return {
+    ok: true,
+    confirmed: true,
+    reason: 'confirmed',
+    paymentId: payment.id,
+  }
 }

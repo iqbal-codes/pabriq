@@ -1,13 +1,13 @@
-import { Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
-import type { AppColumnDef, DataTableLabels } from '#/components/app/data-table'
+import type { DataTableLabels } from '#/components/app/data-table'
 import { DataTable } from '#/components/app/data-table'
 import { PageHeader } from '#/components/app/page-shell/page-header'
-import { StatusBadge } from '#/components/status-badge'
-import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
+import {
+  PaymentMethodRowActions,
+  usePaymentMethodColumns,
+} from '#/features/invoices/components/payment-method-columns'
 import { PaymentMethodDeleteDialog } from '#/features/invoices/components/payment-method-delete-dialog'
 import { PaymentMethodFormDialog } from '#/features/invoices/components/payment-method-form-dialog'
 import {
@@ -16,14 +16,8 @@ import {
 } from '#/features/invoices/hooks'
 import type { PaymentMethod } from '#/features/invoices/model'
 
-const TYPE_LABEL_KEYS: Record<string, 'bankTransfer' | 'paymentGateway'> = {
-  bank_transfer: 'bankTransfer',
-  payment_gateway: 'paymentGateway',
-}
-
 export function PaymentMethodsPage() {
   const t = useTranslations('settings')
-  const ct = useTranslations('common')
   const dt = useTranslations('dataTable')
 
   const { data: methods, isLoading } = usePaymentMethods()
@@ -43,54 +37,7 @@ export function PaymentMethodsPage() {
     setDialogOpen(true)
   }
 
-  const columns: AppColumnDef<PaymentMethod>[] = [
-    {
-      id: 'type',
-      header: ct('type'),
-      meta: { label: ct('type'), mobileRole: 'badge' },
-      cell: ({ row }) => {
-        const labelKey = TYPE_LABEL_KEYS[row.original.type] ?? row.original.type
-        return <Badge variant="secondary">{t(labelKey)}</Badge>
-      },
-    },
-    {
-      id: 'bankName',
-      header: t('bankName'),
-      meta: { label: t('bankName'), mobileRole: 'meta' },
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">
-          {row.original.bankName ?? '—'}
-        </span>
-      ),
-    },
-    {
-      id: 'account',
-      header: t('accountNumber'),
-      meta: { label: t('accountNumber'), mobileRole: 'meta' },
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">
-          {row.original.accountNumber
-            ? `${row.original.accountNumber}${row.original.accountHolder ? ` (${row.original.accountHolder})` : ''}`
-            : '—'}
-        </span>
-      ),
-    },
-    {
-      id: 'isDefault',
-      header: t('defaultPayment'),
-      meta: { label: t('defaultPayment'), mobileRole: 'badge' },
-      cell: ({ row }) =>
-        row.original.isDefault ? <Badge>{t('defaultPayment')}</Badge> : null,
-    },
-    {
-      id: 'active',
-      header: ct('status'),
-      meta: { label: ct('status'), mobileRole: 'badge' },
-      cell: ({ row }) => (
-        <StatusBadge status={row.original.active ? 'active' : 'inactive'} />
-      ),
-    },
-  ]
+  const columns = usePaymentMethodColumns()
 
   const labels: DataTableLabels = {
     clearFilters: dt('clearFilters'),
@@ -141,24 +88,10 @@ export function PaymentMethodsPage() {
         noResultsTitle={t('noPaymentMethods')}
         hasActiveFilters={false}
         rowActions={(method: PaymentMethod) => (
-          <div className="flex gap-1">
-            <Button
-              variant="outline"
-              size="icon"
-              tooltip={t('editPaymentMethod')}
-              onClick={() => openEdit(method)}
-            >
-              <Pencil className="size-4" />
-            </Button>
-            <Button
-              variant="destructive"
-              size="icon"
-              tooltip={t('deletePaymentMethod')}
-              onClick={() => setDeleteTarget(method)}
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          </div>
+          <PaymentMethodRowActions
+            onEdit={() => openEdit(method)}
+            onDelete={() => setDeleteTarget(method)}
+          />
         )}
       />
 
