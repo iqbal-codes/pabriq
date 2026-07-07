@@ -18,6 +18,7 @@ vi.mock('#/features/orders/server', () => ({
 vi.mock('#/features/production/hooks', () => ({
   useOrderTasksTimeline: () => ({ data: [] }),
   useTaskByLineItemId: () => null,
+  useStages: () => ({ data: [] }),
 }))
 
 vi.mock('#/features/assets/server', () => ({
@@ -49,7 +50,13 @@ const messages = {
   orders: { lineItems: 'Line Items', total: 'Total' },
   common: { file: 'File', download: 'Download' },
   production: {},
-  portal: {},
+  portal: {
+    itemProductionDaysInline: '{days}-workday production',
+    itemDeadlineLabel: 'Deadline {date}',
+    itemAttachmentsLabel: 'Order Design',
+    itemShowTimeline: 'Show timeline',
+    itemHideTimeline: 'Hide timeline',
+  },
 }
 
 const lineItem = {
@@ -61,6 +68,8 @@ const lineItem = {
   quantity: 10,
   unitPrice: 50000,
   total: 500000,
+  deadline: new Date('2026-07-15'),
+  productionDays: 5,
 }
 
 const mockAssets: AssetMetadata[] = [

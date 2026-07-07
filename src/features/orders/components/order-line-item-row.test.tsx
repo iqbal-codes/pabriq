@@ -38,7 +38,7 @@ const messages = {
     quantity: 'Quantity',
     hargaNego: 'Negotiated Price',
     unitPrice: 'Unit Price',
-    repeatOrder: 'Pesanan Ulang',
+    repeatOrder: 'Repeat Order',
     addons: 'Addons',
     specification: 'Specification',
     attachments: 'Attachments',
