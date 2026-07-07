@@ -358,6 +358,7 @@ export async function generateInvoicePdf(
     taxes,
     total: invoice.total,
     shippingFee,
+    lateFee: invoice.lateFee ?? 0,
     alreadyPaid,
     shippingAddress,
     notes: invoice.notes ?? null,

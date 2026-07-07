@@ -70,6 +70,7 @@ describe('InvoiceDocument PDF Rendering', () => {
     taxes: 0,
     total: 3750000,
     shippingFee: 0,
+    lateFee: 0,
     alreadyPaid: 0,
     shippingAddress: null,
     notes: null,

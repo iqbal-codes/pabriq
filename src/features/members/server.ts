@@ -10,7 +10,7 @@ import {
 } from '#/features/members/model'
 import type { Role } from '#/features/permissions/model'
 import { canManageMembers } from '#/features/permissions/model'
-import { resolveOrgId } from '#/lib/auth-session'
+import { resolveOrgId } from '#/lib/auth-session-server'
 
 async function resolveManageMembersOrgId(): Promise<string> {
   // Dynamic import keeps #/lib/auth out of the client bundle (project-wide

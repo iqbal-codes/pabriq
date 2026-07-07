@@ -43,6 +43,7 @@ type PortalTimelineKey =
   | 'timelineDateUnavailable'
   | 'timelineShowAll'
   | 'timelineShowLess'
+  | 'timelineQuantityAdjusted'
 
 type TranslateFn = (key: PortalTimelineKey) => string
 
@@ -106,6 +107,25 @@ function getEventMeta(
         icon: <PartyPopper className="size-3.5 shrink-0 mt-0.5" />,
         description: t('timelineOrderCompleted'),
       }
+    case 'quantity_adjusted': {
+      const d = (event.details ?? {}) as Record<string, unknown>
+      const product = String(d.productName ?? '')
+      const design = d.designName ? String(d.designName) : null
+      const label = design ? `${product} - ${design}` : product
+      const oldQty = Number(d.oldQuantity ?? 0)
+      const newQty = Number(d.newQuantity ?? 0)
+      const impact = Number(d.newLineTotal ?? 0) - Number(d.oldLineTotal ?? 0)
+      const impactStr = impact >= 0 ? `+${impact}` : `${impact}`
+      return {
+        icon: <ArrowRight className="size-3.5 shrink-0 mt-0.5" />,
+        description: t('timelineQuantityAdjusted')
+          .replace('{product}', label)
+          .replace('{oldQty}', String(oldQty))
+          .replace('{newQty}', String(newQty))
+          .replace('{impact}', impactStr),
+      }
+    }
+
     default:
       return { icon: null, description: '' }
   }
@@ -155,7 +175,10 @@ export function OrderFlowTimeline({ events, className }: Props) {
   }
 
   const latestEvent = completedEvents[completedEvents.length - 1]
-  const { description: latestDescription } = getEventMeta(latestEvent, translate)
+  const { description: latestDescription } = getEventMeta(
+    latestEvent,
+    translate,
+  )
   const hasDate = latestEvent.completedAt !== null
   const latestStatusLabel = hasDate
     ? getStatusLabel(latestEvent, translate, locale)
@@ -182,16 +205,16 @@ export function OrderFlowTimeline({ events, className }: Props) {
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {translate('orderTimelineSectionTitle')}
           </p>
-          <p className="text-sm font-medium text-foreground">
-            {subtitle}
-          </p>
+          <p className="text-sm font-medium text-foreground">{subtitle}</p>
         </div>
       </div>
 
       <div
         className={cn(
           'grid transition-all duration-200 ease-out',
-          isExpanded ? 'grid-rows-[1fr] border-t border-border' : 'grid-rows-[0fr] border-t border-transparent'
+          isExpanded
+            ? 'grid-rows-[1fr] border-t border-border'
+            : 'grid-rows-[0fr] border-t border-transparent',
         )}
       >
         <div className="overflow-hidden">
@@ -205,7 +228,7 @@ export function OrderFlowTimeline({ events, className }: Props) {
               return (
                 <div key={event.id} className="flex gap-3">
                   <div className="flex flex-col items-center">
-                    <div className="flex size-6 shrink-0 items-start justify-center pt-0.5 text-success">
+                    <div className="flex size-6 shrink-0 items-start justify-center pt-0.5 text-muted-foreground">
                       {icon}
                     </div>
                     {i < displayEvents.length - 1 ? (
@@ -213,14 +236,12 @@ export function OrderFlowTimeline({ events, className }: Props) {
                     ) : null}
                   </div>
                   <div className="min-w-0 flex-1 pb-3 last:pb-0">
-                    <p className="text-xs tabular-nums text-success">
+                    <p className="text-xs tabular-nums text-muted-foreground">
                       {statusLabel}
                       {invoiceSuffix}
                     </p>
                     <div className="mt-0.5 flex items-center gap-2">
-                      <p className="text-sm text-foreground">
-                        {description}
-                      </p>
+                      <p className="text-sm text-foreground">{description}</p>
                     </div>
                   </div>
                 </div>

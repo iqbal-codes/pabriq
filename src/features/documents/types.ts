@@ -51,6 +51,7 @@ export interface InvoicePdfData {
   taxes: number
   total: number
   shippingFee: number
+  lateFee: number
   alreadyPaid: number
   shippingAddress: {
     areaName: string

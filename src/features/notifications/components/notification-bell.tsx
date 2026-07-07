@@ -122,13 +122,9 @@ function renderNotificationLink(
 ) {
   if (item.type === 'payment_confirmation') {
     return (
-      <Link
-        to="/invoices/$id"
-        params={{ id: item.context.invoiceId }}
-        onClick={onClose}
-      >
+      <button type="button" onClick={onClose}>
         {labelText}
-      </Link>
+      </button>
     )
   }
   if (

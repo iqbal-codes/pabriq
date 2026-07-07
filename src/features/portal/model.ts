@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, or } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
+  activityEvents,
   addresses,
   assets,
   customers,
@@ -579,6 +580,16 @@ export async function confirmPortalOrder(
           updatedAt: now,
         })
         .where(eq(orders.id, input.orderId))
+      await tx.insert(activityEvents).values({
+        id: crypto.randomUUID(),
+        orgId: order.orgId,
+        actorId: order.orgId,
+        targetType: 'order',
+        targetId: input.orderId,
+        action: 'draft_confirmed',
+        details: {},
+        createdAt: now,
+      })
     })
 
     return { ok: true }
@@ -1231,6 +1242,7 @@ export type OrderTimelineMilestoneType =
   | 'production_finished'
   | 'shipment_confirmed'
   | 'order_completed'
+  | 'quantity_adjusted'
 
 export type OrderTimelineStatus = 'completed' | 'current' | 'upcoming'
 
@@ -1242,6 +1254,14 @@ export type OrderTimelineEvent = {
   invoiceId?: string
   invoiceNumber?: string
   amount?: number
+  details?: {
+    productName?: string
+    designName?: string
+    oldQuantity?: number
+    newQuantity?: number
+    impact?: number
+    [key: string]: string | number | boolean | null | undefined
+  }
 }
 
 function classifyInvoiceKind(
@@ -1336,6 +1356,29 @@ export async function getOrderTimeline(
             ),
           )
       : []
+  const orderEvents = await db
+    .select({
+      id: activityEvents.id,
+      action: activityEvents.action,
+      createdAt: activityEvents.createdAt,
+      details: activityEvents.details,
+    })
+    .from(activityEvents)
+    .where(
+      and(
+        eq(activityEvents.targetType, 'order'),
+        eq(activityEvents.targetId, order.id),
+        inArray(activityEvents.action, [
+          'draft_confirmed',
+          'production_started',
+          'quantity_adjusted',
+        ]),
+      ),
+    )
+
+  const eventDates = new Map(
+    orderEvents.map((e) => [e.action, e.createdAt] as const),
+  )
 
   if (!orderRow) throw new Error('Order not found')
 
@@ -1459,11 +1502,11 @@ export async function getOrderTimeline(
 
   const completedDates: Array<Date | null> = [
     orderRow.createdAt,
-    null,
+    eventDates.get('draft_confirmed') ?? null,
     orderRow.approvedAt,
     dpInvoiceCompletedAt,
     dpPaymentCompletedAt,
-    null,
+    eventDates.get('production_started') ?? null,
     finalInvoiceCompletedAt,
     finalPaymentCompletedAt,
     orderRow.shippedAt,
@@ -1509,5 +1552,19 @@ export async function getOrderTimeline(
     return event
   })
 
-  return events
+  const quantityAdjustedEvents: OrderTimelineEvent[] = orderEvents
+    .filter((e) => e.action === 'quantity_adjusted')
+    .map((e) => ({
+      id: e.id,
+      type: 'quantity_adjusted' as const,
+      status: 'completed' as const,
+      completedAt: e.createdAt,
+      details: (e.details ?? undefined) as OrderTimelineEvent['details'],
+    }))
+    .sort(
+      (a, b) =>
+        (a.completedAt?.getTime() ?? 0) - (b.completedAt?.getTime() ?? 0),
+    )
+
+  return events.concat(quantityAdjustedEvents)
 }

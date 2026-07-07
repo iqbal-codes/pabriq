@@ -41,5 +41,7 @@ export const PDF_LOCALE = {
     fee: '[Biaya] ',
     discount: '[Diskon] ',
     tax: '[Pajak] ',
+    cashback: '[Cashback] ',
   } as Record<string, string>,
+  lateFeeCashback: 'Cashback Keterlambatan',
 } as const

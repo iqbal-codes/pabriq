@@ -47,3 +47,7 @@ export function canViewActionNotifications(role: Role): boolean {
 export function canManageSettings(role: Role): boolean {
   return role === 'owner' || role === 'admin'
 }
+
+export function canAdjustConfirmedOrder(role: Role): boolean {
+  return role === 'owner' || role === 'admin'
+}

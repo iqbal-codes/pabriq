@@ -4,9 +4,9 @@ import * as schema from '#/db/schema'
 import { listCustomers } from '#/features/customers/model'
 import { listInvoices } from '#/features/invoices/model'
 import { listOrders } from '#/features/orders/model'
+import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
 import { listBoardTasks } from '#/features/production/model'
 import { listBreakpoints, listProducts } from '#/features/products/model'
-import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
 
 export const assistantDomains = [
   'customers',
@@ -288,7 +288,7 @@ async function searchDomain(
           id: row.id,
           title: row.invoiceNumber,
           subtitle: row.customerName ?? null,
-          href: `/invoices/${row.id}`,
+          href: null,
           metadata: { status: row.status, total: row.total },
         }),
       )
@@ -542,9 +542,15 @@ export async function resolveOrderDraft(params: {
       perPage: 3,
     })
     if (customerResult.rows.length === 1) {
-      customer = { id: customerResult.rows[0].id, name: customerResult.rows[0].name }
+      customer = {
+        id: customerResult.rows[0].id,
+        name: customerResult.rows[0].name,
+      }
     } else if (customerResult.rows.length > 1) {
-      customerAmbiguous = customerResult.rows.map((r) => ({ id: r.id, name: r.name }))
+      customerAmbiguous = customerResult.rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+      }))
     }
   }
 
@@ -555,7 +561,13 @@ export async function resolveOrderDraft(params: {
     return { status: 'invalid', missing, customer, customerAmbiguous, total: 0 }
   }
   if (hasAmbiguous) {
-    return { status: 'ambiguous', missing, customer, customerAmbiguous, total: 0 }
+    return {
+      status: 'ambiguous',
+      missing,
+      customer,
+      customerAmbiguous,
+      total: 0,
+    }
   }
 
   const total = lineItems.reduce((sum, li) => sum + li.total, 0)

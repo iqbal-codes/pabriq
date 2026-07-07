@@ -157,6 +157,14 @@ export function InvoiceDocument({ data }: InvoiceDocumentProps) {
               label={PDF_LOCALE.subtotal}
               value={formatPdfCurrency(data.subtotal)}
             />
+            {data.lateFee > 0 && (
+              <PdfPricingLine
+                styles={styles}
+                label={PDF_LOCALE.lateFeeCashback}
+                value={`-${formatPdfCurrency(data.lateFee)}`}
+                muted
+              />
+            )}
             {data.isFinal && data.alreadyPaid > 0 && (
               <PdfPricingLine
                 styles={styles}

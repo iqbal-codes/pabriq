@@ -4,7 +4,9 @@ import { describe, expect, it, vi } from 'vitest'
 import type { OrderTimelineEvent, PortalOrder } from '../model'
 import { ProgressView } from './progress-view'
 
-const mockUseOrderTimeline = vi.fn(() => ({ data: [] as OrderTimelineEvent[] }))
+const mockUseOrderTimeline = vi.fn(() => ({
+  data: [] as OrderTimelineEvent[],
+}))
 const mockUseOrderTasksTimeline = vi.fn(() => ({ data: [] }))
 
 vi.mock('../hooks', () => ({
@@ -29,7 +31,7 @@ const messages = {
     noStageTransitions: 'Belum ada perpindahan tahap',
     taskTimeline: 'Timeline Tugas',
     notes: 'Catatan',
-    attachment: 'Masukkan File PDF / Corel',
+    attachment: 'Masukkan File Desain',
     currentStage: 'Tahap Saat Ini',
     progressOverview: 'Ringkasan cepat',
     progressStatusApprovedHelp:
@@ -83,7 +85,7 @@ const messages = {
     itemsSectionTitle: 'Daftar Pesanan',
     itemShowTimeline: 'Lihat timeline',
     itemHideTimeline: 'Sembunyikan timeline',
-    itemProductionDaysInline: 'Produksi {days} hari',
+    itemProductionDaysInline: 'Produksi {days} hari kerja',
     itemDeadlineLabel: 'Deadline {date}',
     itemAttachmentsLabel: 'Design Pesanan',
     itemNoEvents: 'Belum ada pembaruan tahap',

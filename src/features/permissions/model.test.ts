@@ -5,6 +5,7 @@ import {
   canApproveProductionTask,
   canCreateOrders,
   canManageCustomers,
+  canAdjustConfirmedOrder,
   canManageInvoices,
   canManageMembers,
   canManageProducts,
@@ -86,5 +87,10 @@ describe('canManageCustomers', () => {
 describe('canManageSettings', () => {
   it('allows owner and admin', () => {
     expectPermissions(canManageSettings, ['owner', 'admin'])
+  })
+})
+describe('canAdjustConfirmedOrder', () => {
+  it('allows owner and admin', () => {
+    expectPermissions(canAdjustConfirmedOrder, ['owner', 'admin'])
   })
 })
