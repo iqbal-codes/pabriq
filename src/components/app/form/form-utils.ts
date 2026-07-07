@@ -1,3 +1,5 @@
+import type { z } from 'zod'
+
 type NumericDisplayValue = string | number
 
 export function stripNonDigits(value: NumericDisplayValue): string {
@@ -359,4 +361,46 @@ export function isFieldRequired(field: unknown): boolean {
   }
 
   return false
+}
+
+export function fieldValidator(schema: z.ZodTypeAny) {
+  return ({ value }: { value: unknown }) => {
+    const r = schema.safeParse(value)
+    return r.success ? undefined : r.error.issues[0]?.message
+  }
+}
+
+export function getSchemaForPath(schema: unknown, path: string): any {
+  if (!schema) return null
+  const normalizedPath = path.replace(/\[\d+\]/g, '')
+  const segments = normalizedPath.split('.').filter(Boolean)
+  let current: unknown = schema
+
+  for (const segment of segments) {
+    current = unwrap(current)
+    if (!current) return null
+
+    const def = getDef(current)
+    if (!def) return null
+
+    const typeName = def.type || def.typeName
+    if (typeName === 'object' || typeName === 'ZodObject') {
+      let shape: unknown
+      if ('shape' in def && def.shape && typeof def.shape === 'object') {
+        shape = def.shape
+      } else if (current && typeof current === 'object' && 'shape' in current) {
+        shape = (current as { shape: unknown }).shape
+      }
+
+      if (!shape || typeof shape !== 'object' || !(segment in shape))
+        return null
+
+      const indexedShape = shape as Record<string, unknown>
+      current = indexedShape[segment]
+    } else {
+      return null
+    }
+  }
+
+  return current
 }
