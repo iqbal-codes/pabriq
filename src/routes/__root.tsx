@@ -50,7 +50,7 @@ export function PageTitleSetter() {
 
   const appTitle = t('title')
   const pageTitleKey = getPageTitleKey(matches)
-  const title = pageTitleKey ? `${bt(pageTitleKey)} - ${appTitle}` : appTitle
+  const title = pageTitleKey ? `${appTitle} - ${bt(pageTitleKey)}` : appTitle
 
   useEffect(() => {
     document.title = title

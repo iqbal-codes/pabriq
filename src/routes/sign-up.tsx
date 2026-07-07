@@ -1,39 +1,19 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { AuthForm } from '#/features/auth/AuthForm'
-import { getCurrentSession } from '#/lib/auth-session'
-
-function sanitizeRedirect(value: unknown) {
-  if (
-    typeof value !== 'string' ||
-    !value.startsWith('/') ||
-    value.startsWith('//')
-  ) {
-    return undefined
-  }
-
-  return value
-}
 
 export const Route = createFileRoute('/sign-up')({
   validateSearch: (search) => ({
-    redirect: sanitizeRedirect(search.redirect),
+    redirect:
+      typeof search.redirect === 'string' &&
+      search.redirect.startsWith('/') &&
+      !search.redirect.startsWith('//')
+        ? search.redirect
+        : undefined,
   }),
-  beforeLoad: async ({ search }) => {
-    const session = await getCurrentSession()
-
-    if (session) {
-      throw redirect({ to: search.redirect ?? '/onboarding' })
-    }
-
-    return { pageTitle: 'signUp' as const }
+  beforeLoad: ({ search }) => {
+    throw redirect({
+      to: '/sign-in',
+      search: { redirect: search.redirect },
+    })
   },
-  component: SignUpRoute,
+  component: () => null,
 })
-
-function SignUpRoute() {
-  const search = Route.useSearch()
-
-  return (
-    <AuthForm mode="sign-up" redirectTo={search.redirect ?? '/onboarding'} />
-  )
-}

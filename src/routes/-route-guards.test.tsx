@@ -121,31 +121,31 @@ function buildProtectedRouter(initialEntry: string) {
   })
 }
 
-function buildAuthPageRouter(
-  initialEntry: string,
-  path: '/sign-in' | '/sign-up',
-) {
+function buildAuthPageRouter(initialEntry: string) {
   const rootRoute = createRootRoute()
+  const signInRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/sign-in',
+    component: () => <div>Sign In Page</div>,
+  })
   const onboardingRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/onboarding',
     component: () => <div>Onboarding Page</div>,
   })
-  const authRoute = createRoute({
+  const signUpRoute = createRoute({
     getParentRoute: () => rootRoute,
-    path,
+    path: '/sign-up',
     beforeLoad: async () => {
-      const session = await mockGetCurrentSession()
-
-      if (session) {
-        throw redirect({ to: '/onboarding' })
-      }
+      throw redirect({ to: '/sign-in', search: { redirect: undefined } })
     },
-    component: () =>
-      path === '/sign-in' ? <div>Sign In Page</div> : <div>Sign Up Page</div>,
+    component: () => null,
   })
-
-  const routeTree = rootRoute.addChildren([onboardingRoute, authRoute])
+  const routeTree = rootRoute.addChildren([
+    signInRoute,
+    onboardingRoute,
+    signUpRoute,
+  ])
 
   return createRouter({
     routeTree,
@@ -234,7 +234,7 @@ describe('auth page guards', () => {
   it('renders sign-in for unauthenticated users', async () => {
     mockGetCurrentSession.mockResolvedValue(null)
 
-    const router = buildAuthPageRouter('/sign-in', '/sign-in')
+    const router = buildAuthPageRouter('/sign-in')
 
     await router.load()
     await renderRouter(router)
@@ -243,40 +243,28 @@ describe('auth page guards', () => {
     expect(router.state.location.pathname).toBe('/sign-in')
   })
 
-  it('renders sign-up for unauthenticated users', async () => {
+  it('redirects sign-up to sign-in for unauthenticated users', async () => {
     mockGetCurrentSession.mockResolvedValue(null)
 
-    const router = buildAuthPageRouter('/sign-up', '/sign-up')
+    const router = buildAuthPageRouter('/sign-up')
 
     await router.load()
     await renderRouter(router)
 
-    expect(await screen.findByText('Sign Up Page')).toBeDefined()
-    expect(router.state.location.pathname).toBe('/sign-up')
+    expect(await screen.findByText('Sign In Page')).toBeDefined()
+    expect(router.state.location.pathname).toBe('/sign-in')
   })
 
-  it('redirects authenticated users away from sign-in to onboarding', async () => {
+  it('redirects sign-up to sign-in for authenticated users', async () => {
     mockGetCurrentSession.mockResolvedValue(createMockSession())
 
-    const router = buildAuthPageRouter('/sign-in', '/sign-in')
+    const router = buildAuthPageRouter('/sign-up')
 
     await router.load()
     await renderRouter(router)
 
-    expect(await screen.findByText('Onboarding Page')).toBeDefined()
-    expect(router.state.location.pathname).toBe('/onboarding')
-  })
-
-  it('redirects authenticated users away from sign-up to onboarding', async () => {
-    mockGetCurrentSession.mockResolvedValue(createMockSession())
-
-    const router = buildAuthPageRouter('/sign-up', '/sign-up')
-
-    await router.load()
-    await renderRouter(router)
-
-    expect(await screen.findByText('Onboarding Page')).toBeDefined()
-    expect(router.state.location.pathname).toBe('/onboarding')
+    expect(await screen.findByText('Sign In Page')).toBeDefined()
+    expect(router.state.location.pathname).toBe('/sign-in')
   })
 })
 

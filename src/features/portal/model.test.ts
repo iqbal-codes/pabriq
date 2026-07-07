@@ -710,19 +710,22 @@ describe('getOrderTasksTimeline', () => {
 
     const transitionEvent = events.find((e) => e.type === 'stage_transition')
     expect(transitionEvent).toBeDefined()
-    expect(transitionEvent!.requirementResponses).toHaveLength(1)
-    expect(transitionEvent!.requirementResponses![0].stageName).toBe('Printing')
-    expect(transitionEvent!.requirementResponses![0].responses).toHaveLength(2)
+    if (!transitionEvent?.requirementResponses) {
+      throw new Error('Expected stage transition requirement responses')
+    }
+    expect(transitionEvent.requirementResponses).toHaveLength(1)
+    expect(transitionEvent.requirementResponses[0].stageName).toBe('Printing')
+    expect(transitionEvent.requirementResponses[0].responses).toHaveLength(2)
     expect(
-      transitionEvent!.requirementResponses![0].responses[0].requirementName,
+      transitionEvent.requirementResponses[0].responses[0].requirementName,
     ).toBe('Design File')
     expect(
-      transitionEvent!.requirementResponses![0].responses[0].assetIds,
+      transitionEvent.requirementResponses[0].responses[0].assetIds,
     ).toEqual(['asset-abc'])
     expect(
-      transitionEvent!.requirementResponses![0].responses[1].requirementName,
+      transitionEvent.requirementResponses[0].responses[1].requirementName,
     ).toBe('Color Code')
-    expect(transitionEvent!.requirementResponses![0].responses[1].value).toBe(
+    expect(transitionEvent.requirementResponses[0].responses[1].value).toBe(
       '#FF0000',
     )
   })
@@ -799,9 +802,12 @@ describe('getOrderTasksTimeline', () => {
 
     const transitionEvent = events.find((e) => e.type === 'stage_transition')
     expect(transitionEvent).toBeDefined()
-    expect(transitionEvent!.fromStageName).toBe('Pre-Production')
-    expect(transitionEvent!.toStageName).toBe('Production')
-    expect(transitionEvent!.id).toBe('act-transition-board')
+    if (!transitionEvent) {
+      throw new Error('Expected stage transition event')
+    }
+    expect(transitionEvent.fromStageName).toBe('Pre-Production')
+    expect(transitionEvent.toStageName).toBe('Production')
+    expect(transitionEvent.id).toBe('act-transition-board')
   })
 
   it('sorts multi-task timelines by event date', async () => {

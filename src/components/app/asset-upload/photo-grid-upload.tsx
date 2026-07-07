@@ -119,7 +119,7 @@ export function PhotoGridUpload(props: PhotoGridUploadProps) {
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       const validFiles = acceptedFiles.filter((file) => {
-        const ext = '.' + file.name.split('.').pop()?.toLowerCase()
+        const ext = `.${file.name.split('.').pop()?.toLowerCase()}`
         return (
           file.size <= props.maxBytes &&
           (props.acceptedMimeTypes.length === 0 ||
