@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router'
-import type { Role } from '#/features/permissions/model'
 import { ProductionPage } from '#/features/production/pages/production-page'
 
 export const Route = createFileRoute('/_org/production/')({
@@ -13,8 +12,8 @@ export const Route = createFileRoute('/_org/production/')({
 function ProductionRoute() {
   const ctx = Route.useRouteContext() as {
     session: unknown
-    org: { id: string; role: Role }
+    org: { id: string }
   }
 
-  return <ProductionPage orgId={ctx.org.id} role={ctx.org.role} />
+  return <ProductionPage orgId={ctx.org.id} />
 }

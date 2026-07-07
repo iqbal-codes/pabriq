@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useTranslations } from 'use-intl'
 import type { DataTableLabels } from '#/components/app/data-table'
 import { DataTable } from '#/components/app/data-table'
@@ -7,9 +6,9 @@ import {
   StageRowActions,
   useStageColumns,
 } from '../components/stage-columns'
+import { useGlobalModal } from '#/hooks/use-global-overlay'
 import { useStageMutations } from '../hooks'
 import type { Stage } from '../model'
-import { StageForm } from './stage-form'
 
 type Props = {
   stages: Stage[]
@@ -19,8 +18,8 @@ type Props = {
 export function StageList({ stages, loading }: Props) {
   const t = useTranslations('production')
   const dt = useTranslations('dataTable')
+  const { openModal } = useGlobalModal()
   const { deleteStage, reorderStages } = useStageMutations()
-  const [editStage, setEditStage] = useState<Stage | undefined>()
   const isReordering = reorderStages.isPending
   const deletingStageId = deleteStage.isPending
     ? deleteStage.variables?.id
@@ -101,20 +100,12 @@ export function StageList({ stages, loading }: Props) {
             <StageRowActions
               isReordering={isReordering}
               isDeleting={deletingStageId === stage.id}
-              onEdit={() => setEditStage(stage)}
+              onEdit={() => openModal('stage-form', stage.id)}
               onDelete={() => handleDelete(stage.id)}
             />
           </div>
         )}
       />
-
-      {editStage && (
-        <StageForm
-          stage={editStage}
-          open={true}
-          onOpenChange={() => setEditStage(undefined)}
-        />
-      )}
     </div>
   )
 }

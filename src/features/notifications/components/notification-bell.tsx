@@ -146,7 +146,7 @@ function renderNotificationLink(
   return (
     <Link
       to="/production"
-      search={{ reviewTask: item.context.taskId }}
+      search={{ modal: 'review-task', modalId: item.context.taskId }}
       onClick={onClose}
     >
       {labelText}

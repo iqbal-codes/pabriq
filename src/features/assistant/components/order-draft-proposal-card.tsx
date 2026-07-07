@@ -13,7 +13,10 @@ import {
 } from '#/features/assistant/hooks'
 
 type OrderDraftProposalCardProps = {
-  metadata: Extract<AssistantChatMessageMetadata, { kind: 'order_draft_proposal' }>
+  metadata: Extract<
+    AssistantChatMessageMetadata,
+    { kind: 'order_draft_proposal' }
+  >
   scope: AssistantChatScope
 }
 
@@ -105,7 +108,10 @@ export function OrderDraftProposalCard({
 
       <div className="space-y-1">
         {payload.lineItems.map((li, i) => (
-          <div key={`${li.productId}-${i}`} className="flex justify-between text-xs">
+          <div
+            key={`${li.productId}-${i}`}
+            className="flex justify-between text-xs"
+          >
             <span>
               {li.productName} × {li.quantity}
             </span>

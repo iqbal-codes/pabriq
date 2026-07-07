@@ -1102,11 +1102,11 @@ describe('getOrderTimeline', () => {
       expect(event.status).toBe('completed')
     }
 
-    expect(events.some((e) => (e.type as string) === 'production_stage')).toBe(false)
-
-    const dpPaymentEvent = events.find(
-      (e) => e.type === 'dp_payment_confirmed',
+    expect(events.some((e) => (e.type as string) === 'production_stage')).toBe(
+      false,
     )
+
+    const dpPaymentEvent = events.find((e) => e.type === 'dp_payment_confirmed')
     expect(dpPaymentEvent).toBeDefined()
     expect(dpPaymentEvent?.completedAt).toEqual(
       new Date('2026-01-04T00:00:00.000Z'),
@@ -1223,9 +1223,7 @@ describe('getOrderTimeline', () => {
       'dp_invoice_created',
     ])
 
-    const dpPaymentEvent = events.find(
-      (e) => e.type === 'dp_payment_confirmed',
-    )
+    const dpPaymentEvent = events.find((e) => e.type === 'dp_payment_confirmed')
     expect(dpPaymentEvent).toBeDefined()
     expect(dpPaymentEvent?.status).toBe('current')
 

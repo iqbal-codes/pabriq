@@ -9,33 +9,22 @@ import {
   usePaymentMethodColumns,
 } from '#/features/invoices/components/payment-method-columns'
 import { PaymentMethodDeleteDialog } from '#/features/invoices/components/payment-method-delete-dialog'
-import { PaymentMethodFormDialog } from '#/features/invoices/components/payment-method-form-dialog'
 import {
   useDeletePaymentMethod,
   usePaymentMethods,
 } from '#/features/invoices/hooks'
 import type { PaymentMethod } from '#/features/invoices/model'
+import { useGlobalModal } from '#/hooks/use-global-overlay'
 
 export function PaymentMethodsPage() {
   const t = useTranslations('settings')
   const dt = useTranslations('dataTable')
+  const { openModal } = useGlobalModal()
 
   const { data: methods, isLoading } = usePaymentMethods()
   const deletePaymentMethod = useDeletePaymentMethod()
 
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<PaymentMethod | null>(null)
-
-  function openEdit(method: PaymentMethod) {
-    setEditingMethod(method)
-    setDialogOpen(true)
-  }
-
-  function openCreate() {
-    setEditingMethod(null)
-    setDialogOpen(true)
-  }
 
   const columns = usePaymentMethodColumns()
 
@@ -67,7 +56,7 @@ export function PaymentMethodsPage() {
         title={t('paymentMethods')}
         primaryAction={{
           label: t('addPaymentMethod'),
-          onClick: openCreate,
+          onClick: () => openModal('payment-method-form'),
         }}
       />
 
@@ -89,17 +78,10 @@ export function PaymentMethodsPage() {
         hasActiveFilters={false}
         rowActions={(method: PaymentMethod) => (
           <PaymentMethodRowActions
-            onEdit={() => openEdit(method)}
+            onEdit={() => openModal('payment-method-form', method.id)}
             onDelete={() => setDeleteTarget(method)}
           />
         )}
-      />
-
-      <PaymentMethodFormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        editingMethod={editingMethod}
-        onSaved={() => {}}
       />
 
       <PaymentMethodDeleteDialog

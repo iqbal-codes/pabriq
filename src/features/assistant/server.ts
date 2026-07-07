@@ -147,7 +147,6 @@ export const sendAssistantMessageFn = createServerFn({ method: 'POST' })
     },
   )
 
-
 // Dynamic imports below prevent server-only modules from bundling into client code (TanStack Start convention).
 
 export const proposeOrderDraftFn = createServerFn({ method: 'POST' })
@@ -179,8 +178,7 @@ export const proposeOrderDraftFn = createServerFn({ method: 'POST' })
     async ({
       data,
     }): Promise<
-      | { ok: true; actionId: string }
-      | { ok: false; error: string }
+      { ok: true; actionId: string } | { ok: false; error: string }
     > => {
       try {
         const authCtx = await resolveAssistantAuthContext()
@@ -232,8 +230,7 @@ export const consumeOrderDraftProposalFn = createServerFn({ method: 'POST' })
     async ({
       data,
     }): Promise<
-      | { ok: true; orderId: string }
-      | { ok: false; error: string }
+      { ok: true; orderId: string } | { ok: false; error: string }
     > => {
       try {
         const authCtx = await resolveAssistantAuthContext()
@@ -319,12 +316,7 @@ export const cancelOrderDraftProposalFn = createServerFn({ method: 'POST' })
     }),
   )
   .handler(
-    async ({
-      data,
-    }): Promise<
-      | { ok: true }
-      | { ok: false; error: string }
-    > => {
+    async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
       try {
         const authCtx = await resolveAssistantAuthContext()
         const [{ db }, { assistantActions }, { and, eq }] = await Promise.all([

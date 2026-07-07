@@ -1,11 +1,9 @@
 import { useTranslations } from 'use-intl'
 import { Button } from '#/components/ui/button'
-import { RecordPaymentDialog } from '#/features/invoices/components/record-payment-dialog'
+import { useGlobalModal } from '#/hooks/use-global-overlay'
 
 type InvoiceActionButtonsProps = {
   canModify: boolean
-  recordDialogOpen: boolean
-  onRecordDialogOpenChange: (open: boolean) => void
   invoiceId: string
   onMarkPaid: () => void
   isMarkingPaid: boolean
@@ -15,8 +13,6 @@ type InvoiceActionButtonsProps = {
 
 export function InvoiceActionButtons({
   canModify,
-  recordDialogOpen,
-  onRecordDialogOpenChange,
   invoiceId,
   onMarkPaid,
   isMarkingPaid,
@@ -24,17 +20,18 @@ export function InvoiceActionButtons({
   isVoiding,
 }: InvoiceActionButtonsProps) {
   const t = useTranslations('invoices')
+  const { openModal } = useGlobalModal()
 
   if (!canModify) return null
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <RecordPaymentDialog
-        open={recordDialogOpen}
-        onOpenChange={onRecordDialogOpenChange}
-        invoiceId={invoiceId}
-      />
-
+      <Button
+        variant="default"
+        onClick={() => openModal('record-payment', invoiceId)}
+      >
+        {t('recordPayment')}
+      </Button>
       <Button variant="default" onClick={onMarkPaid} isLoading={isMarkingPaid}>
         {t('markAsPaid')}
       </Button>

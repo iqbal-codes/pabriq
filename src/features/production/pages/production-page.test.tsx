@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event'
 import { IntlProvider } from 'use-intl'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ProductionPage } from './production-page'
-import type { Role } from '#/features/permissions/model'
 
 vi.mock('nuqs', () => {
   const React = require('react')
@@ -28,8 +27,8 @@ vi.mock('../hooks', () => ({
 }))
 
 const mockKanbanPage = vi.hoisted(() =>
-  vi.fn(({ orgId, role }: { orgId: string; role: Role }) => (
-    <div data-testid="kanban-page" data-org-id={orgId} data-role={role}>
+  vi.fn(({ orgId }: { orgId: string }) => (
+    <div data-testid="kanban-page" data-org-id={orgId}>
       Kanban Page Mock
     </div>
   )),
@@ -55,7 +54,7 @@ const enMessages = {
   },
 }
 
-function renderPage(props: { orgId: string; role: Role }) {
+function renderPage(props: { orgId: string }) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
@@ -74,33 +73,32 @@ beforeEach(() => {
 
 describe('ProductionPage', () => {
   it('renders kanban title and tab triggers', () => {
-    renderPage({ orgId: 'org-1', role: 'member' })
+    renderPage({ orgId: 'org-1' })
     expect(screen.getByText('Kanban')).toBeDefined()
     expect(screen.getByText('Active Tasks')).toBeDefined()
     expect(screen.getByText('Archive')).toBeDefined()
   })
 
   it('shows KanbanPage on the active tab by default', () => {
-    renderPage({ orgId: 'org-1', role: 'member' })
+    renderPage({ orgId: 'org-1' })
     expect(screen.getByTestId('kanban-page')).toBeDefined()
     expect(screen.queryByTestId('archived-tasks-page')).not.toBeInTheDocument()
   })
 
-  it('passes orgId and role to KanbanPage', () => {
-    renderPage({ orgId: 'org-1', role: 'member' })
+  it('passes orgId to KanbanPage', () => {
+    renderPage({ orgId: 'org-1' })
     const kanban = screen.getByTestId('kanban-page')
     expect(kanban.getAttribute('data-org-id')).toBe('org-1')
-    expect(kanban.getAttribute('data-role')).toBe('member')
   })
 
   it('renders archived tasks page when archive tab is clicked', async () => {
-    renderPage({ orgId: 'org-1', role: 'member' })
+    renderPage({ orgId: 'org-1' })
     await userEvent.click(screen.getByText('Archive'))
     expect(screen.getByTestId('archived-tasks-page')).toBeDefined()
   })
 
   it('passes orgId to ArchivedTasksPage', async () => {
-    renderPage({ orgId: 'org-1', role: 'member' })
+    renderPage({ orgId: 'org-1' })
     await userEvent.click(screen.getByText('Archive'))
     const archived = screen.getByTestId('archived-tasks-page')
     expect(archived.getAttribute('data-org-id')).toBe('org-1')

@@ -3,18 +3,11 @@ import type { ReactElement } from 'react'
 import { useTranslations } from 'use-intl'
 import { Badge } from '#/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
-import type { Role } from '#/features/permissions/model'
 import { useTaskCounts } from '#/features/production/hooks'
 import { ArchivedTasksPage } from '#/features/production/pages/archived-tasks-page'
 import { KanbanPage } from '#/features/production/pages/kanban-page'
 
-export function ProductionPage({
-  orgId,
-  role,
-}: {
-  orgId: string
-  role: Role
-}): ReactElement {
+export function ProductionPage({ orgId }: { orgId: string }): ReactElement {
   const t = useTranslations('production')
   const [tab, setTab] = useQueryState(
     'tab',
@@ -52,7 +45,7 @@ export function ProductionPage({
         </TabsList>
       </div>
       <TabsContent value="active">
-        <KanbanPage orgId={orgId} role={role} />
+        <KanbanPage orgId={orgId} />
       </TabsContent>
       <TabsContent value="archive">
         <ArchivedTasksPage orgId={orgId} />

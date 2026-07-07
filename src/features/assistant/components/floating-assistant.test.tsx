@@ -31,7 +31,8 @@ const messages = {
       proceed: 'Proceed — create draft',
       cancel: 'Cancel',
       cancelled: 'Draft proposal cancelled.',
-      expired: 'This proposal is no longer valid. Ask the assistant for a fresh one.',
+      expired:
+        'This proposal is no longer valid. Ask the assistant for a fresh one.',
     },
     error: {
       tryAgain: 'Try again by asking the assistant for a fresh proposal.',

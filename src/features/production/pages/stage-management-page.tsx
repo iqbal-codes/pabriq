@@ -1,21 +1,20 @@
 import { parseAsStringEnum, useQueryState } from 'nuqs'
-import { useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { Tabs, TabsList, TabsTrigger } from '#/components/ui/tabs'
-import { StageForm } from '../components/stage-form'
+import { useGlobalModal } from '#/hooks/use-global-overlay'
 import { StageList } from '../components/stage-list'
 import { useStages } from '../hooks'
 
 export function StageManagementPage() {
   const t = useTranslations('production')
+  const { openModal } = useGlobalModal()
   const [board, setBoard] = useQueryState(
     'board',
     parseAsStringEnum(['pre_production', 'production']).withDefault(
       'pre_production',
     ),
   )
-  const [showCreate, setShowCreate] = useState(false)
   const { data: stages, isLoading } = useStages(board)
 
   return (
@@ -24,7 +23,7 @@ export function StageManagementPage() {
         title={t('stageManagement')}
         primaryAction={{
           label: t('addStage'),
-          onClick: () => setShowCreate(true),
+          onClick: () => openModal('stage-form'),
         }}
       />
       <Tabs
@@ -40,7 +39,6 @@ export function StageManagementPage() {
         </TabsList>
       </Tabs>
       <StageList stages={stages ?? []} loading={isLoading} />
-      <StageForm open={showCreate} onOpenChange={setShowCreate} />
     </>
   )
 }

@@ -4,7 +4,6 @@ import type { DataTableLabels } from '#/components/app/data-table'
 import { DataTable } from '#/components/app/data-table'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { CancelInvitationDialog } from '#/features/members/components/cancel-invitation-dialog'
-import { InviteMemberDialog } from '#/features/members/components/invite-member-dialog'
 import {
   InvitationRowActions,
   MemberRowActions,
@@ -21,11 +20,13 @@ import {
 } from '#/features/members/hooks'
 import type { InvitationItem, MemberItem } from '#/features/members/server'
 import { canManageMembers } from '#/features/permissions/model'
+import { useGlobalModal } from '#/hooks/use-global-overlay'
 
 export function MembersPage({ orgRole }: { orgRole: string }) {
   const t = useTranslations('members')
   const dt = useTranslations('dataTable')
   const canManage = canManageMembers(orgRole as 'owner' | 'admin' | 'member')
+  const { openModal } = useGlobalModal()
 
   const { data: members, isLoading: membersLoading } = useMembers()
   const { data: invitations, isLoading: invitationsLoading } = useInvitations()
@@ -39,7 +40,6 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
     [invitations],
   )
 
-  const [inviteOpen, setInviteOpen] = useState(false)
   const [removeTarget, setRemoveTarget] = useState<MemberItem | null>(null)
   const [cancelTarget, setCancelTarget] = useState<string | null>(null)
 
@@ -74,7 +74,7 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
           canManage
             ? {
                 label: t('invite'),
-                onClick: () => setInviteOpen(true),
+                onClick: () => openModal('invite-member'),
               }
             : undefined
         }
@@ -134,8 +134,6 @@ export function MembersPage({ orgRole }: { orgRole: string }) {
           />
         </div>
       )}
-
-      <InviteMemberDialog open={inviteOpen} onOpenChange={setInviteOpen} />
 
       <RemoveMemberDialog
         open={!!removeTarget}

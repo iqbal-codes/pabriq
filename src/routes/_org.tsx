@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { ForbiddenPage } from '#/components/app/forbidden-page'
+import { GlobalModalContainer } from '#/components/app/global-modal/global-modal-container'
 import { LanguageToggle, ThemeToggle } from '#/components/app/header-controls'
 import { Breadcrumbs } from '#/components/app/page-shell/breadcrumbs'
 import { RoutePendingOverlay } from '#/components/app/route-pending-overlay'
@@ -13,9 +14,11 @@ import {
 import { FloatingAssistant } from '#/features/assistant/components/floating-assistant'
 import { NotificationBell } from '#/features/notifications/components/notification-bell'
 import type { Role } from '#/features/permissions/model'
+import { globalOverlaySearchSchema } from '#/hooks/use-global-overlay'
 import { resolveOrgContext } from '#/lib/auth-session'
 
 export const Route = createFileRoute('/_org')({
+  validateSearch: (search) => globalOverlaySearchSchema.parse(search),
   beforeLoad: async ({
     location,
   }: {
@@ -127,6 +130,7 @@ function AdminLayout({
         <div className="relative flex-1 min-w-0 overflow-x-auto">
           <Outlet />
           <FloatingAssistant orgId={org.id} userId={session.user.id} />
+          <GlobalModalContainer />
           <RoutePendingOverlay />
         </div>
       </SidebarInset>
