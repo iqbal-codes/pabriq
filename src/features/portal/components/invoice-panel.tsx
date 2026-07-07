@@ -17,7 +17,7 @@ import {
   createSnapTokenFn,
   reconcilePortalPaymentFn,
 } from '#/features/invoices/server'
-import { formatCurrency, formatLongDate } from '#/lib/formatters'
+import { formatCurrency } from '#/lib/formatters'
 import type { PortalInvoice } from '../model'
 import { getPortalOrderFn } from '../server'
 import { SubmitPaymentProofDialog } from './submit-payment-proof-dialog'
@@ -92,13 +92,6 @@ function InvoiceRow({
   const c = useTranslations('common')
   const locale = useLocale()
   const isUnpaid = invoice.status === 'unpaid'
-  const dueInDays = isUnpaid ? daysFromDue(invoice.dueDate) : null
-  const isOverdue = dueInDays !== null && dueInDays < 0
-  const _dueLabel = !isUnpaid
-    ? null
-    : isOverdue
-      ? t('invoiceOverdueOn', { date: formatLongDate(invoice.dueDate, locale) })
-      : t('invoiceDueLabel', { date: formatLongDate(invoice.dueDate, locale) })
 
   return (
     <li className="grid gap-3 border-b border-border px-4 py-4 last:border-b-0 sm:px-5">

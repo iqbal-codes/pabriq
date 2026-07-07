@@ -289,7 +289,7 @@ export const getInvoicePaymentsFn = createServerFn({ method: 'GET' })
     return getPaymentsForInvoice(orgId, data.invoiceId)
   })
 
-const getInvoiceBalanceFn = createServerFn({ method: 'GET' })
+export const getInvoiceBalanceFn = createServerFn({ method: 'GET' })
   .inputValidator((input: unknown) => getInvoicePaymentsSchema.parse(input))
   .handler(async ({ data }): Promise<InvoiceBalance> => {
     const [orgId, { getInvoiceBalance }] = await Promise.all([
@@ -299,7 +299,7 @@ const getInvoiceBalanceFn = createServerFn({ method: 'GET' })
     return getInvoiceBalance(data.invoiceId, orgId)
   })
 
-const updateInvoiceFn = createServerFn({ method: 'POST' })
+export const updateInvoiceFn = createServerFn({ method: 'POST' })
   .inputValidator((input: unknown) => updateInvoiceSchema.parse(input))
   .handler(async ({ data }): Promise<MutationResult> => {
     const orgId = await resolveOrgId()

@@ -433,7 +433,7 @@ describe('order approval and task spawning', () => {
   })
 
   it('starts production for approved order with paid invoice and ready tasks', async () => {
-    const preProdStage = await createStage({
+    await createStage({
       orgId: org1Id,
       name: 'Design',
       orderIndex: 0,

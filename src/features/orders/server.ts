@@ -13,6 +13,7 @@ import type {
   ListOrdersParams,
   ListOrdersResult,
   OrderCreationReadiness,
+  OrderHistoryEvent,
   UpdateDraftOrderInput,
 } from './model'
 
@@ -162,7 +163,7 @@ export const advanceOrderStatusFn = createServerFn({ method: 'POST' })
     }
   })
 
-const setDeliveryInfoFn = createServerFn({ method: 'POST' })
+export const setDeliveryInfoFn = createServerFn({ method: 'POST' })
   .inputValidator(
     (input: { id: string; courier?: string; trackingNumber?: string }) => input,
   )
@@ -185,7 +186,7 @@ const setDeliveryInfoFn = createServerFn({ method: 'POST' })
     }
   })
 
-const markShippedFn = createServerFn({ method: 'POST' })
+export const markShippedFn = createServerFn({ method: 'POST' })
   .inputValidator(
     (input: { id: string; courier?: string; trackingNumber?: string }) => input,
   )
@@ -453,12 +454,12 @@ export const adjustOrderQuantityFn = createServerFn({ method: 'POST' })
 
 export const listOrderHistoryEventsFn = createServerFn({ method: 'GET' })
   .inputValidator((input: { orderId: string }) => input)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }): Promise<OrderHistoryEvent[]> => {
     const [orgId, { listOrderHistoryEvents }] = await Promise.all([
       resolveOrgId(),
       import('./model'),
     ])
-    return listOrderHistoryEvents(data.orderId, orgId) as Promise<any>
+    return listOrderHistoryEvents(data.orderId, orgId)
   })
 
 export const getOrderAdminTimelineFn = createServerFn({ method: 'GET' })

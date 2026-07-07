@@ -23,7 +23,7 @@ export class AsyncLocalStorage<T = unknown> {
   getStore(): T | undefined {
     return undefined
   }
-  run<R>(store: T, callback: () => R, ...args: unknown[]): R {
+  run<R>(_store: T, callback: () => R, ..._args: unknown[]): R {
     return callback()
   }
 }

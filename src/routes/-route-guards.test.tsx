@@ -153,9 +153,7 @@ function buildAuthPageRouter(
   })
 }
 
-type TestRouter =
-  | ReturnType<typeof buildProtectedRouter>
-  | ReturnType<typeof buildAuthPageRouter>
+type TestRouter = React.ComponentProps<typeof RouterProvider>['router']
 
 async function renderRouter(router: TestRouter) {
   await act(async () => {

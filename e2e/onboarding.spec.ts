@@ -1,10 +1,5 @@
 import { expect, test } from '@playwright/test'
-import {
-  completeOnboarding,
-  gotoApp,
-  signIn,
-  waitForAuthenticated,
-} from './helpers/auth'
+import { completeOnboarding, signIn } from './helpers/auth'
 
 const TEST_EMAIL = 'e2etesting@gmail.com'
 const TEST_PASSWORD = 'testing123'

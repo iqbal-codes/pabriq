@@ -204,7 +204,11 @@ vi.mock('#/components/ui/button', () => ({
   }: {
     children: React.ReactNode
     onClick?: () => void
-  }) => <button onClick={onClick}>{children}</button>,
+  }) => (
+    <button type="button" onClick={onClick}>
+      {children}
+    </button>
+  ),
 }))
 
 // ── Translation messages ─────────────────────────────────────────

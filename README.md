@@ -78,7 +78,7 @@ bun run db:studio:agent    # open drizzle studio with Infisical Machine Identity
 
 1. Branch from `develop`.
 2. Open pull requests into `develop`.
-3. Let the `production-build` workflow pass on every PR.
+- Let the `ci` workflow pass on every PR.
 4. When you are ready to release, open a pull request from `develop` into `main`.
 5. Deploy from `main`, then tag the production release from `main`.
 
@@ -86,11 +86,10 @@ bun run db:studio:agent    # open drizzle studio with Infisical Machine Identity
 
 - Create `develop` from the current `main`.
 - Recommended: make `develop` the default branch so new pull requests target the integration branch by default.
-- Protect both `develop` and `main`: require pull requests, require the `production-build` status check, require conversation resolution, and block force pushes and deletions.
+- Protect both `develop` and `main`: require pull requests, require the `ci` status check, require conversation resolution, and block force pushes and deletions.
 - Turn on auto-delete for head branches after merge.
 - If you later add GitHub Actions deployments, restrict the `staging` environment to `develop` and the `production` environment to `main`.
 
-`bun run build` is the first CI gate because the current branch already carries unrelated Biome and TypeScript failures. Once that backlog is cleared, promote `bun run check`, `bun run typecheck`, and `bun run test` into required status checks too.
 
 ## Environment
 
