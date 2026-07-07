@@ -4,7 +4,7 @@ import { IntlProvider } from 'use-intl'
 import { describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '#/components/ui/tooltip'
 import type { InvoiceRow } from '#/features/invoices/model'
-import { OrderInvoicesCard } from './order-invoices-card'
+import { OrderInvoicesSection } from './order-invoices-section'
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({
@@ -36,6 +36,13 @@ const messages = {
   status: {
     unpaid: 'Unpaid',
   },
+  portal: {
+    invoiceDownPayment: 'Down Payment',
+    invoiceFinalPayment: 'Final Payment',
+    invoiceShipmentFee: 'Shipment fee',
+    invoiceShowAll: 'View all ({count})',
+    invoiceShowLess: 'Hide',
+  },
 }
 
 const invoice: InvoiceRow = {
@@ -51,13 +58,13 @@ const invoice: InvoiceRow = {
   overdue: false,
 }
 
-function renderCard(
+function renderSection(
   invoicePayments: Record<string, Array<{ id: string; proofAssetId: string }>>,
 ) {
   return render(
     <IntlProvider locale="en" messages={messages}>
       <TooltipProvider>
-        <OrderInvoicesCard
+        <OrderInvoicesSection
           orderInvoices={[invoice]}
           invoicePayments={invoicePayments}
         />
@@ -65,13 +72,14 @@ function renderCard(
     </IntlProvider>,
   )
 }
-describe('OrderInvoicesCard', () => {
+
+describe('OrderInvoicesSection', () => {
   it('shows uploaded customer payment proofs as image previews without download links', () => {
-    renderCard({
+    renderSection({
       'invoice-1': [{ id: 'proof-asset-1', proofAssetId: 'proof-asset-1' }],
     })
 
-    expect(screen.getByText('Payment Proof')).toBeInTheDocument()
+    expect(screen.getByText('Invoices')).toBeInTheDocument()
     expect(screen.getByAltText('proof proof-asset-1')).toBeInTheDocument()
     expect(
       screen.queryByRole('link', { name: 'proof proof-asset-1' }),
