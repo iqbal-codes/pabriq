@@ -215,6 +215,7 @@ export const organizationProfiles = pgTable('organization_profiles', {
   addressId: text('address_id').references(() => addresses.id, {
     onDelete: 'set null',
   }),
+  lateFeePerDay: integer('late_fee_per_day').notNull().default(0),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
@@ -242,6 +243,8 @@ export const orders = pgTable('orders', {
   courier: text('courier'),
   trackingNumber: text('tracking_number'),
   shippedAt: timestamp('shipped_at'),
+  deadline: timestamp('deadline'),
+  manualDeadline: boolean('manual_deadline').notNull().default(false),
   deliveredAt: timestamp('delivered_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
@@ -351,6 +354,7 @@ export const invoices = pgTable(
     ),
     paidAt: timestamp('paid_at'),
     paidBy: text('paid_by'),
+    lateFee: real('late_fee').notNull().default(0),
     notes: text('notes'),
     midtransOrderId: text('midtrans_order_id'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
