@@ -171,4 +171,25 @@ describe('AssetFileList', () => {
     )
     expect(previewCallsForVideo).toHaveLength(0)
   })
+
+  it('renders image grid previews inside a square frame', async () => {
+    mockGetAssetsMetadata.mockResolvedValue(allAssets)
+    mockGetAssetSignedUrl.mockImplementation(async (input) => ({
+      url: `https://cdn.example.com/${input.data.variantKey}/${input.data.assetId}`,
+      expiresAt: Date.now() + 60_000,
+    }))
+
+    const { container } = renderFileList()
+
+    expect(await screen.findByRole('button', { name: 'Preview' })).toBeDefined()
+
+    const squareFrame = container.querySelector(
+      '.aspect-square.overflow-hidden.rounded-lg.bg-muted\\/30',
+    )
+
+    expect(squareFrame).toBeTruthy()
+    expect(
+      squareFrame?.querySelector('button[aria-label="Preview"]'),
+    ).toBeTruthy()
+  })
 })

@@ -50,7 +50,11 @@ export function DataTableToolbar<TData>({
       {!hasSelection && hasToolbarContent ? (
         <>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2">{toolbarStart}</div>
+            {toolbarStart && (
+              <div className="flex items-center gap-2 w-full md:w-auto flex-1 md:flex-initial">
+                {toolbarStart}
+              </div>
+            )}
             {inlineFilters && (
               <div className="hidden h-5 w-px bg-border md:block" />
             )}

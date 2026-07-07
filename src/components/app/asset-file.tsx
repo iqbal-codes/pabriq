@@ -170,12 +170,12 @@ function AssetFileGridCard({
 
   const cardContent = (
     <>
-      <div className="flex aspect-square items-center justify-center bg-muted/30">
+      <div className="relative aspect-square overflow-hidden rounded-lg bg-muted/30">
         {isImage ? (
           <AssetImage
             assetId={metadata.id}
             assetKind={metadata.assetKind as AssetKind}
-            className="size-full rounded-lg object-cover"
+            className="size-full rounded-none"
             token={token}
           />
         ) : (
