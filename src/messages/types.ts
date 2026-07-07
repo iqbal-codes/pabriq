@@ -88,6 +88,7 @@ export type Messages = {
     members: string;
     profile: string;
     paymentMethods: string;
+    invoicing: string;
     orgName: string;
     orgSlug: string;
     phone: string;
@@ -115,6 +116,8 @@ export type Messages = {
     active: string;
     inactive: string;
     organization: string;
+    lateFeePerDay: string;
+    lateFeePerDayDescription: string;
     save: string;
   };
   members: {
@@ -318,6 +321,18 @@ export type Messages = {
     setupMissionHelpAddress: string;
     setupMissionHelpProduction: string;
     setupMissionHelpPayment: string;
+    orderDeadline: string;
+    manualOrderDeadline: string;
+    orderDeadlineAutoDescription: string;
+    orderDeadlineRequired: string;
+    adjustQuantity: string;
+    adjustQuantityDescription: string;
+    selectLineItem: string;
+    currentQuantity: string;
+    newQuantity: string;
+    adjustmentReason: string;
+    adjustmentReasonPlaceholder: string;
+    quantityAdjusted: string;
   };
   breadcrumb: {
     dashboard: string;
@@ -675,6 +690,8 @@ export type Messages = {
     shippingAreaRequired: string;
     packageWeightRequired: string;
     customerPickupNoShipping: string;
+    lateFeeCashback: string;
+    lateFeeCashbackDescription: string;
   };
   address: {
     title: string;
@@ -1044,6 +1061,7 @@ export type Messages = {
     timelineProductionFinished: string;
     timelineShipmentConfirmed: string;
     timelineOrderCompleted: string;
+    timelineQuantityAdjusted: string;
     timelineStepCompleted: string;
     timelineStepCurrent: string;
     timelineStepUpcoming: string;

@@ -57,7 +57,7 @@ const en: Messages = {
       serverError: "Server error",
     },
     hints: {
-      acceptedFormats: "PNG, JPG, WebP up to {size}",
+      acceptedFormats: "JPG, PNG, PDF, Corel up to {size}",
       maxSize: "Max {size}",
     },
   },
@@ -243,6 +243,19 @@ const en: Messages = {
       "Production stages define where approved work lands on the board.",
     setupMissionHelpPayment:
       "Payment methods make invoices actionable for customers from the first order.",
+    orderDeadline: "Order deadline",
+    manualOrderDeadline: "Set order deadline manually",
+    orderDeadlineAutoDescription:
+      "When disabled, the order deadline follows the latest line item deadline.",
+    orderDeadlineRequired: "Order deadline is required",
+    adjustQuantity: "Adjust Quantity",
+    adjustQuantityDescription: "Change the quantity of a line item. The order total and pricing will be recalculated.",
+    selectLineItem: "Select Line Item",
+    currentQuantity: "Current Quantity",
+    newQuantity: "New Quantity",
+    adjustmentReason: "Reason",
+    adjustmentReasonPlaceholder: "Enter reason for this adjustment",
+    quantityAdjusted: "Quantity adjusted successfully",
   },
   breadcrumb: {
     dashboard: "Dashboard",
@@ -340,6 +353,7 @@ const en: Messages = {
     members: "Members",
     profile: "Profile",
     paymentMethods: "Payment Methods",
+    invoicing: "Invoicing",
     orgName: "Organization Name",
     orgSlug: "Slug",
     phone: "Phone Number",
@@ -368,6 +382,9 @@ const en: Messages = {
     active: "Active",
     inactive: "Inactive",
     organization: "Organization",
+    lateFeePerDay: "Late cashback per day",
+    lateFeePerDayDescription:
+      "Deduct this amount from the final invoice for each calendar day after the order deadline. Set 0 to disable.",
     save: "Save",
   },
   members: {
@@ -686,13 +703,17 @@ const en: Messages = {
     packageWeightKg: "Package Weight (kg)",
     calculateShipmentFee: "Calculate Shipping Fee",
     shipmentRate: "Shipment Rate",
-    selectShipmentRateRequired: "Please select a shipment rate before submitting",
+    selectShipmentRateRequired:
+      "Please select a shipment rate before submitting",
     noShipmentRatesFound: "No shipment rates found",
     biteshipApiKeyMissing: "Biteship API key is not configured",
     biteshipRateCalculationFailed: "Failed to calculate shipping rates",
     shippingAreaRequired: "Shipping area is required",
     packageWeightRequired: "Package weight is required",
-    customerPickupNoShipping: "Customer will pick up the order. No shipping fee will be added.",
+    customerPickupNoShipping:
+      "Customer will pick up the order. No shipping fee will be added.",
+    lateFeeCashback: "Late delivery cashback",
+    lateFeeCashbackDescription: "{days} days late × {amount} per day",
   },
   address: {
     title: "Address",
@@ -871,7 +892,7 @@ const en: Messages = {
       "Enter design name, artwork name, or reference label",
     itemNotes: "Notes / Specification",
     itemNotesPlaceholder: "Logo height and width dimensions",
-    attachment: "Upload PDF / Corel File",
+    attachment: "Upload Desain File",
     addAttachment: "Add attachment",
     shippingAddress: "Shipping Address",
     orderNumber: "Order Number",
@@ -1012,7 +1033,8 @@ const en: Messages = {
     rejectedResubmitCta: "Discuss with the seller",
 
     // Draft view (multi-step)
-    draftSubmitHelp: "Please fill in your personal data and order information. The {org} team will process the order as soon as the data is complete.",
+    draftSubmitHelp:
+      "Please fill in your personal data and order information. The {org} team will process the order as soon as the data is complete.",
     draftStepCustomer: "Tell us who you are",
     draftStepShipping: "Where should we ship it?",
     draftStepItems: "Review each item",
@@ -1055,7 +1077,7 @@ const en: Messages = {
     invoiceShowAll: "View all ({count})",
     invoiceShowLess: "Hide",
     itemDeadlineLabel: "Deadline {date}",
-    itemProductionDaysInline: "{days}-day production",
+    itemProductionDaysInline: "{days}-workday production",
     itemShowTimeline: "Show timeline",
     itemHideTimeline: "Hide timeline",
     itemAttachmentsLabel: "Order Design",
@@ -1068,7 +1090,8 @@ const en: Messages = {
     paymentFailed: "Payment failed. Please try again.",
     processingPayment: "Processing...",
     paymentVerifying: "Verifying your payment...",
-    paymentConfirmTimeout: "Payment received but confirmation is taking longer than usual. Please refresh in a moment.",
+    paymentConfirmTimeout:
+      "Payment received but confirmation is taking longer than usual. Please refresh in a moment.",
     shipmentTracking: "Shipment Tracking",
     trackShipment: "Track shipment",
     orderTimelineSectionTitle: "Order History",
@@ -1087,6 +1110,7 @@ const en: Messages = {
     timelineProductionFinished: "Production finished, ready to ship",
     timelineShipmentConfirmed: "Shipment confirmed",
     timelineOrderCompleted: "Done",
+    timelineQuantityAdjusted: "{product}: {oldQty} → {newQty} pcs ({impact})",
     timelineStepCompleted: "Complete",
     timelineStepCurrent: "Current",
     timelineStepUpcoming: "Waiting",
@@ -1124,7 +1148,8 @@ const en: Messages = {
       proceed: "Proceed — create draft",
       cancel: "Cancel",
       cancelled: "Draft proposal cancelled.",
-      expired: "This proposal is no longer valid. Ask the assistant for a fresh one.",
+      expired:
+        "This proposal is no longer valid. Ask the assistant for a fresh one.",
     },
     error: {
       tryAgain: "Try again by asking the assistant for a fresh proposal.",
@@ -1134,10 +1159,12 @@ const en: Messages = {
     title: "Action notifications",
     pageTitle: "Action notifications",
     description: "Workflow items waiting for owner or admin action.",
-    subtitle: "{count, plural, =0 {No pending actions} one {# pending action} other {# pending actions}}",
+    subtitle:
+      "{count, plural, =0 {No pending actions} one {# pending action} other {# pending actions}}",
     viewAll: "View all",
     emptyTitle: "No pending actions",
-    emptyDescription: "Payment confirmations, order reviews, invoice requests, and task reviews will appear here.",
+    emptyDescription:
+      "Payment confirmations, order reviews, invoice requests, and task reviews will appear here.",
     paymentConfirmations: "Payment confirmations",
     orderReviews: "Order reviews",
     taskReviews: "Task reviews",
@@ -1148,11 +1175,15 @@ const en: Messages = {
     taskReviewLabel: "Task review",
     dpInvoiceLabel: "Send DP invoice",
     finalInvoiceLabel: "Send final invoice",
-    paymentConfirmationMessage: "{customerName} submitted {amount} for invoice {invoiceNumber}.",
-    orderReviewMessage: "{customerName} submitted order {orderNumber} for review.",
+    paymentConfirmationMessage:
+      "{customerName} submitted {amount} for invoice {invoiceNumber}.",
+    orderReviewMessage:
+      "{customerName} submitted order {orderNumber} for review.",
     taskReviewMessage: "{taskNumber} needs review at {stageName}.",
-    dpInvoiceMessage: "All pre-production tasks for order {orderNumber} are queued for {stageName}. Send the DP invoice to {customerName} to continue the order.",
-    finalInvoiceMessage: "All production tasks for order {orderNumber} are finished. Send the final invoice to {customerName}.",
+    dpInvoiceMessage:
+      "All pre-production tasks for order {orderNumber} are queued for {stageName}. Send the DP invoice to {customerName} to continue the order.",
+    finalInvoiceMessage:
+      "All production tasks for order {orderNumber} are finished. Send the final invoice to {customerName}.",
     openAction: "Open",
     amount: "Amount",
     noCustomer: "Unknown customer",

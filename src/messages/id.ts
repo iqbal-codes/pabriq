@@ -57,7 +57,7 @@ const id: Messages = {
       serverError: "Kesalahan server",
     },
     hints: {
-      acceptedFormats: "PNG, JPG, WebP hingga {size}",
+      acceptedFormats: "JPG, PNG, PDF, Corel hingga {size}",
       maxSize: "Maks {size}",
     },
   },
@@ -244,6 +244,19 @@ const id: Messages = {
       "Tahapan produksi menentukan tempat kerja yang disetujui masuk di papan produksi.",
     setupMissionHelpPayment:
       "Metode pembayaran membuat invoice langsung bisa ditindaklanjuti pelanggan sejak pesanan pertama.",
+    orderDeadline: "Deadline pesanan",
+    manualOrderDeadline: "Atur deadline pesanan manual",
+    orderDeadlineAutoDescription:
+      "Jika nonaktif, deadline pesanan mengikuti deadline item paling akhir.",
+    orderDeadlineRequired: "Deadline pesanan wajib diisi",
+    adjustQuantity: "Sesuaikan Jumlah",
+    adjustQuantityDescription: "Ubah jumlah item pesanan. Total pesanan dan harga akan dihitung ulang.",
+    selectLineItem: "Pilih Item Pesanan",
+    currentQuantity: "Jumlah Saat Ini",
+    newQuantity: "Jumlah Baru",
+    adjustmentReason: "Alasan",
+    adjustmentReasonPlaceholder: "Masukkan alasan penyesuaian ini",
+    quantityAdjusted: "Jumlah berhasil disesuaikan",
   },
   breadcrumb: {
     dashboard: "Dasbor",
@@ -341,6 +354,7 @@ const id: Messages = {
     members: "Anggota",
     profile: "Profil",
     paymentMethods: "Metode Pembayaran",
+    invoicing: "Invoice",
     orgName: "Nama Organisasi",
     orgSlug: "Slug",
     phone: "Nomor Telepon",
@@ -369,6 +383,9 @@ const id: Messages = {
     active: "Aktif",
     inactive: "Tidak Aktif",
     organization: "Organisasi",
+    lateFeePerDay: "Cashback terlambat per hari",
+    lateFeePerDayDescription:
+      "Potong nominal ini dari invoice pelunasan untuk setiap hari kalender setelah deadline pesanan. Isi 0 untuk menonaktifkan.",
     save: "Simpan",
   },
   members: {
@@ -693,7 +710,10 @@ const id: Messages = {
     biteshipRateCalculationFailed: "Gagal menghitung tarif pengiriman",
     shippingAreaRequired: "Area pengiriman wajib diisi",
     packageWeightRequired: "Berat paket wajib diisi",
-    customerPickupNoShipping: "Pelanggan akan mengambil pesanan. Tidak ada biaya pengiriman.",
+    customerPickupNoShipping:
+      "Pelanggan akan mengambil pesanan. Tidak ada biaya pengiriman.",
+    lateFeeCashback: "Cashback keterlambatan",
+    lateFeeCashbackDescription: "{days} hari terlambat × {amount} per hari",
   },
   address: {
     title: "Alamat",
@@ -873,7 +893,7 @@ const id: Messages = {
       "Masukkan nama desain, nama artwork, atau label referensi",
     itemNotes: "Catatan / Spesifikasi",
     itemNotesPlaceholder: "Ukuran tinggi dan lebar logo",
-    attachment: "Masukkan File PDF / Corel",
+    attachment: "Masukkan File Desain",
     addAttachment: "Tambah lampiran",
     shippingAddress: "Alamat Pengiriman",
     orderNumber: "Nomor Pesanan",
@@ -1014,7 +1034,8 @@ const id: Messages = {
     rejectedResubmitCta: "Diskusikan dengan penjual",
 
     // Draft view (multi-step)
-    draftSubmitHelp: "Silakan isi data diri dan informasi pesanan Anda. Tim {org} akan segera memproses pesanan setelah data lengkap.",
+    draftSubmitHelp:
+      "Silakan isi data diri dan informasi pesanan Anda. Tim {org} akan segera memproses pesanan setelah data lengkap.",
     draftStepCustomer: "Beri tahu siapa Anda",
     draftStepShipping: "Mau dikirim ke mana?",
     draftStepItems: "Tinjau setiap item",
@@ -1058,7 +1079,7 @@ const id: Messages = {
     invoiceShowAll: "Lihat semua ({count})",
     invoiceShowLess: "Sembunyikan",
     itemDeadlineLabel: "Deadline {date}",
-    itemProductionDaysInline: "Produksi {days} hari",
+    itemProductionDaysInline: "Produksi {days} hari kerja",
     itemShowTimeline: "Lihat timeline",
     itemHideTimeline: "Sembunyikan timeline",
     itemAttachmentsLabel: "Design Pesanan",
@@ -1071,7 +1092,8 @@ const id: Messages = {
     paymentFailed: "Pembayaran gagal. Silakan coba lagi.",
     processingPayment: "Memproses...",
     paymentVerifying: "Memverifikasi pembayaran Anda...",
-    paymentConfirmTimeout: "Pembayaran diterima tetapi konfirmasi membutuhkan waktu lebih lama dari biasanya. Silakan muat ulang sebentar lagi.",
+    paymentConfirmTimeout:
+      "Pembayaran diterima tetapi konfirmasi membutuhkan waktu lebih lama dari biasanya. Silakan muat ulang sebentar lagi.",
     shipmentTracking: "Pelacakan Pengiriman",
     trackShipment: "Lacak pengiriman",
     orderTimelineSectionTitle: "Riwayat Pesanan",
@@ -1090,6 +1112,7 @@ const id: Messages = {
     timelineProductionFinished: "Produksi selesai, siap dikirim",
     timelineShipmentConfirmed: "Pengiriman dikonfirmasi",
     timelineOrderCompleted: "Selesai",
+    timelineQuantityAdjusted: "{product}: {oldQty} → {newQty} pcs ({impact})",
     timelineStepCompleted: "Selesai",
     timelineStepCurrent: "Saat ini",
     timelineStepUpcoming: "Menunggu",
@@ -1128,7 +1151,8 @@ const id: Messages = {
       proceed: "Proses — buat draft",
       cancel: "Batal",
       cancelled: "Proposal draft dibatalkan.",
-      expired: "Proposal ini sudah tidak berlaku. Minta asisten buat yang baru.",
+      expired:
+        "Proposal ini sudah tidak berlaku. Minta asisten buat yang baru.",
     },
     error: {
       tryAgain: "Coba lagi dengan meminta asisten membuat proposal baru.",
@@ -1138,10 +1162,12 @@ const id: Messages = {
     title: "Notifikasi tindakan",
     pageTitle: "Notifikasi tindakan",
     description: "Alur kerja yang menunggu tindakan owner atau admin.",
-    subtitle: "{count, plural, =0 {Tidak ada tindakan tertunda} one {# tindakan tertunda} other {# tindakan tertunda}}",
+    subtitle:
+      "{count, plural, =0 {Tidak ada tindakan tertunda} one {# tindakan tertunda} other {# tindakan tertunda}}",
     viewAll: "Lihat semua",
     emptyTitle: "Tidak ada tindakan tertunda",
-    emptyDescription: "Konfirmasi pembayaran, review pesanan, permintaan invoice, dan review tugas akan muncul di sini.",
+    emptyDescription:
+      "Konfirmasi pembayaran, review pesanan, permintaan invoice, dan review tugas akan muncul di sini.",
     paymentConfirmations: "Konfirmasi pembayaran",
     orderReviews: "Review pesanan",
     taskReviews: "Review tugas",
@@ -1152,11 +1178,15 @@ const id: Messages = {
     taskReviewLabel: "Review tugas",
     dpInvoiceLabel: "Kirim invoice DP",
     finalInvoiceLabel: "Kirim invoice final",
-    paymentConfirmationMessage: "{customerName} mengirim {amount} untuk invoice {invoiceNumber}.",
-    orderReviewMessage: "{customerName} mengirim pesanan {orderNumber} untuk direview.",
+    paymentConfirmationMessage:
+      "{customerName} mengirim {amount} untuk invoice {invoiceNumber}.",
+    orderReviewMessage:
+      "{customerName} mengirim pesanan {orderNumber} untuk direview.",
     taskReviewMessage: "{taskNumber} perlu direview di {stageName}.",
-    dpInvoiceMessage: "Semua tugas pra-produksi untuk pesanan {orderNumber} sudah masuk antrian {stageName}. Kirim invoice DP ke {customerName} untuk melanjutkan pesanan.",
-    finalInvoiceMessage: "Semua tugas produksi untuk pesanan {orderNumber} sudah selesai. Kirim invoice final ke {customerName}.",
+    dpInvoiceMessage:
+      "Semua tugas pra-produksi untuk pesanan {orderNumber} sudah masuk antrian {stageName}. Kirim invoice DP ke {customerName} untuk melanjutkan pesanan.",
+    finalInvoiceMessage:
+      "Semua tugas produksi untuk pesanan {orderNumber} sudah selesai. Kirim invoice final ke {customerName}.",
     openAction: "Buka",
     amount: "Jumlah",
     noCustomer: "Pelanggan tidak diketahui",
