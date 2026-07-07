@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import { IntlProvider } from 'use-intl'
 import { describe, expect, it } from 'vitest'
+import { TooltipProvider } from '#/components/ui/tooltip'
 import type { Stage } from '../model'
 import { StageList } from './stage-list'
 
@@ -72,21 +73,24 @@ function renderStageList() {
   })
   return render(
     <QueryClientProvider client={queryClient}>
-      <IntlProvider locale="en" messages={enMessages}>
-        <StageList stages={stages} loading={false} />
-      </IntlProvider>
+      <TooltipProvider>
+        <IntlProvider locale="en" messages={enMessages}>
+          <StageList stages={stages} loading={false} />
+        </IntlProvider>
+      </TooltipProvider>
     </QueryClientProvider>,
   )
 }
 
 describe('StageList', () => {
-  it('renders reorder buttons with svg icons', () => {
+  it('renders stage rows with row actions', () => {
     renderStageList()
 
     const rows = screen.getAllByRole('row')
-    const dataRow = rows[1]
-    const reorderCell = dataRow.querySelector('td')
-    const svgs = reorderCell?.querySelectorAll('svg')
-    expect(svgs?.length).toBeGreaterThanOrEqual(1)
+    expect(rows.length).toBeGreaterThanOrEqual(2)
+
+    // Row actions should contain reorder and edit/delete buttons
+    const buttons = screen.getAllByRole('button')
+    expect(buttons.length).toBeGreaterThanOrEqual(4)
   })
 })

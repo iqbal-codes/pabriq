@@ -111,7 +111,7 @@ export function KanbanTaskCard({
       }
       onKeyDown={isInteractive ? handleKeyDown : undefined}
     >
-      <CardContent className="p-2.5 space-y-0.5">
+      <CardContent className="p-2.5! space-y-0.5">
         <div className="flex h-5 items-center justify-between gap-1.5">
           <span className="font-mono text-xs font-semibold">
             {taskData.taskNumber || '-'}

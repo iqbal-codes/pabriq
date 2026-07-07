@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import type { OrderTaskEvent } from '#/features/portal/model'
-import { resolveOrgId } from '#/lib/auth-session'
+import { resolveOrgId } from '#/lib/auth-session-server'
 import type { MutationResult } from '#/lib/server-results'
 import type { CreateStageInput, Stage, UpdateStageInput } from './model'
 

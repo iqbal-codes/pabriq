@@ -52,7 +52,7 @@ export function KanbanColumn({
   return (
     <Card className="flex h-full min-w-72 flex-col bg-muted/30 gap-0! py-0!">
       <CardHeader
-        className={`flex flex-row items-center justify-between p-3 rounded-t-xl ${styles.headerBg}`}
+        className={`flex flex-row items-center justify-between p-3! rounded-t-xl ${styles.headerBg}`}
       >
         <div className="flex items-center gap-1.5">
           <h3 className="text-sm font-semibold">{title}</h3>
@@ -69,7 +69,7 @@ export function KanbanColumn({
           {count}
         </Badge>
       </CardHeader>
-      <CardContent className="flex flex-col gap-2 overflow-y-auto p-3">
+      <CardContent className="flex flex-col gap-2 overflow-y-auto p-3!">
         {tasks.length === 0 ? (
           <p className="py-8 text-center text-xs text-muted-foreground">
             {t('noTasks')}

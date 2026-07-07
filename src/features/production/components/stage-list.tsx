@@ -1,10 +1,12 @@
-import { ArrowDown, ArrowUp, Edit, Trash } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslations } from 'use-intl'
-import type { AppColumnDef, DataTableLabels } from '#/components/app/data-table'
+import type { DataTableLabels } from '#/components/app/data-table'
 import { DataTable } from '#/components/app/data-table'
-import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
+import {
+  StageReorderActions,
+  StageRowActions,
+  useStageColumns,
+} from '../components/stage-columns'
 import { useStageMutations } from '../hooks'
 import type { Stage } from '../model'
 import { StageForm } from './stage-form'
@@ -42,86 +44,7 @@ export function StageList({ stages, loading }: Props) {
     await deleteStage.mutateAsync({ id: stageId })
   }
 
-  const columns: AppColumnDef<Stage>[] = [
-    {
-      id: 'reorder',
-      header: t('reorder'),
-      enableSorting: false,
-      meta: { label: t('reorder'), mobileRole: 'hidden' },
-      cell: ({ row }) => {
-        const i = stages.findIndex((s) => s.id === row.original.id)
-        return (
-          <div className="flex gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleMoveUp(i)}
-              isLoading={isReordering}
-              disabled={isReordering || deleteStage.isPending || i === 0}
-            >
-              <ArrowUp className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleMoveDown(i)}
-              isLoading={isReordering}
-              disabled={
-                isReordering || deleteStage.isPending || i === stages.length - 1
-              }
-            >
-              <ArrowDown className="size-4" />
-            </Button>
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: 'name',
-      header: t('stageName'),
-      meta: { label: t('stageName'), mobileRole: 'title' },
-    },
-    {
-      accessorKey: 'description',
-      header: t('stageDescription'),
-      meta: { label: t('stageDescription'), mobileRole: 'meta' },
-      cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground">
-          {row.original.description ?? '—'}
-        </span>
-      ),
-    },
-    {
-      id: 'needApproval',
-      header: t('needApproval'),
-      meta: { label: t('needApproval'), mobileRole: 'badge' },
-      cell: ({ row }) => (
-        <Badge variant={row.original.needApproval ? 'default' : 'secondary'}>
-          {row.original.needApproval ? t('required') : t('optional')}
-        </Badge>
-      ),
-    },
-    {
-      id: 'requirements',
-      header: t('requirements'),
-      meta: { label: t('requirements'), mobileRole: 'meta' },
-      cell: ({ row }) => (
-        <span className="text-sm">
-          {(row.original.requirements as Array<unknown>)?.length ?? 0}
-        </span>
-      ),
-    },
-    {
-      id: 'active',
-      header: t('active'),
-      meta: { label: t('active'), mobileRole: 'badge' },
-      cell: ({ row }) => (
-        <Badge variant={row.original.active ? 'default' : 'secondary'}>
-          {row.original.active ? t('active') : t('inactive')}
-        </Badge>
-      ),
-    },
-  ]
+  const columns = useStageColumns()
 
   const labels: DataTableLabels = {
     clearFilters: dt('clearFilters'),
@@ -161,28 +84,26 @@ export function StageList({ stages, loading }: Props) {
         emptyDescription={t('noTasks')}
         noResultsTitle={t('stageManagement')}
         hasActiveFilters={false}
-        toolbarStart={<div />}
         rowActions={(stage: Stage) => (
-          <div className="flex gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              tooltip={t('editStage')}
-              onClick={() => setEditStage(stage)}
-              disabled={isReordering || deleteStage.isPending}
-            >
-              <Edit className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              tooltip={t('deleteStage')}
-              onClick={() => handleDelete(stage.id)}
-              isLoading={deletingStageId === stage.id}
-              disabled={isReordering || deleteStage.isPending}
-            >
-              <Trash className="size-4 text-destructive" />
-            </Button>
+          <div className="flex flex-col gap-1">
+            <StageReorderActions
+              isFirst={stages[0]?.id === stage.id}
+              isLast={stages[stages.length - 1]?.id === stage.id}
+              isReordering={isReordering}
+              isDeleting={deletingStageId === stage.id}
+              onMoveUp={() =>
+                handleMoveUp(stages.findIndex((s) => s.id === stage.id))
+              }
+              onMoveDown={() =>
+                handleMoveDown(stages.findIndex((s) => s.id === stage.id))
+              }
+            />
+            <StageRowActions
+              isReordering={isReordering}
+              isDeleting={deletingStageId === stage.id}
+              onEdit={() => setEditStage(stage)}
+              onDelete={() => handleDelete(stage.id)}
+            />
           </div>
         )}
       />
