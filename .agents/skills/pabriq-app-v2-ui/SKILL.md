@@ -32,6 +32,8 @@ UI layer for a manufacturing SaaS (TanStack Start SSR + React 19). All user-faci
 - **StatusBadge**: From `src/components/status-badge.tsx` — entity status display with i18n.
 - **withForm**: Reusable field group composition from `src/components/app/form/`.
 - **FormActions (align="stacked")**: Stacked buttons that stretch to full-width on mobile and align-end row on desktop.
+- **getReadyForProductionLabel**: From `src/features/production/ready-for-production-label.ts` — produces a localized "Ready for Production" label with the first production stage name. Used in activity timeline, modal wrappers, line-item cards, and portal components.
+- **Deadline badge**: Filled-background urgency badges on Kanban cards — use the multi-tier color system (see Kanban deadline badges pattern below).
 
 Full pattern catalog: `references/ui-patterns.md`.
 
@@ -159,7 +161,7 @@ export function useGlobalModal() {
 // useGlobalSheet — same pattern for sheets
 ```
 
-**Registry** (`src/components/app/global-modal/global-modal-registry.tsx`) maps string keys to lazy-loaded components:
+**Registry** (`src/components/app/global-modal/global-modal-registry.tsx`) maps string keys to lazy-loaded wrapper components:
 ```typescript
 export const GLOBAL_MODALS = {
   'invite-member': InviteMemberDialogWrapper,
@@ -173,7 +175,26 @@ export const GLOBAL_MODALS = {
 
 **Container** (`src/components/app/global-modal/global-modal-container.tsx`) reads URL state, resolves the component, and renders it with `<Suspense>`.
 
-Why: URL-driven overlays survive page navigation, enable deep-linking to open modals, and keep overlay state out of component trees. To add a new overlay, register it in `GLOBAL_MODALS` and call `openModal('your-key')` from any component.
+**Wrapper pattern**: Each registry entry is a smart wrapper that resolves data dependencies (route context, query hooks, mutations) and passes clean props to the presentation component. This keeps presentation components pure and testable.
+
+> from `src/components/app/global-modal/global-modal-registry.tsx`
+```typescript
+function TaskDetailModalWrapper({ open, onOpenChange, id }: GlobalOverlayProps) {
+  const { openModal } = useGlobalModal()
+  const ctx = useRouteContext({ from: '/_org' }) as { org: { id: string } }
+  const canApprove = canApproveProductionTask('owner' as Role)
+  if (!id) return null
+  return (
+    <TaskDetailModal
+      open={open} onOpenChange={onOpenChange}
+      taskId={id} orgId={ctx.org.id}
+      canApprove={canApprove}
+      onReview={(taskId) => openModal('review-task', taskId)}
+    />
+  )
+}
+```
+Why: URL-driven overlays survive page navigation, enable deep-linking to open modals, and keep overlay state out of component trees. To add a new overlay, register it in `GLOBAL_MODALS` with a kebab-case key, create a wrapper that resolves data deps, and call `openModal('your-key')` from any component.
 
 ### Form field components
 
@@ -259,6 +280,52 @@ const st = useTranslations('status')
 ```
 Why: Multiple namespaces per component is normal — `status`, `dataTable`, `common` are reused across features.
 
+**Production activity i18n**: Activity descriptions in `src/features/production/components/activity-row.tsx` use the `production` namespace for activity-type keys (`activityAdvancementRequested`, `activityApproved`, `activityRejected`) and the `portal` namespace for timeline transition labels (`timelineTransition`, `timelineQueue`, `timelineQueued`, `timelineReadyForProduction`, `timelineReadyForProductionWithStage`, `timelineCompleted`). This is the established convention — production UI components pull from both `production` and `portal` namespaces.
+
+### Kanban deadline badge styling
+
+Kanban cards use filled-background badges with a multi-tier urgency color system (not text colors). The badge sits in the top-right of the card alongside priority indicators.
+
+> from `src/features/production/components/kanban-task-card.tsx`
+```typescript
+function getDeadlineClasses(daysFromNow: number, showDeadlineOutcome: boolean): string {
+  if (showDeadlineOutcome) {
+    if (daysFromNow > 0) return 'bg-success text-white border-transparent'
+    if (daysFromNow === 0) return 'bg-brand-accent text-white border-transparent'
+    return 'bg-destructive text-white border-transparent'
+  }
+  // Overdue
+  if (daysFromNow < 0) {
+    return 'bg-destructive text-white border-transparent font-semibold animate-pulse'
+  }
+  // Today
+  if (daysFromNow === 0) {
+    return 'bg-destructive text-white border-transparent font-medium'
+  }
+  // Near deadline: 1-2 days
+  if (daysFromNow <= 2) {
+    return 'bg-orange-600 dark:bg-orange-500 text-white border-transparent'
+  }
+  // Mid deadline: 3-5 days
+  if (daysFromNow <= 5) {
+    return 'bg-amber-500 text-white border-transparent'
+  }
+  // Long time: > 5 days
+  return 'bg-success text-white border-transparent'
+}
+```
+Why: Filled backgrounds with white text provide high contrast and immediate urgency recognition. The tiers: destructive+pulse = overdue, destructive = today, orange = 1-2 days, amber = 3-5 days, success = 5+ days.
+
+Card priority is indicated with a `variant="destructive"` badge and a subtle red background tint: `bg-red-50/70 border-red-200 dark:bg-red-950/20 dark:border-red-900/60`.
+
+The pending-approval badge (`variant="warning"`) is positioned in the bottom row alongside quantity, not in the top badge row.
+
+### Review modal as slide-in panel
+
+The `ReviewModal` (`src/features/production/components/review-modal.tsx`) is a Dialog-based slide-in panel that shows task review details with approve/reject actions. It uses the `production` namespace for its own labels (`reviewAdvancement`, `reviewTaskLabel`, `reviewStageLabel`, `fulfilledRequirements`, `reviewNotes`, `commentPlaceholder`, `close`, `approve`, `reject`).
+
+The wrapper in the global modal registry resolves stage names, requirements, and the "next stage" label (which uses `getReadyForProductionLabel` when the task is at the end of pre-production). All user-facing strings are i18n — no hardcoded English.
+
 ### Extracted page sections
 
 Complex detail pages extract domain sections into standalone components for readability and reuse. Each section owns its own i18n, data formatting, and layout.
@@ -284,70 +351,64 @@ Key extracted components in the orders feature:
 
 ### `getReadyForProductionLabel` utility
 
-Used in `OrderLineItemsCard` and portal components to display production-ready status with the first stage name.
+Used across multiple components to display a localized "Ready for Production" label with the first production stage name.
 
 > from `src/features/production/ready-for-production-label.ts`
 ```typescript
 export function getReadyForProductionLabel({
   firstProductionStageName, readyForProduction, readyForProductionWithStage,
-}: { ... }): string {
+}: {
+  firstProductionStageName: string | undefined
+  readyForProduction: string
+  readyForProductionWithStage: (values: { stage: string }) => string
+}): string {
   if (!firstProductionStageName) return readyForProduction
   return readyForProductionWithStage({ stage: firstProductionStageName })
 }
 ```
 
+Canonical usage sites:
+- `src/features/production/components/activity-row.tsx` — timeline stage-transition descriptions
+- `src/components/app/global-modal/global-modal-registry.tsx` — review-modal next-stage label
+- `src/features/orders/components/order-line-items-card.tsx` — line-item production stage badge
+- `src/features/portal/components/line-item-task-card.tsx` — portal line-item display
+
 ### `fieldValidator` helper
 
-> from `src/components/app/form/form-utils.ts`
-```typescript
-export function fieldValidator(schema: z.ZodTypeAny) { ... }
-```
-Use `fieldValidator` to wrap Zod schemas for individual field validation. Also exported: `getSchemaForPath` for resolving sub-schemas from a root Zod object by field path, `isFieldRequired` for checking if a field is required.
+…
+[See pattern catalog for full detail]
 
 ## Commands
 
-| Command | Notes |
-|---|---|
-| `bun run dev` | Dev server on port 3001 (Sentry instrumented) |
-| `bun run dev:infisical` | Dev with Infisical secrets |
-| `bun run dev:agent` | Dev with Infisical Machine Identity (for agents) |
-| `bun run build` | Vite build + copy instrument.server.mjs |
-| `bun run check` | Biome lint + format check |
-| `bun run typecheck` | `tsc --noEmit` |
-| `bun run test` | Vitest via load-env-test (staging DB) |
-| `bun run test src/features/customers/pages/customers-list-page.test.tsx` | Single test file |
-| `bun run test:e2e` | Playwright E2E tests |
-| `bun run format` | Biome format --write |
-
-**Pre-commit pipeline**: `bun run check && bun run typecheck && bun run test`.
+- Run this domain's tests: `bun run test src/features` (Vitest via happy-dom)
+- Dev server: `bun run dev`
+- Typecheck: `bun run typecheck`
+- Lint/format check: `bun run check`
+- E2E tests: `bun run test:e2e`
 
 ## Conventions observed
 
-- Components: one per file, PascalCase filenames, named exports only.
-- shadcn/ui primitives (`src/components/ui/`) are generated — never hand-edit.
-- Imports: `#/` prefix for all internal imports; `import type` for type-only bindings.
-- All icons from `lucide-react` — no other icon libraries.
-- `Button asChild` when wrapping a `Link` (e.g. `<Button asChild><Link to="...">...</Link></Button>`).
-- `useState` only for local UI state (toggle, modal open, submission error) — never for form field values.
-- `cn()` utility from `src/lib/utils` for conditional class merging.
-- Dark mode via `.dark` class on `<html>`, oklch color tokens in `src/styles.css`.
-- App is installable as a PWA (standalone mode) — see `pabriq-app-v2-infra`.
+- Components are PascalCase, one per file, co-located with `.test.tsx` when tested.
+- Every user-visible string uses i18n — no hardcoded English in production components.
+- Multiple i18n namespaces per component is normal (`production`, `portal`, `common`, `status`).
+- `cn()` utility for conditional Tailwind classes; never raw template literals for class merging.
+- shadcn/ui primitives in `src/components/ui/` are never hand-edited; always generate via CLI.
+- Forms always go through `useAppForm` + `FormRoot` — never raw `useState`.
+- Global overlays use the URL-driven registry pattern — never `useState` for cross-page modals.
+- Deadlines and urgency use filled-background badges (`bg-* text-white border-transparent`), not text-only variants.
+- The `@/*` alias exists alongside `#/` for shadcn/ui compatibility. Convention is `#/` for all authored code.
 
 ## Anti-patterns to avoid
 
-- No raw HTML form elements (`<input>`, `<select>`, `<textarea>`, `<button>`, `<table>`, `<dialog>`, `<label>`) — use shadcn/ui components.
-- No `react-hook-form` or raw `useState` for form state — use `useAppForm`.
-- No `useSearchParams` from React Router — use `nuqs`.
-- No `window.confirm` — use `ConfirmDialog`.
-- No hardcoded English strings in JSX — use `useTranslations()`.
-- No `console.log` on user-facing pages.
-- No emoji or non-Lucide icon libraries.
-- No inline Zod schemas — use shared schemas from `#/lib/validation-schemas`.
-- No full-page form routes — use `FormSheet` slide-out panels for create/edit.
-- No manual overlay state management — use the global overlay system (`useGlobalModal`/`useGlobalSheet`).
+- No default exports — the repo uses named exports everywhere.
+- Never hardcode English strings in production components — use `useTranslations()`.
+- Never use `useState` for cross-page modal/sheet state — use the global overlay system.
+- Never build forms from raw `<input>` + `<label>` — use `useAppForm` + field components.
+- Never hand-edit shadcn/ui primitives in `src/components/ui/`.
+- Never use text-color-only deadline/urgency badges — use filled backgrounds for contrast.
 
 ## Gaps / verify
 
-- `docs/agents/boilerplate/components.md` documents `PageActions` accepting `PageAction` with `label` as raw strings, but source shows labels passed as i18n keys from the route. Verify `PageActions` rendering — it appears to render labels directly without translation.
-- `orgFilter` from `src/lib/rls.ts` is documented in the profile but unused in practice — source filters by `eq(table.orgId, orgId)` directly. Don't adopt `orgFilter`.
-- The `@/*` alias exists alongside `#/` for shadcn/ui compatibility. Convention is `#/` for all authored code.
+- `src/styles.css` defines the oklch theme tokens; the exact token values for `bg-success`, `bg-destructive`, `bg-brand-accent`, `bg-warning`, `bg-orange-600`, `bg-amber-500` should be verified against `src/styles.css` before adding new urgency tiers.
+- `getReadyForProductionLabel` is also imported in `activity-row.tsx` and `global-modal-registry.tsx` — confirm the `portal` namespace keys (`timelineReadyForProduction`, `timelineReadyForProductionWithStage`) are the correct i18n source for production-board-related labels outside the portal feature.
+- The `ReviewModal` is built as a shadcn `Dialog` with slide-in styling (not a `Sheet`); verify this is the intended pattern for review-type modals versus other overlay types.

@@ -110,7 +110,21 @@ describe('products', () => {
 
 ### Component Tests — IntlProvider Wrapper
 
-Every component using `useTranslations` MUST be wrapped in `<IntlProvider>`. Define only the keys the test exercises:
+Every component using `useTranslations` MUST be wrapped in `<IntlProvider>`. Define **all keys the component tree renders**, including nested component namespaces. Missing keys cause silent render failures or wrong assertions:
+
+> `src/features/production/components/review-modal.test.tsx`
+```typescript
+const enMessages = {
+  production: {
+    reviewAdvancement: 'Review Advancement',
+    approve: 'Approve & Advance',
+    reject: 'Reject',
+    close: 'Close',
+    commentPlaceholder: 'Type a comment...',
+    // ... all keys the component and its children render
+  },
+}
+```
 
 > `src/components/status-badge.test.tsx`
 ```typescript
@@ -132,6 +146,24 @@ describe('StatusBadge', () => {
   })
 })
 ```
+
+### Regex Matchers for Embedded Text
+
+When rendered text is part of a larger string (e.g., a task number embedded in a card), use regex matchers instead of exact string matches:
+
+> `src/features/production/components/review-modal.test.tsx`
+```typescript
+// Task number may appear as "TSK-5" or "TSK-5 - Some Title"
+expect(screen.getByText(/TSK-5/)).toBeInTheDocument()
+```
+
+> `src/features/production/components/task-detail-modal.test.tsx`
+```typescript
+expect(screen.getByText(/Acme Corp/)).toBeInTheDocument()
+expect(screen.getByText(/500/)).toBeInTheDocument()
+```
+
+Use exact string `getByText('...')` when the full text content is known and stable. Use regex `/pattern/` when text may be wrapped, interpolated, or combined with other elements.
 
 ### Form Components — Radix UI + PointerCapture Polyfills
 
@@ -232,9 +264,25 @@ vi.mock('../hooks', () => ({
 
 `vi.hoisted` ensures mocks are available before `vi.mock` hoisting. Same pattern in `OrderQuantityAdjustmentModal` (`src/features/orders/components/order-quantity-adjustment-modal.test.tsx`). Use `@testing-library/userEvent` for interactions.
 
-### Order Component Tests — Server Function Mocks
+### Cross-Feature Server Function Mocks
 
-Some components also mock server functions directly:
+Components that depend on server functions from other features mock them with `vi.hoisted` + `vi.mock`. This is used across order and production feature tests:
+
+> `src/features/production/components/task-detail-modal.test.tsx`
+```typescript
+const mocks = vi.hoisted(() => ({
+  getAssetsForLineItemFn: vi.fn(),
+}))
+
+vi.mock('#/features/orders/server', () => ({
+  getAssetsForLineItemFn: mocks.getAssetsForLineItemFn,
+}))
+
+beforeEach(() => {
+  mocks.getAssetsForLineItemFn.mockReset()
+  mocks.getAssetsForLineItemFn.mockResolvedValue([])
+})
+```
 
 > `src/features/orders/components/order-line-items-card.test.tsx`
 ```typescript
@@ -339,7 +387,7 @@ Rule of thumb:
 - **Naming**: `*.test.ts` for logic, `*.test.tsx` for React, `*.spec.ts` for Playwright E2E
 - **E2E helpers**: shared page actions in `e2e/helpers/`, not duplicated across specs
 - **DB cleanup**: `TRUNCATE ... CASCADE` in `beforeEach` — no test isolation library
-- **IntlProvider**: wrap components using `useTranslations` with only the keys the test exercises
+- **IntlProvider**: wrap components using `useTranslations` with all keys the component tree renders, including nested namespace keys
 - **Form-sheet mock stack**: mock router + use-intl + feature hooks, wrap in QueryClientProvider
 - **Org isolation**: model tests seed multiple orgs and assert no data leaks across `orgId`
 - **Shallow stubs**: mock complex children as `<div data-testid="...">` or `null`
@@ -347,6 +395,9 @@ Rule of thumb:
 - **PointerCapture polyfills**: needed for Radix UI primitives in happy-dom
 - **`@testing-library/react`**: use `render`, `screen`, `waitFor`, `act`; prefer `getByText` / `findByText` / `getByRole`
 - **`@testing-library/userEvent`**: use for click/type interactions in modal and form tests
+- **Regex matchers**: use `getByText(/pattern/)` when text is embedded in a larger string or may be interpolated; use exact `getByText('...')` for stable, full-text content
+- **Badge color assertions**: assert `bg-*` classes (e.g. `bg-success`, `bg-destructive`) not `text-*` — badge components use background colors
+- **Server function mocks**: components depending on server functions from other features mock them via `vi.mock('#/features/<feature>/server')` with `vi.hoisted`
 
 ## Anti-patterns to avoid
 

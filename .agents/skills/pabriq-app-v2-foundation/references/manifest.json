@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repo_path": "/Users/efishery/Documents/workspace/projects/pabriq-app-v2",
   "slug": "pabriq-app-v2",
-  "generated_at": "2026-07-07T12:30:00Z",
+  "generated_at": "2026-07-07T14:27:30Z",
   "generator": "codebase-skills",
   "output_dir": "/Users/efishery/Documents/workspace/projects/pabriq-app-v2/.agents/skills",
   "catalog": {
@@ -76,7 +76,7 @@
       "domain": "ui",
       "name": "pabriq-app-v2-ui",
       "path": "pabriq-app-v2-ui/SKILL.md",
-      "generated_hash": "sha256:2aeeb2eca8d6b0ea0ce22b7abc5212920f48c10a22412b26c2787a4e30caaf8e",
+      "generated_hash": "sha256:37e25028be1114ab3bff8708b43010492b684a4eef11956e84d8e903711bb349",
       "watches": [
         "src/components/**",
         "src/routes/**",
@@ -112,7 +112,7 @@
       "domain": "testing",
       "name": "pabriq-app-v2-testing",
       "path": "pabriq-app-v2-testing/SKILL.md",
-      "generated_hash": "sha256:66a81170ba32c026865b224156d9ac35de2c3ac52324c0b0c8e64ed9ee3e9589",
+      "generated_hash": "sha256:42e9316cfe7a341872cc3e587d6033206a83a1f9104ed628e53fe43ca940ea95",
       "watches": [
         "src/**/*.test.ts",
         "src/**/*.test.tsx",
@@ -128,7 +128,12 @@
       "name": "pabriq-app-v2-conventions",
       "path": "pabriq-app-v2-conventions/SKILL.md",
       "generated_hash": "sha256:761b7df69dda638a6168d3780905b4ff18714a7371132bb05329ebe0652ff70a",
-      "watches": ["biome.json", "tsconfig.json", "AGENTS.md", "package.json"]
+      "watches": [
+        "biome.json",
+        "tsconfig.json",
+        "AGENTS.md",
+        "package.json"
+      ]
     },
     {
       "domain": "data",
@@ -183,13 +188,13 @@
     "src/routes/__root.tsx": "sha256:5fb1dda2f316b3369f3ebbef78c288d10ea2522706a2e0dbb397b57f3d6500b5",
     "src/routes/_org.tsx": "sha256:8476eb9ac64e4d2486ab9271a5aa49fa090e85146504cd0a5f0c44ad6e985b42",
     "src/styles.css": "sha256:497d47bff809943e1003f6067f41fe05310832ff94b4f9a0c7548b55b213214c",
-    "src/components/app/**": "sha256:acdfac6f0fbf49def8d1ca66645283535d1167c35c551dbd3f1fb11d5bdfd7b8",
+    "src/components/app/**": "sha256:3a88eec39e976a7119513d67881ea8217c32e08e6452d4aa3675f0f072e9da0f",
     "src/features/*/model.ts": "sha256:e2d4a4d08d1cd54929070360d71f5dfa55b56c869e85209e82d585aa861a3967",
     "src/features/*/server.ts": "sha256:1fd63b52654d888c78814f11ba39d4c284cd0e5b46565ca9a40f5808f174924a",
     "src/features/*/hooks.ts": "sha256:798264591f69c43ba01084859018f1c627e25a7bee293033659c452fe188fd35",
     "src/db/**": "sha256:1a482d0511b4be3a9d419f467674eadb7c44448f95c103ee462c0cb436e73853",
     "src/lib/**": "sha256:76032f6442abae521f4d680765f62b2c498ba53af82ef69330867805c0261be2",
-    "src/messages/**": "sha256:b5758edb2fd01c1b70ca824bcb49a09f07e5556ae66a709e8ce8e9070395c646",
+    "src/messages/**": "sha256:c375c8af22d94534383afd2015d32a23885fa420101726c3b37980c73ee0dc60",
     "src/routes/**": "sha256:e032bc74218f9d2fb7ffb634438b060be910216968d0887f20cea6c8955ea507",
     "drizzle/**": "sha256:b81f899cdfac8013f1f0e484fa7678591ebea85ebaf3a016d2dd7c69e62084d9",
     "e2e/**": "sha256:0c437ea515f4be60b1662bab7d67c3a43d323209d0f89d1ba83cdf10705820a7",
@@ -232,17 +237,65 @@
     "public/manifest.json"
   ],
   "git_state": {
-    "head_commit": "216c996765b23c2826c2c9f5190300545e2c64c8",
-    "dirty": true,
+    "last_synced_commit": "6aefecb96205183e696bc4c5ea4b752287583b37",
+    "is_dirty": true,
     "dirty_files": [
-      ".agents/skills/pabriq-app-v2-backend/SKILL.md",
-      ".agents/skills/pabriq-app-v2-backend/references/backend-patterns.md",
-      ".agents/skills/pabriq-app-v2-data/SKILL.md",
-      ".agents/skills/pabriq-app-v2-data/references/data-patterns.md",
-      ".agents/skills/pabriq-app-v2-foundation/references/codebase-profile.md",
-      ".agents/skills/pabriq-app-v2-testing/SKILL.md",
-      ".agents/skills/pabriq-app-v2-ui/SKILL.md",
-      ".agents/skills/pabriq-app-v2-ui/references/ui-patterns.md"
+      {
+        "path": ".agents/skills/pabriq-app-v2-foundation/references/manifest.json",
+        "status": "modified"
+      },
+      {
+        "path": ".agents/skills/pabriq-app-v2-testing/SKILL.md",
+        "status": "modified"
+      },
+      {
+        "path": ".agents/skills/pabriq-app-v2-ui/SKILL.md",
+        "status": "modified"
+      },
+      {
+        "path": ".agents/skills/pabriq-app-v2-ui/references/ui-patterns.md",
+        "status": "modified"
+      },
+      {
+        "path": "src/components/app/global-modal/global-modal-registry.tsx",
+        "status": "modified"
+      },
+      {
+        "path": "src/features/production/components/activity-row.tsx",
+        "status": "modified"
+      },
+      {
+        "path": "src/features/production/components/kanban-task-card.test.tsx",
+        "status": "modified"
+      },
+      {
+        "path": "src/features/production/components/kanban-task-card.tsx",
+        "status": "modified"
+      },
+      {
+        "path": "src/features/production/components/review-modal.test.tsx",
+        "status": "modified"
+      },
+      {
+        "path": "src/features/production/components/review-modal.tsx",
+        "status": "modified"
+      },
+      {
+        "path": "src/features/production/components/task-detail-modal.test.tsx",
+        "status": "modified"
+      },
+      {
+        "path": "src/messages/en.ts",
+        "status": "modified"
+      },
+      {
+        "path": "src/messages/id.ts",
+        "status": "modified"
+      },
+      {
+        "path": "src/messages/types.ts",
+        "status": "modified"
+      }
     ]
   }
 }

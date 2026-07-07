@@ -94,10 +94,11 @@
 - **Prefer**: `useGlobalModal()` / `useGlobalSheet()` from `#/hooks/use-global-overlay` + registry in `#/components/app/global-modal/global-modal-registry.tsx`.
 - **Canonical examples**:
   - `src/components/app/global-modal/global-modal-container.tsx` — centralized container mounted in `_org.tsx`.
-  - `src/components/app/global-modal/global-modal-registry.tsx` — `GLOBAL_MODALS` registry mapping string keys to lazy-loaded components.
+  - `src/components/app/global-modal/global-modal-registry.tsx` — `GLOBAL_MODALS` registry mapping string keys to lazy-loaded wrapper components.
   - `src/hooks/use-global-overlay.ts` — `useGlobalModal()` and `useGlobalSheet()` hooks.
 - **Do**:
-  - Register new overlays in `GLOBAL_MODALS` with a kebab-case key and a lazy-loaded wrapper component.
+  - Register new overlays in `GLOBAL_MODALS` with a kebab-case key and a wrapper component that resolves data dependencies.
+  - Each wrapper uses `useRouteContext({ from: '/_org' })` for org-scoped data and query hooks for business data.
   - Call `openModal('invite-member')` or `openSheet('task-detail', taskId)` from any component.
   - The container renders the active overlay with `<Suspense>` and handles close via URL state.
   - Use `ModalComponentWrapper` pattern: accept `{ open, onOpenChange, id }` props, resolve data deps internally.
@@ -105,6 +106,7 @@
   - Managing modal/sheet open state with `useState` in parent components for cross-page overlays.
   - Passing overlay components as children — use the registry pattern instead.
   - Directly mutating URL search params for overlay state — use the hooks.
+  - Hardcoding org ID in wrapper components — always resolve from route context.
 
 ### DateField (calendar picker)
 - **Use when**: Date selection in forms (single date or date range).
@@ -226,16 +228,57 @@
   - Passing entire parent component state as props to sections.
 
 ### `getReadyForProductionLabel` for production stage display
-- **Use when**: Displaying "Ready for Production" with the first production stage name.
+- **Use when**: Displaying "Ready for Production" with the first production stage name in any timeline, modal, or line-item context.
 - **Prefer**: `getReadyForProductionLabel` from `#/features/production/ready-for-production-label`.
 - **Canonical examples**:
+  - `src/features/production/components/activity-row.tsx` — timeline stage-transition descriptions when task completes last pre-production stage.
+  - `src/components/app/global-modal/global-modal-registry.tsx` — review-modal next-stage label for pre-production tasks.
   - `src/features/orders/components/order-line-items-card.tsx` — production stage badge in line item rows.
-  - `src/features/portal/components/line-item-task-card.tsx` — portal line item display.
+  - `src/features/portal/components/line-item-task-card.tsx` — portal line-item display.
 - **Do**:
-  - Pass `firstProductionStageName`, `readyForProduction` (i18n key), and `readyForProductionWithStage` (i18n key with `{stage}` placeholder).
+  - Pass `firstProductionStageName` (look up from active stages where `s.active && s.board === 'production'`), `readyForProduction` (i18n key value), and `readyForProductionWithStage` (i18n key with `{stage}` placeholder).
   - When `firstProductionStageName` is undefined, falls back to `readyForProduction`.
+  - Use the `portal` namespace keys `timelineReadyForProduction` and `timelineReadyForProductionWithStage` for production-board labels.
 - **Avoid**:
   - Hardcoding stage name logic in component render — use the utility.
+  - Duplicating the fallback logic across components.
+
+### Deadline badge urgency colors (filled backgrounds)
+- **Use when**: Displaying deadline urgency on kanban cards or task badges.
+- **Prefer**: Filled-background badges with `bg-* text-white border-transparent` — not text-only color variants.
+- **Canonical examples**:
+  - `src/features/production/components/kanban-task-card.tsx` — `getDeadlineClasses()` function with multi-tier urgency system.
+  - `src/features/production/components/kanban-task-card.test.tsx` — tests asserting `bg-success`, `bg-brand-accent`, `bg-destructive` classes.
+- **Do**:
+  - Use the multi-tier urgency system for deadline badges:
+    - Overdue (`daysFromNow < 0`): `bg-destructive text-white border-transparent font-semibold animate-pulse`
+    - Today (`daysFromNow === 0`): `bg-destructive text-white border-transparent font-medium`
+    - Near deadline (1-2 days): `bg-orange-600 dark:bg-orange-500 text-white border-transparent`
+    - Mid deadline (3-5 days): `bg-amber-500 text-white border-transparent`
+    - Long time (5+ days): `bg-success text-white border-transparent`
+  - For outcome mode (`showDeadlineOutcome`): `bg-success` (early), `bg-brand-accent` (on time), `bg-destructive` (late).
+  - Place deadline badge in the top-right card area alongside priority badge.
+  - Use `variant="destructive"` for priority badges, `variant="warning"` for pending-approval badges.
+- **Avoid**:
+  - `text-success`, `text-destructive`, `text-brand-accent` on badge text — use filled backgrounds.
+  - Putting deadline badges in the bottom row — they belong in the top badge row.
+  - Using `border-current` on deadline badges — use `border-transparent`.
+
+### Production activity timeline i18n
+- **Use when**: Building activity/timeline descriptions that reference stage transitions, board transitions, or review actions.
+- **Prefer**: Use `production` namespace for activity-type labels and `portal` namespace for timeline transition templates.
+- **Canonical examples**:
+  - `src/features/production/components/activity-row.tsx` — the canonical implementation of activity description rendering.
+- **Do**:
+  - Use `production` namespace keys for activity type labels: `activityAdvancementRequested`, `activityApproved`, `activityRejected`.
+  - Use `portal` namespace keys for timeline formatting: `timelineTransition` (`{from} Completed -> {to}`), `timelineQueue`, `timelineQueued`, `timelineReadyForProduction`, `timelineReadyForProductionWithStage`, `timelineCompleted`.
+  - Format `from` labels using `fromName ?? pt('timelineQueue')` as the default.
+  - For board transitions, derive the board label from `data.fromBoard` — map `'pre_production'` to `pt('timelineReadyForProduction')`.
+  - Use `getReadyForProductionLabel` when a stage-transition completes the last pre-production stage (`data.readyForProduction` flag).
+- **Avoid**:
+  - Hardcoded English strings for any activity description.
+  - Using only the `production` namespace for timeline transition templates — the `portal` namespace owns those keys.
+  - Duplicating the "Ready for Production" label logic — use `getReadyForProductionLabel`.
 
 ### i18n in tests
 - **Use when**: Any test rendering a component that uses `useTranslations()`.
@@ -243,8 +286,11 @@
 - **Canonical examples**:
   - `src/components/status-badge.test.tsx:25` — test wrapping pattern.
   - `src/components/confirm-dialog.test.tsx:15` — minimal test messages.
+  - `src/features/production/components/review-modal.test.tsx` — production + portal namespace test messages.
+  - `src/features/production/components/task-detail-modal.test.tsx` — portal timeline namespace test messages.
 - **Do**:
-  - Include all namespaces the component tree uses (e.g. `status`, `common`, `customers`).
+  - Include all namespaces the component tree uses (e.g. `status`, `common`, `customers`, `production`, `portal`).
   - Use `StatusBadge` → always include `status` namespace in test messages.
+  - When testing components that render `ActivityRow` or timeline elements, include the `portal` namespace in test messages.
 - **Avoid**:
   - Forgetting nested component namespaces — `StatusBadge` inside a page needs `status` messages even if the test only targets the page.
