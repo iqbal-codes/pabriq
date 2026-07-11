@@ -25,7 +25,7 @@ const en: Messages = {
     logOut: "Log out",
   },
   app: {
-    title: "labq.dev",
+    title: "AKZ Production",
     retry: "Retry",
     language: "Language",
     english: "English",

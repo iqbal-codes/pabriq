@@ -25,7 +25,7 @@ const id: Messages = {
     logOut: "Keluar",
   },
   app: {
-    title: "labq.dev",
+    title: "AKZ Production",
     retry: "Coba Lagi",
     language: "Bahasa",
     english: "Inggris",
