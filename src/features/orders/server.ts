@@ -218,6 +218,7 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
       shippingFee?: number
       shippingFeeDescription?: string
       invoiceDueDate?: string
+      invoicePaymentProvider?: string
       invoicePaymentMethodId?: string
       invoiceNotes?: string
     }) => input,
@@ -330,7 +331,10 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
 
     // 4. Create final invoice when there is unpaid order balance or shipping
     if (remainingAmount + shippingAmount > 0) {
-      if (!data.invoiceDueDate || !data.invoicePaymentMethodId) {
+      if (
+        !data.invoiceDueDate ||
+        (!data.invoicePaymentMethodId && !data.invoicePaymentProvider)
+      ) {
         throw new Error(
           'Due date and payment method are required to create the final invoice',
         )
@@ -348,8 +352,11 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
         lineItems: [],
         percentage: remainingPercentage,
         customProductTotal: remainingAmount,
-        dueDate: data.invoiceDueDate,
-        paymentMethodId: data.invoicePaymentMethodId,
+        paymentMethodId: data.invoicePaymentMethodId ?? null,
+        paymentProvider: data.invoicePaymentProvider as
+          | 'bank_transfer'
+          | 'midtrans'
+          | undefined,
         notes: data.invoiceNotes,
         shippingFee: shippingAmount > 0 ? shippingAmount : undefined,
         shippingFeeDescription:

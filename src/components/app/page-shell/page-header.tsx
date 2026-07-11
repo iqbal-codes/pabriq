@@ -21,7 +21,7 @@ export function PageHeader({
   primaryAction,
   secondaryActions,
   className,
-  mobileVisible = false,
+  mobileVisible = true,
 }: PageHeaderProps) {
   return (
     <div

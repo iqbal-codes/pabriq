@@ -41,6 +41,14 @@ const enMessages = {
     productLabel: 'Product',
     customerLabel: 'Customer',
     quantityLabel: 'Quantity',
+    priorityBadge: 'Priority',
+    needReview: 'Need Review',
+    deadlineToday: 'Due today',
+    deadlineTomorrow: 'Due tomorrow',
+    deadlineDaysLeft: '{days, plural, one {# day left} other {# days left}}',
+    deadlineDaysOverdue:
+      '{days, plural, one {# day overdue} other {# days overdue}}',
+    deadlineLabel: 'Deadline {date}',
     comments: 'Comments',
     commentPlaceholder: 'Type a comment...',
     send: 'Send',
@@ -61,6 +69,9 @@ const enMessages = {
     openTask: 'Open task {task}',
     columnTaskCount: '{column}: {count, plural, one {# task} other {# tasks}}',
   },
+  common: {
+    pcs: 'pcs',
+  },
   status: {
     queued: 'Queued',
     in_progress: 'In Progress',
@@ -80,6 +91,7 @@ const taskStatusMap: Record<string, string> = {
   'task-done': 'completed',
   'task-final-stage': 'in_progress',
   'task-approval': 'in_progress',
+  'task-priority': 'in_progress',
 }
 
 const taskStageMap: Record<string, string | null> = {
@@ -89,6 +101,7 @@ const taskStageMap: Record<string, string | null> = {
   'task-pending': 'stage-1',
   'task-done': 'stage-2',
   'task-approval': 'stage-approval',
+  'task-priority': 'stage-1',
 }
 
 vi.mock('../hooks', () => {
@@ -105,13 +118,14 @@ vi.mock('../hooks', () => {
         status: taskStatusMap[taskId] ?? 'in_progress',
         taskNumber: 'TSK-5',
         lineItemId: 'line-item-1',
-        priority: false,
+        priority: taskId === 'task-priority',
         context: {
           productName: 'Custom T-Shirt',
           customerName: 'Acme Corp',
           orderNumber: 'ORD-001',
           quantity: 500,
           requirements: 'Red color',
+          deadline: taskId === 'task-priority' ? '2000-01-01T00:00:00Z' : null,
         },
         assignedTo: null,
         createdAt: '2026-05-01T00:00:00Z',
@@ -218,6 +232,17 @@ describe('TaskDetailModal', () => {
     expect(screen.getByText('Custom T-Shirt')).toBeInTheDocument()
     expect(screen.getByText(/Acme Corp/)).toBeInTheDocument()
     expect(screen.getByText(/500/)).toBeInTheDocument()
+  })
+  it('renders card-only priority and deadline metadata in detail', () => {
+    renderModal('task-priority')
+    expect(screen.getByText('Priority')).toBeInTheDocument()
+    expect(screen.getByText('Deadline Jan 1')).toBeInTheDocument()
+    expect(screen.getByText(/days? overdue/)).toBeInTheDocument()
+  })
+
+  it('renders pending review state in detail header', () => {
+    renderModal('task-pending')
+    expect(screen.getByText('Need Review')).toBeInTheDocument()
   })
   it('renders task detail and activity sections', () => {
     renderModal()

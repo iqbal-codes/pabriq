@@ -5,7 +5,19 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import type { Stage } from '../model'
 
-export function useStageColumns(): AppColumnDef<Stage>[] {
+export function useStageColumns({
+  stages,
+  isReordering,
+  isDeletingId,
+  onMoveUp,
+  onMoveDown,
+}: {
+  stages: Stage[]
+  isReordering: boolean
+  isDeletingId: string | null
+  onMoveUp: (index: number) => void
+  onMoveDown: (index: number) => void
+}): AppColumnDef<Stage>[] {
   const t = useTranslations('production')
 
   return [
@@ -14,6 +26,16 @@ export function useStageColumns(): AppColumnDef<Stage>[] {
       header: t('reorder'),
       enableSorting: false,
       meta: { label: t('reorder'), mobileRole: 'actions' },
+      cell: ({ row }) => (
+        <StageReorderActions
+          isFirst={row.index === 0}
+          isLast={row.index === stages.length - 1}
+          isReordering={isReordering}
+          isDeleting={isDeletingId === row.original.id}
+          onMoveUp={() => onMoveUp(row.index)}
+          onMoveDown={() => onMoveDown(row.index)}
+        />
+      ),
     },
     {
       accessorKey: 'name',

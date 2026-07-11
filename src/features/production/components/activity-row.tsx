@@ -16,7 +16,7 @@ const systemActivityIconMap: Record<string, React.ReactNode> = {
     <Clock className="size-3.5 text-warning shrink-0 mt-0.5" />
   ),
   approved: <CheckCircle2 className="size-3.5 text-success shrink-0 mt-0.5" />,
-  rejected: <XCircle className="size-3.5 text-error shrink-0 mt-0.5" />,
+  rejected: <XCircle className="size-3.5 text-destructive shrink-0 mt-0.5" />,
 }
 
 const userActivityIconMap: Record<string, React.ReactNode> = {
@@ -24,7 +24,7 @@ const userActivityIconMap: Record<string, React.ReactNode> = {
     <Clock className="size-3.5 text-warning shrink-0 mt-0.5" />
   ),
   approved: <CheckCircle2 className="size-3.5 text-success shrink-0 mt-0.5" />,
-  rejected: <XCircle className="size-3.5 text-error shrink-0 mt-0.5" />,
+  rejected: <XCircle className="size-3.5 text-destructive shrink-0 mt-0.5" />,
 }
 
 function getInitials(name: string) {

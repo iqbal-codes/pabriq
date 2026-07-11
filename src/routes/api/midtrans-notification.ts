@@ -4,6 +4,7 @@ import { and, eq } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   invoices as invoicesTable,
+  organizationProfiles as organizationProfilesTable,
   payments as paymentsTable,
 } from '#/db/schema'
 import { confirmPayment, createPayment } from '#/features/invoices/model'
@@ -17,8 +18,10 @@ interface MidtransWebhookBody {
   fraud_status?: string
 }
 
-function verifyMidtransSignature(body: MidtransWebhookBody): boolean {
-  const serverKey = process.env.MIDTRANS_SERVER_KEY ?? ''
+function verifyMidtransSignature(
+  body: MidtransWebhookBody,
+  serverKey: string,
+): boolean {
   const hash = crypto
     .createHash('sha512')
     .update(body.order_id + body.status_code + body.gross_amount + serverKey)
@@ -33,26 +36,31 @@ export const Route = createFileRoute('/api/midtrans-notification')({
         try {
           const body = (await request.json()) as MidtransWebhookBody
 
-          if (!verifyMidtransSignature(body)) {
-            return new Response('Unauthorized signature', { status: 403 })
-          }
-
-          // Extract invoiceNumber from order_id (handling retry timestamp suffixes)
-          const orderIdStr = body.order_id
-          const lastHyphenIndex = orderIdStr.lastIndexOf('-')
-          const invoiceNumber =
-            lastHyphenIndex !== -1
-              ? orderIdStr.substring(0, lastHyphenIndex)
-              : orderIdStr
-
           const [invoice] = await db
-            .select()
+            .select({
+              id: invoicesTable.id,
+              orgId: invoicesTable.orgId,
+              midtransServerKey: organizationProfilesTable.midtransServerKey,
+            })
             .from(invoicesTable)
-            .where(eq(invoicesTable.invoiceNumber, invoiceNumber))
+            .leftJoin(
+              organizationProfilesTable,
+              eq(invoicesTable.orgId, organizationProfilesTable.orgId),
+            )
+            .where(eq(invoicesTable.midtransOrderId, body.order_id))
             .limit(1)
 
           if (!invoice) {
             return new Response('Invoice not found', { status: 404 })
+          }
+
+          const serverKey = (invoice.midtransServerKey ?? '').trim()
+          if (!serverKey) {
+            return new Response('Unauthorized signature', { status: 403 })
+          }
+
+          if (!verifyMidtransSignature(body, serverKey)) {
+            return new Response('Unauthorized signature', { status: 403 })
           }
 
           const orgId = invoice.orgId
@@ -85,7 +93,7 @@ export const Route = createFileRoute('/api/midtrans-notification')({
             const payment = await createPayment(orgId, {
               invoiceId: invoice.id,
               amount: Number(body.gross_amount),
-              method: 'payment_gateway',
+              method: 'midtrans',
               reference: body.order_id,
               receivedAt: new Date(),
             })

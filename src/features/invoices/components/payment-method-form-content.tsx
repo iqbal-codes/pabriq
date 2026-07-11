@@ -12,7 +12,6 @@ import type { PaymentMethod } from '#/features/invoices/model'
 
 type PaymentMethodFormValues = {
   name: string
-  type: string
   bankName: string
   accountNumber: string
   accountHolder: string
@@ -27,7 +26,6 @@ function getPaymentMethodDefaults(
   if (!editingMethod) {
     return {
       name: '',
-      type: 'bank_transfer',
       bankName: '',
       accountNumber: '',
       accountHolder: '',
@@ -38,7 +36,6 @@ function getPaymentMethodDefaults(
   }
   return {
     name: editingMethod.name,
-    type: editingMethod.type,
     bankName: editingMethod.bankName ?? '',
     accountNumber: editingMethod.accountNumber ?? '',
     accountHolder: editingMethod.accountHolder ?? '',
@@ -70,13 +67,11 @@ export function PaymentMethodFormContent({
     defaultValues: getPaymentMethodDefaults(editingMethod),
     onSubmit: async ({ value }) => {
       const derivedName =
-        value.type === 'bank_transfer'
-          ? [value.bankName, value.accountNumber].filter(Boolean).join(' - ') ||
-            t('bankTransfer')
-          : t('paymentGateway')
+        [value.bankName, value.accountNumber].filter(Boolean).join(' - ') ||
+        t('bankTransfer')
       const payload = {
         name: derivedName,
-        type: value.type,
+        type: 'bank_transfer' as const,
         bankName: value.bankName || null,
         accountNumber: value.accountNumber || null,
         accountHolder: value.accountHolder || null,
@@ -117,37 +112,17 @@ export function PaymentMethodFormContent({
   return (
     <FormRoot form={form}>
       <FormGrid columns={1}>
-        <form.AppField name="type">
-          {(field) => (
-            <field.SelectField
-              label={ct('type')}
-              options={[
-                { value: 'bank_transfer', label: t('bankTransfer') },
-                { value: 'payment_gateway', label: t('paymentGateway') },
-              ]}
-            />
-          )}
+        <form.AppField name="bankName">
+          {(field) => <field.TextField label={t('bankName')} />}
         </form.AppField>
 
-        <form.Subscribe selector={(state) => state.values.type}>
-          {(type) =>
-            type === 'bank_transfer' ? (
-              <>
-                <form.AppField name="bankName">
-                  {(field) => <field.TextField label={t('bankName')} />}
-                </form.AppField>
+        <form.AppField name="accountNumber">
+          {(field) => <field.TextField label={t('accountNumber')} />}
+        </form.AppField>
 
-                <form.AppField name="accountNumber">
-                  {(field) => <field.TextField label={t('accountNumber')} />}
-                </form.AppField>
-
-                <form.AppField name="accountHolder">
-                  {(field) => <field.TextField label={t('accountHolder')} />}
-                </form.AppField>
-              </>
-            ) : null
-          }
-        </form.Subscribe>
+        <form.AppField name="accountHolder">
+          {(field) => <field.TextField label={t('accountHolder')} />}
+        </form.AppField>
 
         <form.AppField name="instructions">
           {(field) => <field.TextareaField label={t('instructions')} />}

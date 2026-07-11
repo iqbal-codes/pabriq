@@ -169,7 +169,7 @@ export const deletePaymentMethodFn = createServerFn({ method: 'POST' })
 const createPaymentSchema = z.object({
   invoiceId: z.string().min(1),
   amount: z.number().positive(),
-  method: z.enum(['bank_transfer', 'payment_gateway', 'cash']),
+  method: z.enum(['bank_transfer', 'midtrans', 'cash']),
   reference: z.string().optional(),
   proofAssetId: z.string().optional(),
   receivedAt: z.string().datetime().optional(),
@@ -193,6 +193,7 @@ const updateInvoiceSchema = z.object({
   notes: z.string().optional(),
   dueDate: z.string().optional(),
   paymentMethodId: z.string().optional(),
+  paymentProvider: z.enum(['bank_transfer', 'midtrans']).optional(),
   customerName: z.string().optional(),
 })
 
@@ -441,7 +442,13 @@ export const createSnapTokenFn = createServerFn({ method: 'POST' })
     async ({
       data,
     }): Promise<
-      { ok: true; snapToken: string } | { ok: false; error: string }
+      | {
+          ok: true
+          snapToken: string
+          clientKey: string
+          isProduction: boolean
+        }
+      | { ok: false; error: string }
     > => {
       try {
         const portalOrderResult = await getPortalOrder(data.token)
@@ -455,8 +462,12 @@ export const createSnapTokenFn = createServerFn({ method: 'POST' })
           return { ok: false, error: 'Invoice not found in this order' }
         }
         const orgId = portalOrderResult.order.orgId
-        const result = await createMidtransTransaction(data.invoiceId, orgId)
-        return { ok: true, snapToken: result.token }
+        const {
+          token: snapToken,
+          clientKey,
+          isProduction,
+        } = await createMidtransTransaction(data.invoiceId, orgId)
+        return { ok: true, snapToken, clientKey, isProduction }
       } catch (e) {
         return {
           ok: false,

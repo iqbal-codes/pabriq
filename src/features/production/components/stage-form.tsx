@@ -1,4 +1,3 @@
-import { useStore } from '@tanstack/react-form'
 import { Trash } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { FormGrid, FormRoot, useAppForm } from '#/components/app/form'
@@ -57,10 +56,6 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
       onOpenChange(false)
     },
   })
-
-  const isSubmitting = useStore(form.store, (state) => state.isSubmitting)
-  const nameValue = useStore(form.store, (state) => state.values.name)
-  const canSubmit = !isSubmitting && nameValue.trim().length > 0
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -239,12 +234,21 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
               {ct('cancel')}
             </Button>
             <form.AppForm>
-              <form.SubmitButton
-                isPending={createStage.isPending || updateStage.isPending}
-                disabled={!canSubmit}
+              <form.Subscribe
+                selector={(state) => ({
+                  name: state.values.name,
+                  isSubmitting: state.isSubmitting,
+                })}
               >
-                {stage ? t('editStage') : t('addStage')}
-              </form.SubmitButton>
+                {({ name, isSubmitting }) => (
+                  <form.SubmitButton
+                    isPending={createStage.isPending || updateStage.isPending}
+                    disabled={!name && isSubmitting}
+                  >
+                    {stage ? t('editStage') : t('addStage')}
+                  </form.SubmitButton>
+                )}
+              </form.Subscribe>
             </form.AppForm>
           </DialogFooter>
         </FormRoot>

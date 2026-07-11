@@ -1,17 +1,17 @@
 {
-  "name": "Pabriq",
-  "short_name": "Pabriq",
-  "description": "Production management for made-to-order businesses.",
+  "name": "labq.dev",
+  "short_name": "labq",
+  "description": "Production management for made-to-order businesses by labq.dev.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#111111",
+  "background_color": "#FFFFFF",
+  "theme_color": "#00B8A9",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/labq_bq_logo_vector.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     },
     {
       "src": "/logo192.png",

@@ -52,10 +52,10 @@ export function StageTracker({
             className="flex flex-1 flex-col gap-1.5"
             aria-current={isActive ? 'step' : undefined}
           >
-            <div className="relative h-1.5 overflow-hidden rounded-full bg-muted">
+            <div className="relative h-1.5 overflow-hidden bg-muted">
               <div
                 className={cn(
-                  'absolute inset-y-0 left-0 rounded-full bg-primary transition-[width] duration-500 ease-out',
+                  'absolute inset-y-0 left-0 bg-primary transition-[width] duration-500 ease-out',
                   isCompleted && 'w-full',
                   isActive && 'w-1/2',
                   isUpcoming && 'w-0',

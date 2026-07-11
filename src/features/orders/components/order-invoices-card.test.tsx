@@ -54,6 +54,7 @@ const invoice: InvoiceRow = {
   percentage: 50,
   dueDate: '2026-06-30',
   paymentMethodId: null,
+  paymentProvider: 'bank_transfer',
   createdAt: new Date('2026-06-01T00:00:00Z'),
   overdue: false,
 }

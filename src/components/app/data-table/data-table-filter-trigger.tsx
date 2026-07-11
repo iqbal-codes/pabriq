@@ -21,13 +21,18 @@ export function DataTableFilterTrigger({
   onClick,
 }: DataTableFilterTriggerProps) {
   return (
-    <Button variant="outline" size="sm" onClick={onClick} className="relative">
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={onClick}
+      className="relative h-8"
+    >
       <ListFilter className="size-4 md:mr-1.5" />
       <span className="hidden md:inline">{labels.filters}</span>
       {activeCount > 0 && (
         <Badge
           variant="secondary"
-          className="ml-1 size-5 rounded-full p-0 text-xs leading-none md:static md:size-auto md:rounded-md md:px-1.5 md:py-0.5"
+          className="ml-1 size-5 rounded-none p-0 text-xs leading-none md:static md:size-auto md:px-1.5 md:py-0.5"
         >
           {activeCount}
         </Badge>
@@ -74,7 +79,7 @@ export function DataTableActiveFilterChips({
             <button
               type="button"
               onClick={() => onClear(def.id)}
-              className="ml-0.5 rounded-full hover:bg-muted-foreground/20"
+              className="ml-0.5 rounded-none hover:bg-muted-foreground/20"
             >
               <X className="size-3" />
               <span className="sr-only">Remove {def.label} filter</span>

@@ -17,7 +17,6 @@ import { CreateInvoiceModal } from '#/features/invoices/components/create-invoic
 import {
   useInvoicePaymentProofs,
   useInvoicesList,
-  usePaymentMethods,
 } from '#/features/invoices/hooks'
 import { CompleteProductionModal } from '#/features/orders/components/complete-production-modal'
 import { OrderDetailSection } from '#/features/orders/components/order-detail-section'
@@ -67,7 +66,6 @@ export function ViewOrderPage() {
     perPage: 50,
   })
   const { data: tasksData } = useTasksByOrderId(id)
-  const { data: paymentMethods } = usePaymentMethods()
   const { data: productsData } = useProductsList({
     orgId: ctx.org.id,
     perPage: 200,
@@ -125,14 +123,7 @@ export function ViewOrderPage() {
   const unpaidInvoice = orderInvoices.find(
     (inv) => inv.status === 'unpaid' || inv.status === 'partially_paid',
   )
-  const unpaidPaymentMethod = unpaidInvoice?.paymentMethodId
-    ? (paymentMethods?.find((pm) => pm.id === unpaidInvoice.paymentMethodId) ??
-      null)
-    : null
-  const isManualTransfer =
-    unpaidPaymentMethod?.type === 'bank_transfer' ||
-    unpaidPaymentMethod?.type === 'cash' ||
-    !unpaidPaymentMethod
+  const isManualTransfer = unpaidInvoice?.paymentProvider !== 'midtrans'
 
   // ── Header actions ────────────────────────────────────────────
 

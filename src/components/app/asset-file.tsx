@@ -51,15 +51,17 @@ function AssetFileRow({
   showSize = true,
   className,
   token,
+  showImagePreview = true,
 }: {
   metadata: AssetMetadata
   showSize?: boolean
   className?: string
   token?: string
+  showImagePreview?: boolean
 }) {
   const common = useTranslations('common')
   const isImage = metadata.assetKind === 'image'
-
+  const shouldShowPreview = isImage && showImagePreview
   const { data: signedUrlData } = useQuery({
     queryKey: [
       'asset-signed-url',
@@ -77,13 +79,13 @@ function AssetFileRow({
           disposition: 'attachment',
         },
       }),
-    enabled: !isImage,
+    enabled: !shouldShowPreview,
     staleTime: 5 * 60 * 1000,
   })
 
   const rowContent = (
     <>
-      {isImage ? (
+      {shouldShowPreview ? (
         <AssetImage
           assetId={metadata.id}
           assetKind={metadata.assetKind as AssetKind}
@@ -107,7 +109,7 @@ function AssetFileRow({
           </span>
         )}
       </div>
-      {!isImage && signedUrlData?.url && (
+      {signedUrlData?.url && (
         <Download className="size-4 shrink-0 text-muted-foreground" />
       )}
     </>
@@ -115,11 +117,11 @@ function AssetFileRow({
 
   const rowClasses = cn(
     'flex items-center gap-3 rounded-lg border py-2 pr-2 pl-3',
-    !isImage && signedUrlData?.url && 'hover:bg-accent/50 cursor-pointer',
+    signedUrlData?.url && 'hover:bg-accent/50 cursor-pointer',
     className,
   )
 
-  if (!isImage && signedUrlData?.url) {
+  if (signedUrlData?.url) {
     return (
       <a
         href={signedUrlData.url}
@@ -139,14 +141,16 @@ function AssetFileGridCard({
   metadata,
   showSize = true,
   token,
+  showImagePreview = true,
 }: {
   metadata: AssetMetadata
   showSize?: boolean
   token?: string
+  showImagePreview?: boolean
 }) {
   const common = useTranslations('common')
   const isImage = metadata.assetKind === 'image'
-
+  const shouldShowPreview = isImage && showImagePreview
   const { data: signedUrlData } = useQuery({
     queryKey: [
       'asset-signed-url',
@@ -164,14 +168,14 @@ function AssetFileGridCard({
           disposition: 'attachment',
         },
       }),
-    enabled: !isImage,
+    enabled: !shouldShowPreview,
     staleTime: 5 * 60 * 1000,
   })
 
   const cardContent = (
     <>
       <div className="relative aspect-square overflow-hidden rounded-lg bg-muted/30">
-        {isImage ? (
+        {shouldShowPreview ? (
           <AssetImage
             assetId={metadata.id}
             assetKind={metadata.assetKind as AssetKind}
@@ -202,7 +206,7 @@ function AssetFileGridCard({
   const cardClasses =
     'group relative flex flex-col overflow-hidden rounded-lg border bg-card transition-shadow hover:shadow-md'
 
-  if (!isImage && signedUrlData?.url) {
+  if (signedUrlData?.url) {
     return (
       <a
         href={signedUrlData.url}
@@ -226,6 +230,7 @@ type AssetFileListProps = {
   className?: string
   token?: string
   prefetchedAssets?: AssetMetadata[]
+  showImagePreview?: boolean
 }
 
 export function AssetFileList({
@@ -236,6 +241,7 @@ export function AssetFileList({
   className,
   token,
   prefetchedAssets,
+  showImagePreview = true,
 }: AssetFileListProps) {
   const common = useTranslations('common')
   const { data: queriedAssets } = useQuery({
@@ -273,6 +279,7 @@ export function AssetFileList({
             metadata={asset}
             showSize={showSize}
             token={token}
+            showImagePreview={showImagePreview}
           />
         ))}
         {remaining > 0 && (
@@ -292,6 +299,7 @@ export function AssetFileList({
           metadata={asset}
           showSize={showSize}
           token={token}
+          showImagePreview={showImagePreview}
         />
       ))}
       {remaining > 0 && (

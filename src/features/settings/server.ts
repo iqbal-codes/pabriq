@@ -11,6 +11,9 @@ type OrgSettings = {
   address: { areaId: string; areaName: string; streetAddress: string } | null
   logoAssetId: string | null
   lateFeePerDay: number
+  midtransServerKey: string | null
+  midtransClientKey: string | null
+  midtransIsProduction: boolean
 }
 
 export const getOrgSettingsFn = createServerFn({ method: 'GET' }).handler(
@@ -39,6 +42,9 @@ export const getOrgSettingsFn = createServerFn({ method: 'GET' }).handler(
         email: organizationProfiles.email,
         logoAssetId: organizationProfiles.logoAssetId,
         lateFeePerDay: organizationProfiles.lateFeePerDay,
+        midtransServerKey: organizationProfiles.midtransServerKey,
+        midtransClientKey: organizationProfiles.midtransClientKey,
+        midtransIsProduction: organizationProfiles.midtransIsProduction,
         areaId: addresses.areaId,
         areaName: addresses.areaName,
         streetAddress: addresses.streetAddress,
@@ -62,17 +68,23 @@ export const getOrgSettingsFn = createServerFn({ method: 'GET' }).handler(
         : null,
       logoAssetId: profile?.logoAssetId ?? null,
       lateFeePerDay: profile?.lateFeePerDay ?? 0,
+      midtransServerKey: profile?.midtransServerKey ?? null,
+      midtransClientKey: profile?.midtransClientKey ?? null,
+      midtransIsProduction: profile?.midtransIsProduction ?? false,
     }
   },
 )
 
 export type UpdateOrgSettingsInput = {
-  name: string
+  name?: string
   phone?: string | null
   email?: string | null
   address?: { areaId: string; areaName: string; streetAddress: string } | null
   logoAssetId?: string | null
   lateFeePerDay?: number
+  midtransServerKey?: string | null
+  midtransClientKey?: string | null
+  midtransIsProduction?: boolean
 }
 
 async function upsertOrgAddress(
@@ -122,20 +134,25 @@ export const updateOrgSettingsFn = createServerFn({ method: 'POST' })
       const headers = getRequestHeaders()
 
       try {
-        await auth.api.updateOrganization({
-          headers,
-          body: {
-            organizationId: orgId,
-            data: { name: data.name },
-          },
-        })
+        if (data.name !== undefined) {
+          await auth.api.updateOrganization({
+            headers,
+            body: {
+              organizationId: orgId,
+              data: { name: data.name },
+            },
+          })
+        }
 
         if (
           data.phone !== undefined ||
           data.email !== undefined ||
           data.address !== undefined ||
           data.logoAssetId !== undefined ||
-          data.lateFeePerDay !== undefined
+          data.lateFeePerDay !== undefined ||
+          data.midtransServerKey !== undefined ||
+          data.midtransClientKey !== undefined ||
+          data.midtransIsProduction !== undefined
         ) {
           const [{ db }, { organizationProfiles }] = await Promise.all([
             import('#/db/index'),
@@ -171,6 +188,14 @@ export const updateOrgSettingsFn = createServerFn({ method: 'POST' })
               0,
               Math.trunc(data.lateFeePerDay),
             )
+          if (data.midtransServerKey !== undefined)
+            updateData.midtransServerKey =
+              (data.midtransServerKey ?? '').trim() || null
+          if (data.midtransClientKey !== undefined)
+            updateData.midtransClientKey =
+              (data.midtransClientKey ?? '').trim() || null
+          if (data.midtransIsProduction !== undefined)
+            updateData.midtransIsProduction = data.midtransIsProduction
 
           if (existing) {
             await db

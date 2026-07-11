@@ -216,6 +216,11 @@ export const organizationProfiles = pgTable('organization_profiles', {
     onDelete: 'set null',
   }),
   lateFeePerDay: integer('late_fee_per_day').notNull().default(0),
+  midtransServerKey: text('midtrans_server_key'),
+  midtransClientKey: text('midtrans_client_key'),
+  midtransIsProduction: boolean('midtrans_is_production')
+    .notNull()
+    .default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
@@ -347,6 +352,9 @@ export const invoices = pgTable(
     subtotal: real('subtotal').notNull(),
     total: real('total').notNull(),
     dueDate: date('due_date').notNull(),
+    paymentProvider: text('payment_provider')
+      .notNull()
+      .default('bank_transfer'),
     issuedDate: date('issued_date').notNull().defaultNow(),
     paymentMethodId: text('payment_method_id').references(
       () => paymentMethods.id,

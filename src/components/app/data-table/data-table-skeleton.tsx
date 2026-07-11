@@ -28,8 +28,8 @@ export function DataTableDesktopSkeleton<TData>({
   columnVisibility,
 }: DataTableSkeletonProps<TData>) {
   return (
-    <div className="rounded-xl border bg-muted/50 p-1.5">
-      <div className="rounded-lg border bg-background">
+    <div className="rounded-none border bg-muted/50 p-1.5">
+      <div className="rounded-none border bg-background">
         <Table>
           <TableHeader>
             <TableRow>
@@ -79,7 +79,7 @@ export function DataTableMobileSkeleton() {
   return (
     <div className="space-y-3 md:hidden">
       {MOBILE_SKELETON.map((key) => (
-        <div key={key} className="rounded-lg border p-4 space-y-2">
+        <div key={key} className="rounded-none border p-4 space-y-2">
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-3 w-1/2" />
           <Skeleton className="h-3 w-1/3" />

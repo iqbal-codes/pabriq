@@ -6,6 +6,7 @@ import {
   customers as customersTable,
   invoices as invoicesTable,
   organization,
+  organizationProfiles as organizationProfilesTable,
   payments as paymentsTable,
 } from '#/db/schema'
 import { createInvoice } from '#/features/invoices/model'
@@ -15,8 +16,6 @@ const webhookOrgId = '00000000-0000-0000-0000-000000000088'
 
 describe('/api/midtrans-notification', () => {
   beforeEach(async () => {
-    process.env.MIDTRANS_SERVER_KEY = 'mock_server_key'
-
     await db.execute(
       sql`TRUNCATE organization, biteship_areas, payment_methods CASCADE`,
     )
@@ -26,6 +25,15 @@ describe('/api/midtrans-notification', () => {
       id: webhookOrgId,
       name: 'Webhook Org',
       slug: 'webhook-org',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(organizationProfilesTable).values({
+      id: 'webhook-profile',
+      orgId: webhookOrgId,
+      midtransServerKey: 'mock_server_key',
+      midtransClientKey: 'mock_client_key',
+      midtransIsProduction: false,
       createdAt: now,
       updatedAt: now,
     })
@@ -53,6 +61,19 @@ describe('/api/midtrans-notification', () => {
   it('rejects with 403 on invalid signature', async () => {
     expect(handler).toBeDefined()
     if (!handler) return
+
+    // Seed an invoice so the route can find it by midtransOrderId
+    const result = await createInvoice(webhookOrgId, {
+      customerId: 'webhook-cust',
+      customerName: 'Webhook Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'midtrans',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 10000 }],
+    })
+    await db
+      .update(invoicesTable)
+      .set({ midtransOrderId: 'INV-123' })
+      .where(eq(invoicesTable.id, result.invoice.id))
 
     const body = {
       order_id: 'INV-123',
@@ -116,17 +137,23 @@ describe('/api/midtrans-notification', () => {
     expect(handler).toBeDefined()
     if (!handler) return
 
-    // 1. Create invoice in DB
+    // 1. Create invoice in DB with midtrans provider
     const result = await createInvoice(webhookOrgId, {
       customerId: 'webhook-cust',
       customerName: 'Webhook Customer',
       dueDate: '2026-06-30',
-      paymentMethodId: null,
+      paymentProvider: 'midtrans',
       lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
     })
     const invoice = result.invoice
 
     const orderId = `${invoice.invoiceNumber}-1718291823`
+    // Set midtransOrderId so the route can find the invoice
+    await db
+      .update(invoicesTable)
+      .set({ midtransOrderId: orderId })
+      .where(eq(invoicesTable.id, invoice.id))
+
     const statusCode = '200'
     const grossAmount = '100000.00'
     const serverKey = 'mock_server_key'
@@ -157,7 +184,7 @@ describe('/api/midtrans-notification', () => {
     const text = await response.text()
     expect(text).toBe('OK')
 
-    // Verify payment was created and confirmed
+    // Verify payment was created and confirmed with method 'midtrans'
     const payments = await db
       .select()
       .from(paymentsTable)
@@ -166,6 +193,7 @@ describe('/api/midtrans-notification', () => {
     expect(payments).toHaveLength(1)
     expect(payments[0].amount).toBe(100000)
     expect(payments[0].status).toBe('confirmed')
+    expect(payments[0].method).toBe('midtrans')
     expect(payments[0].reference).toBe(orderId)
     expect(payments[0].confirmedBy).toBe('midtrans-webhook')
 

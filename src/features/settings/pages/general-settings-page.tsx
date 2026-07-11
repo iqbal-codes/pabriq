@@ -49,9 +49,6 @@ export function GeneralSettingsPage() {
   return (
     <>
       <PageHeader title={t('organization')} />
-      <h1 className="text-2xl font-semibold tracking-tight md:hidden">
-        {t('organization')}
-      </h1>
       <FormRoot form={form}>
         <Card>
           <CardContent>

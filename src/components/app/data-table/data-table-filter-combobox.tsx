@@ -142,7 +142,7 @@ export function DataTableFilterCombobox(props: DataTableFilterComboboxProps) {
           aria-expanded={open}
           aria-controls={open ? 'filter-combobox-multi-list' : undefined}
           aria-haspopup="listbox"
-          className="flex h-auto min-h-10 w-full justify-between gap-1.5 py-2 font-normal"
+          className="flex h-auto min-h-8 w-full justify-between gap-1.5 py-1 font-normal"
         >
           <div className="flex flex-wrap gap-1">
             {value.length > 0 ? (
@@ -150,7 +150,7 @@ export function DataTableFilterCombobox(props: DataTableFilterComboboxProps) {
                 <Badge
                   key={v}
                   variant="secondary"
-                  className="gap-1 whitespace-nowrap"
+                  className="gap-1 whitespace-nowrap text-xs"
                   onClick={(e) => {
                     e.stopPropagation()
                     removeValue(v)
@@ -164,7 +164,9 @@ export function DataTableFilterCombobox(props: DataTableFilterComboboxProps) {
               <span className="text-muted-foreground">{placeholder}</span>
             )}
             {value.length > 3 && (
-              <Badge variant="secondary">+{value.length - 3}</Badge>
+              <Badge variant="secondary" className="text-xs">
+                +{value.length - 3}
+              </Badge>
             )}
           </div>
           <ChevronsUpDown className="size-4 shrink-0 opacity-50" />

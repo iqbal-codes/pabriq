@@ -104,6 +104,14 @@ export type Messages = {
     editPaymentMethod: string;
     bankTransfer: string;
     paymentGateway: string;
+    midtransIntegration: string;
+    bankAccounts: string;
+    midtransServerKey: string;
+    midtransClientKey: string;
+    midtransProduction: string;
+    midtransIntegrationDescription: string;
+    midtransCredentialsRequired: string;
+    midtransWebhookUrl: string;
     bankName: string;
     accountNumber: string;
     accountHolder: string;
@@ -118,6 +126,7 @@ export type Messages = {
     organization: string;
     lateFeePerDay: string;
     lateFeePerDayDescription: string;
+    midtransWebhookCopied: string;
     save: string;
   };
   members: {
@@ -630,7 +639,7 @@ export type Messages = {
     paymentRejected: string;
     invalidAmount: string;
     bankTransfer: string;
-    gateway: string;
+    midtrans: string;
     paymentCash: string;
     confirmPayment: string;
     pendingConfirmation: string;
@@ -677,6 +686,7 @@ export type Messages = {
     remainingFrom: string;
     customerName: string;
     transferFallback: string;
+    confirmManualShipmentFee: string;
     shipmentMethod: string;
     shipmentMethodBiteship: string;
     shipmentMethodManual: string;
@@ -856,6 +866,13 @@ export type Messages = {
     readyForProduction: string;
     readyForProductionQueue: string;
     markReadyForProduction: string;
+    tabThreeColumn: string;
+    queueReady: string;
+    queueWaiting: string;
+    noReadyTasks: string;
+    noWaitingTasks: string;
+    stagePending: string;
+    workflow: string;
   };
   portal: {
     title: string;
@@ -1046,6 +1063,7 @@ export type Messages = {
     paymentCancelled: string;
     paymentSuccess: string;
     paymentFailed: string;
+    midtransSdkNotLoaded: string;
     processingPayment: string;
     paymentVerifying: string;
     paymentConfirmTimeout: string;

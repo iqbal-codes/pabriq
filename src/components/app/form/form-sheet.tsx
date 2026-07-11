@@ -29,7 +29,10 @@ export function FormSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className={cn('w-full sm:max-w-xl flex flex-col gap-0 p-0', className)}
+        className={cn(
+          'w-full! sm:max-w-xl! flex flex-col gap-0 p-0',
+          className,
+        )}
       >
         <SheetHeader className="px-5 pt-5 pb-3 border-b pr-12">
           <SheetTitle>{title}</SheetTitle>

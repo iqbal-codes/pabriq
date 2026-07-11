@@ -31,7 +31,7 @@ export function RecordPaymentDialog({
 
   const paymentMethodOptions = [
     { value: 'bank_transfer', label: t('bankTransfer') },
-    { value: 'payment_gateway', label: t('gateway') },
+    { value: 'midtrans', label: t('midtrans') },
     { value: 'cash', label: t('paymentCash') },
   ]
 
@@ -50,7 +50,7 @@ export function RecordPaymentDialog({
       const res = await createPayment.mutateAsync({
         invoiceId,
         amount,
-        method: value.method as 'bank_transfer' | 'payment_gateway' | 'cash',
+        method: value.method as 'bank_transfer' | 'midtrans' | 'cash',
         reference: value.reference || undefined,
       })
       if (res.ok) {

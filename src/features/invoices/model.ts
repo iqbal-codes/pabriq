@@ -9,6 +9,7 @@ import {
   invoiceLineItems as lineItemsTable,
   orderLineItems as orderLineItemsTable,
   orders as ordersTable,
+  organizationProfiles as organizationProfilesTable,
   paymentMethods as paymentMethodsTable,
   payments as paymentsTable,
 } from '#/db/schema'
@@ -37,13 +38,12 @@ export type Invoice = {
   lateFee: number
   dueDate: string
   issuedDate: string
+  paymentProvider: 'bank_transfer' | 'midtrans'
   paymentMethodId: string | null
   paidAt: Date | null
   paidBy: string | null
   notes: string | null
   midtransOrderId: string | null
-  createdAt: Date
-  updatedAt: Date
 }
 export type InvoiceLineItem = {
   id: string
@@ -60,7 +60,7 @@ export type PaymentMethod = {
   id: string
   orgId: string
   name: string
-  type: string
+  type: 'bank_transfer'
   bankName: string | null
   accountNumber: string | null
   accountHolder: string | null
@@ -82,8 +82,9 @@ export type CreateInvoiceInput = {
   }>
   percentage?: number
   customProductTotal?: number
-  dueDate: string
+  dueDate?: string
   issuedDate?: string
+  paymentProvider?: 'bank_transfer' | 'midtrans'
   paymentMethodId?: string | null
   notes?: string
   shippingFee?: number
@@ -107,6 +108,7 @@ export type InvoiceRow = {
   total: number
   percentage: number | null
   dueDate: string
+  paymentProvider: 'bank_transfer' | 'midtrans'
   paymentMethodId: string | null
   createdAt: Date
   overdue: boolean
@@ -118,7 +120,7 @@ export type Payment = {
   orgId: string
   invoiceId: string
   amount: number
-  method: 'bank_transfer' | 'payment_gateway' | 'cash'
+  method: 'bank_transfer' | 'midtrans' | 'cash'
   reference: string | null
   proofAssetId: string | null
   status: 'pending' | 'confirmed' | 'rejected' | 'refunded'
@@ -133,7 +135,7 @@ export type Payment = {
 export type CreatePaymentInput = {
   invoiceId: string
   amount: number
-  method: 'bank_transfer' | 'payment_gateway' | 'cash'
+  method: 'bank_transfer' | 'midtrans' | 'cash'
   reference?: string
   proofAssetId?: string
   receivedAt?: Date
@@ -336,9 +338,16 @@ export async function createInvoice(
       subtotal,
       total: Math.max(0, Math.round(invoiceTotal * 100) / 100),
       lateFee,
-      dueDate: input.dueDate,
-      issuedDate: input.issuedDate ?? new Date().toISOString().split('T')[0],
-      paymentMethodId: input.paymentMethodId || null,
+      dueDate:
+        input.dueDate ??
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split('T')[0],
+      paymentProvider: input.paymentProvider ?? 'bank_transfer',
+      paymentMethodId:
+        input.paymentProvider === 'midtrans'
+          ? null
+          : input.paymentMethodId || null,
       notes: input.notes ?? null,
       createdAt: now,
       updatedAt: now,
@@ -380,9 +389,17 @@ export async function createInvoice(
       subtotal,
       total: subtotal,
       lateFee: 0,
-      dueDate: input.dueDate,
+      paymentProvider: input.paymentProvider ?? 'bank_transfer',
+      paymentMethodId:
+        input.paymentProvider === 'midtrans'
+          ? null
+          : input.paymentMethodId || null,
+      dueDate:
+        input.dueDate ??
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split('T')[0],
       issuedDate: input.issuedDate ?? new Date().toISOString().split('T')[0],
-      paymentMethodId: input.paymentMethodId || null,
       notes: input.notes ?? null,
       createdAt: now,
       updatedAt: now,
@@ -670,6 +687,7 @@ export async function listPaymentMethods(
     .where(
       and(
         eq(paymentMethodsTable.orgId, orgId),
+        eq(paymentMethodsTable.type, 'bank_transfer'),
         eq(paymentMethodsTable.active, true),
       ),
     )
@@ -1046,12 +1064,19 @@ export async function updateInvoice(
     dueDate: string
     paymentMethodId: string
     customerName: string
+    paymentProvider: 'bank_transfer' | 'midtrans'
   }>,
 ): Promise<Invoice> {
   const now = new Date()
+  const updateData: Record<string, unknown> = {
+    ...input,
+    updatedAt: now,
+    paymentMethodId:
+      input.paymentProvider === 'midtrans' ? null : input.paymentMethodId,
+  }
   await db
     .update(invoicesTable)
-    .set({ ...input, updatedAt: now })
+    .set(updateData)
     .where(and(eq(invoicesTable.id, id), eq(invoicesTable.orgId, orgId)))
 
   const [updated] = await db
@@ -1211,18 +1236,60 @@ function isValidPhone(phone: string | null | undefined): phone is string {
   return cleaned.length >= 5 && cleaned.length <= 19
 }
 
+async function getMidtransCredentials(
+  orgId: string,
+): Promise<{ serverKey: string; clientKey: string; isProduction: boolean }> {
+  const [profile] = await db
+    .select({
+      serverKey: organizationProfilesTable.midtransServerKey,
+      clientKey: organizationProfilesTable.midtransClientKey,
+      isProduction: organizationProfilesTable.midtransIsProduction,
+    })
+    .from(organizationProfilesTable)
+    .where(eq(organizationProfilesTable.orgId, orgId))
+    .limit(1)
+
+  if (!profile) {
+    throw new Error('Midtrans credentials are missing for this organization')
+  }
+
+  const serverKey = profile.serverKey?.trim() ?? ''
+  const clientKey = profile.clientKey?.trim() ?? ''
+
+  if (!serverKey || !clientKey) {
+    throw new Error('Midtrans credentials are missing for this organization')
+  }
+
+  return { serverKey, clientKey, isProduction: profile.isProduction }
+}
+
 export async function createMidtransTransaction(
   invoiceId: string,
   orgId: string,
-): Promise<{ token: string; redirectUrl: string }> {
+): Promise<{
+  token: string
+  redirectUrl: string
+  clientKey: string
+  isProduction: boolean
+}> {
   const [invoice] = await db
-    .select()
+    .select({
+      id: invoicesTable.id,
+      invoiceNumber: invoicesTable.invoiceNumber,
+      customerId: invoicesTable.customerId,
+      paymentProvider: invoicesTable.paymentProvider,
+      paymentMethodId: invoicesTable.paymentMethodId,
+    })
     .from(invoicesTable)
     .where(and(eq(invoicesTable.id, invoiceId), eq(invoicesTable.orgId, orgId)))
     .limit(1)
 
   if (!invoice) {
     throw new Error('Invoice not found')
+  }
+
+  if (invoice.paymentProvider !== 'midtrans') {
+    throw new Error('Invoice is not configured for Midtrans payment')
   }
 
   const balance = await getInvoiceBalance(invoiceId, orgId)
@@ -1246,10 +1313,12 @@ export async function createMidtransTransaction(
     )
     .limit(1)
 
+  const credentials = await getMidtransCredentials(orgId)
+
   const snap = new Snap({
-    isProduction: process.env.VITE_MIDTRANS_IS_PRODUCTION === 'true',
-    serverKey: process.env.MIDTRANS_SERVER_KEY ?? '',
-    clientKey: process.env.VITE_MIDTRANS_CLIENT_KEY ?? '',
+    isProduction: credentials.isProduction,
+    serverKey: credentials.serverKey,
+    clientKey: credentials.clientKey,
   })
 
   const orderId = `${invoice.invoiceNumber}-${Date.now()}`
@@ -1287,6 +1356,8 @@ export async function createMidtransTransaction(
     return {
       token: res.token,
       redirectUrl: res.redirect_url,
+      clientKey: credentials.clientKey,
+      isProduction: credentials.isProduction,
     }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -1306,15 +1377,17 @@ export type MidtransTransactionStatus = {
   raw: Record<string, unknown>
 }
 
-export async function getMidtransTransactionStatus(
-  orderId: string,
-): Promise<MidtransTransactionStatus> {
+export async function getMidtransTransactionStatus(params: {
+  orgId: string
+  orderId: string
+}): Promise<MidtransTransactionStatus> {
+  const credentials = await getMidtransCredentials(params.orgId)
   const coreApi = new CoreApi({
-    isProduction: process.env.VITE_MIDTRANS_IS_PRODUCTION === 'true',
-    serverKey: process.env.MIDTRANS_SERVER_KEY ?? '',
-    clientKey: process.env.VITE_MIDTRANS_CLIENT_KEY ?? '',
+    isProduction: credentials.isProduction,
+    serverKey: credentials.serverKey,
+    clientKey: credentials.clientKey,
   }) as unknown as CoreApiWithTransaction
-  const res = (await coreApi.transaction.status(orderId)) as Record<
+  const res = (await coreApi.transaction.status(params.orderId)) as Record<
     string,
     unknown
   >
@@ -1322,7 +1395,7 @@ export async function getMidtransTransactionStatus(
     transactionStatus: String(res.transaction_status ?? ''),
     fraudStatus: typeof res.fraud_status === 'string' ? res.fraud_status : null,
     grossAmount: String(res.gross_amount ?? ''),
-    orderId: String(res.order_id ?? orderId),
+    orderId: String(res.order_id ?? params.orderId),
     paymentType: typeof res.payment_type === 'string' ? res.payment_type : null,
     transactionId:
       typeof res.transaction_id === 'string' ? res.transaction_id : null,
@@ -1366,6 +1439,7 @@ export async function reconcilePayment(
       id: invoicesTable.id,
       orgId: invoicesTable.orgId,
       status: invoicesTable.status,
+      paymentProvider: invoicesTable.paymentProvider,
       midtransOrderId: invoicesTable.midtransOrderId,
       total: invoicesTable.total,
     })
@@ -1381,6 +1455,10 @@ export async function reconcilePayment(
     return { ok: true, confirmed: true, reason: 'already_paid' }
   }
 
+  if (invoice.paymentProvider !== 'midtrans') {
+    return { ok: true, confirmed: false, reason: 'no_midtrans_order_id' }
+  }
+
   const orderId = invoice.midtransOrderId
   if (!orderId) {
     return { ok: true, confirmed: false, reason: 'no_midtrans_order_id' }
@@ -1388,7 +1466,7 @@ export async function reconcilePayment(
 
   let status: MidtransTransactionStatus
   try {
-    status = await getMidtransTransactionStatus(orderId)
+    status = await getMidtransTransactionStatus({ orgId, orderId })
   } catch (e: unknown) {
     return {
       ok: false,
@@ -1436,7 +1514,7 @@ export async function reconcilePayment(
   const payment = await createPayment(orgId, {
     invoiceId,
     amount: Number(status.grossAmount),
-    method: 'payment_gateway',
+    method: 'midtrans',
     reference: orderId,
     receivedAt: status.settlementTime
       ? new Date(status.settlementTime)

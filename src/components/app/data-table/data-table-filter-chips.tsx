@@ -20,7 +20,7 @@ export function DataTableFilterChips({
         type="button"
         onClick={() => onChange(null)}
         className={cn(
-          'rounded-full px-3 py-1 text-xs font-medium transition-colors',
+          'rounded-none px-3 py-1 text-xs font-medium transition-colors',
           value === null
             ? 'bg-primary text-primary-foreground'
             : 'bg-muted text-muted-foreground hover:bg-muted/80',
@@ -34,7 +34,7 @@ export function DataTableFilterChips({
           type="button"
           onClick={() => onChange(opt.value)}
           className={cn(
-            'rounded-full px-3 py-1 text-xs font-medium transition-colors',
+            'rounded-none px-3 py-1 text-xs font-medium transition-colors',
             value === opt.value
               ? 'bg-primary text-primary-foreground'
               : 'bg-muted text-muted-foreground hover:bg-muted/80',

@@ -55,7 +55,7 @@ export type PortalInvoice = {
   status: string
   paidAt: string | null
   paymentMethodName: string | null
-  paymentMethodType: string | null
+  paymentProvider: 'bank_transfer' | 'midtrans'
   paymentMethodBankName: string | null
   paymentMethodAccountNumber: string | null
   paymentMethodAccountHolder: string | null
@@ -274,7 +274,7 @@ export async function getPortalOrder(
       status: invoicesTable.status,
       paidAt: invoicesTable.paidAt,
       paymentMethodName: paymentMethodsTable.name,
-      paymentMethodType: paymentMethodsTable.type,
+      paymentProvider: invoicesTable.paymentProvider,
       paymentMethodBankName: paymentMethodsTable.bankName,
       paymentMethodAccountNumber: paymentMethodsTable.accountNumber,
       paymentMethodAccountHolder: paymentMethodsTable.accountHolder,
@@ -345,7 +345,7 @@ export async function getPortalOrder(
     status: inv.status,
     paidAt: inv.paidAt ? inv.paidAt.toISOString() : null,
     paymentMethodName: inv.paymentMethodName,
-    paymentMethodType: inv.paymentMethodType,
+    paymentProvider: inv.paymentProvider as 'bank_transfer' | 'midtrans',
     paymentMethodBankName: inv.paymentMethodBankName,
     paymentMethodAccountNumber: inv.paymentMethodAccountNumber,
     paymentMethodAccountHolder: inv.paymentMethodAccountHolder,
@@ -1104,19 +1104,26 @@ export function buildTimelineEvents(params: {
       }
 
       events.push({
-        id: lastTransition
-          ? `completed-${lastTransition.id}`
-          : `completed-${task.id}`,
+        id: completedActivity
+          ? completedActivity.id
+          : lastTransition
+            ? `completed-${lastTransition.id}`
+            : `completed-${task.id}`,
         taskId: task.id,
         lineItemId: task.lineItemId,
         taskNumber: task.taskNumber ?? null,
         productName,
         type: 'completed',
-        fromStageName: lastTransition?.fromStageId
-          ? (stageNameMap.get(lastTransition.fromStageId) ?? null)
-          : null,
+        fromStageName: completedActivity?.fromStageId
+          ? (stageNameMap.get(completedActivity.fromStageId) ?? null)
+          : lastTransition?.fromStageId
+            ? (stageNameMap.get(lastTransition.fromStageId) ?? null)
+            : (stageNameMap.get(task.stageId ?? '') ?? null),
         toStageName: null,
-        createdAt: lastTransition?.createdAt ?? new Date(),
+        createdAt:
+          completedActivity?.createdAt ??
+          lastTransition?.createdAt ??
+          new Date(),
         requirementResponses: requirementResponsesData,
       })
     } else if (completedActivity) {

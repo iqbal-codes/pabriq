@@ -90,7 +90,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       {
         name: 'theme-color',
-        content: '#111111',
+        content: '#00B8A9',
       },
       {
         name: 'apple-mobile-web-app-capable',
@@ -98,7 +98,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       {
         name: 'apple-mobile-web-app-title',
-        content: 'Pabriq',
+        content: 'labq.dev',
       },
       {
         name: 'apple-mobile-web-app-status-bar-style',
@@ -129,7 +129,8 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       {
         rel: 'icon',
-        href: '/favicon.ico',
+        href: '/labq_bq_logo_vector.svg',
+        type: 'image/svg+xml',
       },
       {
         rel: 'apple-touch-icon',

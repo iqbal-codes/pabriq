@@ -84,10 +84,10 @@ export function NotificationBell() {
                 return (
                   <div
                     key={item.id}
-                    className="flex flex-col gap-2.5 p-4 rounded-lg border border-border bg-card hover:border-primary/50 transition-colors"
+                    className="flex flex-col gap-2.5 p-4 rounded-none border border-border bg-card hover:border-primary/50 transition-colors"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-[10px] uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                      <span className="font-semibold text-[10px] uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5">
                         {label}
                       </span>
                       <span className="text-muted-foreground text-[10px]">

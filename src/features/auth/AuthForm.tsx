@@ -56,78 +56,87 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
 
   return (
     <main className="flex min-h-svh items-center justify-center bg-muted/30 px-4 py-10">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>
-            {isSignUp ? t('signUpTitle') : t('signInTitle')}
-          </CardTitle>
-          <CardDescription>
-            {isSignUp ? t('signUpDesc') : t('signInDesc')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            className="space-y-6"
-            onSubmit={(e) => {
-              // react-doctor: intentional — TanStack Form handleSubmit needs preventDefault
-              e.preventDefault()
-              e.stopPropagation()
-              form.handleSubmit()
-            }}
-          >
-            {authError && (
-              <form.AppForm>
-                <form.FormError message={authError} />
-              </form.AppForm>
-            )}
+      <div className="flex w-full max-w-md flex-col items-center gap-6">
+        <img
+          src="/labq_bq_logo_vector.svg"
+          alt="labq.dev"
+          className="h-20 w-auto"
+        />
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle>
+              {isSignUp ? t('signUpTitle') : t('signInTitle')}
+            </CardTitle>
+            <CardDescription>
+              {isSignUp ? t('signUpDesc') : t('signInDesc')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form
+              className="space-y-6"
+              onSubmit={(e) => {
+                // react-doctor: intentional — TanStack Form handleSubmit needs preventDefault
+                e.preventDefault()
+                e.stopPropagation()
+                form.handleSubmit()
+              }}
+            >
+              {authError && (
+                <form.AppForm>
+                  <form.FormError message={authError} />
+                </form.AppForm>
+              )}
 
-            {isSignUp && (
+              {isSignUp && (
+                <form.AppField
+                  name="name"
+                  validators={{
+                    onChange: ({ value }) =>
+                      value.trim().length < 2 ? t('nameMin') : undefined,
+                  }}
+                >
+                  {(field) => (
+                    <field.TextField label={t('name')} autoComplete="name" />
+                  )}
+                </form.AppField>
+              )}
+
               <form.AppField
-                name="name"
+                name="email"
                 validators={{
                   onChange: ({ value }) =>
-                    value.trim().length < 2 ? t('nameMin') : undefined,
+                    /^\S+@\S+\.\S+$/.test(value) ? undefined : t('emailValid'),
+                }}
+              >
+                {(field) => <field.EmailField label={t('email')} />}
+              </form.AppField>
+
+              <form.AppField
+                name="password"
+                validators={{
+                  onChange: ({ value }) =>
+                    value.length < 8 ? t('passwordMin') : undefined,
                 }}
               >
                 {(field) => (
-                  <field.TextField label={t('name')} autoComplete="name" />
+                  <field.PasswordField
+                    label={t('password')}
+                    autoComplete={
+                      isSignUp ? 'new-password' : 'current-password'
+                    }
+                  />
                 )}
               </form.AppField>
-            )}
 
-            <form.AppField
-              name="email"
-              validators={{
-                onChange: ({ value }) =>
-                  /^\S+@\S+\.\S+$/.test(value) ? undefined : t('emailValid'),
-              }}
-            >
-              {(field) => <field.EmailField label={t('email')} />}
-            </form.AppField>
-
-            <form.AppField
-              name="password"
-              validators={{
-                onChange: ({ value }) =>
-                  value.length < 8 ? t('passwordMin') : undefined,
-              }}
-            >
-              {(field) => (
-                <field.PasswordField
-                  label={t('password')}
-                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                />
-              )}
-            </form.AppField>
-
-            <form.AppForm>
-              <form.SubmitButton className="w-full">
-                {isSignUp ? t('signUp') : t('signIn')}
-              </form.SubmitButton>
-            </form.AppForm>
-          </form>
-        </CardContent>
-      </Card>
+              <form.AppForm>
+                <form.SubmitButton className="w-full">
+                  {isSignUp ? t('signUp') : t('signIn')}
+                </form.SubmitButton>
+              </form.AppForm>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </main>
   )
 }

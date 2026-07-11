@@ -26,6 +26,7 @@ import {
 } from '#/components/ui/sidebar'
 import type { Role } from '#/features/permissions/model'
 import { canViewProduction } from '#/features/permissions/model'
+import { cn } from '#/lib/utils'
 
 type NavItem = {
   key:
@@ -89,29 +90,30 @@ export function AppSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="cursor-default">
-              {org.logo ? (
-                <AssetImage
-                  assetId={org.logo}
-                  assetKind="image"
-                  interactive={false}
-                  className="w-8 h-auto rounded-lg object-contain"
-                />
-              ) : (
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <GalleryVerticalEnd className="size-4" />
+            <Link to={'/'}>
+              <SidebarMenuButton size="lg" className="hover:bg-transparent!">
+                {org.logo ? (
+                  <AssetImage
+                    assetId={org.logo}
+                    assetKind="image"
+                    interactive={false}
+                    className="w-8 h-auto rounded-lg object-contain"
+                  />
+                ) : (
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                    <GalleryVerticalEnd className="size-4" />
+                  </div>
+                )}
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-medium">{org.name}</span>
                 </div>
-              )}
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{org.name}</span>
-                <span className="truncate text-xs">{org.slug}</span>
-              </div>
-            </SidebarMenuButton>
+              </SidebarMenuButton>
+            </Link>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu className="px-2">
+        <SidebarMenu>
           {navItems.map((item) => {
             const isActive =
               item.href === '/'
@@ -132,6 +134,10 @@ export function AppSidebar({
                   asChild
                   isActive={isActive}
                   tooltip={t(item.key)}
+                  className={cn(
+                    'px-4 border-l-2',
+                    isActive && 'border-primary',
+                  )}
                 >
                   <Link to={item.href}>
                     {item.icon && <item.icon />}

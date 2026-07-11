@@ -130,7 +130,7 @@ function InvoiceRow({
       {isUnpaid && (
         <div className="flex items-center gap-2 w-full">
           <div className="flex-1">
-            {invoice.paymentMethodType === 'payment_gateway' ? (
+            {invoice.paymentProvider === 'midtrans' ? (
               <PayNowButton invoiceId={invoice.id} token={token} />
             ) : (
               <SubmitPaymentProofDialog
@@ -300,6 +300,29 @@ async function reconcilePayment(
   }
 }
 
+function loadMidtransSnapScript(opts: {
+  clientKey: string
+  isProduction: boolean
+}) {
+  const src = opts.isProduction
+    ? 'https://app.midtrans.com/snap/snap.js'
+    : 'https://app.sandbox.midtrans.com/snap/snap.js'
+  const existing = document.querySelector('script[data-midtrans-snap="true"]')
+  if (existing) {
+    const isStale =
+      existing.getAttribute('src') !== src ||
+      existing.getAttribute('data-client-key') !== opts.clientKey
+    if (isStale) existing.remove()
+    else return
+  }
+  const script = document.createElement('script')
+  script.src = src
+  script.setAttribute('data-client-key', opts.clientKey)
+  script.setAttribute('data-midtrans-snap', 'true')
+  script.async = true
+  document.head.appendChild(script)
+}
+
 function PayNowButton({
   invoiceId,
   token,
@@ -331,8 +354,13 @@ function PayNowButton({
         return
       }
 
+      loadMidtransSnapScript({
+        clientKey: res.clientKey,
+        isProduction: res.isProduction,
+      })
+
       if (!window.snap) {
-        toast.error('Payment gateway SDK not loaded yet. Please try again.')
+        toast.error(t('midtransSdkNotLoaded'))
         setIsLoading(false)
         return
       }

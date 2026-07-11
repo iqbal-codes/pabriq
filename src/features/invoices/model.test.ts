@@ -8,7 +8,9 @@ import {
   orderLineItems as orderLineItemsTable,
   orders as ordersTable,
   organization,
+  organizationProfiles as organizationProfilesTable,
   paymentMethods as paymentMethodsTable,
+  payments as paymentsTable,
   products as productsTable,
 } from '#/db/schema'
 import {
@@ -24,24 +26,36 @@ import {
   listInvoices,
   listPaymentMethods,
   markInvoicePaid,
+  reconcilePayment,
   rejectPayment,
   updatePaymentMethod,
   voidInvoice,
 } from './model'
 
 const mockCreateTransaction = vi.fn()
+const mockSnapConfig = vi.fn()
+const mockCoreApiConfig = vi.fn()
+const mockTransactionStatus = vi.fn()
 
 vi.mock('midtrans-client', () => {
-  const SnapMock = vi.fn().mockImplementation(function (this: {
-    createTransaction: unknown
-  }) {
+  const SnapMock = vi.fn().mockImplementation(function (
+    this: { createTransaction: unknown },
+    config: unknown,
+  ) {
+    mockSnapConfig(config)
     this.createTransaction = mockCreateTransaction
   })
+  const CoreApiMock = vi.fn().mockImplementation(function (
+    this: { transaction: { status: unknown } },
+    config: unknown,
+  ) {
+    mockCoreApiConfig(config)
+    this.transaction = { status: mockTransactionStatus }
+  })
   return {
-    default: {
-      Snap: SnapMock,
-    },
+    default: { Snap: SnapMock, CoreApi: CoreApiMock },
     Snap: SnapMock,
+    CoreApi: CoreApiMock,
   }
 })
 
@@ -1408,15 +1422,27 @@ describe('createMidtransTransaction', () => {
       createdAt: now,
       updatedAt: now,
     })
+    await db.insert(organizationProfilesTable).values({
+      id: 'midtrans-profile',
+      orgId: midtransOrgId,
+      midtransServerKey: 'midtrans-server-key',
+      midtransClientKey: 'midtrans-client-key',
+      midtransIsProduction: true,
+      createdAt: now,
+      updatedAt: now,
+    })
     mockCreateTransaction.mockReset()
+    mockSnapConfig.mockClear()
+    mockCoreApiConfig.mockClear()
+    mockTransactionStatus.mockReset()
   })
 
-  it('creates transaction with correct order_id and gross_amount', async () => {
+  it('creates transaction with correct config and order details', async () => {
     const result = await createInvoice(midtransOrgId, {
       customerId: 'midtrans-cust',
       customerName: 'Midtrans Customer',
       dueDate: '2026-06-30',
-      paymentMethodId: null,
+      paymentProvider: 'midtrans',
       lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
     })
     const invoiceId = result.invoice.id
@@ -1425,13 +1451,18 @@ describe('createMidtransTransaction', () => {
       redirect_url: 'https://mock-redirect-url',
     })
 
-    const { token, redirectUrl } = await createMidtransTransaction(
-      invoiceId,
-      midtransOrgId,
-    )
+    const { token, redirectUrl, clientKey, isProduction } =
+      await createMidtransTransaction(invoiceId, midtransOrgId)
 
     expect(token).toBe('mock-snap-token')
     expect(redirectUrl).toBe('https://mock-redirect-url')
+    expect(clientKey).toBe('midtrans-client-key')
+    expect(isProduction).toBe(true)
+    expect(mockSnapConfig).toHaveBeenCalledWith({
+      isProduction: true,
+      serverKey: 'midtrans-server-key',
+      clientKey: 'midtrans-client-key',
+    })
     expect(mockCreateTransaction).toHaveBeenCalled()
     const callArgs = mockCreateTransaction.mock.calls[0][0]
     expect(callArgs.transaction_details.gross_amount).toBe(100000)
@@ -1447,14 +1478,14 @@ describe('createMidtransTransaction', () => {
       customerId: 'midtrans-cust',
       customerName: 'Midtrans Customer',
       dueDate: '2026-06-30',
-      paymentMethodId: null,
+      paymentProvider: 'midtrans',
       lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
     })
     const invoiceId = result.invoice.id
     const payment = await createPayment(midtransOrgId, {
       invoiceId,
       amount: 100000,
-      method: 'payment_gateway',
+      method: 'midtrans',
     })
     await confirmPayment(midtransOrgId, payment.id, 'admin')
 
@@ -1480,7 +1511,7 @@ describe('createMidtransTransaction', () => {
       customerId: 'midtrans-cust-invalid',
       customerName: 'Invalid Email/Phone Customer',
       dueDate: '2026-06-30',
-      paymentMethodId: null,
+      paymentProvider: 'midtrans',
       lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
     })
     const invoiceId = result.invoice.id
@@ -1499,5 +1530,88 @@ describe('createMidtransTransaction', () => {
     )
     expect(callArgs.customer_details.email).toBeUndefined()
     expect(callArgs.customer_details.phone).toBeUndefined()
+  })
+
+  it('throws when invoice paymentProvider is not midtrans', async () => {
+    const result = await createInvoice(midtransOrgId, {
+      customerId: 'midtrans-cust',
+      customerName: 'Midtrans Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'bank_transfer',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoiceId = result.invoice.id
+
+    await expect(
+      createMidtransTransaction(invoiceId, midtransOrgId),
+    ).rejects.toThrow('Invoice is not configured for Midtrans payment')
+  })
+
+  it('throws when org has no midtrans credentials', async () => {
+    // Delete the org profile seeded in beforeEach
+    await db
+      .delete(organizationProfilesTable)
+      .where(eq(organizationProfilesTable.orgId, midtransOrgId))
+
+    const result = await createInvoice(midtransOrgId, {
+      customerId: 'midtrans-cust',
+      customerName: 'Midtrans Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'midtrans',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoiceId = result.invoice.id
+
+    await expect(
+      createMidtransTransaction(invoiceId, midtransOrgId),
+    ).rejects.toThrow('Midtrans credentials are missing for this organization')
+  })
+
+  it('reconcilePayment with midtrans invoice creates midtrans payment', async () => {
+    const result = await createInvoice(midtransOrgId, {
+      customerId: 'midtrans-cust',
+      customerName: 'Midtrans Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'midtrans',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoice = result.invoice
+
+    // Set midtransOrderId on the invoice
+    await db
+      .update(invoicesTable)
+      .set({ midtransOrderId: 'MID-ORDER-123' })
+      .where(eq(invoicesTable.id, invoice.id))
+
+    // Mock CoreApi transaction.status response
+    mockTransactionStatus.mockResolvedValue({
+      transaction_status: 'settlement',
+      fraud_status: 'accept',
+      gross_amount: '100000.00',
+      order_id: 'MID-ORDER-123',
+      settlement_time: '2026-01-01 12:00:00',
+    })
+
+    const result2 = await reconcilePayment(midtransOrgId, invoice.id)
+
+    expect(result2.ok).toBe(true)
+    if (!result2.ok) throw new Error('expected ok')
+    expect(result2.confirmed).toBe(true)
+    expect(result2.reason).toBe('confirmed')
+    expect(mockCoreApiConfig).toHaveBeenCalledWith({
+      isProduction: true,
+      serverKey: 'midtrans-server-key',
+      clientKey: 'midtrans-client-key',
+    })
+    expect(mockTransactionStatus).toHaveBeenCalledWith('MID-ORDER-123')
+
+    // Verify payment was created with method 'midtrans'
+    const payments = await db
+      .select()
+      .from(paymentsTable)
+      .where(eq(paymentsTable.invoiceId, invoice.id))
+    expect(payments).toHaveLength(1)
+    expect(payments[0].method).toBe('midtrans')
+    expect(payments[0].status).toBe('confirmed')
   })
 })

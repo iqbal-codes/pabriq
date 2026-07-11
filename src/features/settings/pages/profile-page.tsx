@@ -52,9 +52,6 @@ export function ProfilePage({
   return (
     <>
       <PageHeader title={t('title')} />
-      <h1 className="text-2xl font-semibold tracking-tight md:hidden">
-        {t('title')}
-      </h1>
       <div className="space-y-8">
         <FormRoot form={profileForm}>
           <Card>

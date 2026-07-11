@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { XIcon } from 'lucide-react'
+import { Clock, XIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useTranslations } from 'use-intl'
+import { useLocale, useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
@@ -13,6 +13,7 @@ import {
 } from '#/components/ui/sheet'
 import { useMembers } from '#/features/members/hooks'
 import { getAssetsForLineItemFn } from '#/features/orders/server'
+import { cn } from '#/lib/utils'
 import {
   useStages,
   useTaskActivities,
@@ -21,6 +22,11 @@ import {
 } from '../hooks'
 import { ActivityRow } from './activity-row'
 import { RequirementForm } from './requirement-form'
+import {
+  getTaskDeadlineClasses,
+  getTaskDeadlineInfo,
+  type TaskContext,
+} from './task-deadline'
 
 type Props = {
   taskId: string
@@ -40,6 +46,8 @@ export function TaskDetailModal({
   onReview,
 }: Props) {
   const t = useTranslations('production')
+  const ct = useTranslations('common')
+  const locale = useLocale()
   const { data: task, isLoading: taskLoading } = useTaskDetail(taskId)
   const { data: activities } = useTaskActivities(taskId)
   const { data: stages } = useStages()
@@ -76,15 +84,24 @@ export function TaskDetailModal({
     return map
   }, [members])
 
-  const ctx = task
-    ? (task.context as Record<string, string | number | boolean | null> | null)
-    : null
+  const ctx = task ? (task.context as TaskContext) : null
   const productName = ctx?.productName ?? ''
   const designName = ctx?.designName ?? ''
   const customerName = ctx?.customerName ?? ''
   const orderNumber = ctx?.orderNumber ?? ''
   const quantity = ctx?.quantity ?? ''
   const spec = ctx?.requirements ?? ''
+  const deadline = getTaskDeadlineInfo(ctx, locale, new Date())
+  const deadlineStatusLabel = deadline
+    ? deadline.dayDelta < 0
+      ? t('deadlineDaysOverdue', { days: -deadline.dayDelta })
+      : deadline.dayDelta === 0
+        ? t('deadlineToday')
+        : deadline.dayDelta === 1
+          ? t('deadlineTomorrow')
+          : t('deadlineDaysLeft', { days: deadline.dayDelta })
+    : ''
+  const isPendingApproval = task?.status === 'pending_approval'
 
   const boardStages = (stages ?? [])
     .filter((s) => s.active && s.board === task?.board)
@@ -185,10 +202,10 @@ export function TaskDetailModal({
           <div className="flex flex-col h-full">
             <SheetHeader className="px-5 pt-5 pb-4 border-b space-y-3">
               <div className="flex items-center gap-2">
-                <div className="h-5 w-16 rounded bg-muted animate-pulse" />
-                <div className="h-5 w-20 rounded-full bg-muted animate-pulse" />
+                <div className="h-5 w-16 rounded-none bg-muted animate-pulse" />
+                <div className="h-5 w-20 rounded-none bg-muted animate-pulse" />
               </div>
-              <div className="h-6 w-48 rounded bg-muted animate-pulse" />
+              <div className="h-6 w-48 rounded-none bg-muted animate-pulse" />
             </SheetHeader>
             <div className="flex-1 p-5 space-y-6">
               <div className="space-y-3">
@@ -234,11 +251,17 @@ export function TaskDetailModal({
             {/* Header */}
             <SheetHeader className="px-5 pt-5 pb-4 border-b space-y-2.5">
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-xs font-semibold text-muted-foreground bg-muted px-2.5 py-1 rounded border border-border">
                     {task.taskNumber}
                   </span>
                   {currentStage && <Badge>{currentStage.name}</Badge>}
+                  {task.priority ? (
+                    <Badge variant="destructive">{t('priorityBadge')}</Badge>
+                  ) : null}
+                  {isPendingApproval ? (
+                    <Badge variant="warning">{t('needReview')}</Badge>
+                  ) : null}
                 </div>
                 <Button
                   type="button"
@@ -305,10 +328,29 @@ export function TaskDetailModal({
                       <p className="font-medium text-foreground">
                         {quantity}{' '}
                         <span className="text-xs font-normal text-muted-foreground">
-                          pcs
+                          {ct('pcs')}
                         </span>
                       </p>
                     </div>
+                    {deadline ? (
+                      <div className="space-y-1">
+                        <span className="text-xs text-muted-foreground">
+                          {t('deadlineLabel', { date: deadline.dateLabel })}
+                        </span>
+                        <div>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              'gap-1 text-[10px]',
+                              getTaskDeadlineClasses(deadline.dayDelta, false),
+                            )}
+                          >
+                            <Clock className="size-3" aria-hidden="true" />
+                            {deadlineStatusLabel}
+                          </Badge>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 </section>
 
@@ -318,7 +360,7 @@ export function TaskDetailModal({
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                       {t('specification')}
                     </h3>
-                    <div className="bg-card border border-border rounded-lg p-3.5 text-sm text-foreground/95 leading-relaxed whitespace-pre-wrap">
+                    <div className="bg-card border border-border rounded-none p-3.5 text-sm text-foreground/95 leading-relaxed whitespace-pre-wrap">
                       {spec}
                     </div>
                   </section>
@@ -366,7 +408,7 @@ export function TaskDetailModal({
 
             {/* Comment composer — pinned to bottom */}
             <div className="shrink-0 border-t p-4">
-              <div className="flex gap-2 items-center bg-background p-2 border border-input rounded-lg focus-within:ring-2 focus-within:ring-ring/40 focus-within:border-ring transition-all">
+              <div className="flex gap-2 items-center bg-background p-2 border border-input rounded-none focus-within:ring-2 focus-within:ring-ring/40 focus-within:border-ring transition-all">
                 <input
                   type="text"
                   placeholder={t('commentPlaceholder')}
