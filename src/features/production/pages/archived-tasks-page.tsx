@@ -1,6 +1,6 @@
 import { Archive } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
-import { useTranslations } from 'use-intl'
+import { useLocale, useTranslations } from 'use-intl'
 import type { AppColumnDef, DataTableLabels } from '#/components/app/data-table'
 import {
   DataTable,
@@ -8,13 +8,9 @@ import {
   useListPageState,
 } from '#/components/app/data-table'
 import { PageContent } from '#/components/app/page-shell/page-content'
+import { PageHeader } from '#/components/app/page-shell/page-header'
 import { useArchivedTasks } from '../hooks'
 import type { ArchivedTaskRow } from '../model'
-
-const dateTimeFormatter = new Intl.DateTimeFormat('id-ID', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-})
 
 type Props = {
   orgId: string
@@ -23,6 +19,16 @@ type Props = {
 export function ArchivedTasksPage({ orgId }: Props) {
   const t = useTranslations('production')
   const dt = useTranslations('dataTable')
+  const locale = useLocale()
+
+  const dateTimeFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }),
+    [locale],
+  )
 
   const {
     search,
@@ -115,7 +121,8 @@ export function ArchivedTasksPage({ orgId }: Props) {
   const hasActiveFilters = !!search
 
   return (
-    <PageContent className="px-4! pt-0!">
+    <PageContent>
+      <PageHeader title={t('tabArchive')} />
       <DataTable
         columns={columns}
         data={rows}

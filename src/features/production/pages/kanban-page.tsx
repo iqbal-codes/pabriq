@@ -1,12 +1,21 @@
 import { parseAsString, useQueryState } from 'nuqs'
 import { useMemo } from 'react'
 import { useTranslations } from 'use-intl'
+import { EmptyState } from '#/components/app/page-shell/empty-state'
 import { Input } from '#/components/ui/input'
-import { NativeSelect } from '#/components/ui/native-select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#/components/ui/select'
 import { Spinner } from '#/components/ui/spinner'
 import { useGlobalModal } from '#/hooks/use-global-overlay'
 import { KanbanBoard } from '../components/kanban-board'
 import { useBoardTasks, useStages } from '../hooks'
+
+const ALL_STAGES = '__all__'
 
 type Props = {
   orgId: string
@@ -51,18 +60,22 @@ export function KanbanPage({ orgId }: Props) {
           onChange={(e) => setSearch(e.target.value || null)}
           className="max-w-xs"
         />
-        <NativeSelect
-          value={stageFilter}
-          onChange={(e) => setStageFilter(e.target.value || null)}
-          className="w-48"
+        <Select
+          value={stageFilter || ALL_STAGES}
+          onValueChange={(v) => setStageFilter(v === ALL_STAGES ? null : v)}
         >
-          <option value="">{t('allStages')}</option>
-          {allActiveStages.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </NativeSelect>
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_STAGES}>{t('allStages')}</SelectItem>
+            {allActiveStages.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="w-full overflow-x-auto h-full">
         {isLoading ? (
@@ -76,9 +89,10 @@ export function KanbanPage({ orgId }: Props) {
             onClickCard={(taskId) => openModal('task-detail', taskId)}
           />
         ) : (
-          <div className="py-16 text-center text-sm text-muted-foreground">
-            {t('noTasks')}
-          </div>
+          <EmptyState
+            title={t('noTasks')}
+            description={t('searchPlaceholder')}
+          />
         )}
       </div>
     </div>

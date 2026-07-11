@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { IntlProvider } from 'use-intl'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ViewOrderPage } from './view-order-page'
@@ -28,6 +29,7 @@ const mockInvoices: Array<{
   percentage: number | null
   dueDate: string
   paymentMethodId: string | null
+  paymentProvider: 'bank_transfer' | 'midtrans'
   createdAt: Date
   overdue: boolean
   shippingFee?: number
@@ -160,6 +162,14 @@ vi.mock('#/features/invoices/components/create-invoice-modal', () => ({
   CreateInvoiceModal: () => null,
 }))
 
+vi.mock(
+  '#/features/invoices/components/manual-payment-confirmation-dialog',
+  () => ({
+    ManualPaymentConfirmationDialog: ({ open }: { open: boolean }) =>
+      open ? <div data-testid="manual-payment-confirmation-dialog" /> : null,
+  }),
+)
+
 vi.mock('#/features/orders/components/complete-production-modal', () => ({
   CompleteProductionModal: () => null,
 }))
@@ -183,13 +193,20 @@ vi.mock('#/components/app/page-shell/page-content', () => ({
 vi.mock('#/components/app/page-shell/page-header', () => ({
   PageHeader: ({
     title,
+    primaryAction,
     secondaryActions,
   }: {
     title: React.ReactNode
+    primaryAction?: { label: string; onClick?: () => void }
     secondaryActions?: Array<{ label: string }>
   }) => (
     <div>
       <div data-testid="page-header-title">{title}</div>
+      {primaryAction && (
+        <button type="button" onClick={primaryAction.onClick}>
+          {primaryAction.label}
+        </button>
+      )}
       {secondaryActions?.map((action) => (
         <span key={action.label}>{action.label}</span>
       ))}
@@ -299,6 +316,7 @@ describe('ViewOrderPage – shipping card', () => {
       percentage: 50,
       dueDate: '2026-07-01',
       paymentMethodId: null,
+      paymentProvider: 'bank_transfer',
       createdAt: new Date('2026-06-01'),
       overdue: false,
       shippingFee: 50000,
@@ -322,6 +340,7 @@ describe('ViewOrderPage – shipping card', () => {
       percentage: 50,
       dueDate: '2026-07-01',
       paymentMethodId: null,
+      paymentProvider: 'bank_transfer',
       createdAt: new Date('2026-06-01'),
       overdue: false,
     })
@@ -329,5 +348,33 @@ describe('ViewOrderPage – shipping card', () => {
     renderPage()
 
     expect(screen.queryByText('Shipment Fee')).not.toBeInTheDocument()
+  })
+
+  it('opens payment review before confirming a manual transfer', async () => {
+    const user = userEvent.setup()
+    mockInvoices.push({
+      id: 'inv-manual',
+      invoiceNumber: 'INV-MANUAL',
+      customerName: 'Acme Corp',
+      status: 'unpaid',
+      total: 250000,
+      percentage: 50,
+      dueDate: '2026-07-01',
+      paymentMethodId: 'payment-method-1',
+      paymentProvider: 'bank_transfer',
+      createdAt: new Date('2026-06-01'),
+      overdue: false,
+    })
+
+    renderPage()
+    expect(
+      screen.queryByTestId('manual-payment-confirmation-dialog'),
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Confirm DP Payment' }))
+
+    expect(
+      screen.getByTestId('manual-payment-confirmation-dialog'),
+    ).toBeInTheDocument()
   })
 })

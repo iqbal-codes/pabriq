@@ -14,6 +14,7 @@ import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import type { PageAction } from '#/components/app/page-shell/page-shell-types'
 import { CreateInvoiceModal } from '#/features/invoices/components/create-invoice-modal'
+import { ManualPaymentConfirmationDialog } from '#/features/invoices/components/manual-payment-confirmation-dialog'
 import {
   useInvoicePaymentProofs,
   useInvoicesList,
@@ -48,6 +49,7 @@ export function ViewOrderPage() {
   }
   const { data } = useOrder({ id, orgId: ctx.org.id })
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
+  const [paymentConfirmationOpen, setPaymentConfirmationOpen] = useState(false)
   const [completeProductionModalOpen, setCompleteProductionModalOpen] =
     useState(false)
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
@@ -149,8 +151,7 @@ export function ViewOrderPage() {
                   ? t('confirmSettlementPayment')
                   : t('confirmDpPayment'),
                 icon: CheckCircle2,
-                onClick: () =>
-                  mutations.handleMarkInvoicePaid(unpaidInvoice.id),
+                onClick: () => setPaymentConfirmationOpen(true),
                 isLoading: mutations.isMarkingPaid,
               }
             : derived.canStartProduction
@@ -302,6 +303,17 @@ export function ViewOrderPage() {
           shippingAddress,
         }}
       />
+
+      {unpaidInvoice && isManualTransfer && (
+        <ManualPaymentConfirmationDialog
+          open={paymentConfirmationOpen}
+          onOpenChange={setPaymentConfirmationOpen}
+          invoice={unpaidInvoice}
+          paymentProofs={invoicePayments?.[unpaidInvoice.id] ?? []}
+          onConfirm={() => mutations.handleMarkInvoicePaid(unpaidInvoice.id)}
+          isConfirming={mutations.isMarkingPaid}
+        />
+      )}
 
       <CompleteProductionModal
         open={completeProductionModalOpen}

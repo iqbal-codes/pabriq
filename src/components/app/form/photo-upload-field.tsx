@@ -30,7 +30,7 @@ function PhotoPreviewTile({
       <AssetImage
         assetId={assetId}
         assetKind="image"
-        className="size-24 rounded-lg object-cover"
+        className="size-24 rounded-none object-cover"
       />
       <Button
         variant="secondary"

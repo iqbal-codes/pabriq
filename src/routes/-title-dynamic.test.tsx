@@ -53,7 +53,7 @@ describe('dynamic page title', () => {
     await router.load()
     await renderRouter(router)
 
-    expect(document.title).toBe('AKZ Production - Orders')
+    expect(document.title).toBe('labq.dev - Orders')
   })
 
   it('sets title for /customers route', async () => {
@@ -62,7 +62,7 @@ describe('dynamic page title', () => {
     await router.load()
     await renderRouter(router)
 
-    expect(document.title).toBe('AKZ Production - Customers')
+    expect(document.title).toBe('labq.dev - Customers')
   })
 
   it('sets title for /sign-in route', async () => {
@@ -71,7 +71,7 @@ describe('dynamic page title', () => {
     await router.load()
     await renderRouter(router)
 
-    expect(document.title).toBe('AKZ Production - Sign in')
+    expect(document.title).toBe('labq.dev - Sign in')
   })
 
   it('falls back to app title when no pageTitle context', async () => {
@@ -80,7 +80,7 @@ describe('dynamic page title', () => {
     await router.load()
     await renderRouter(router)
 
-    expect(document.title).toBe('AKZ Production')
+    expect(document.title).toBe('labq.dev')
   })
 })
 

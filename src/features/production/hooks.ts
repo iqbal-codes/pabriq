@@ -159,17 +159,21 @@ export function useTaskActivities(taskId: string) {
   })
 }
 
-export function useArchivedTasks(filters: {
-  orgId: string
-  board?: string
-  search?: string
-  sort?: { field: string; direction: 'asc' | 'desc' } | null
-  page?: number
-  perPage?: number
-}) {
+export function useArchivedTasks(
+  filters: {
+    orgId: string
+    board?: string
+    search?: string
+    sort?: { field: string; direction: 'asc' | 'desc' } | null
+    page?: number
+    perPage?: number
+  },
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: queryKeys.production.archived(filters),
     queryFn: () => listArchivedTasksFn({ data: filters }),
+    ...options,
   })
 }
 

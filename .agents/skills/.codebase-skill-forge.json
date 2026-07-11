@@ -1,0 +1,523 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-11T17:24:04.588Z",
+  "repository": "pabriq-app-v2",
+  "skills": [
+    {
+      "name": "pabriq-app-ui",
+      "path": ".agents/skills/pabriq-app-ui/SKILL.md",
+      "concerns": [
+        "URL overlays",
+        "application UI composition",
+        "data tables",
+        "forms",
+        "localized responsive states"
+      ],
+      "evidence": [
+        {
+          "path": "src/components/app/data-table/data-table-utils.ts",
+          "fingerprint": "773f74a2f32611869beff6cc8cb619e26704ae1e22e80f29b1e241636c7a33f3"
+        },
+        {
+          "path": "src/components/app/data-table/data-table.tsx",
+          "fingerprint": "27d21d163b141291d46ccc3ed42e5e6f031b38004fc87a630f389bcf004fcb26"
+        },
+        {
+          "path": "src/components/app/data-table/use-list-page-state.ts",
+          "fingerprint": "cd1ab879fc48d4fbeee31e3a1f8067c75379cb6b7dd57b19bc97827d0e8e6044"
+        },
+        {
+          "path": "src/components/app/form/form-context.tsx",
+          "fingerprint": "702eb275b507d52744a8071ee840b7f7bcc8a1d638f39eb85278762873b0443e"
+        },
+        {
+          "path": "src/components/app/form/form-layout.tsx",
+          "fingerprint": "75fbcaad2ea75709d4dde255cf262f1b22c949f1f2a682c767309b439abb1414"
+        },
+        {
+          "path": "src/components/app/form/form-utils.ts",
+          "fingerprint": "a407870c18d41e8f2827a2f75ff093c1fc606b198d5ad730b70d9abb52afa722"
+        },
+        {
+          "path": "src/components/app/global-modal/global-modal-registry.tsx",
+          "fingerprint": "833d4b2a6821bd56c20bf05ea796e5fcd06ed51c26a4f5d2d39fd5b0d43b51f9"
+        },
+        {
+          "path": "src/components/app/page-shell/page-header.tsx",
+          "fingerprint": "3bbd3a00a73930e7f95c228662c8fbd65e007b12c6b16fffb67c4e6a05e0bd73"
+        },
+        {
+          "path": "src/features/customers/components/customer-form-sheet.tsx",
+          "fingerprint": "5629a871995936cf72be283145f815317f6b05617269113f3f7462de028cabaf"
+        },
+        {
+          "path": "src/features/customers/pages/customers-list-page.tsx",
+          "fingerprint": "9832523c89a7487e3106074fd3e141ca98f433dbe74b827af9e8dc8b81577307"
+        },
+        {
+          "path": "src/hooks/use-global-overlay.ts",
+          "fingerprint": "d8e812ff26d658812e7e390f811ca0d167012d0af2daa998e65b8de355eaadc3"
+        },
+        {
+          "path": "src/messages/index.ts",
+          "fingerprint": "9f64cb53d6c626d122c59025b78e8fcc80519b1d32dfd79e259aa5e1601c1114"
+        },
+        {
+          "path": "src/styles.css",
+          "fingerprint": "4ee7316c093ec5a4a474ce24623e351beb4cd58dc04a6977048b367fd4aed8f0"
+        }
+      ],
+      "references": [
+        ".agents/skills/pabriq-app-ui/references/data-tables.md",
+        ".agents/skills/pabriq-app-ui/references/forms.md"
+      ]
+    },
+    {
+      "name": "pabriq-business-workflows",
+      "path": ".agents/skills/pabriq-business-workflows/SKILL.md",
+      "concerns": [
+        "invoice and payment lifecycle",
+        "order lifecycle and pricing",
+        "portal token workflow",
+        "production task workflow"
+      ],
+      "evidence": [
+        {
+          "path": "src/features/invoices/model.test.ts",
+          "fingerprint": "e5378935021f8e048eac5a229a9db6e5f031d53cd40f03e5f386d78bbe048a3a"
+        },
+        {
+          "path": "src/features/invoices/model.ts",
+          "fingerprint": "a733c1eb9643bf36e9b0bc5d5140b1a1881fe2a237a93475e0510445d76c153d"
+        },
+        {
+          "path": "src/features/invoices/server.ts",
+          "fingerprint": "5920f7dec5be9a6cf61f19c5f1e444da0ab6f95cbbae70a7fb9675892e92f17b"
+        },
+        {
+          "path": "src/features/orders/model.test.ts",
+          "fingerprint": "5da509246f2481f45ddf838c4a7a880f1801c2a871772dcdb7ae5a8c7a63b2ef"
+        },
+        {
+          "path": "src/features/orders/model.ts",
+          "fingerprint": "2abcab0e9ee39d61e5e2db792167f232b5254c4d06682eec296215b23530a05e"
+        },
+        {
+          "path": "src/features/orders/server.ts",
+          "fingerprint": "5fed4e6df0eb48a95908d9b3b2d78eaee093e4e5979de593e2ea76f15eb6da4d"
+        },
+        {
+          "path": "src/features/permissions/model.ts",
+          "fingerprint": "7788054d9d07bbee4aca7668f68e2f72a29957d84b84ca9866c96ead312d674c"
+        },
+        {
+          "path": "src/features/portal/model.test.ts",
+          "fingerprint": "b40b825b3c65d721438a6bb33a24d309364c8e96e886d87a8e6a53b566416db0"
+        },
+        {
+          "path": "src/features/portal/model.ts",
+          "fingerprint": "ddb84cc627a5036fe2800f36adfea50e49321386d2ab8995b07da97cc11ac8eb"
+        },
+        {
+          "path": "src/features/portal/server.ts",
+          "fingerprint": "c0635e533d8b782eace9df1ee5b7bc3a84b4b0de160fb247786138f801c7b416"
+        },
+        {
+          "path": "src/features/pricing/engine.test.ts",
+          "fingerprint": "4938058a4bbfd5d4893314070852a224772e762acfec36449d867fec9ce5bea0"
+        },
+        {
+          "path": "src/features/pricing/engine.ts",
+          "fingerprint": "0004e6823332aebf15dffea13a82d888133f81ac4dee90d8b7f55f06b26b4872"
+        },
+        {
+          "path": "src/features/production/model.test.ts",
+          "fingerprint": "81f355d92e64a7168681027afbf401b079eed23b05a7ac46b265c74c36339bd0"
+        },
+        {
+          "path": "src/features/production/model.ts",
+          "fingerprint": "167c367a08ac1b53119379ff7a6dc5c85e975418d11493386b6c10af22e5463e"
+        },
+        {
+          "path": "src/features/production/spawner.ts",
+          "fingerprint": "5c7be9cd326833a59801c52fbfbdf283512ffdc48cd9580f369d784b6e9fc836"
+        },
+        {
+          "path": "src/features/production/task-spawn-helpers.ts",
+          "fingerprint": "a0fadb2c0c4681cd53356afc671530495067ae719b1b6c2011989b23f9374738"
+        }
+      ],
+      "references": [
+        ".agents/skills/pabriq-business-workflows/references/invoices-payments.md",
+        ".agents/skills/pabriq-business-workflows/references/orders-pricing.md",
+        ".agents/skills/pabriq-business-workflows/references/portal.md",
+        ".agents/skills/pabriq-business-workflows/references/production-tasks.md"
+      ]
+    },
+    {
+      "name": "pabriq-data-features",
+      "path": ".agents/skills/pabriq-data-features/SKILL.md",
+      "concerns": [
+        "React Query data hooks",
+        "database schema and migrations",
+        "domain data models",
+        "server functions"
+      ],
+      "evidence": [
+        {
+          "path": "drizzle.config.ts",
+          "fingerprint": "ec4c5fd59fca9d095acce2372eb687f6318e994c8ebafa5ecde79e376f8efdd6"
+        },
+        {
+          "path": "drizzle/meta/_journal.json",
+          "fingerprint": "c089e86e3df574388455eb8a17c8065650caf3981fea95675ca50e5bc83f923b"
+        },
+        {
+          "path": "src/db/index.ts",
+          "fingerprint": "99229d8ba5259660875a027986f1197888487fe46ba1b8026f802fec970eef96"
+        },
+        {
+          "path": "src/db/schema.ts",
+          "fingerprint": "56f34300dc6700c6f0fbbf3ff484b3a090eed0c0bd9ad93680896006b030ae0b"
+        },
+        {
+          "path": "src/features/customers/hooks.ts",
+          "fingerprint": "831963901863a65e64777a1075298bdec53ecb259c48911d2e969ddbc69df0e0"
+        },
+        {
+          "path": "src/features/customers/model.ts",
+          "fingerprint": "dc68976ac777b458508b346df70d90a902693ab22b960678cb1830395283fb7e"
+        },
+        {
+          "path": "src/features/customers/server.ts",
+          "fingerprint": "0f08e9b6320af492ba0ca8589ca7336360d766e4539a540d018ad3b82a0eb919"
+        },
+        {
+          "path": "src/features/products/hooks.ts",
+          "fingerprint": "9b895045e79b5199da7758314b1278d8f93690282ff530c99b8c768d5698bedc"
+        },
+        {
+          "path": "src/features/products/model.ts",
+          "fingerprint": "56cf8808eb72df9d6a7f4baf639d7b78d8a3855d4de5dd64ffc16b4e25de1c6d"
+        },
+        {
+          "path": "src/features/products/server.ts",
+          "fingerprint": "9c929732bc5bf8a04b14c59ddd3978a128ff9943ea502300cfca2de63b5a5b81"
+        },
+        {
+          "path": "src/lib/auth-session-server.ts",
+          "fingerprint": "6b72aeebfbc75608392660271a2c49d02e1cee4301acc78967bad0f97b8009dc"
+        },
+        {
+          "path": "src/lib/mutation-invalidation.ts",
+          "fingerprint": "6bd2c90bb0a086a8e4c8beff5fdeafce38c31de0a829dbfb6d0f5d364292ca0d"
+        },
+        {
+          "path": "src/lib/query-keys.ts",
+          "fingerprint": "62369d24870d09e60f034e2560dc4c015ad51fc6187de618f14d320cb55c9fc7"
+        },
+        {
+          "path": "src/lib/server-results.ts",
+          "fingerprint": "d8eb69a7a4808418c47dd4f294325765691560b450c90c2f30adaabd786cf317"
+        },
+        {
+          "path": "src/lib/sorting.ts",
+          "fingerprint": "4c4fc8123ed02520008c51c9d8463db1be83181a467997d8d54cee389744d2f2"
+        }
+      ],
+      "references": [
+        ".agents/skills/pabriq-data-features/references/schema-migrations.md"
+      ]
+    },
+    {
+      "name": "pabriq-integrations",
+      "path": ".agents/skills/pabriq-integrations/SKILL.md",
+      "concerns": [
+        "Mastra assistant",
+        "PWA runtime",
+        "asset storage",
+        "document generation",
+        "external service integrations"
+      ],
+      "evidence": [
+        {
+          "path": "instrument.server.mjs",
+          "fingerprint": "e1dc496447e33699f5e4c5703a96fbf2287f539faecf19519bde79ecf0b6e22c"
+        },
+        {
+          "path": "src/components/app/asset-upload/r2-adapter.ts",
+          "fingerprint": "224bd379cd037923bbbe601ff3450daeea530d390a6a31c373505c2b621e6a85"
+        },
+        {
+          "path": "src/features/address/model.ts",
+          "fingerprint": "a701608899bc45cddaa9dc08f3fee1977fa455eac2661cf364208ea7703d6339"
+        },
+        {
+          "path": "src/features/assets/model.ts",
+          "fingerprint": "f7c12c53c56608de650db252b85d3a1bd6a3d7004d723d78543ccec6937a2b8e"
+        },
+        {
+          "path": "src/features/assets/server.ts",
+          "fingerprint": "734fd39d8d030a87210461501879fcacb98dca0112beec2354b5fa3108e311ba"
+        },
+        {
+          "path": "src/features/assets/upload-machine.ts",
+          "fingerprint": "613e1436cc69b7c432f5c3081a5a3d9884f84de42b14ea055e7893277c91c833"
+        },
+        {
+          "path": "src/features/assistant/server.ts",
+          "fingerprint": "dc847e831359bec7b7e1b208d6dacdb78d66fb249d4d7388d1925028dab7a783"
+        },
+        {
+          "path": "src/features/documents/server.tsx",
+          "fingerprint": "c8fbccbd7ccfe1541bcda8c31862dd47ab54292d2bf548e75bc71580cee0961c"
+        },
+        {
+          "path": "src/features/documents/templates/pdf-template-shared.tsx",
+          "fingerprint": "a0ed8a986ed4e839eff60e04c94504bbec546cae77782e4daa5803ad136bf738"
+        },
+        {
+          "path": "src/features/invoices/model.ts",
+          "fingerprint": "a733c1eb9643bf36e9b0bc5d5140b1a1881fe2a237a93475e0510445d76c153d"
+        },
+        {
+          "path": "src/lib/r2.ts",
+          "fingerprint": "908eddef8d84716cd8636e2a8856ba7b16c396610705b587adf9736481443f4e"
+        },
+        {
+          "path": "src/mastra/agents/business-assistant-agent.ts",
+          "fingerprint": "032334cfcea53747991cd3414c14727e427e3fe9ae36e11d11c59673e6bc9245"
+        },
+        {
+          "path": "src/mastra/index.ts",
+          "fingerprint": "0f2687f66b265badbfe697e76dfd2c209fc65e685c7b36c60826ea1033be8510"
+        },
+        {
+          "path": "src/mastra/tools/business-tools.ts",
+          "fingerprint": "4875c94aad086e39a05e3b3342d083399708731c3b0c2cb9a515eedbd1a979e2"
+        },
+        {
+          "path": "src/routes/__root.tsx",
+          "fingerprint": "731f49739d73850938472f32fcd72a2f3ddbee41ce9d4580905eaa21c450a208"
+        },
+        {
+          "path": "src/routes/api/-midtrans-notification.test.ts",
+          "fingerprint": "c17ff3c5661bf86f1c82a96b62fd0e3b9638ed4f1527c706671db19dfee345c3"
+        },
+        {
+          "path": "src/routes/api/midtrans-notification.ts",
+          "fingerprint": "9fb19a9ce7c809cd8712bcee03acf913266c42dd2cab86808b30fbbe544876cb"
+        },
+        {
+          "path": "src/sw.ts",
+          "fingerprint": "63810d256586d8468a7432f1ef35cd6293edf9e91be3d2a58205ef40eb2ec3e6"
+        },
+        {
+          "path": "src/tanstack-serwist-plugin.ts",
+          "fingerprint": "c7ac8a876bd46c9977a0682296223962fc4d64540f03d49a4cc6dd90b0ed5af9"
+        }
+      ],
+      "references": []
+    },
+    {
+      "name": "pabriq-operations",
+      "path": ".agents/skills/pabriq-operations/SKILL.md",
+      "concerns": [
+        "CI",
+        "build and deployment",
+        "health probes",
+        "observability",
+        "owner bootstrap",
+        "production startup"
+      ],
+      "evidence": [
+        {
+          "path": ".github/workflows/ci.yml",
+          "fingerprint": "6c5722b9c7d1d0a2268b04077e0951bcdba63feb42497a525c06436d2890418c"
+        },
+        {
+          "path": "Dockerfile",
+          "fingerprint": "6c392916e0d405bb712d58ad4628714a3a0fbf66b2d2d8718ea55d5fd00d0461"
+        },
+        {
+          "path": "instrument.server.mjs",
+          "fingerprint": "e1dc496447e33699f5e4c5703a96fbf2287f539faecf19519bde79ecf0b6e22c"
+        },
+        {
+          "path": "package.json",
+          "fingerprint": "51e83f0c650f688f7773aac4cc911548525b918443f6da89bedfd6b1bc564ed0"
+        },
+        {
+          "path": "scripts/bootstrap-owner.ts",
+          "fingerprint": "b062725dff0a0f14439d88f158c8a07fff9e14cda638a8934809080b1b86b322"
+        },
+        {
+          "path": "scripts/start-production.mjs",
+          "fingerprint": "99cd6e9a4784f15f9d864f72a09b687c7f73078e0aa5e6298396fb836dcb5e24"
+        },
+        {
+          "path": "src/db/index.ts",
+          "fingerprint": "99229d8ba5259660875a027986f1197888487fe46ba1b8026f802fec970eef96"
+        },
+        {
+          "path": "src/lib/logger.ts",
+          "fingerprint": "26af277f28500d0e0fe6b263087edb000c4a1562c7356cbec872d1f3ec913543"
+        },
+        {
+          "path": "src/lib/server-logger-middleware.ts",
+          "fingerprint": "ae7c07028d90d5d8699b25319ce9fe22f421da3ef8228d7fb706ea96902f2f16"
+        },
+        {
+          "path": "src/routes/api/healthz.ts",
+          "fingerprint": "f2e482ab835d564824295bed4f1926c10891ccad96dd3c43e9a97b19786f8001"
+        },
+        {
+          "path": "src/routes/api/ready.ts",
+          "fingerprint": "d62fa154c6b94e8075276ce3e00ee00a40a5fb8b923ade008e8699fabcc505f6"
+        },
+        {
+          "path": "src/start.ts",
+          "fingerprint": "4899ffd8c6d042d5eddc46a37409eb6a402034a90aaa29e21bc5b72059ef235b"
+        },
+        {
+          "path": "vite.config.ts",
+          "fingerprint": "fee36dd2e69efa45bb6e9f432e775754e4a669cffdfb41e922df2f9f6a83106c"
+        }
+      ],
+      "references": []
+    },
+    {
+      "name": "pabriq-routing-auth",
+      "path": ".agents/skills/pabriq-routing-auth/SKILL.md",
+      "concerns": [
+        "authentication and authorization",
+        "file-based routing",
+        "raw API routes",
+        "subdomain routing"
+      ],
+      "evidence": [
+        {
+          "path": "src/features/permissions/model.ts",
+          "fingerprint": "7788054d9d07bbee4aca7668f68e2f72a29957d84b84ca9866c96ead312d674c"
+        },
+        {
+          "path": "src/lib/auth-session-server.ts",
+          "fingerprint": "6b72aeebfbc75608392660271a2c49d02e1cee4301acc78967bad0f97b8009dc"
+        },
+        {
+          "path": "src/lib/auth-session.ts",
+          "fingerprint": "404235259f89db110215380d7fc9e3ed8613aaf7e757e3c553cd81409edab157"
+        },
+        {
+          "path": "src/lib/auth.ts",
+          "fingerprint": "9fc44a45eb211e8cc6890a83e8c71db2edb721658071de766dc572466718c634"
+        },
+        {
+          "path": "src/lib/domain-routing.test.ts",
+          "fingerprint": "779b6750584a22e5b1e1740574f6d5717cda0d4cf5ff26fc38efe5e63cb2f46c"
+        },
+        {
+          "path": "src/lib/domain-routing.ts",
+          "fingerprint": "f808eb4d88677896ec9469615c9845316022c08ed59ea843862cf13011af7994"
+        },
+        {
+          "path": "src/router.tsx",
+          "fingerprint": "d754c88fa0e2d004760e4ff6418d49f3133dca38d0d6fea0a8e63b5378a17f0f"
+        },
+        {
+          "path": "src/routes/-route-guards.test.tsx",
+          "fingerprint": "8f6c4c340a92090c9ee51482c2b983f168168fbd55df83be9cca378694e4b061"
+        },
+        {
+          "path": "src/routes/-title-dynamic.test.tsx",
+          "fingerprint": "c8fdee77dee0bbdc0cc0700819c67e97e1315846fa236ce67f9eb41c62e0e312"
+        },
+        {
+          "path": "src/routes/__root.tsx",
+          "fingerprint": "731f49739d73850938472f32fcd72a2f3ddbee41ce9d4580905eaa21c450a208"
+        },
+        {
+          "path": "src/routes/_org.tsx",
+          "fingerprint": "09eac99829c30708e62e5c3a21bd917a521a97998519c7b50bac9fb3460d5a20"
+        },
+        {
+          "path": "src/routes/api/auth/$.ts",
+          "fingerprint": "7f23727f72cc539d3b419f347745fe18d8b378fba43f99a7b8a274a7d15b2ae5"
+        },
+        {
+          "path": "src/routes/operator.tsx",
+          "fingerprint": "8af7dc4d23dbc9fac044733b7fa79d65a058ba9b4787378acc12202ac521519c"
+        },
+        {
+          "path": "src/routes/order.$token.tsx",
+          "fingerprint": "c02cd4e9ff3f368737ad1f29fd8785d9e1f336f45816c026ccd2ce56faf39d1f"
+        },
+        {
+          "path": "src/routes/sign-in.tsx",
+          "fingerprint": "6a7f88603a0bf122c093e841eb1c32d7990d304dd10dfdafc22108ee1dfd2436"
+        },
+        {
+          "path": "src/start.ts",
+          "fingerprint": "4899ffd8c6d042d5eddc46a37409eb6a402034a90aaa29e21bc5b72059ef235b"
+        }
+      ],
+      "references": []
+    },
+    {
+      "name": "pabriq-test-safety",
+      "path": ".agents/skills/pabriq-test-safety/SKILL.md",
+      "concerns": [
+        "E2E testing",
+        "database test safety",
+        "unit integration component and route tests"
+      ],
+      "evidence": [
+        {
+          "path": "e2e/auth.spec.ts",
+          "fingerprint": "1ddc9272c11ab1b8f1e8567f0d07361fed1ca96f315d5fefcb4887cf825d3746"
+        },
+        {
+          "path": "e2e/global-setup.ts",
+          "fingerprint": "81049f2889408e11de0f8933c707962816fbb163fe12262d248f5eb0a23d4fe1"
+        },
+        {
+          "path": "e2e/helpers/auth.ts",
+          "fingerprint": "a820a3b9324dc204c2379347ce897019852c7c9dbede2d2d5b137c55af661fd2"
+        },
+        {
+          "path": "package.json",
+          "fingerprint": "51e83f0c650f688f7773aac4cc911548525b918443f6da89bedfd6b1bc564ed0"
+        },
+        {
+          "path": "playwright.config.ts",
+          "fingerprint": "9d2bbf63a7c60f646a9bc5d4435cee9d7b7a2dd2cf2bf3b930243a407d557217"
+        },
+        {
+          "path": "src/components/app/data-table/data-table.test.tsx",
+          "fingerprint": "e8557fa5400ec70dccfc0030ec4143ee42f73925c57dbdfd5809c85a22d4d648"
+        },
+        {
+          "path": "src/features/orders/model.test.ts",
+          "fingerprint": "5da509246f2481f45ddf838c4a7a880f1801c2a871772dcdb7ae5a8c7a63b2ef"
+        },
+        {
+          "path": "src/features/pricing/engine.test.ts",
+          "fingerprint": "4938058a4bbfd5d4893314070852a224772e762acfec36449d867fec9ce5bea0"
+        },
+        {
+          "path": "src/routes/-route-guards.test.tsx",
+          "fingerprint": "8f6c4c340a92090c9ee51482c2b983f168168fbd55df83be9cca378694e4b061"
+        },
+        {
+          "path": "src/test/setup.ts",
+          "fingerprint": "7ee749e069ee9801714ed64466d0699cc4cf41974cd24a43b93379d7b086f8db"
+        },
+        {
+          "path": "vitest.config.ts",
+          "fingerprint": "c3e64b5d152ba2a25db64deb67530459c734b4af62351776226278042900a8a9"
+        }
+      ],
+      "references": []
+    }
+  ]
+}

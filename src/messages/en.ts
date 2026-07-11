@@ -25,7 +25,7 @@ const en: Messages = {
     logOut: "Log out",
   },
   app: {
-    title: "AKZ Production",
+    title: "labq.dev",
     retry: "Retry",
     language: "Language",
     english: "English",
@@ -726,6 +726,18 @@ const en: Messages = {
       "Customer will pick up the order. No shipping fee will be added.",
     lateFeeCashback: "Late delivery cashback",
     lateFeeCashbackDescription: "{days} days late × {amount} per day",
+    confirmManualPayment: "Confirm Manual Payment",
+    confirmManualPaymentDesc:
+      "Review the payment proof and confirm this bank transfer payment.",
+    destinationBank: "Destination Bank",
+    bankName: "Bank Name",
+    accountNumber: "Account Number",
+    accountHolder: "Account Holder",
+    noPaymentMethodConfigured:
+      "No bank account configured for this invoice.",
+    latestProofSubmitted: "Latest proof submitted",
+    paymentProofs: "Payment Proofs",
+    noPaymentProofs: "No payment proof submitted yet.",
   },
   address: {
     title: "Address",
@@ -899,6 +911,34 @@ const en: Messages = {
     noWaitingTasks: "No tasks waiting for review",
     stagePending: "In queue",
     workflow: "Workflow",
+    // Workflow step subtitles
+    stepSubtitleReleased: "Released",
+    stepSubtitleInQueue: "In queue",
+    stepSubtitleReadyToShip: "Ready to ship",
+    stepSubtitlePendingReview: "Pending review",
+    stepSubtitleCurrentStage: "Current stage",
+    stepSubtitleNextStage: "Next stage",
+    stepSubtitleLater: "Later",
+    stepSubtitleRequiresReview: "Requires review",
+    stepSubtitleDone: "Done",
+    // Selected-task pane section headings
+    paneProductionSummary: "Production Summary",
+    paneCuttingInstructions: "Cutting Instructions",
+    paneProductionFiles: "Production Files",
+    paneStageRequirements: "Stage Requirements",
+    paneCountSeparator: "of",
+    paneCountComplete: "complete",
+    paneRequirementRequiredHint: "Required before advancing",
+    paneRequirementOptionalHint: "Optional",
+    paneEnterText: "Enter text...",
+    paneEnterNumber: "Enter number...",
+    paneRequirementRemaining:
+      "{count, plural, one {# requirement remaining} other {# requirements remaining}}",
+    paneRequirementRemainingHint: "Complete all to move forward.",
+    paneCompleteRequirements: "Complete Requirements",
+    // Work-queue board short labels
+    boardShortPreProd: "Pre-Prod",
+    boardShortProd: "Prod",
   },
   portal: {
     title: "Complete Order Data",
