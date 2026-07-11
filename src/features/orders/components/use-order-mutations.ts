@@ -101,13 +101,15 @@ export function useOrderMutations({
     }
   }
 
-  const handleMarkInvoicePaid = async (invoiceId: string) => {
+  const handleMarkInvoicePaid = async (invoiceId: string): Promise<boolean> => {
     const result = await markInvoicePaid.mutateAsync(invoiceId)
     if (result.ok) {
       toast.success(it('invoicePaid'))
-    } else {
-      toast.error(result.error ?? ct('cancel'))
+      return true
     }
+
+    toast.error(result.error ?? ct('cancel'))
+    return false
   }
 
   const handleCompleteOrder = async () => {

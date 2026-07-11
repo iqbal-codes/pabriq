@@ -703,6 +703,16 @@ export type Messages = {
     customerPickupNoShipping: string;
     lateFeeCashback: string;
     lateFeeCashbackDescription: string;
+    confirmManualPayment: string;
+    confirmManualPaymentDesc: string;
+    destinationBank: string;
+    bankName: string;
+    accountNumber: string;
+    accountHolder: string;
+    noPaymentMethodConfigured: string;
+    latestProofSubmitted: string;
+    paymentProofs: string;
+    noPaymentProofs: string;
   };
   address: {
     title: string;
@@ -873,6 +883,33 @@ export type Messages = {
     noWaitingTasks: string;
     stagePending: string;
     workflow: string;
+    // Workflow step subtitles
+    stepSubtitleReleased: string;
+    stepSubtitleInQueue: string;
+    stepSubtitleReadyToShip: string;
+    stepSubtitlePendingReview: string;
+    stepSubtitleCurrentStage: string;
+    stepSubtitleNextStage: string;
+    stepSubtitleLater: string;
+    stepSubtitleRequiresReview: string;
+    stepSubtitleDone: string;
+    // Selected-task pane section headings
+    paneProductionSummary: string;
+    paneCuttingInstructions: string;
+    paneProductionFiles: string;
+    paneStageRequirements: string;
+    paneCountSeparator: string;
+    paneCountComplete: string;
+    paneRequirementRequiredHint: string;
+    paneRequirementOptionalHint: string;
+    paneEnterText: string;
+    paneEnterNumber: string;
+    paneRequirementRemaining: string;
+    paneRequirementRemainingHint: string;
+    paneCompleteRequirements: string;
+    // Work-queue board short labels
+    boardShortPreProd: string;
+    boardShortProd: string;
   };
   portal: {
     title: string;

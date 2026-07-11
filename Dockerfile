@@ -33,6 +33,7 @@ COPY --chown=pabriq:pabriq --from=builder /app/package.json ./package.json
 COPY --chown=pabriq:pabriq --from=prod-deps /app/node_modules ./node_modules
 COPY --chown=pabriq:pabriq --from=builder /app/dist ./dist
 COPY --chown=pabriq:pabriq --from=builder /app/scripts/start-production.mjs ./scripts/start-production.mjs
+COPY --chown=pabriq:pabriq --from=builder /app/drizzle ./drizzle
 
 # Expose the default port for TanStack Start (usually 3001)
 EXPOSE 3001

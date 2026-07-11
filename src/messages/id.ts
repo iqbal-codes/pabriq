@@ -25,7 +25,7 @@ const id: Messages = {
     logOut: "Keluar",
   },
   app: {
-    title: "AKZ Production",
+    title: "labq.dev",
     retry: "Coba Lagi",
     language: "Bahasa",
     english: "Inggris",
@@ -727,6 +727,18 @@ const id: Messages = {
       "Pelanggan akan mengambil pesanan. Tidak ada biaya pengiriman.",
     lateFeeCashback: "Cashback keterlambatan",
     lateFeeCashbackDescription: "{days} hari terlambat × {amount} per hari",
+    confirmManualPayment: "Konfirmasi Pembayaran Manual",
+    confirmManualPaymentDesc:
+      "Tinjau bukti pembayaran dan konfirmasi transfer bank ini.",
+    destinationBank: "Bank Tujuan",
+    bankName: "Nama Bank",
+    accountNumber: "Nomor Rekening",
+    accountHolder: "Nama Pemilik Rekening",
+    noPaymentMethodConfigured:
+      "Belum ada rekening bank yang dikonfigurasi untuk invoice ini.",
+    latestProofSubmitted: "Bukti terakhir dikirim",
+    paymentProofs: "Bukti Pembayaran",
+    noPaymentProofs: "Belum ada bukti pembayaran yang dikirim.",
   },
   address: {
     title: "Alamat",
@@ -902,6 +914,34 @@ const id: Messages = {
     noWaitingTasks: "Tidak ada tugas yang menunggu persetujuan",
     stagePending: "Dalam antrian",
     workflow: "Alur kerja",
+    // Workflow step subtitles
+    stepSubtitleReleased: "Dirilis",
+    stepSubtitleInQueue: "Dalam antrian",
+    stepSubtitleReadyToShip: "Siap dikirim",
+    stepSubtitlePendingReview: "Menunggu review",
+    stepSubtitleCurrentStage: "Tahap saat ini",
+    stepSubtitleNextStage: "Tahap berikutnya",
+    stepSubtitleLater: "Nanti",
+    stepSubtitleRequiresReview: "Perlu review",
+    stepSubtitleDone: "Selesai",
+    // Selected-task pane section headings
+    paneProductionSummary: "Ringkasan Produksi",
+    paneCuttingInstructions: "Petunjuk Pengerjaan",
+    paneProductionFiles: "Berkas Produksi",
+    paneStageRequirements: "Persyaratan Tahap",
+    paneCountSeparator: "dari",
+    paneCountComplete: "selesai",
+    paneRequirementRequiredHint: "Wajib sebelum lanjut",
+    paneRequirementOptionalHint: "Opsional",
+    paneEnterText: "Masukkan teks...",
+    paneEnterNumber: "Masukkan angka...",
+    paneRequirementRemaining:
+      "{count, plural, one {# persyaratan tersisa} other {# persyaratan tersisa}}",
+    paneRequirementRemainingHint: "Lengkapi semua untuk melanjutkan.",
+    paneCompleteRequirements: "Lengkapi Persyaratan",
+    // Work-queue board short labels
+    boardShortPreProd: "Pra-Prod",
+    boardShortProd: "Prod",
   },
   portal: {
     title: "Lengkapi Data Pesanan",

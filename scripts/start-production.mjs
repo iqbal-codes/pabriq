@@ -1,8 +1,19 @@
 #!/usr/bin/env node
 
-import { spawn } from 'node:child_process'
+import { execSync, spawn } from 'node:child_process'
 
 const SHUTDOWN_GRACE_MS = Number(process.env.SHUTDOWN_GRACE_MS) || 10_000
+
+if (process.env.RUN_MIGRATIONS_ON_STARTUP === 'true') {
+  console.log('RUN_MIGRATIONS_ON_STARTUP is enabled. Running migrations...')
+  try {
+    execSync('node dist/migrate.js', { stdio: 'inherit' })
+    console.log('Migrations completed successfully!')
+  } catch (error) {
+    console.error('Migration failed! Aborting startup.', error)
+    process.exit(1)
+  }
+}
 
 let childExiting = false
 

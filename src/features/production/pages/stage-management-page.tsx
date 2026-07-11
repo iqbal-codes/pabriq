@@ -1,5 +1,6 @@
 import { parseAsStringEnum, useQueryState } from 'nuqs'
 import { useTranslations } from 'use-intl'
+import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { Tabs, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { useGlobalModal } from '#/hooks/use-global-overlay'
@@ -18,7 +19,7 @@ export function StageManagementPage() {
   const { data: stages, isLoading } = useStages(board)
 
   return (
-    <>
+    <PageContent>
       <PageHeader
         title={t('stageManagement')}
         primaryAction={{
@@ -29,7 +30,6 @@ export function StageManagementPage() {
       <Tabs
         value={board}
         onValueChange={(v) => setBoard(v as 'pre_production' | 'production')}
-        className="pt-2"
       >
         <TabsList>
           <TabsTrigger value="pre_production">
@@ -39,6 +39,6 @@ export function StageManagementPage() {
         </TabsList>
       </Tabs>
       <StageList stages={stages ?? []} loading={isLoading} />
-    </>
+    </PageContent>
   )
 }

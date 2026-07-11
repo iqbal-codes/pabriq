@@ -205,6 +205,6 @@ describe('KanbanPage', () => {
   it('renders search and stage filter controls', () => {
     renderPage()
     expect(screen.getByPlaceholderText('Search orders...')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('All Stages')).toBeInTheDocument()
+    expect(screen.getByRole('combobox')).toHaveTextContent('All Stages')
   })
 })

@@ -76,16 +76,15 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ### Skill registry
 
 Project-local skills stored under `.agents/skills/` and available at runtime via `skill://` URIs:
+- `pabriq-app-ui` — Compose React UI pages, forms, data tables, URL overlays, and responsive layouts.
+- `pabriq-business-workflows` — Orchestrate order, invoice, payment, production, and portal state-machine workflows.
+- `pabriq-data-features` — Build schema, model, server-function, query, mutation, migration, and tenant-scoped data features.
+- `pabriq-integrations` — Integrate R2 assets, PDFs, Mastra, Midtrans, PWA instrumentation, shipping, and monitoring.
+- `pabriq-operations` — Operate builds, containers, health probes, production startup, owner bootstrap, CI, and observability.
+- `pabriq-routing-auth` — Create TanStack Start routes, auth guards, role gates, portal-token endpoints, and API handlers.
+- `pabriq-test-safety` — Choose, write, and safely run unit, integration, component, route, and E2E tests.
 
-| Skill | URI | When to load |
-|---|---|---|
-| `pabriq-app-v2-foundation` | `skill://pabriq-app-v2-foundation` | High-level architecture, project setup, starting dev server, feature folder layout |
-| `pabriq-app-v2-ui` | `skill://pabriq-app-v2-ui` | Frontend, layout shells, TanStack Form, DataTable, Tailwind CSS v4, i18n |
-| `pabriq-app-v2-backend` | `skill://pabriq-app-v2-backend` | createServerFn, session & role checks, API webhooks, server validation |
-| `pabriq-app-v2-data` | `skill://pabriq-app-v2-data` | Drizzle ORM schemas, database connections, query pooling, migrations |
-| `pabriq-app-v2-testing` | `skill://pabriq-app-v2-testing` | Writing or running Vitest unit/integration tests or Playwright E2E tests |
-| `pabriq-app-v2-conventions` | `skill://pabriq-app-v2-conventions` | Code style, Biome rules, TypeScript strictness, named exports, import aliases (`#/`) |
-| `pabriq-app-v2-infra` | `skill://pabriq-app-v2-infra` | Dockerfile, Infisical secrets, environment configurations |
+
 
 ## 6. Code Best Practices
 
