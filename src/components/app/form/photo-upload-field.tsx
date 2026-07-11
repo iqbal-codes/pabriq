@@ -26,7 +26,7 @@ function PhotoPreviewTile({
   onRemove: () => void
 }): React.ReactElement {
   return (
-    <div className="relative inline-block group">
+    <div className="relative inline-block size-24 align-top group">
       <AssetImage
         assetId={assetId}
         assetKind="image"
@@ -115,6 +115,7 @@ function PhotoUploadFieldSingle({
             acceptedMimeTypes={getAcceptedMimeTypes(usage)}
             maxBytes={getMaxBytes(usage)}
             keepCompletedItems={false}
+            hideDropzone={uploadItems.length > 0}
             onUploadComplete={handleUploadComplete}
             disabled={disabled}
           />

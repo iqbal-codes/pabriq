@@ -108,6 +108,7 @@ beforeEach(async () => {
       orgId: org1Id,
       orderId: order1Id,
       productId: product1Id,
+      productName: 'Product 1',
       quantity: 1,
       unitPrice: 10000,
       total: 10000,
@@ -692,8 +693,8 @@ describe('getOrderTasksTimeline', () => {
         orgId: org1Id,
         taskId: task1Id,
         type: 'stage_transition',
-        fromStageId: null,
-        toStageId: stage1Id,
+        fromStageId: stage1Id,
+        toStageId: null,
         data: {
           responses: {
             'req-design': { assetIds: ['asset-abc'] },

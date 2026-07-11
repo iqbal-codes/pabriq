@@ -154,7 +154,7 @@ export function OrderCreationMissionOverlay({
               <div className="flex min-w-0 gap-3">
                 <span
                   className={cn(
-                    'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg',
+                    'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-none',
                     mission.isComplete
                       ? 'bg-success/10 text-success ring-1 ring-success/20'
                       : 'bg-muted text-muted-foreground',
@@ -178,7 +178,7 @@ export function OrderCreationMissionOverlay({
               <div className="flex shrink-0 items-center gap-2 pl-11 sm:pl-0">
                 <span
                   className={cn(
-                    'rounded-full px-2 py-0.5 text-xs font-medium',
+                    'rounded-none px-2 py-0.5 text-xs font-medium',
                     mission.isComplete
                       ? 'bg-success/10 text-success'
                       : 'bg-muted text-muted-foreground',

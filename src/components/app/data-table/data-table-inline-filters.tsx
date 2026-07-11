@@ -53,7 +53,7 @@ function asRadioChips(def: FilterDefinition): { options: FilterOption[] } {
 /* ── trigger button base styles ──────────────────────────────────── */
 
 const triggerBase =
-  'inline-flex items-center gap-1.5 rounded-md border px-2.5 h-10 text-sm font-medium bg-background transition-colors cursor-pointer select-none whitespace-nowrap'
+  'inline-flex h-8 items-center gap-1.5 rounded-none border bg-background px-2 text-xs font-medium transition-colors cursor-pointer select-none whitespace-nowrap'
 const triggerIdle = 'border-border hover:bg-accent/50'
 const triggerActive = 'border-primary/30 bg-primary/5'
 
@@ -79,14 +79,14 @@ function TriggerButton({
       {active && valueText ? (
         <>
           <span className="text-muted-foreground">{label}:</span>
-          <span className="truncate max-w-[10rem]">{valueText}</span>
+          <span className="truncate max-w-[8rem]">{valueText}</span>
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation()
               onRemove?.()
             }}
-            className="ml-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="ml-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-none text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <X className="size-3" />
           </button>

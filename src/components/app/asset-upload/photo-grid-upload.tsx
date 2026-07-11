@@ -17,6 +17,7 @@ interface PhotoGridUploadProps {
   maxBytes: number
   disabled?: boolean
   keepCompletedItems?: boolean
+  hideDropzone?: boolean
   onUploadComplete?: (payload: UploadCompletePayload) => void
   onUploadError?: (itemId: string, error: string) => void
 }
@@ -146,17 +147,19 @@ export function PhotoGridUpload(props: PhotoGridUploadProps) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      <div
-        {...getRootProps()}
-        className={cn(
-          'size-24 rounded-lg border-2 border-dashed flex items-center justify-center bg-muted transition-colors cursor-pointer shrink-0',
-          isDragActive ? 'border-primary bg-primary/5' : 'border-muted',
-          props.disabled && 'opacity-50 pointer-events-none',
-        )}
-      >
-        <input {...getInputProps()} />
-        <ImageIcon className="size-6 text-muted-foreground" />
-      </div>
+      {!props.hideDropzone && (
+        <div
+          {...getRootProps()}
+          className={cn(
+            'size-24 rounded-lg border-2 border-dashed flex items-center justify-center bg-muted transition-colors cursor-pointer shrink-0',
+            isDragActive ? 'border-primary bg-primary/5' : 'border-muted',
+            props.disabled && 'opacity-50 pointer-events-none',
+          )}
+        >
+          <input {...getInputProps()} />
+          <ImageIcon className="size-6 text-muted-foreground" />
+        </div>
+      )}
 
       {items.map((item) => (
         <PhotoThumbnail

@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
 import { formatNumber } from '#/components/app/form/form-utils'
-import { Button } from '#/components/ui/button'
 import {
   Command,
   CommandEmpty,
@@ -38,7 +37,7 @@ export function ProductSelectDialog({
   const t = useTranslations('orders')
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
-  const [isAdding, setIsAdding] = useState(false)
+  const [_isAdding, setIsAdding] = useState(false)
 
   const activeProducts = useMemo(
     () => products.filter((p) => p.active),
@@ -110,6 +109,7 @@ export function ProductSelectDialog({
                     key={product.id}
                     value={product.id}
                     onSelect={() => handleSelect(product)}
+                    className="cursor-pointer"
                   >
                     <div className="flex w-full items-center gap-3">
                       <AssetImage
@@ -126,15 +126,6 @@ export function ProductSelectDialog({
                           {product.minQuantity}
                         </p>
                       </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        className="shrink-0"
-                        disabled={isAdding}
-                      >
-                        {t('addToOrder')}
-                      </Button>
                     </div>
                   </CommandItem>
                 ))}

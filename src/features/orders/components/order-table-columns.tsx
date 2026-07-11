@@ -143,16 +143,15 @@ export function getOrderColumns(t: TranslationFn): AppColumnDef<OrderRow>[] {
         ),
     },
     {
-      accessorKey: 'shippedAt',
-      header: t('completedAt'),
-      meta: { label: t('completedAt'), mobileRole: 'meta' },
+      accessorKey: 'createdAt',
+      header: t('createdAt'),
+      meta: { label: t('createdAt'), mobileRole: 'hidden' },
       cell: ({ row }) => {
-        const { status, shippedAt } = row.original
-        if ((status !== 'in_delivery' && status !== 'completed') || !shippedAt)
-          return <span className="text-muted-foreground">—</span>
+        const date = row.original.createdAt
+        if (!date) return <span className="text-muted-foreground">—</span>
         return (
           <span>
-            {shippedAt.toLocaleString('id-ID', {
+            {new Date(date).toLocaleString('id-ID', {
               year: 'numeric',
               month: 'short',
               day: 'numeric',
@@ -164,15 +163,16 @@ export function getOrderColumns(t: TranslationFn): AppColumnDef<OrderRow>[] {
       },
     },
     {
-      accessorKey: 'createdAt',
-      header: t('createdAt'),
-      meta: { label: t('createdAt'), mobileRole: 'hidden' },
+      accessorKey: 'shippedAt',
+      header: t('completedAt'),
+      meta: { label: t('completedAt'), mobileRole: 'meta' },
       cell: ({ row }) => {
-        const date = row.original.createdAt
-        if (!date) return <span className="text-muted-foreground">—</span>
+        const { status, shippedAt } = row.original
+        if ((status !== 'in_delivery' && status !== 'completed') || !shippedAt)
+          return <span className="text-muted-foreground">—</span>
         return (
           <span>
-            {new Date(date).toLocaleString('id-ID', {
+            {shippedAt.toLocaleString('id-ID', {
               year: 'numeric',
               month: 'short',
               day: 'numeric',

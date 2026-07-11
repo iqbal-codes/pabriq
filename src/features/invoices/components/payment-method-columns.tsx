@@ -6,25 +6,11 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import type { PaymentMethod } from '#/features/invoices/model'
 
-const TYPE_LABEL_KEYS: Record<string, 'bankTransfer' | 'paymentGateway'> = {
-  bank_transfer: 'bankTransfer',
-  payment_gateway: 'paymentGateway',
-}
-
 export function usePaymentMethodColumns(): AppColumnDef<PaymentMethod>[] {
   const t = useTranslations('settings')
   const ct = useTranslations('common')
 
   return [
-    {
-      id: 'type',
-      header: ct('type'),
-      meta: { label: ct('type'), mobileRole: 'badge' },
-      cell: ({ row }) => {
-        const labelKey = TYPE_LABEL_KEYS[row.original.type] ?? row.original.type
-        return <Badge variant="secondary">{t(labelKey)}</Badge>
-      },
-    },
     {
       id: 'bankName',
       header: t('bankName'),

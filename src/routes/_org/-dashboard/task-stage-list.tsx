@@ -33,12 +33,12 @@ export function TaskStageList({
         const width = `${Math.max((item.count / maxCount) * 100, item.count > 0 ? 8 : 0)}%`
         const barColor =
           item.id === 'queue'
-            ? 'bg-slate-500'
+            ? 'bg-primary'
             : item.id === 'done'
-              ? 'bg-emerald-600'
+              ? 'bg-success'
               : item.board === 'pre_production'
-                ? 'bg-sky-600'
-                : 'bg-amber-600'
+                ? 'bg-brand-accent'
+                : 'bg-warning'
 
         return (
           <div key={item.id} className="space-y-2">
@@ -48,9 +48,9 @@ export function TaskStageList({
                 {formatNumber(item.count, locale)}
               </Badge>
             </div>
-            <div className="h-2 rounded-full bg-muted">
+            <div className="h-2 bg-muted">
               <div
-                className={cn('h-2 rounded-full transition-all', barColor)}
+                className={cn('h-2 transition-all', barColor)}
                 style={{ width }}
               />
             </div>

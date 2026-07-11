@@ -56,8 +56,8 @@ export function DataTableDesktopView<TData>({
   return (
     <div className="relative">
       <div className="hidden md:block">
-        <div className="rounded-xl border bg-muted/50 p-1.5">
-          <div className="rounded-lg border bg-background overflow-hidden">
+        <div className="rounded-none border bg-muted/50 p-1.5">
+          <div className="rounded-none border bg-background overflow-hidden">
             <UITable>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -72,8 +72,7 @@ export function DataTableDesktopView<TData>({
                           className={cn(
                             meta?.align === 'end' && 'text-right',
                             meta?.align === 'center' && 'text-center',
-                            meta?.sticky &&
-                              'sticky right-0 bg-background z-10 rounded-tr-lg',
+                            meta?.sticky && 'sticky right-0 bg-background z-10',
                             meta?.headerClassName,
                           )}
                         >
@@ -128,7 +127,7 @@ export function DataTableDesktopView<TData>({
                                 'sticky right-0 bg-background z-10',
                                 row.index ===
                                   table.getRowModel().rows.length - 1 &&
-                                  'rounded-br-lg',
+                                  'rounded-none',
                               ),
                             meta?.cellClassName,
                           )}
@@ -149,7 +148,7 @@ export function DataTableDesktopView<TData>({
       </div>
 
       {isRefetching && (
-        <div className="absolute inset-0 z-10 hidden md:flex items-center justify-center rounded-xl bg-background/60 backdrop-blur-[1px]">
+        <div className="absolute inset-0 z-10 hidden md:flex items-center justify-center rounded-none bg-background/60 backdrop-blur-[1px]">
           <RefreshCw className="size-6 animate-spin text-muted-foreground" />
         </div>
       )}

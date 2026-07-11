@@ -104,7 +104,7 @@ export function AssetImage({
           variant="ghost"
           aria-label={previewLabel}
           className={cn(
-            'group relative inline-flex h-10 w-10 shrink-0 overflow-hidden bg-transparent p-0 shadow-none transition-transform duration-150 hover:scale-[1.02] hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            'group relative inline-flex h-10 w-10 shrink-0 overflow-hidden bg-transparent p-0 shadow-none transition-transform duration-150 hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
             className,
           )}
         >

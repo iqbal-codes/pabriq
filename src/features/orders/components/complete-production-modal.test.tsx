@@ -164,7 +164,7 @@ describe('CompleteProductionModal', () => {
 
     const selects = document.querySelectorAll('select')
     if (selects.length > 0) {
-      await user.selectOptions(selects[0], 'pm-1')
+      await user.selectOptions(selects[0], 'bank:pm-1')
     }
 
     await user.click(submitButton)
@@ -204,7 +204,7 @@ describe('CompleteProductionModal', () => {
     // Select a payment method via native select
     const selects = document.querySelectorAll('select')
     if (selects.length > 0) {
-      await user.selectOptions(selects[0], 'pm-1')
+      await user.selectOptions(selects[0], 'bank:pm-1')
     }
 
     // Fill in shipping fee

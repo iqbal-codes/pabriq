@@ -16,7 +16,12 @@ import {
 } from '#/components/ui/dialog'
 import type { ShippingAddress } from '#/features/address/model'
 import { usePaymentMethods } from '#/features/invoices/hooks'
+import {
+  encodeBankPaymentSelection,
+  parseInvoicePaymentSelection,
+} from '#/features/invoices/payment-selection'
 import { useCompleteProduction } from '#/features/orders/hooks'
+import { useOrgSettings } from '#/features/settings/hooks'
 import {
   type CompleteProductionForm,
   FinalInvoicePreview,
@@ -47,11 +52,17 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
   const it = useTranslations('invoices')
   const completeProduction = useCompleteProduction()
   const { data: paymentMethods } = usePaymentMethods()
+  const { data: orgSettings } = useOrgSettings()
 
-  const paymentMethodOptions = (paymentMethods ?? []).map((pm) => ({
-    value: pm.id,
-    label: pm.name,
-  }))
+  const paymentMethodOptions = [
+    ...(paymentMethods ?? []).map((pm) => ({
+      value: encodeBankPaymentSelection(pm.id),
+      label: pm.name,
+    })),
+    ...(orgSettings?.midtransServerKey && orgSettings?.midtransClientKey
+      ? [{ value: 'midtrans', label: it('midtrans') }]
+      : []),
+  ]
 
   const form = useAppForm({
     defaultValues: {
@@ -80,6 +91,8 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
         return
       }
 
+      const selection = parseInvoicePaymentSelection(value.paymentMethodId)
+
       const result = await completeProduction.mutateAsync({
         id: order.id,
         courier: value.courier || undefined,
@@ -88,9 +101,15 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
         shippingFeeDescription:
           shippingAmount > 0 ? value.shippingFeeDescription : undefined,
         invoiceDueDate: isInvoiceNeeded ? value.dueDate : undefined,
-        invoicePaymentMethodId: isInvoiceNeeded
-          ? value.paymentMethodId
+        invoicePaymentProvider: isInvoiceNeeded
+          ? selection?.paymentProvider
           : undefined,
+        invoicePaymentMethodId:
+          isInvoiceNeeded &&
+          selection &&
+          selection.paymentProvider === 'bank_transfer'
+            ? (selection.paymentMethodId ?? undefined)
+            : undefined,
         invoiceNotes: isInvoiceNeeded && value.notes ? value.notes : undefined,
       })
 

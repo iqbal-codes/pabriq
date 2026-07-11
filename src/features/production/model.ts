@@ -411,17 +411,6 @@ export async function advanceTask(
     return { ok: false, error: 'Current stage not found' }
   }
 
-  if (!isQueued) {
-    const currentStage = allStages[currentStageIdx] as Stage
-    const reqError = validateStageRequirements(
-      currentStage.requirements,
-      requirementResponses,
-    )
-    if (reqError !== null) {
-      return { ok: false, error: reqError }
-    }
-  }
-
   if (requirementResponses && Object.keys(requirementResponses).length > 0) {
     const existingContext = (task.context as Record<string, unknown>) ?? {}
     const updatedContext = {
@@ -439,10 +428,25 @@ export async function advanceTask(
         updatedAt: new Date(),
       })
       .where(eq(tasksTable.id, taskId))
+    task.context = updatedContext as never
   }
 
-  const completedReqIds = Object.keys(requirementResponses ?? {})
+  if (!isQueued) {
+    const currentStage = allStages[currentStageIdx] as Stage
+    const reqError = validateStageRequirements(
+      currentStage.requirements,
+      (task.context as Record<string, unknown>)
+        ?.requirementResponses as RequirementResponse,
+    )
+    if (reqError !== null) {
+      return { ok: false, error: reqError }
+    }
+  }
 
+  const completedReqIds = Object.keys(
+    ((task.context as Record<string, unknown>)
+      ?.requirementResponses as RequirementResponse) ?? {},
+  )
   const nextStageIdx = currentStageIdx + 1
   const isAtLastStage = nextStageIdx >= allStages.length
 

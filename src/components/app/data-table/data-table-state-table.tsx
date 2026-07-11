@@ -96,8 +96,8 @@ function StateTableShell<TData>({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border bg-muted/50 p-1.5">
-        <div className="rounded-lg border bg-background">
+      <div className="rounded-none border bg-muted/50 p-1.5">
+        <div className="rounded-none border bg-background">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50 *:px-3 sm:*:px-4">

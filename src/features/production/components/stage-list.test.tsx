@@ -1,9 +1,19 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import { IntlProvider } from 'use-intl'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '#/components/ui/tooltip'
+import * as globalOverlay from '#/hooks/use-global-overlay'
 import type { Stage } from '../model'
+
+vi.spyOn(globalOverlay, 'useGlobalModal').mockReturnValue({
+  modal: null,
+  modalId: null,
+  openModal: vi.fn(),
+  closeModal: vi.fn(),
+  isOpen: false,
+})
+
 import { StageList } from './stage-list'
 
 const enMessages = {
@@ -26,6 +36,11 @@ const enMessages = {
     required: 'Required',
     optional: 'Optional',
     active: 'Active',
+    dataTable: {
+      previous: 'Previous',
+      next: 'Next',
+      noResults: 'No results',
+    },
     inactive: 'Inactive',
     editStage: 'Edit',
     deleteStage: 'Delete',

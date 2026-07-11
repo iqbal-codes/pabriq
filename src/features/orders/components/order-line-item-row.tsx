@@ -189,22 +189,18 @@ export const OrderLineItemRow = withForm({
             {isNegotiated ? (
               <form.AppField name={`lineItems[${index}].unitPrice`}>
                 {(field) => (
-                  <field.NumberField
-                    label={t('hargaNego')}
-                    optional
-                    onValueChange={async () => {
-                      // Price changed manually, no recalc needed
-                    }}
-                  />
+                  <field.NumberField label={t('hargaNego')} optional />
                 )}
               </form.AppField>
             ) : (
-              <div className="flex flex-col flex-1 mt-1">
-                <span className="text-sm font-medium">{t('unitPrice')}</span>
+              <div className="flex flex-col flex-1">
+                <span className="text-sm font-medium shrink h-4.25">
+                  {t('unitPrice')}
+                </span>
                 {isCalculatingPrice ? (
-                  <Skeleton className="mt-1 h-9 w-full" />
+                  <Skeleton className="mt-2 h-8 w-full" />
                 ) : (
-                  <p className="mt-1 rounded-md border bg-muted px-3 py-2 text-sm h-9">
+                  <p className="mt-2 rounded-md border bg-muted px-2 py-1.25 text-sm h-8">
                     {displayPrice}
                   </p>
                 )}

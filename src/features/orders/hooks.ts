@@ -98,6 +98,7 @@ export function useCompleteProduction() {
       shippingFee?: number
       shippingFeeDescription?: string
       invoiceDueDate?: string
+      invoicePaymentProvider?: string
       invoicePaymentMethodId?: string
       invoiceNotes?: string
     }) => completeProductionFn({ data: input }),

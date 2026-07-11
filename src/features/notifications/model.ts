@@ -23,7 +23,7 @@ export type PaymentNotificationContext = {
   invoiceNumber: string
   customerName: string
   amount: number
-  method: 'bank_transfer' | 'payment_gateway' | 'cash'
+  method: 'bank_transfer' | 'midtrans' | 'cash'
   reference: string | null
   proofAssetId: string | null
 }
@@ -115,11 +115,11 @@ export type ListActionNotificationsResult = {
   counts: ActionNotificationCounts
 }
 
-type PaymentMethod = 'bank_transfer' | 'payment_gateway' | 'cash'
+type PaymentMethod = 'bank_transfer' | 'midtrans' | 'cash'
 
 const PAYMENT_METHODS: Record<PaymentMethod, true> = {
   bank_transfer: true,
-  payment_gateway: true,
+  midtrans: true,
   cash: true,
 }
 

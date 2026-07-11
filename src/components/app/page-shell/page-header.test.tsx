@@ -72,8 +72,18 @@ describe('PageHeader', () => {
     expect(clicked).toBe(true)
   })
 
-  it('hides on mobile with hidden md:flex classes', () => {
+  it('shows on mobile by default', () => {
     const { container } = render(<PageHeader title="Orders" />)
+    const root = container.firstChild as HTMLElement
+    expect(root.className).toContain('flex')
+    expect(root.className).toContain('flex-col')
+    expect(root.className).toContain('md:flex-row')
+  })
+
+  it('can be hidden on mobile when explicitly disabled', () => {
+    const { container } = render(
+      <PageHeader title="Orders" mobileVisible={false} />,
+    )
     const root = container.firstChild as HTMLElement
     expect(root.className).toContain('hidden')
     expect(root.className).toContain('md:flex')

@@ -2,11 +2,7 @@ import { useTranslations } from 'use-intl'
 import type { DataTableLabels } from '#/components/app/data-table'
 import { DataTable } from '#/components/app/data-table'
 import { useGlobalModal } from '#/hooks/use-global-overlay'
-import {
-  StageReorderActions,
-  StageRowActions,
-  useStageColumns,
-} from '../components/stage-columns'
+import { StageRowActions, useStageColumns } from '../components/stage-columns'
 import { useStageMutations } from '../hooks'
 import type { Stage } from '../model'
 
@@ -43,7 +39,13 @@ export function StageList({ stages, loading }: Props) {
     await deleteStage.mutateAsync({ id: stageId })
   }
 
-  const columns = useStageColumns()
+  const columns = useStageColumns({
+    stages,
+    isReordering,
+    isDeletingId: deletingStageId,
+    onMoveUp: handleMoveUp,
+    onMoveDown: handleMoveDown,
+  })
 
   const labels: DataTableLabels = {
     clearFilters: dt('clearFilters'),
@@ -84,19 +86,7 @@ export function StageList({ stages, loading }: Props) {
         noResultsTitle={t('stageManagement')}
         hasActiveFilters={false}
         rowActions={(stage: Stage) => (
-          <div className="flex flex-col gap-1">
-            <StageReorderActions
-              isFirst={stages[0]?.id === stage.id}
-              isLast={stages[stages.length - 1]?.id === stage.id}
-              isReordering={isReordering}
-              isDeleting={deletingStageId === stage.id}
-              onMoveUp={() =>
-                handleMoveUp(stages.findIndex((s) => s.id === stage.id))
-              }
-              onMoveDown={() =>
-                handleMoveDown(stages.findIndex((s) => s.id === stage.id))
-              }
-            />
+          <div className="flex gap-1">
             <StageRowActions
               isReordering={isReordering}
               isDeleting={deletingStageId === stage.id}
