@@ -12,6 +12,7 @@ import { getAssetsForLineItemFn } from '#/features/orders/server'
 import { cn } from '#/lib/utils'
 import { useTaskDetail, useTaskMutations } from '../hooks'
 import type { ProductionTask, Stage } from '../model'
+import { StageBadge } from './stage-badge'
 import {
   type DeadlineInfo,
   getTaskDeadlineClasses,
@@ -58,14 +59,14 @@ function buildActionLabel(
 
 type TaskIdentityHeaderProps = {
   task: ProductionTask
-  currentStage: Stage | null
+  activeStages: Stage[]
   deadline: DeadlineInfo | null
   deadlineStatusLabel: string
 }
 
 function TaskIdentityHeader({
   task,
-  currentStage,
+  activeStages,
   deadline,
   deadlineStatusLabel,
 }: TaskIdentityHeaderProps) {
@@ -81,11 +82,7 @@ function TaskIdentityHeader({
         <span className="font-mono text-xs font-semibold text-muted-foreground bg-muted px-2.5 py-1 border border-border">
           {task.taskNumber ?? '—'}
         </span>
-        {currentStage ? (
-          <Badge className="text-[10px] rounded-none">
-            {currentStage.name}
-          </Badge>
-        ) : null}
+        <StageBadge task={task} activeStages={activeStages} />
         {task.priority ? (
           <Badge variant="destructive" className="text-[10px] rounded-none">
             {t('priorityBadge')}
@@ -306,7 +303,7 @@ export function SelectedTaskPane({
           {showSummary && (
             <TaskIdentityHeader
               task={task}
-              currentStage={currentStage}
+              activeStages={activeStages}
               deadline={deadline}
               deadlineStatusLabel={deadlineStatusLabel}
             />
@@ -589,16 +586,11 @@ export function SelectedTaskSummary({
           : t('deadlineDaysLeft', { days: deadline.dayDelta })
     : ''
 
-  const boardStages = activeStages.filter((s) => s.board === task.board)
-  const currentStage = task.stageId
-    ? (boardStages.find((s) => s.id === task.stageId) ?? null)
-    : null
-
   return (
     <div className="p-5 pr-16">
       <TaskIdentityHeader
         task={task}
-        currentStage={currentStage}
+        activeStages={activeStages}
         deadline={deadline}
         deadlineStatusLabel={deadlineStatusLabel}
       />

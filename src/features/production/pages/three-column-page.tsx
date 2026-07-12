@@ -103,18 +103,6 @@ export function ThreeColumnPage({ orgId }: Props) {
     [boardData, activeStages],
   )
 
-  const stepCounts = useMemo(() => {
-    const counts: Record<string, number> = {}
-    if (!boardData) return counts
-    counts.queue = boardData.queued.length
-    counts.ready_for_production = boardData.readyForProduction.length
-    counts.completed = boardData.done.length
-    for (const [stageId, tasksList] of boardData.stages.entries()) {
-      counts[stageId] = tasksList.length
-    }
-    return counts
-  }, [boardData])
-
   const allTasks = useMemo(() => [...ready, ...waiting], [ready, waiting])
   const effectiveTaskId =
     selectedTaskId && allTasks.some((bt) => bt.task.id === selectedTaskId)
@@ -157,7 +145,6 @@ export function ThreeColumnPage({ orgId }: Props) {
             taskId={effectiveTaskId}
             orgId={orgId}
             activeStages={activeStages}
-            stepCounts={stepCounts}
             tab={detailTab}
             onTabChange={setDetailTab}
           />
@@ -171,11 +158,7 @@ export function ThreeColumnPage({ orgId }: Props) {
               orgId={orgId}
               activeStages={activeStages}
             />
-            <WorkflowRail
-              taskId={effectiveTaskId}
-              activeStages={activeStages}
-              stepCounts={stepCounts}
-            />
+            <WorkflowRail taskId={effectiveTaskId} />
           </>
         )}
       </div>
@@ -214,7 +197,6 @@ export function ThreeColumnPage({ orgId }: Props) {
               taskId={effectiveTaskId}
               orgId={orgId}
               activeStages={activeStages}
-              stepCounts={stepCounts}
               tab={detailTab}
               onTabChange={setDetailTab}
               showSummary={false}
@@ -230,7 +212,6 @@ type TabbedTaskPaneProps = {
   taskId: string
   orgId: string
   activeStages: Stage[]
-  stepCounts: Record<string, number>
   tab: 'detail' | 'activity'
   onTabChange: (tab: 'detail' | 'activity') => void
   showSummary?: boolean
@@ -240,7 +221,6 @@ function TabbedTaskPane({
   taskId,
   orgId,
   activeStages,
-  stepCounts,
   tab,
   onTabChange,
   showSummary = true,
@@ -285,11 +265,7 @@ function TabbedTaskPane({
           />
         </TabsContent>
         <TabsContent value="activity" className="min-h-0 flex-1">
-          <WorkflowRail
-            taskId={taskId}
-            activeStages={activeStages}
-            stepCounts={stepCounts}
-          />
+          <WorkflowRail taskId={taskId} />
         </TabsContent>
       </Tabs>
     </div>
