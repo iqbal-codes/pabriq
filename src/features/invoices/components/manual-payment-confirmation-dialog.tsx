@@ -1,7 +1,8 @@
-import { Download, ImageOff, Landmark } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { ImageOff, Landmark } from 'lucide-react'
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'use-intl'
-import { AssetImage } from '#/components/app/asset-image'
+import { ExistingFileList } from '#/components/app/form/file-upload-field'
 import { Button } from '#/components/ui/button'
 import {
   Dialog,
@@ -11,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
+import { getAssetsMetadata } from '#/features/assets/server'
 import { useInvoice } from '#/features/invoices/hooks'
 import type { InvoicePaymentProof, InvoiceRow } from '#/features/invoices/model'
 import { formatCurrency } from '#/lib/formatters'
@@ -39,12 +41,24 @@ export function ManualPaymentConfirmationDialog({
   const [isProcessing, setIsProcessing] = useState(false)
 
   const paymentMethod = invoiceDetail?.paymentMethod
+  const proofAssetIds = paymentProofs.map((proof) => proof.proofAssetId)
   const latestProof =
     paymentProofs.length > 0
       ? paymentProofs.reduce((latest, current) =>
           current.createdAt > latest.createdAt ? current : latest,
         )
       : null
+
+  const { data: proofAssets } = useQuery({
+    queryKey: ['assets-metadata', proofAssetIds],
+    queryFn: () => getAssetsMetadata({ data: { assetIds: proofAssetIds } }),
+    enabled: proofAssetIds.length > 0,
+    placeholderData: (previousData) => previousData,
+  })
+
+  const proofsByAssetId = new Map(
+    proofAssets?.map((asset) => [asset.id, asset]) ?? [],
+  )
 
   const handleClose = (nextOpen: boolean) => {
     if (isProcessing || isConfirming) return
@@ -159,31 +173,14 @@ export function ManualPaymentConfirmationDialog({
               <p className="mb-2 text-xs font-medium text-muted-foreground">
                 {t('paymentProofs')} ({paymentProofs.length})
               </p>
-              <div className="flex flex-wrap gap-2">
-                {paymentProofs.map((proof) => (
-                  <div
-                    key={proof.id}
-                    className="flex items-center gap-2 border p-2"
-                  >
-                    <AssetImage
-                      assetId={proof.proofAssetId}
-                      assetKind="image"
-                      className="size-16 object-cover"
-                    />
-                    <Button variant="outline" size="icon-sm" asChild>
-                      <a
-                        href={`/api/assets/${proof.proofAssetId}/download`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download
-                      >
-                        <Download aria-hidden="true" />
-                        <span className="sr-only">{t('downloadProof')}</span>
-                      </a>
-                    </Button>
-                  </div>
-                ))}
-              </div>
+              <ExistingFileList
+                assets={proofAssetIds
+                  .map((id) => proofsByAssetId.get(id))
+                  .filter(
+                    (asset): asset is NonNullable<typeof asset> =>
+                      asset !== undefined,
+                  )}
+              />
             </div>
           ) : (
             <div className="flex items-center gap-2 rounded-lg border border-dashed p-3">

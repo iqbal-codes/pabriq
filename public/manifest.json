@@ -1,7 +1,7 @@
 {
-  "name": "labq.dev",
-  "short_name": "labq",
-  "description": "Production management for made-to-order businesses by labq.dev.",
+  "name": "AKZ app",
+  "short_name": "AKZ app",
+  "description": "Production management for made-to-order businesses.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

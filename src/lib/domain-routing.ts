@@ -1,6 +1,7 @@
-export type AppSubdomain = 'operator' | 'portal'
+export type AppSubdomain = 'app' | 'operator' | 'portal'
 
 const APP_SUBDOMAINS = [
+  'app',
   'operator',
   'portal',
 ] as const satisfies readonly AppSubdomain[]
