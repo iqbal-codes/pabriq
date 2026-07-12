@@ -55,7 +55,7 @@ async function checkMigrationStatementsApplied(
 
     // 2. Match ALTER TABLE "table_name" ADD COLUMN "column_name" or ADD "column_name"
     const addColumnMatch = stmt.match(
-      /ALTER\s+TABLE\s+"?([a-zA-Z0-9_]+)"?\s+ADD\s+(?:COLUMN\s+)?"?([a-zA-Z0-9_]+)"?/i,
+      /ALTER\s+TABLE\s+"?([a-zA-Z0-9_]+)"?\s+ADD\s+(?!CONSTRAINT\b)(?:COLUMN\s+)?"?([a-zA-Z0-9_]+)"?/i,
     )
     if (addColumnMatch) {
       totalChecks++
@@ -157,6 +157,11 @@ async function runMigrations() {
               [hash, entry.when],
             )
             console.log(`Baselined migration (marked applied): ${entry.tag}`)
+          } else {
+            await pool.query(
+              `UPDATE drizzle.__drizzle_migrations SET created_at = $1 WHERE hash = $2`,
+              [entry.when, hash],
+            )
           }
         } else {
           // Reconcile/heal: if it is recorded but not actually applied, remove it
