@@ -48,6 +48,12 @@ describe('rewriteAppUrlInput', () => {
     expect(url.pathname).toBe('/dashboard')
   })
 
+  it('leaves app subdomain path untouched', () => {
+    const url = new URL('http://app.example.com/orders')
+    rewriteAppUrlInput(url)
+    expect(url.pathname).toBe('/orders')
+  })
+
   it('leaves bare hostnames untouched', () => {
     const url = new URL('http://localhost:3000/orders')
     rewriteAppUrlInput(url)
@@ -105,6 +111,19 @@ describe('rewriteAppUrlOutput', () => {
     expect(url.hostname).toBe('operator.localhost')
     expect(url.port).toBe('3000')
   })
+  it('strips app prefix on portal rewrite', () => {
+    const url = new URL('/order/abc-123', 'http://app.example.com')
+    rewriteAppUrlOutput(url)
+    expect(url.hostname).toBe('portal.example.com')
+    expect(url.pathname).toBe('/abc-123')
+  })
+
+  it('strips app prefix on operator rewrite', () => {
+    const url = new URL('/operator', 'http://app.example.com')
+    rewriteAppUrlOutput(url)
+    expect(url.hostname).toBe('operator.example.com')
+    expect(url.pathname).toBe('/')
+  })
 })
 
 describe('buildPortalUrl', () => {
@@ -125,7 +144,17 @@ describe('buildPortalUrl', () => {
   })
 
   it('preserves https scheme', () => {
+    const result = buildPortalUrl('tok', 'https://example.com')
+    expect(result).toBe('https://portal.example.com/tok')
+  })
+
+  it('strips app prefix from origin for portal URL', () => {
     const result = buildPortalUrl('tok', 'https://app.example.com')
-    expect(result).toBe('https://portal.app.example.com/tok')
+    expect(result).toBe('https://portal.example.com/tok')
+  })
+
+  it('strips app prefix with port from origin', () => {
+    const result = buildPortalUrl('tok', 'https://app.example.com:8443')
+    expect(result).toBe('https://portal.example.com:8443/tok')
   })
 })
