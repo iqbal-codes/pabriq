@@ -32,6 +32,7 @@ const messages = {
     viewInvoice: 'View Invoice',
     markAsPaid: 'Mark as Paid',
     paymentProof: 'Payment Proof',
+    paymentProofs: 'Payment Proofs',
   },
   status: {
     unpaid: 'Unpaid',
@@ -61,12 +62,13 @@ const invoice: InvoiceRow = {
 
 function renderSection(
   invoicePayments: Record<string, Array<{ id: string; proofAssetId: string }>>,
+  orderInvoices: InvoiceRow[] = [invoice],
 ) {
   return render(
     <IntlProvider locale="en" messages={messages}>
       <TooltipProvider>
         <OrderInvoicesSection
-          orderInvoices={[invoice]}
+          orderInvoices={orderInvoices}
           invoicePayments={invoicePayments}
         />
       </TooltipProvider>
@@ -85,5 +87,26 @@ describe('OrderInvoicesSection', () => {
     expect(
       screen.queryByRole('link', { name: 'proof proof-asset-1' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('shows a down payment badge for a single partial invoice', () => {
+    renderSection({})
+
+    expect(screen.getByText('Down Payment')).toBeInTheDocument()
+    expect(screen.queryByText('Final Payment')).not.toBeInTheDocument()
+  })
+
+  it('labels the last of multiple invoices as the final payment', () => {
+    const finalInvoice: InvoiceRow = {
+      ...invoice,
+      id: 'invoice-2',
+      invoiceNumber: 'INV-002',
+      percentage: 50,
+    }
+
+    renderSection({}, [invoice, finalInvoice])
+
+    expect(screen.getByText('Down Payment')).toBeInTheDocument()
+    expect(screen.getByText('Final Payment')).toBeInTheDocument()
   })
 })

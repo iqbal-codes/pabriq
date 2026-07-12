@@ -13,13 +13,19 @@ import type { InvoiceRow } from '#/features/invoices/model'
 import { currencyFormatter } from './view-order-utils'
 
 function getInvoiceBadgeType(
-  _invoice: InvoiceRow,
+  invoice: InvoiceRow,
   index: number,
   totalCount: number,
 ): 'dp' | 'settlement' | null {
-  if (totalCount <= 1) return null
-  if (index === 0) return 'dp'
-  if (index === totalCount - 1) return 'settlement'
+  if (totalCount > 1) {
+    if (index === totalCount - 1) {
+      return 'settlement'
+    }
+    return 'dp'
+  }
+  if (invoice.percentage !== null && invoice.percentage < 100) {
+    return 'dp'
+  }
   return null
 }
 
@@ -36,7 +42,11 @@ export function OrderInvoicesSection({
   const pt = useTranslations('portal')
   const [expanded, setExpanded] = useState(false)
 
-  const visibleInvoices = orderInvoices.filter((inv) => inv.status !== 'void')
+  // Sort by invoice number so the DP invoice (first issued) sits above the
+  // final/settlement invoice (last issued), matching the portal view.
+  const visibleInvoices = orderInvoices
+    .filter((inv) => inv.status !== 'void')
+    .sort((a, b) => a.invoiceNumber.localeCompare(b.invoiceNumber))
   if (visibleInvoices.length === 0) return null
 
   const initialCount = Math.min(2, visibleInvoices.length)
@@ -115,22 +125,29 @@ export function OrderInvoicesSection({
               </div>
 
               {/* Proof images + actions */}
-              <div className="flex items-center gap-3">
-                {proofPayments.length > 0 && (
-                  <div className="flex items-center gap-1.5 flex-1">
-                    {proofPayments.map((p) => (
-                      <div
-                        key={p.id}
-                        className="relative size-10 overflow-hidden rounded-md ring-1 ring-border"
-                      >
-                        <AssetImage
-                          assetId={p.proofAssetId}
-                          assetKind="image"
-                          className="size-full object-cover"
-                        />
-                      </div>
-                    ))}
+              <div className="flex items-start gap-3">
+                {proofPayments.length > 0 ? (
+                  <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {it('paymentProofs')} ({proofPayments.length})
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {proofPayments.map((p) => (
+                        <div
+                          key={p.id}
+                          className="relative size-10 overflow-hidden rounded-md ring-1 ring-border"
+                        >
+                          <AssetImage
+                            assetId={p.proofAssetId}
+                            assetKind="image"
+                            className="size-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                ) : (
+                  <div className="flex-1" />
                 )}
                 <div className="ml-auto">
                   <Tooltip>
