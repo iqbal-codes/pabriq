@@ -20,6 +20,60 @@ const pool = new Pool({
 
 const db = drizzle(pool)
 
+async function checkMigrationStatementsApplied(
+  pool: Pool,
+  sqlContent: string,
+): Promise<boolean> {
+  const statements = sqlContent
+    .split('--> statement-breakpoint')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+
+  for (const stmt of statements) {
+    // 1. Match CREATE TABLE "table_name"
+    const createTableMatch = stmt.match(
+      /CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+"([^"]+)"/i,
+    )
+    if (createTableMatch) {
+      const tableName = createTableMatch[1]
+      const res = await pool.query(
+        `SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = $1
+        );`,
+        [tableName],
+      )
+      if (res.rows[0]?.exists !== true) {
+        return false
+      }
+    }
+
+    // 2. Match ALTER TABLE "table_name" ADD COLUMN "column_name" or ADD "column_name"
+    const addColumnMatch = stmt.match(
+      /ALTER\s+TABLE\s+"([^"]+)"\s+ADD\s+(?:COLUMN\s+)?"([^"]+)"/i,
+    )
+    if (addColumnMatch) {
+      const tableName = addColumnMatch[1]
+      const columnName = addColumnMatch[2]
+      const res = await pool.query(
+        `SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_schema = 'public' 
+          AND table_name = $1
+          AND column_name = $2
+        );`,
+        [tableName, columnName],
+      )
+      if (res.rows[0]?.exists !== true) {
+        return false
+      }
+    }
+  }
+
+  return true
+}
+
 async function runMigrations() {
   console.log('Running database migrations...')
   try {
@@ -33,26 +87,10 @@ async function runMigrations() {
     `)
     const accountTableExists = tableCheck.rows[0]?.exists === true
 
-    // Check if drizzle.__drizzle_migrations table exists and has rows
-    let migrationsTableExists = false
-    let migrationsCount = 0
-    try {
-      const migrationsCheck = await pool.query(
-        'SELECT count(*) FROM drizzle.__drizzle_migrations',
-      )
-      migrationsTableExists = true
-      migrationsCount = parseInt(migrationsCheck.rows[0]?.count || '0', 10)
-    } catch {
-      migrationsTableExists = false
-    }
-
-    // Baseline if we have tables but no migrations history
-    if (
-      accountTableExists &&
-      (!migrationsTableExists || migrationsCount === 0)
-    ) {
+    // Baseline if we have tables
+    if (accountTableExists) {
       console.log(
-        'Existing database schema detected without migration history. Baselining...',
+        'Existing database schema detected. Baselining and reconciling migrations...',
       )
 
       // Create drizzle schema and migrations table if not exists
@@ -65,12 +103,23 @@ async function runMigrations() {
         )
       `)
 
-      // Read journal and insert all migrations as applied
+      // Query currently recorded migrations from database
+      const existingDbRes = await pool.query(
+        'SELECT hash FROM drizzle.__drizzle_migrations',
+      )
+      const existingHashes = new Set<string>()
+      for (const row of existingDbRes.rows) {
+        existingHashes.add(row.hash)
+      }
+
+      // Read journal
       const journalContent = fs.readFileSync(
         './drizzle/meta/_journal.json',
         'utf-8',
       )
       const journal = JSON.parse(journalContent)
+
+      let stopBaselining = false
 
       for (const entry of journal.entries) {
         const sqlContent = fs.readFileSync(
@@ -82,19 +131,40 @@ async function runMigrations() {
           .update(sqlContent)
           .digest('hex')
 
-        await pool.query(
-          `INSERT INTO drizzle.__drizzle_migrations (hash, created_at) 
-           VALUES ($1, $2)
-           ON CONFLICT DO NOTHING`,
-          [hash, entry.when],
-        )
-        console.log(`Baselined migration: ${entry.tag}`)
+        let isApplied = false
+        if (!stopBaselining) {
+          isApplied = await checkMigrationStatementsApplied(pool, sqlContent)
+          if (!isApplied) {
+            stopBaselining = true
+          }
+        }
+
+        if (isApplied) {
+          if (!existingHashes.has(hash)) {
+            await pool.query(
+              `INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)`,
+              [hash, entry.when],
+            )
+            console.log(`Baselined migration (marked applied): ${entry.tag}`)
+          }
+        } else {
+          // Reconcile/heal: if it is recorded but not actually applied, remove it
+          if (existingHashes.has(hash)) {
+            await pool.query(
+              `DELETE FROM drizzle.__drizzle_migrations WHERE hash = $1`,
+              [hash],
+            )
+            console.log(
+              `Removed baseline entry for unapplied migration (will run): ${entry.tag}`,
+            )
+          }
+        }
       }
-      console.log('Baselining completed successfully!')
+      console.log('Migration reconciliation completed successfully!')
     }
   } catch (baselineError) {
     console.error(
-      'Migration baselining failed, continuing with default migrator:',
+      'Migration baselining/reconciliation failed, continuing with default migrator:',
       baselineError,
     )
   }
