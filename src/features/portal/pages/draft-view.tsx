@@ -156,12 +156,14 @@ export function DraftView({
   return (
     <FormRoot form={form}>
       <div className="space-y-6">
-        <Alert className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-          <Info className="size-4" />
-          <AlertDescription className="text-sm">
-            {t('waitApproval')}
-          </AlertDescription>
-        </Alert>
+        {order.status === 'pending' && (
+          <Alert className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+            <Info className="size-4" />
+            <AlertDescription className="text-sm">
+              {t('waitApproval')}
+            </AlertDescription>
+          </Alert>
+        )}
         {/* Checklist header */}
         <header className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
           <h1 className="mt-1 text-balance text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
