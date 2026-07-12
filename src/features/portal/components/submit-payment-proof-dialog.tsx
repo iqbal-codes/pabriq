@@ -1,9 +1,10 @@
 import { useRouter } from '@tanstack/react-router'
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import { FileListUpload } from '#/components/app/asset-upload'
 import { uploadToSignedUrl } from '#/components/app/asset-upload/upload-utils'
+import { ExistingFileList } from '#/components/app/form/file-upload-field'
 import { Button } from '#/components/ui/button'
 import {
   Dialog,
@@ -14,11 +15,18 @@ import {
   DialogTrigger,
 } from '#/components/ui/dialog'
 import { Textarea } from '#/components/ui/textarea'
+import type { AssetMetadata } from '#/features/assets/server'
 import type { UploadItem } from '#/features/assets/upload-machine'
 import {
   portalGetInvoiceUploadUrlFn,
   submitPaymentProofFn,
 } from '#/features/portal/server'
+
+function getAssetKindFromMimeType(mimeType: string): string {
+  if (mimeType.startsWith('image/')) return 'image'
+  if (mimeType.startsWith('video/')) return 'video'
+  return 'file'
+}
 
 type Props = {
   invoiceId: string
@@ -35,8 +43,8 @@ export function SubmitPaymentProofDialog({
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([])
+  const [uploadedAssets, setUploadedAssets] = useState<AssetMetadata[]>([])
   const [reference, setReference] = useState('')
-  const uploadedAssetIds = useRef<string[]>([])
   const [isSubmittingProof, setIsSubmittingProof] = useState(false)
 
   // Reset state when dialog closes
@@ -44,8 +52,8 @@ export function SubmitPaymentProofDialog({
     if (!next && isSubmittingProof) return
     if (!next) {
       setUploadItems([])
+      setUploadedAssets([])
       setReference('')
-      uploadedAssetIds.current = []
     }
     setOpen(next)
   }
@@ -90,9 +98,6 @@ export function SubmitPaymentProofDialog({
           throw new Error(finalizeResult.error)
         }
 
-        // Track uploaded asset ID
-        uploadedAssetIds.current = [...uploadedAssetIds.current, assetId]
-
         return {
           assetId,
           variants: [
@@ -107,16 +112,28 @@ export function SubmitPaymentProofDialog({
       },
 
       async removeFile(assetId: string) {
-        uploadedAssetIds.current = uploadedAssetIds.current.filter(
-          (id) => id !== assetId,
+        setUploadedAssets((current) =>
+          current.filter((asset) => asset.id !== assetId),
         )
       },
     }),
     [token, invoiceId],
   )
 
-  const completedItems = uploadItems.filter((i) => i.status === 'done')
-  const hasUploads = completedItems.length > 0
+  function handleUploadComplete(upload: { assetId: string; file: File }) {
+    setUploadedAssets((current) => [
+      ...current.filter((asset) => asset.id !== upload.assetId),
+      {
+        id: upload.assetId,
+        originalFilename: upload.file.name,
+        mimeType: upload.file.type || 'application/octet-stream',
+        sizeBytes: upload.file.size,
+        assetKind: getAssetKindFromMimeType(upload.file.type),
+      },
+    ])
+  }
+
+  const hasUploads = uploadedAssets.length > 0
   const isUploading = uploadItems.some(
     (i) => i.status === 'uploading' || i.status === 'processing',
   )
@@ -186,7 +203,14 @@ export function SubmitPaymentProofDialog({
               'application/pdf',
             ]}
             maxBytes={10 * 1024 * 1024}
-            keepCompletedItems
+            keepCompletedItems={false}
+            onUploadComplete={handleUploadComplete}
+          />
+          <ExistingFileList
+            assets={uploadedAssets}
+            onRemove={async (asset) => {
+              await adapter.removeFile(asset.id)
+            }}
           />
         </div>
 
