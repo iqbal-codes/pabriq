@@ -51,13 +51,13 @@ function getAssetKindFromMimeType(mimeType: string): string {
   return 'file'
 }
 
-function ExistingFileRow({
+export function ExistingFileRow({
   metadata,
   onRemove,
   token,
 }: {
   metadata: AssetMetadata
-  onRemove: () => Promise<void>
+  onRemove?: () => void
   token?: string
 }) {
   const t = useTranslations('assetUpload')
@@ -90,9 +90,35 @@ function ExistingFileRow({
           <span className="text-xs text-success">{t('states.uploaded')}</span>
         </div>
       </div>
-      <Button variant="ghost" size="icon-lg" onClick={() => void onRemove()}>
-        <X />
-      </Button>
+      {onRemove && (
+        <Button variant="ghost" size="icon-lg" onClick={() => onRemove()}>
+          <X />
+        </Button>
+      )}
+    </div>
+  )
+}
+
+export function ExistingFileList({
+  assets,
+  token,
+  onRemove,
+}: {
+  assets: readonly AssetMetadata[]
+  token?: string
+  onRemove?: (asset: AssetMetadata) => void | Promise<void>
+}) {
+  if (assets.length === 0) return null
+  return (
+    <div className="space-y-2">
+      {assets.map((asset) => (
+        <ExistingFileRow
+          key={asset.id}
+          metadata={asset}
+          onRemove={onRemove ? () => onRemove(asset) : undefined}
+          token={token}
+        />
+      ))}
     </div>
   )
 }
@@ -208,21 +234,14 @@ function FileUploadFieldBase({
           onUploadComplete={handleUploadComplete}
           disabled={disabled}
         />
-        {displayedAssets.length > 0 && (
-          <div className="space-y-2">
-            {displayedAssets.map((asset) => {
-              const index = assetIds.indexOf(asset.id)
-              return (
-                <ExistingFileRow
-                  key={asset.id}
-                  metadata={asset}
-                  onRemove={() => handleRemoveAsset(asset.id, index)}
-                  token={token}
-                />
-              )
-            })}
-          </div>
-        )}
+        <ExistingFileList
+          assets={displayedAssets}
+          token={token}
+          onRemove={(asset) => {
+            const index = assetIds.indexOf(asset.id)
+            if (index !== -1) return handleRemoveAsset(asset.id, index)
+          }}
+        />
       </div>
       {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
     </div>
