@@ -25,7 +25,7 @@ const en: Messages = {
     logOut: "Log out",
   },
   app: {
-    title: "labq.dev",
+    title: "AKZ Production",
     retry: "Retry",
     language: "Language",
     english: "English",
@@ -251,7 +251,8 @@ const en: Messages = {
       "When disabled, the order deadline follows the latest line item deadline.",
     orderDeadlineRequired: "Order deadline is required",
     adjustQuantity: "Adjust Quantity",
-    adjustQuantityDescription: "Change the quantity of a line item. The order total and pricing will be recalculated.",
+    adjustQuantityDescription:
+      "Change the quantity of a line item. The order total and pricing will be recalculated.",
     selectLineItem: "Select Line Item",
     currentQuantity: "Current Quantity",
     newQuantity: "New Quantity",
@@ -376,8 +377,10 @@ const en: Messages = {
     midtransServerKey: "Midtrans Server Key",
     midtransClientKey: "Midtrans Client Key",
     midtransProduction: "Use production Midtrans",
-    midtransIntegrationDescription: "Configure one Midtrans payment gateway for online invoice payments.",
-    midtransCredentialsRequired: "Enter both Midtrans server key and client key.",
+    midtransIntegrationDescription:
+      "Configure one Midtrans payment gateway for online invoice payments.",
+    midtransCredentialsRequired:
+      "Enter both Midtrans server key and client key.",
     midtransWebhookUrl: "Webhook URL",
     bankName: "Bank Name",
     accountNumber: "Account Number",
@@ -733,8 +736,7 @@ const en: Messages = {
     bankName: "Bank Name",
     accountNumber: "Account Number",
     accountHolder: "Account Holder",
-    noPaymentMethodConfigured:
-      "No bank account configured for this invoice.",
+    noPaymentMethodConfigured: "No bank account configured for this invoice.",
     latestProofSubmitted: "Latest proof submitted",
     paymentProofs: "Payment Proofs",
     noPaymentProofs: "No payment proof submitted yet.",
@@ -922,9 +924,9 @@ const en: Messages = {
     stepSubtitleRequiresReview: "Requires review",
     stepSubtitleDone: "Done",
     // Selected-task pane section headings
-    paneProductionSummary: "Production Summary",
+    paneProductionSummary: "Order Summary",
     paneCuttingInstructions: "Cutting Instructions",
-    paneProductionFiles: "Production Files",
+    paneProductionFiles: "Design Files",
     paneStageRequirements: "Stage Requirements",
     paneCountSeparator: "of",
     paneCountComplete: "complete",

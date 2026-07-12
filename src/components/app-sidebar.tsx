@@ -26,7 +26,6 @@ import {
 } from '#/components/ui/sidebar'
 import type { Role } from '#/features/permissions/model'
 import { canViewProduction } from '#/features/permissions/model'
-import { cn } from '#/lib/utils'
 
 type NavItem = {
   key:
@@ -113,7 +112,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu>
+        <SidebarMenu className="px-2">
           {navItems.map((item) => {
             const isActive =
               item.href === '/'
@@ -134,10 +133,6 @@ export function AppSidebar({
                   asChild
                   isActive={isActive}
                   tooltip={t(item.key)}
-                  className={cn(
-                    'px-4 border-l-2',
-                    isActive && 'border-primary',
-                  )}
                 >
                   <Link to={item.href}>
                     {item.icon && <item.icon />}

@@ -5,23 +5,13 @@ import { Badge } from '#/components/ui/badge'
 import { Input } from '#/components/ui/input'
 import { Spinner } from '#/components/ui/spinner'
 import { Tabs, TabsList, TabsTrigger } from '#/components/ui/tabs'
-import { getReadyForProductionLabel } from '#/features/production/ready-for-production-label'
 import { cn } from '#/lib/utils'
 import { useArchivedTasks } from '../hooks'
 import type { BoardTask, Stage } from '../model'
+import { StageBadge } from './stage-badge'
 import { getTaskDeadlineInfo, type TaskContext } from './task-deadline'
 
 export type QueueTab = 'active' | 'archived'
-
-const badgeStyles = {
-  queue:
-    'border-gray-400/50 bg-gray-400/10 text-gray-600 dark:text-gray-400 dark:border-gray-700/50',
-  preProduction:
-    'border-blue-400/50 bg-blue-400/10 text-blue-600 dark:text-blue-400 dark:border-blue-500/30',
-  production:
-    'border-warning/50 bg-warning/10 text-warning dark:border-warning/30',
-  done: 'border-success/50 bg-success/10 text-success dark:border-success/30',
-} as const
 
 function getCtxValue(ctx: TaskContext, key: string): string {
   const raw = ctx?.[key]
@@ -58,32 +48,9 @@ export function WorkQueue({
   const ct = useTranslations('common')
   const locale = useLocale()
 
-  const stageNameById = useMemo(
-    () => new Map(activeStages.map((s) => [s.id, s.name] as const)),
-    [activeStages],
-  )
-  const stageBoardById = useMemo(
-    () => new Map(activeStages.map((s) => [s.id, s.board] as const)),
-    [activeStages],
-  )
   const stageOrder = useMemo(
     () => new Map(activeStages.map((s, i) => [s.id, i] as const)),
     [activeStages],
-  )
-
-  const firstProdStageName = useMemo(
-    () => activeStages.find((s) => s.board === 'production')?.name,
-    [activeStages],
-  )
-  const readyForProductionLabel = useMemo(
-    () =>
-      getReadyForProductionLabel({
-        firstProductionStageName: firstProdStageName,
-        readyForProduction: t('readyForProduction'),
-        readyForProductionWithStage: (values) =>
-          t('readyForProductionQueue', values),
-      }),
-    [firstProdStageName, t],
   )
 
   const flat = useMemo(() => {
@@ -189,26 +156,6 @@ export function WorkQueue({
                 const orderNum = getCtxValue(ctx, 'orderNumber') || '—'
                 const quantity = getCtxValue(ctx, 'quantity')
                 const isQueued = task.status === 'queued'
-                const stageName = task.stageId
-                  ? (stageNameById.get(task.stageId) ?? '—')
-                  : task.status === 'ready_for_production'
-                    ? readyForProductionLabel
-                    : t('stagePending')
-                const stageBoard = task.stageId
-                  ? (stageBoardById.get(task.stageId) ?? task.board)
-                  : task.board
-                const badgeVariant = (() => {
-                  if (task.status === 'completed') return 'done' as const
-                  if (task.status === 'ready_for_production')
-                    return 'preProduction' as const
-                  if (task.stageId) {
-                    const board = stageBoardById.get(task.stageId) ?? task.board
-                    return board === 'production'
-                      ? ('production' as const)
-                      : ('preProduction' as const)
-                  }
-                  return 'queue' as const
-                })()
                 const isSelected = selectedTaskId === task.id
                 const showGroupDivider =
                   index > 0 && flat[index - 1]?.group !== group
@@ -262,27 +209,7 @@ export function WorkQueue({
                         {productName}
                       </p>
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            'px-1.5 py-0 text-[10px] font-medium',
-                            badgeStyles[badgeVariant],
-                          )}
-                        >
-                          {stageName}
-                        </Badge>
-                        {task.status !== 'ready_for_production' && (
-                          <Badge
-                            variant="secondary"
-                            className="px-1.5 py-0 text-[10px] font-normal text-muted-foreground"
-                          >
-                            {stageBoard === 'pre_production'
-                              ? t('boardShortPreProd')
-                              : stageBoard === 'production'
-                                ? t('boardShortProd')
-                                : stageBoard}
-                          </Badge>
-                        )}
+                        <StageBadge task={task} activeStages={activeStages} />
                       </div>
                       <div className="mt-1.5 flex items-center justify-between gap-2 text-[10.5px] text-muted-foreground">
                         <span className="truncate font-mono">{orderNum}</span>

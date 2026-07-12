@@ -25,7 +25,7 @@ const id: Messages = {
     logOut: "Keluar",
   },
   app: {
-    title: "labq.dev",
+    title: "AKZ Production",
     retry: "Coba Lagi",
     language: "Bahasa",
     english: "Inggris",
@@ -378,7 +378,8 @@ const id: Messages = {
     midtransServerKey: "Server Key Midtrans",
     midtransClientKey: "Client Key Midtrans",
     midtransProduction: "Gunakan Midtrans production",
-    midtransIntegrationDescription: "Atur satu payment gateway Midtrans untuk pembayaran invoice online.",
+    midtransIntegrationDescription:
+      "Atur satu payment gateway Midtrans untuk pembayaran invoice online.",
     midtransCredentialsRequired: "Masukkan server key dan client key Midtrans.",
     midtransWebhookUrl: "URL Webhook",
     bankName: "Nama Bank",
@@ -925,9 +926,9 @@ const id: Messages = {
     stepSubtitleRequiresReview: "Perlu review",
     stepSubtitleDone: "Selesai",
     // Selected-task pane section headings
-    paneProductionSummary: "Ringkasan Produksi",
+    paneProductionSummary: "Ringkasan Pesanan",
     paneCuttingInstructions: "Petunjuk Pengerjaan",
-    paneProductionFiles: "Berkas Produksi",
+    paneProductionFiles: "File Design",
     paneStageRequirements: "Persyaratan Tahap",
     paneCountSeparator: "dari",
     paneCountComplete: "selesai",
