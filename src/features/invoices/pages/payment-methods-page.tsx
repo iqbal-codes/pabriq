@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'use-intl'
 import type { DataTableLabels } from '#/components/app/data-table'
@@ -48,6 +48,11 @@ function MidtransForm() {
     },
   })
 
+  const [webhookUrl, setWebhookUrl] = useState('')
+  useEffect(() => {
+    setWebhookUrl(window.location.origin)
+  }, [])
+
   return (
     <FormRoot form={form}>
       <FormGrid columns={1}>
@@ -76,8 +81,7 @@ function MidtransForm() {
           <div className="mt-1 flex items-center gap-2">
             <Input
               type="text"
-              readOnly
-              value={`${typeof window !== 'undefined' ? window.location.origin : ''}/api/midtrans-notification`}
+              value={`${webhookUrl}/api/midtrans-notification`}
               className="bg-muted"
               onClick={(e) => e.currentTarget.select()}
             />

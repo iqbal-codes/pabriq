@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { ArrowRight, CheckCircle2, Clock, XCircle } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
@@ -58,12 +59,18 @@ export function ActivityRow({
     ? stageNameMap.get(activity.toStageId)
     : null
   const data = activity.data ?? {}
-  const time = new Date(activity.createdAt)
-  const dateStr = time.toLocaleDateString()
-  const timeStr = time.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  const [dateStr, setDateStr] = useState('')
+  const [timeStr, setTimeStr] = useState('')
+  useEffect(() => {
+    const time = new Date(activity.createdAt)
+    setDateStr(time.toLocaleDateString())
+    setTimeStr(
+      time.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    )
+  }, [activity.createdAt])
 
   const user = actorMap.get(activity.actorId)
 
@@ -182,13 +189,14 @@ export function ActivityRow({
     const sourceStage = stages.find((s) => s.id === activity.fromStageId)
     if (sourceStage?.requirements) {
       const sourceReqIds = sourceStage.requirements.map((r) => r.id)
+      const sourceReqIdsSet = new Set(sourceReqIds)
       const contextResponses = taskContext.requirementResponses as Record<
         string,
         { assetIds?: string[] }
       >
-      proofAssetIds = Object.entries(contextResponses)
-        .filter(([reqId]) => sourceReqIds.includes(reqId))
-        .flatMap(([, r]) => r.assetIds ?? [])
+      proofAssetIds = Object.entries(contextResponses).flatMap(([reqId, r]) =>
+        sourceReqIdsSet.has(reqId) ? (r.assetIds ?? []) : [],
+      )
     }
   }
   if (isSystem) {

@@ -123,8 +123,11 @@ export function AppSidebar({
                   : (() => {
                       const itemSegments = item.href.split('/').filter(Boolean)
                       const pathSegments = pathname.split('/').filter(Boolean)
-                      return itemSegments.every(
-                        (segment, index) => pathSegments[index] === segment,
+                      return (
+                        itemSegments.length === pathSegments.length &&
+                        itemSegments.every(
+                          (segment, index) => pathSegments[index] === segment,
+                        )
                       )
                     })()
             return (

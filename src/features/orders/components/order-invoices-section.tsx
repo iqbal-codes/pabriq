@@ -152,7 +152,7 @@ export function OrderInvoicesSection({
                 <div className="ml-auto">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="outline" size="icon-sm" asChild>
+                      <Button variant="outline" size="icon-sm" aria-label="Print invoice" asChild>
                         <a
                           href={`/api/documents/invoices/${inv.id}/pdf`}
                           target="_blank"
@@ -178,6 +178,7 @@ export function OrderInvoicesSection({
             variant="ghost"
             size="sm"
             className="w-full rounded-none text-xs"
+            aria-label={expanded ? 'Show fewer invoices' : `Show all ${remainingCount} invoices`}
             onClick={() => setExpanded((prev) => !prev)}
           >
             {expanded

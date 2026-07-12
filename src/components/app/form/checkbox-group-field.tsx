@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Checkbox } from '#/components/ui/checkbox'
 import { cn } from '#/lib/utils'
 import { useFieldContext } from './form-context-base'
@@ -20,9 +21,11 @@ function CheckboxGroupField({
   const field = useFieldContext<string[]>()
   const error = firstError(field.state.meta.errors)
   const values = field.state.value ?? []
+  const valuesSet = useMemo(() => new Set(values), [values])
+
 
   function handleToggle(optionValue: string) {
-    const next = values.includes(optionValue)
+    const next = valuesSet.has(optionValue)
       ? values.filter((v) => v !== optionValue)
       : [...values, optionValue]
     field.handleChange(next)
@@ -48,7 +51,7 @@ function CheckboxGroupField({
           <div key={opt.value} className="flex items-center gap-2">
             <Checkbox
               id={`${field.name}-${opt.value}`}
-              checked={values.includes(opt.value)}
+              checked={valuesSet.has(opt.value)}
               onCheckedChange={() => handleToggle(opt.value)}
               disabled={disabled}
             />

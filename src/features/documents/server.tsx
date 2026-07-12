@@ -1,10 +1,7 @@
-import { renderToBuffer } from '@react-pdf/renderer'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { and, eq, ne } from 'drizzle-orm'
 import { db } from '#/db/index'
 import { member } from '#/db/schema'
-import { InvoiceDocument } from './templates/invoice'
-import { QuotationDocument } from './templates/quotation'
 import type {
   CustomerPdfInfo,
   InvoicePdfData,
@@ -211,6 +208,10 @@ export async function generateQuotationPdf(
     grandTotal: subtotal + taxes,
     notes: order.notes ?? null,
   }
+  const [{ renderToBuffer }, { QuotationDocument }] = await Promise.all([
+    import('@react-pdf/renderer'),
+    import('./templates/quotation'),
+  ])
   const buffer = await renderToBuffer(<QuotationDocument data={pdfData} />)
   return Buffer.from(buffer)
 }
@@ -373,6 +374,10 @@ export async function generateInvoicePdf(
       : null,
   }
 
+  const [{ renderToBuffer }, { InvoiceDocument }] = await Promise.all([
+    import('@react-pdf/renderer'),
+    import('./templates/invoice'),
+  ])
   const buffer = await renderToBuffer(<InvoiceDocument data={pdfData} />)
   return Buffer.from(buffer)
 }

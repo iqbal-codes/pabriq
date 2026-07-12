@@ -9,7 +9,7 @@ import {
   PackageCheck,
   PartyPopper,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'use-intl'
 import { formatShortDate } from '#/lib/formatters'
 import { cn } from '#/lib/utils'
@@ -135,11 +135,12 @@ function getStatusLabel(
   event: OrderTimelineEvent,
   t: TranslateFn,
   locale: string,
+  mounted: boolean,
 ): string {
   if (event.status === 'completed') {
-    return event.completedAt
-      ? `${formatShortDate(String(event.completedAt), locale)} ${new Date(event.completedAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`
-      : t('timelineDateUnavailable')
+    if (!event.completedAt) return t('timelineDateUnavailable')
+    if (!mounted) return ''
+    return `${formatShortDate(String(event.completedAt), locale)} ${new Date(event.completedAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`
   }
   if (event.status === 'current') return t('timelineStepCurrent')
   return t('timelineStepUpcoming')
@@ -150,6 +151,10 @@ export function OrderFlowTimeline({ events, className }: Props) {
   const translate: TranslateFn = (key) => t(key)
   const locale = useLocale()
   const [isExpanded, setIsExpanded] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const completedEvents = events.filter((e) => e.status === 'completed')
 
@@ -181,7 +186,7 @@ export function OrderFlowTimeline({ events, className }: Props) {
   )
   const hasDate = latestEvent.completedAt !== null
   const latestStatusLabel = hasDate
-    ? getStatusLabel(latestEvent, translate, locale)
+    ? getStatusLabel(latestEvent, translate, locale, mounted)
     : ''
   const baseSubtitle = hasDate
     ? `${latestDescription} · ${latestStatusLabel}`
@@ -221,7 +226,7 @@ export function OrderFlowTimeline({ events, className }: Props) {
           <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6 space-y-3">
             {displayEvents.map((event, i) => {
               const { icon, description } = getEventMeta(event, translate)
-              const statusLabel = getStatusLabel(event, translate, locale)
+              const statusLabel = getStatusLabel(event, translate, locale, mounted)
               const invoiceSuffix = event.invoiceNumber
                 ? ` · ${event.invoiceNumber}`
                 : ''

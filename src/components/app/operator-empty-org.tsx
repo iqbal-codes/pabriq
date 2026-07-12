@@ -2,7 +2,7 @@
 
 import { useRouter } from '@tanstack/react-router'
 import { useTranslations } from 'use-intl'
-import { signOutAndNavigate } from '#/components/app/operator-header'
+import { signOutAndNavigate } from '#/components/app/operator-header-utils'
 import { Button } from '#/components/ui/button'
 
 export function OperatorEmptyOrg() {

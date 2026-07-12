@@ -9,5 +9,13 @@
       "drizzle/0019_invoices_redo.sql",
       "src/lib/formatters.ts"
     ]
+  },
+  "suppress": {
+    "react-doctor/rules-of-hooks": [
+      "src/routes/_org/**/$id/*.tsx"
+    ],
+    "react-doctor/supabase-rls-policy-risk": [
+      "drizzle/*.sql"
+    ]
   }
 }

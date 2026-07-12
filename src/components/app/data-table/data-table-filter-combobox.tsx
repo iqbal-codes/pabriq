@@ -132,6 +132,8 @@ export function DataTableFilterCombobox(props: DataTableFilterComboboxProps) {
   const removeValue = (v: string) => {
     onChange(value.filter((x) => x !== v))
   }
+  const valueSet = useMemo(() => new Set(value), [value])
+
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -185,7 +187,7 @@ export function DataTableFilterCombobox(props: DataTableFilterComboboxProps) {
             </CommandEmpty>
             <CommandGroup>
               {filtered.map((opt) => {
-                const isSelected = value.includes(opt.value)
+                const isSelected = valueSet.has(opt.value)
                 return (
                   <CommandItem
                     key={opt.value}

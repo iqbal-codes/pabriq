@@ -18,6 +18,20 @@ type UseOrderMutationsParams = {
   rejectReason: string
   onRejectSuccess: () => void
 }
+export type OrderMutations = {
+  isGeneratingLink: boolean
+  isApproving: boolean
+  isRejecting: boolean
+  isMarkingPaid: boolean
+  isCompletingOrder: boolean
+  isStartingProduction: boolean
+  handleCopyPortalLink: () => Promise<void>
+  handleApprove: () => Promise<void>
+  handleReject: () => Promise<void>
+  handleMarkInvoicePaid: (invoiceId: string) => Promise<boolean>
+  handleCompleteOrder: () => Promise<void>
+  handleStartProduction: () => Promise<void>
+}
 
 export function useOrderMutations({
   data,

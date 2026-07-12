@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle, ImageIcon, RefreshCw, X } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Button } from '#/components/ui/button'
 import { Progress } from '#/components/ui/progress'
@@ -117,15 +117,20 @@ export function PhotoGridUpload(props: PhotoGridUploadProps) {
     }
   }, [items])
 
+  const acceptedMimeTypesSet = useMemo(
+    () => new Set(props.acceptedMimeTypes),
+    [props.acceptedMimeTypes],
+  )
+
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       const validFiles = acceptedFiles.filter((file) => {
         const ext = `.${file.name.split('.').pop()?.toLowerCase()}`
         return (
           file.size <= props.maxBytes &&
-          (props.acceptedMimeTypes.length === 0 ||
-            props.acceptedMimeTypes.includes(file.type) ||
-            props.acceptedMimeTypes.includes(ext))
+          (acceptedMimeTypesSet.size === 0 ||
+            acceptedMimeTypesSet.has(file.type) ||
+            acceptedMimeTypesSet.has(ext))
         )
       })
       if (validFiles.length > 0) {

@@ -26,7 +26,12 @@ function verifyMidtransSignature(
     .createHash('sha512')
     .update(body.order_id + body.status_code + body.gross_amount + serverKey)
     .digest('hex')
-  return hash === body.signature_key
+  const expected = Buffer.from(hash, 'hex')
+  const received = Buffer.from(body.signature_key, 'hex')
+  if (expected.length !== received.length) {
+    return false
+  }
+  return crypto.timingSafeEqual(expected, received)
 }
 
 export const Route = createFileRoute('/api/midtrans-notification')({

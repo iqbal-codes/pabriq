@@ -1,5 +1,5 @@
 import { Bot, Loader2, Send } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { useAppForm } from '#/components/app/form/form-context'
 import { Button } from '#/components/ui/button'
@@ -25,19 +25,24 @@ type FloatingAssistantProps = {
 export function FloatingAssistant({ orgId, userId }: FloatingAssistantProps) {
   const t = useTranslations('assistant')
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState<AssistantChatMessage[]>([])
+  const [localMessages, setLocalMessages] = useState<AssistantChatMessage[]>([])
   const transcriptRef = useRef<HTMLDivElement>(null)
 
   const scope = { orgId, userId }
   const historyQuery = useAssistantChatHistory(scope)
   const sendMessage = useSendAssistantMessage(scope)
 
-  // Sync messages from history query
-  useEffect(() => {
-    if (historyQuery.data?.ok && historyQuery.data.messages.length > 0) {
-      setMessages(historyQuery.data.messages)
-    }
-  }, [historyQuery.data])
+  // Derive history messages from query — no effect needed
+  const historyMessages = useMemo(
+    () => (historyQuery.data?.ok === true ? historyQuery.data.messages : []),
+    [historyQuery.data],
+  )
+
+  // Combined: history + locally-added messages (deduplicated by id)
+  const messages = useMemo(() => {
+    const seen = new Set(historyMessages.map((m) => m.id))
+    return [...historyMessages, ...localMessages.filter((m) => !seen.has(m.id))]
+  }, [historyMessages, localMessages])
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll trigger on new messages
   useEffect(() => {
@@ -58,18 +63,18 @@ export function FloatingAssistant({ orgId, userId }: FloatingAssistantProps) {
         content: text,
         createdAt: new Date().toISOString(),
       }
-      setMessages((prev) => [...prev, userMessage])
+      setLocalMessages((prev) => [...prev, userMessage])
       form.reset()
 
       const result = await sendMessage.mutateAsync(text)
       if (result.ok) {
-        setMessages((prev) => [...prev, result.message])
+        setLocalMessages((prev) => [...prev, result.message])
       } else {
         const errorText =
           result.error === 'AI assistant is not configured'
             ? t('notConfigured')
             : t('genericError')
-        setMessages((prev) => [
+        setLocalMessages((prev) => [
           ...prev,
           {
             id: crypto.randomUUID(),

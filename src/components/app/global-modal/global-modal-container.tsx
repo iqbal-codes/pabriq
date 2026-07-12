@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useGlobalModal, useGlobalSheet } from '#/hooks/use-global-overlay'
-import { GLOBAL_MODALS } from './global-modal-registry'
+import { GLOBAL_MODALS } from './global-modal-registry-map'
 
 export function GlobalModalContainer() {
   const { modal, modalId, closeModal: closeModalState } = useGlobalModal()

@@ -8,7 +8,7 @@ import {
   subMonths,
 } from 'date-fns'
 import { CalendarIcon, ChevronDown, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { DateRange } from 'react-day-picker'
 import { useLocale, useTranslations } from 'use-intl'
 import { Button } from '#/components/ui/button'
@@ -135,13 +135,9 @@ export function DateField({
     return parseDateValue(field.state.value, mode)
   }, [field.state.value, mode])
 
-  const parsedSingleValue = useMemo(() => {
-    return mode === 'single' ? (parsedValue as Date | undefined) : undefined
-  }, [parsedValue, mode])
+  const parsedSingleValue = mode === 'single' ? (parsedValue as Date | undefined) : undefined
 
-  const parsedRangeValue = useMemo(() => {
-    return mode === 'range' ? (parsedValue as DateRange | undefined) : undefined
-  }, [parsedValue, mode])
+  const parsedRangeValue = mode === 'range' ? (parsedValue as DateRange | undefined) : undefined
 
   const isStringValue = useMemo(() => {
     if (valueFormat === 'string') return true
@@ -154,37 +150,50 @@ export function DateField({
     return false
   }, [field.state.value, valueFormat])
 
-  const formattedLabel = useMemo(() => {
+  const serverLabel =
+    mode === 'single'
+      ? (placeholder || t('pickDate'))
+      : (placeholder || t('pickDateRange'))
+  const [formattedLabel, setFormattedLabel] = useState(serverLabel)
+  useEffect(() => {
     if (mode === 'single') {
       const val = parsedSingleValue
-      if (!val) return placeholder || t('pickDate')
-      return new Intl.DateTimeFormat(locale, {
+      if (!val) {
+        setFormattedLabel(placeholder || t('pickDate'))
+        return
+      }
+      setFormattedLabel(
+        new Intl.DateTimeFormat(locale, {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }).format(val),
+      )
+    } else {
+      const val = parsedRangeValue
+      if (!val?.from) {
+        setFormattedLabel(placeholder || t('pickDateRange'))
+        return
+      }
+      const fromStr = new Intl.DateTimeFormat(locale, {
         day: 'numeric',
-        month: 'long',
+        month: 'short',
         year: 'numeric',
-      }).format(val)
+      }).format(val.from)
+      if (!val.to) {
+        setFormattedLabel(fromStr)
+        return
+      }
+      const toStr = new Intl.DateTimeFormat(locale, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }).format(val.to)
+      setFormattedLabel(`${fromStr} - ${toStr}`)
     }
-
-    const val = parsedRangeValue
-    if (!val?.from) return placeholder || t('pickDateRange')
-    const fromStr = new Intl.DateTimeFormat(locale, {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    }).format(val.from)
-
-    if (!val.to) return fromStr
-
-    const toStr = new Intl.DateTimeFormat(locale, {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    }).format(val.to)
-
-    return `${fromStr} - ${toStr}`
   }, [parsedSingleValue, parsedRangeValue, mode, placeholder, t, locale])
 
-  const today = useMemo(() => startOfDay(new Date()), [])
+  const today = startOfDay(new Date())
 
   const defaultPresets = useMemo(() => {
     if (mode === 'single') {
@@ -220,11 +229,7 @@ export function DateField({
     ]
   }, [mode, today, t])
 
-  const presetItems = useMemo(() => {
-    if (Array.isArray(presets)) return presets
-    if (presets === true) return defaultPresets
-    return []
-  }, [presets, defaultPresets])
+  const presetItems = Array.isArray(presets) ? presets : presets === true ? defaultPresets : []
 
   const showPresets = presetItems.length > 0
 
@@ -321,26 +326,17 @@ export function DateField({
               <CalendarIcon className="mr-2 h-4 w-4 shrink-0 opacity-70" />
               <span className="truncate flex-1">{formattedLabel}</span>
               {parsedValue && !disabled && (
-                // biome-ignore lint/a11y/useSemanticElements: nested button is invalid HTML
-                <span
-                  role="button"
-                  tabIndex={0}
+                <button
+                  type="button"
                   className="ml-auto p-1 rounded-sm opacity-70 hover:opacity-100 focus:outline-hidden hover:bg-accent/80 select-none cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation()
                     handleClear()
                   }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      handleClear()
-                    }
-                  }}
                 >
                   <X className="h-4 w-4" />
                   <span className="sr-only">{t('clear')}</span>
-                </span>
+                </button>
               )}
               <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>

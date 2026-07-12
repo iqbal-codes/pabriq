@@ -213,5 +213,3 @@ export function LineItemTaskCard({
   )
 }
 
-// Back-compat re-export so any external caller still resolves.
-export { LineItemTaskCard as default }
