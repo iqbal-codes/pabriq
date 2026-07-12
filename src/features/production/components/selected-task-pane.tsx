@@ -1,14 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
+import { useRouteContext } from '@tanstack/react-router'
 import { Check, Clock } from 'lucide-react'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useLocale, useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
 import { FormRoot, useAppForm } from '#/components/app/form'
+import { fieldContext } from '#/components/app/form/form-context-base'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Skeleton } from '#/components/ui/skeleton'
 import { getAssetsForLineItemFn } from '#/features/orders/server'
+import { useGlobalModal } from '#/hooks/use-global-overlay'
 import { cn } from '#/lib/utils'
 import { useTaskDetail, useTaskMutations } from '../hooks'
 import type { ProductionTask, Stage } from '../model'
@@ -136,7 +139,13 @@ export function SelectedTaskPane({
   const t = useTranslations('production')
   const ct = useTranslations('common')
   const { data: task, isLoading } = useTaskDetail(taskId)
-  const { advanceTask } = useTaskMutations()
+  const { advanceTask, saveRequirementResponse } = useTaskMutations()
+  const { openModal } = useGlobalModal()
+  const routeCtx = useRouteContext({ strict: false }) as
+    | { role?: string }
+    | undefined
+  const role = routeCtx?.role ?? 'member'
+  const canApprove = role === 'owner' || role === 'admin'
 
   const { data: lineItemAssets } = useQuery({
     queryKey: ['order-assets', task?.lineItemId ?? ''],
@@ -194,6 +203,21 @@ export function SelectedTaskPane({
     }
   }, [currentStage, hasRequirements, responses])
 
+  const hasMissingRequired = useMemo(() => {
+    if (!currentStage?.requirements) return false
+    return currentStage.requirements.some((req) => {
+      if (!req.required) return false
+      const resp = responses[req.id]
+      if (req.type === 'upload') {
+        return !resp?.assetIds || resp.assetIds.length === 0
+      }
+      if (req.type === 'number') {
+        return !resp || resp.value === undefined || resp.value === ''
+      }
+      return !resp?.value
+    })
+  }, [currentStage, responses])
+
   const form = useAppForm({
     defaultValues,
     onSubmit: async ({ value }) => {
@@ -219,6 +243,11 @@ export function SelectedTaskPane({
       })
     },
   })
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset form when task or stage changes
+  useEffect(() => {
+    form.reset()
+  }, [taskId, currentStage?.id, form])
 
   if (!taskId) {
     return (
@@ -262,6 +291,7 @@ export function SelectedTaskPane({
   }
 
   const ctx = (task.context as TaskContext) ?? null
+  const isPendingApproval = task.status === 'pending_approval'
   const orderNumber = getCtxValue(ctx, 'orderNumber')
   const customerName = getCtxValue(ctx, 'customerName')
   const quantity = getCtxValue(ctx, 'quantity')
@@ -393,7 +423,7 @@ export function SelectedTaskPane({
                   return (
                     <div
                       key={req.id}
-                      className="flex flex-col md:flex-row md:items-center justify-between gap-3 border border-border bg-card p-3 rounded-none"
+                      className="flex flex-col justify-between gap-3 border border-border bg-card p-3 rounded-none"
                     >
                       <div className="flex items-start gap-2.5">
                         {isCompleted ? (
@@ -415,7 +445,7 @@ export function SelectedTaskPane({
                         </div>
                       </div>
 
-                      <div className="w-full md:w-auto min-w-[200px] shrink-0">
+                      <div className="w-full shrink-0">
                         {req.type === 'text' && (
                           <form.AppField name={`requirements[${index}].value`}>
                             {(field) => (
@@ -424,6 +454,19 @@ export function SelectedTaskPane({
                                 value={field.state.value}
                                 onChange={(e) =>
                                   field.handleChange(e.target.value)
+                                }
+                                onBlur={async () => {
+                                  const val = field.state.value
+                                  await saveRequirementResponse.mutateAsync({
+                                    taskId,
+                                    requirementResponses: {
+                                      [req.id]: { value: val },
+                                    },
+                                  })
+                                }}
+                                disabled={
+                                  isPendingApproval ||
+                                  saveRequirementResponse.isPending
                                 }
                                 placeholder={t('paneEnterText')}
                                 className="h-8 text-xs font-mono rounded-none"
@@ -447,6 +490,22 @@ export function SelectedTaskPane({
                                         : Number(e.target.value),
                                     )
                                   }
+                                  onBlur={async () => {
+                                    const val = field.state.value
+                                    await saveRequirementResponse.mutateAsync({
+                                      taskId,
+                                      requirementResponses: {
+                                        [req.id]: {
+                                          value:
+                                            val !== null ? String(val) : '',
+                                        },
+                                      },
+                                    })
+                                  }}
+                                  disabled={
+                                    isPendingApproval ||
+                                    saveRequirementResponse.isPending
+                                  }
                                   placeholder={t('paneEnterNumber')}
                                   className="h-8 pl-3 pr-8 text-xs font-mono rounded-none"
                                 />
@@ -461,18 +520,48 @@ export function SelectedTaskPane({
                           <form.AppField
                             name={`requirements[${index}].assetIds`}
                           >
-                            {(field) => (
-                              <div className="text-right text-xs [&_[data-slot=dropzone]]:py-2 [&_[data-slot=dropzone]]:px-3 [&_h4]:text-[11px]">
-                                <field.FileUploadField
-                                  ownerType="productionTask"
-                                  ownerId={taskId}
-                                  usage="attachment"
-                                  maxFiles={1}
-                                  optional={!req.required}
-                                  label=""
-                                />
-                              </div>
-                            )}
+                            {(field) => {
+                              // Delegate to field prototype and cast to preserve FieldApi type
+                              const interceptedField = Object.create(
+                                field,
+                              ) as unknown as typeof field
+                              interceptedField.handleChange = (
+                                updater:
+                                  | string[]
+                                  | ((prev: string[]) => string[]),
+                              ) => {
+                                const prev = field.state.value ?? []
+                                const val =
+                                  typeof updater === 'function'
+                                    ? updater(prev)
+                                    : updater
+                                field.handleChange(updater)
+                                void saveRequirementResponse.mutateAsync({
+                                  taskId,
+                                  requirementResponses: {
+                                    [req.id]: { value: '', assetIds: val },
+                                  },
+                                })
+                              }
+                              return (
+                                <fieldContext.Provider value={interceptedField}>
+                                  <div className="text-right text-xs [&_h4]:text-[11px]">
+                                    <field.FileUploadField
+                                      ownerType="productionTask"
+                                      ownerId={taskId}
+                                      usage="attachment"
+                                      maxFiles={1}
+                                      optional={!req.required}
+                                      label=""
+                                      disabled={
+                                        isPendingApproval ||
+                                        saveRequirementResponse.isPending
+                                      }
+                                    />
+                                  </div>
+                                </fieldContext.Provider>
+                              )
+                            }}
                           </form.AppField>
                         )}
                       </div>
@@ -485,10 +574,14 @@ export function SelectedTaskPane({
         </div>
       </div>
 
-      {(hasRequirements || !!actionLabel) && (
+      {(hasRequirements || !!actionLabel || isPendingApproval) && (
         <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border px-5 py-3.5">
           <div>
-            {hasRequirements && remainingCount > 0 ? (
+            {isPendingApproval ? (
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                {t('needReview')}
+              </p>
+            ) : hasRequirements && remainingCount > 0 ? (
               <p className="text-[11px] text-muted-foreground leading-snug">
                 <span className="font-semibold text-foreground">
                   {t('paneRequirementRemaining', { count: remainingCount })}
@@ -503,12 +596,24 @@ export function SelectedTaskPane({
             )}
           </div>
           <div className="flex items-center gap-2">
-            {hasRequirements ? (
+            {isPendingApproval ? (
+              canApprove ? (
+                <Button
+                  type="button"
+                  onClick={() => openModal('review-task', taskId)}
+                  size="lg"
+                >
+                  {t('reviewAdvancement')}
+                </Button>
+              ) : null
+            ) : hasRequirements ? (
               <form.AppForm>
-                <form.SubmitButton isPending={advanceTask.isPending} size="lg">
-                  {remainingCount > 0
-                    ? t('paneCompleteRequirements')
-                    : (actionLabel ?? t('completeRequirements'))}
+                <form.SubmitButton
+                  isPending={advanceTask.isPending}
+                  disabled={hasMissingRequired || advanceTask.isPending}
+                  size="lg"
+                >
+                  {actionLabel ?? t('completeRequirements')}
                 </form.SubmitButton>
               </form.AppForm>
             ) : actionLabel ? (

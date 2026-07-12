@@ -175,6 +175,68 @@ export const advanceTaskFn = createServerFn({ method: 'POST' })
     },
   )
 
+export const saveRequirementResponsesFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (input: {
+      taskId: string
+      requirementResponses: Record<
+        string,
+        { value?: string; assetIds?: string[] }
+      >
+    }) => input,
+  )
+  .handler(async ({ data }): Promise<MutationResult> => {
+    const orgId = await resolveOrgId()
+    const [{ db }, { productionTasks }, { eq, and }] = await Promise.all([
+      import('#/db/index'),
+      import('#/db/schema'),
+      import('drizzle-orm'),
+    ])
+
+    try {
+      const taskRows = await db
+        .select()
+        .from(productionTasks)
+        .where(
+          and(
+            eq(productionTasks.id, data.taskId),
+            eq(productionTasks.orgId, orgId),
+          ),
+        )
+        .limit(1)
+
+      if (taskRows.length === 0) throw new Error('Task not found')
+      const task = taskRows[0]
+
+      const existingContext = (task.context as Record<string, unknown>) ?? {}
+      const updatedContext = {
+        ...existingContext,
+        requirementResponses: {
+          ...((existingContext.requirementResponses as Record<
+            string,
+            unknown
+          >) ?? {}),
+          ...data.requirementResponses,
+        },
+      }
+
+      await db
+        .update(productionTasks)
+        .set({
+          context: updatedContext as never,
+          updatedAt: new Date(),
+        })
+        .where(eq(productionTasks.id, data.taskId))
+
+      return { ok: true }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
+  })
+
 export const approveTaskAdvanceFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { taskId: string; reviewNotes?: string }) => input)
   .handler(async ({ data }) => {

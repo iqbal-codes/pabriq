@@ -1,8 +1,22 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { IntlProvider } from 'use-intl'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { OrderTimelineEvent, PortalOrder } from '../model'
 import { ProgressView } from './progress-view'
+
+const { mockCreateSnapToken, mockRouterInvalidate } = vi.hoisted(() => ({
+  mockCreateSnapToken: vi.fn(),
+  mockRouterInvalidate: vi.fn(),
+}))
+
+vi.mock('@tanstack/react-router', () => ({
+  useRouter: () => ({ invalidate: mockRouterInvalidate }),
+}))
+
+vi.mock('#/features/invoices/server', () => ({
+  createSnapTokenFn: mockCreateSnapToken,
+  reconcilePortalPaymentFn: vi.fn(),
+}))
 
 const mockUseOrderTimeline = vi.fn(() => ({
   data: [] as OrderTimelineEvent[],
@@ -21,6 +35,12 @@ vi.mock('../hooks', () => ({
     isPending: false,
   })),
 }))
+
+afterEach(() => {
+  document.querySelector('script[data-midtrans-snap="true"]')?.remove()
+  Reflect.deleteProperty(window, 'snap')
+  vi.restoreAllMocks()
+})
 
 const messages = {
   portal: {
@@ -135,6 +155,14 @@ const messages = {
     timelineStepUpcoming: 'Menunggu',
     timelineDateUnavailable: 'Tanggal belum tercatat',
     statusCompleted: 'Selesai',
+    payNow: 'Bayar Sekarang',
+    paymentCancelled: 'Pembayaran dibatalkan',
+    paymentSuccess: 'Pembayaran berhasil',
+    paymentFailed: 'Pembayaran gagal',
+    midtransSdkNotLoaded: 'SDK Midtrans belum dimuat',
+    processingPayment: 'Memproses',
+    paymentVerifying: 'Memverifikasi pembayaran',
+    paymentConfirmTimeout: 'Konfirmasi pembayaran tertunda',
   },
   status: {
     production: 'Dalam Produksi',
@@ -211,6 +239,61 @@ function renderProgressView(order = makeOrder()) {
 }
 
 describe('ProgressView', () => {
+  it('opens Midtrans Snap on the first click after the SDK loads', async () => {
+    const appendScript = vi
+      .spyOn(document.head, 'appendChild')
+      .mockImplementation((node) => node)
+    const pay = vi.fn()
+    mockCreateSnapToken.mockResolvedValue({
+      ok: true,
+      snapToken: 'snap-token-1',
+      clientKey: 'client-key-1',
+      isProduction: false,
+    })
+    renderProgressView(
+      makeOrder({
+        invoices: [
+          {
+            id: 'inv-midtrans',
+            invoiceNumber: 'INV-MIDTRANS',
+            total: 100000,
+            percentage: 100,
+            dueDate: '2099-01-10',
+            status: 'unpaid',
+            paymentMethodName: 'Midtrans',
+            paymentProvider: 'midtrans',
+            paymentMethodBankName: null,
+            paymentMethodAccountNumber: null,
+            paymentMethodAccountHolder: null,
+            paymentMethodInstructions: null,
+            hasPaymentProof: false,
+            midtransOrderId: null,
+            paidAt: null,
+            shippingFee: null,
+          },
+        ],
+      }),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Bayar Sekarang' }))
+
+    const script = await waitFor(() => {
+      expect(appendScript).toHaveBeenCalledTimes(1)
+      const appendedNode = appendScript.mock.calls[0]?.[0]
+      expect(appendedNode).toBeInstanceOf(HTMLScriptElement)
+      return appendedNode as HTMLScriptElement
+    })
+    expect(pay).not.toHaveBeenCalled()
+
+    window.snap = { pay }
+    script.dispatchEvent(new Event('load'))
+
+    await waitFor(() =>
+      expect(pay).toHaveBeenCalledWith('snap-token-1', expect.any(Object)),
+    )
+    expect(mockCreateSnapToken).toHaveBeenCalledTimes(1)
+  })
+
   it('renders the estimated completion from the max line item deadline', () => {
     renderProgressView()
     expect(screen.getAllByText(/10 Jan 2026/).length).toBeGreaterThanOrEqual(1)

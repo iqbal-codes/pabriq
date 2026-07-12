@@ -54,19 +54,12 @@ export function WorkQueue({
   )
 
   const flat = useMemo(() => {
-    return [
-      ...ready.map((bt) => ({ bt, group: 'ready' as const })),
-      ...waiting.map((bt) => ({ bt, group: 'waiting' as const })),
-    ].sort((a, b) => {
-      if (a.bt.task.priority !== b.bt.task.priority) {
-        return Number(b.bt.task.priority) - Number(a.bt.task.priority)
+    return [...ready, ...waiting].sort((a, b) => {
+      if (a.task.priority !== b.task.priority) {
+        return Number(b.task.priority) - Number(a.task.priority)
       }
-      const aIdx = a.bt.task.stageId
-        ? (stageOrder.get(a.bt.task.stageId) ?? -1)
-        : -1
-      const bIdx = b.bt.task.stageId
-        ? (stageOrder.get(b.bt.task.stageId) ?? -1)
-        : -1
+      const aIdx = a.task.stageId ? (stageOrder.get(a.task.stageId) ?? -1) : -1
+      const bIdx = b.task.stageId ? (stageOrder.get(b.task.stageId) ?? -1) : -1
       if (aIdx !== bIdx) return aIdx - bIdx
       return 0
     })
@@ -148,8 +141,7 @@ export function WorkQueue({
             </p>
           ) : (
             <ul className="m-0 list-none p-0">
-              {flat.map((item, index) => {
-                const { bt, group } = item
+              {flat.map((bt) => {
                 const task = bt.task
                 const ctx = task.context as TaskContext
                 const productName = getCtxValue(ctx, 'productName') || '—'
@@ -157,24 +149,8 @@ export function WorkQueue({
                 const quantity = getCtxValue(ctx, 'quantity')
                 const isQueued = task.status === 'queued'
                 const isSelected = selectedTaskId === task.id
-                const showGroupDivider =
-                  index > 0 && flat[index - 1]?.group !== group
                 return (
                   <li key={task.id}>
-                    {showGroupDivider && (
-                      <div className="border-y border-border bg-muted/50 px-4 py-1.5">
-                        <div className="flex items-baseline justify-between">
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {group === 'ready'
-                              ? t('queueReady')
-                              : t('queueWaiting')}
-                          </span>
-                          <span className="font-mono text-[10px] text-muted-foreground">
-                            {group === 'ready' ? ready.length : waiting.length}
-                          </span>
-                        </div>
-                      </div>
-                    )}
                     <button
                       type="button"
                       onClick={() => onSelect(task.id)}
