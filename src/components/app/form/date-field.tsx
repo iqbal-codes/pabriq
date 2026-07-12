@@ -128,6 +128,24 @@ export function DateField({
   const error = firstError(field.state.meta.errors)
   const locale = useLocale()
   const t = useTranslations('dateField')
+  const dateFormatterLong = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+    [locale],
+  )
+  const dateFormatterShort = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }),
+    [locale],
+  )
 
   const [open, setOpen] = useState(false)
 
@@ -162,33 +180,19 @@ export function DateField({
         setFormattedLabel(placeholder || t('pickDate'))
         return
       }
-      setFormattedLabel(
-        new Intl.DateTimeFormat(locale, {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        }).format(val),
-      )
+      setFormattedLabel(dateFormatterLong.format(val))
     } else {
       const val = parsedRangeValue
       if (!val?.from) {
         setFormattedLabel(placeholder || t('pickDateRange'))
         return
       }
-      const fromStr = new Intl.DateTimeFormat(locale, {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      }).format(val.from)
+      const fromStr = dateFormatterShort.format(val.from)
       if (!val.to) {
         setFormattedLabel(fromStr)
         return
       }
-      const toStr = new Intl.DateTimeFormat(locale, {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      }).format(val.to)
+      const toStr = dateFormatterShort.format(val.to)
       setFormattedLabel(`${fromStr} - ${toStr}`)
     }
   }, [parsedSingleValue, parsedRangeValue, mode, placeholder, t, locale])

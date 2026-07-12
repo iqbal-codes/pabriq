@@ -1,5 +1,5 @@
 import { createFormHook } from '@tanstack/react-form'
-import { useMemo, useRef } from 'react'
+import { useInsertionEffect, useMemo, useRef } from 'react'
 import { fieldContext, formContext } from './form-context-base'
 import { FormError } from './form-error'
 import {
@@ -73,7 +73,9 @@ export const useAppForm: typeof useAppFormBase = (options) => {
   const formMutable = form as unknown as { AppField: unknown }
 
   const appFieldBaseRef = useRef(AppFieldBase)
-  appFieldBaseRef.current = AppFieldBase
+  useInsertionEffect(() => {
+    appFieldBaseRef.current = AppFieldBase
+  })
 
   formMutable.AppField = useMemo(() => {
     return function AppFieldWrapper(

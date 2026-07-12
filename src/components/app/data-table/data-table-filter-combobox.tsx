@@ -62,6 +62,13 @@ export function DataTableFilterCombobox(props: DataTableFilterComboboxProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const filtered = useOptions(options, search)
+  const valueSet = useMemo(
+    () =>
+      new Set(
+        Array.isArray(props.value) ? props.value : ([] as string[]),
+      ),
+    [props.value],
+  )
 
   if (props.mode === 'single') {
     const { value, onChange, mode: _m } = props
@@ -132,7 +139,6 @@ export function DataTableFilterCombobox(props: DataTableFilterComboboxProps) {
   const removeValue = (v: string) => {
     onChange(value.filter((x) => x !== v))
   }
-  const valueSet = useMemo(() => new Set(value), [value])
 
 
   return (
