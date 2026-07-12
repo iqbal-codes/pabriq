@@ -11,6 +11,12 @@ if (process.env.RUN_MIGRATIONS_ON_STARTUP === 'true') {
     console.log('Migrations completed successfully!')
   } catch (error) {
     console.error('Migration failed! Aborting startup.', error)
+    if (error.stdout) {
+      console.error('Migration stdout:', error.stdout.toString())
+    }
+    if (error.stderr) {
+      console.error('Migration stderr:', error.stderr.toString())
+    }
     process.exit(1)
   }
 }
