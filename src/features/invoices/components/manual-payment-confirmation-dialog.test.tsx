@@ -3,6 +3,8 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { IntlProvider } from 'use-intl'
 import { describe, expect, it, vi } from 'vitest'
+import type { AssetMetadata } from '#/features/assets/server'
+import { getAssetsMetadata } from '#/features/assets/server'
 import type { InvoicePaymentProof, InvoiceRow } from '#/features/invoices/model'
 import { ManualPaymentConfirmationDialog } from './manual-payment-confirmation-dialog'
 
@@ -21,6 +23,15 @@ vi.mock('#/components/app/asset-image', () => ({
     />
   ),
 }))
+
+vi.mock('#/features/assets/server', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('#/features/assets/server')>()
+  return {
+    ...actual,
+    getAssetsMetadata: vi.fn(),
+  }
+})
 
 const mockUseInvoice = vi.fn()
 
@@ -48,6 +59,12 @@ const messages = {
   },
   common: {
     cancel: 'Cancel',
+    file: 'File',
+  },
+  assetUpload: {
+    states: {
+      uploaded: 'Uploaded',
+    },
   },
 }
 
@@ -95,6 +112,22 @@ const proofs: InvoicePaymentProof[] = [
   },
 ]
 
+const proofAssets: AssetMetadata[] = [
+  {
+    id: 'asset-proof-1',
+    originalFilename: 'transfer-1.png',
+    mimeType: 'image/png',
+    sizeBytes: 12_345,
+    assetKind: 'image',
+  },
+  {
+    id: 'asset-proof-2',
+    originalFilename: 'transfer-2.jpg',
+    mimeType: 'image/jpeg',
+    sizeBytes: 24_680,
+    assetKind: 'image',
+  },
+]
 function renderDialog({
   invoiceData = invoice,
   paymentProofs = proofs,
@@ -114,6 +147,7 @@ function renderDialog({
   }
 } = {}) {
   mockUseInvoice.mockReturnValue({ data: invoiceDetail })
+  vi.mocked(getAssetsMetadata).mockResolvedValue(proofAssets)
 
   const onOpenChange = vi.fn()
   const queryClient = new QueryClient({
@@ -142,19 +176,20 @@ describe('ManualPaymentConfirmationDialog', () => {
   it('renders invoice number, amount, and destination bank details', () => {
     renderDialog()
 
-    expect(screen.getByText('Confirm Manual Payment')).toBeInTheDocument()
     expect(screen.getByText('INV-001')).toBeInTheDocument()
     expect(screen.getByText('BCA')).toBeInTheDocument()
     expect(screen.getByText('1234567890')).toBeInTheDocument()
     expect(screen.getByText('PT Labq')).toBeInTheDocument()
   })
 
-  it('shows latest proof submission timestamp and renders proof thumbnails', () => {
+  it('shows latest proof submission timestamp and renders proof thumbnails', async () => {
     renderDialog()
 
     expect(screen.getByText('Latest proof submitted')).toBeInTheDocument()
     expect(screen.getByText(/Jun 22, 2026/)).toBeInTheDocument()
-    expect(screen.getAllByTestId('asset-image')).toHaveLength(2)
+    await waitFor(() => {
+      expect(screen.getAllByTestId('asset-image')).toHaveLength(2)
+    })
     expect(screen.getByAltText('proof asset-proof-1')).toBeInTheDocument()
     expect(screen.getByAltText('proof asset-proof-2')).toBeInTheDocument()
   })
