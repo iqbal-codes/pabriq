@@ -29,12 +29,16 @@ async function checkMigrationStatementsApplied(
     .map((s) => s.trim())
     .filter((s) => s.length > 0)
 
+  let totalChecks = 0
+  let passedChecks = 0
+
   for (const stmt of statements) {
-    // 1. Match CREATE TABLE "table_name"
+    // 1. Match CREATE TABLE "table_name" or CREATE TABLE table_name
     const createTableMatch = stmt.match(
-      /CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+"([^"]+)"/i,
+      /CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+"?([a-zA-Z0-9_]+)"?/i,
     )
     if (createTableMatch) {
+      totalChecks++
       const tableName = createTableMatch[1]
       const res = await pool.query(
         `SELECT EXISTS (
@@ -44,16 +48,17 @@ async function checkMigrationStatementsApplied(
         );`,
         [tableName],
       )
-      if (res.rows[0]?.exists !== true) {
-        return false
+      if (res.rows[0]?.exists === true) {
+        passedChecks++
       }
     }
 
     // 2. Match ALTER TABLE "table_name" ADD COLUMN "column_name" or ADD "column_name"
     const addColumnMatch = stmt.match(
-      /ALTER\s+TABLE\s+"([^"]+)"\s+ADD\s+(?:COLUMN\s+)?"([^"]+)"/i,
+      /ALTER\s+TABLE\s+"?([a-zA-Z0-9_]+)"?\s+ADD\s+(?:COLUMN\s+)?"?([a-zA-Z0-9_]+)"?/i,
     )
     if (addColumnMatch) {
+      totalChecks++
       const tableName = addColumnMatch[1]
       const columnName = addColumnMatch[2]
       const res = await pool.query(
@@ -65,13 +70,19 @@ async function checkMigrationStatementsApplied(
         );`,
         [tableName, columnName],
       )
-      if (res.rows[0]?.exists !== true) {
-        return false
+      if (res.rows[0]?.exists === true) {
+        passedChecks++
       }
     }
   }
 
-  return true
+  // If there are no tables/columns created/added in this migration, default to true
+  if (totalChecks === 0) {
+    return true
+  }
+
+  // If at least one check passed, we consider it applied (handles dropped/renamed objects)
+  return passedChecks > 0
 }
 
 async function runMigrations() {
