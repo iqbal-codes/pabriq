@@ -1,3 +1,12 @@
+import { vi } from 'vitest'
+
+vi.mock('@tanstack/react-router', async () => {
+  const actual = await vi.importActual<typeof import('@tanstack/react-router')>(
+    '@tanstack/react-router',
+  )
+  return { ...actual, useRouteContext: () => ({ role: 'admin' }) }
+})
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
   fireEvent,
@@ -8,7 +17,7 @@ import {
 } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { IntlProvider } from 'use-intl'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { ThreeColumnPage } from './three-column-page'
 
 // ---------------------------------------------------------------------------
@@ -228,6 +237,7 @@ vi.mock('../hooks', () => ({
   useTaskActivities: () => ({ data: [], isLoading: false }),
   useTaskMutations: () => ({
     advanceTask: { mutateAsync: advanceMutate, isPending: false },
+    saveRequirementResponse: { mutateAsync: vi.fn(), isPending: false },
     saveComment: { mutateAsync: saveCommentMutate, isPending: false },
   }),
   useArchivedTasks: () => ({
@@ -403,14 +413,14 @@ describe('ThreeColumnPage', () => {
     expect(screen.getAllByText('No tasks yet').length).toBeGreaterThanOrEqual(2)
     // No detail-only content visible
     expect(screen.queryByText('Production Summary')).toBeNull()
-    expect(screen.queryByText('Workflow')).toBeNull()
+    expect(screen.queryByRole('complementary', { name: 'Workflow' })).toBeNull()
   })
 
   it('hides the workflow rail when no task is selected', () => {
     boardState.hasTasks = false
     renderPage()
     expect(screen.getAllByText('No tasks yet').length).toBeGreaterThanOrEqual(1)
-    expect(screen.queryByText('Workflow')).toBeNull()
+    expect(screen.queryByRole('complementary', { name: 'Workflow' })).toBeNull()
     expect(screen.queryByPlaceholderText('Add a comment...')).toBeNull()
   })
 
@@ -432,7 +442,9 @@ describe('ThreeColumnPage', () => {
 
     // Task detail and workflow now visible
     expect(screen.getAllByText('Sample Product').length).toBeGreaterThan(0)
-    expect(screen.getByText('Workflow')).toBeDefined()
+    expect(
+      screen.getByRole('complementary', { name: 'Workflow' }),
+    ).toBeDefined()
     // No dialog
     expect(screen.queryByRole('dialog')).toBeNull()
     // No mobile tabs
@@ -503,14 +515,13 @@ describe('ThreeColumnPage', () => {
     })
   })
 
-  it('renders the workflow rail only with stages from the selected task board', async () => {
+  it('renders the task detail page with stages from the selected task board', async () => {
     renderPage()
     // Click task to select it
-    const taskRow = screen.getByText('Sample Product')
+    const taskRow = screen.getByText('Priority Product')
     await userEvent.click(taskRow.closest('button') ?? taskRow)
-    // Both stages are pre_production, so they should appear
     expect(screen.getAllByText('Design').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Cutting').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Cutting/i).length).toBeGreaterThan(0)
   })
 
   // ---- Desktop: invalid task param ----
@@ -561,7 +572,9 @@ describe('ThreeColumnPage', () => {
     expect(within(dialog).getByText('Production Summary')).toBeDefined()
 
     // Workflow absent (inactive tab)
-    expect(within(dialog).queryByText('Workflow')).toBeNull()
+    expect(
+      within(dialog).queryByRole('complementary', { name: 'Workflow' }),
+    ).toBeNull()
   })
 
   // ---- Mobile: closing clears task param ----
@@ -628,7 +641,9 @@ describe('ThreeColumnPage', () => {
     expect(detailTab).toHaveAttribute('aria-selected', 'true')
     expect(within(dialog).getByText('Sample Product')).toBeDefined()
     expect(within(dialog).getByText('Front panel')).toBeDefined()
-    expect(within(dialog).queryByText('Workflow')).toBeNull()
+    expect(
+      within(dialog).queryByRole('complementary', { name: 'Workflow' }),
+    ).toBeNull()
 
     // Switch to Activity
     const activityTab = within(dialog).getByRole('tab', { name: 'Activity' })
@@ -642,8 +657,9 @@ describe('ThreeColumnPage', () => {
     expect(within(dialog).getByText('Front panel')).toBeDefined()
 
     // Workflow visible
-    expect(within(dialog).getByText('Workflow')).toBeDefined()
-
+    expect(
+      within(dialog).getByRole('complementary', { name: 'Workflow' }),
+    ).toBeDefined()
     // Production Summary absent (detail-only content)
     expect(within(dialog).queryByText('Production Summary')).toBeNull()
   })
@@ -661,7 +677,9 @@ describe('ThreeColumnPage', () => {
     // Switch to Activity then back to Task Detail
     const activityTab = within(dialog).getByRole('tab', { name: 'Activity' })
     await userEvent.click(activityTab)
-    expect(within(dialog).getByText('Workflow')).toBeDefined()
+    expect(
+      within(dialog).getByRole('complementary', { name: 'Workflow' }),
+    ).toBeDefined()
 
     const detailTab = within(dialog).getByRole('tab', { name: 'Task Detail' })
     await userEvent.click(detailTab)
@@ -673,7 +691,9 @@ describe('ThreeColumnPage', () => {
     // Production Summary restored
     expect(within(dialog).getByText('Production Summary')).toBeDefined()
     // Workflow gone
-    expect(within(dialog).queryByText('Workflow')).toBeNull()
+    expect(
+      within(dialog).queryByRole('complementary', { name: 'Workflow' }),
+    ).toBeNull()
   })
 
   // ---- Mobile: Design Name persists across tab switch ----
@@ -755,13 +775,17 @@ describe('ThreeColumnPage', () => {
 
     // On Task Detail: Production Summary present, Workflow absent
     expect(within(dialog).getByText('Production Summary')).toBeDefined()
-    expect(within(dialog).queryByText('Workflow')).toBeNull()
+    expect(
+      within(dialog).queryByRole('complementary', { name: 'Workflow' }),
+    ).toBeNull()
 
     // Switch to Activity: Workflow present, Production Summary absent
     const activityTab = within(dialog).getByRole('tab', { name: 'Activity' })
     await userEvent.click(activityTab)
 
-    expect(within(dialog).getByText('Workflow')).toBeDefined()
+    expect(
+      within(dialog).getByRole('complementary', { name: 'Workflow' }),
+    ).toBeDefined()
     expect(within(dialog).queryByText('Production Summary')).toBeNull()
   })
 
@@ -775,7 +799,9 @@ describe('ThreeColumnPage', () => {
     expect(screen.queryByRole('tab', { name: 'Task Detail' })).toBeNull()
     expect(screen.queryByRole('tab', { name: 'Activity' })).toBeNull()
     expect(screen.getByText('Production Summary')).toBeDefined()
-    expect(screen.getByText('Workflow')).toBeDefined()
+    expect(
+      screen.getByRole('complementary', { name: 'Workflow' }),
+    ).toBeDefined()
   })
 
   it('tablet and smaller desktop hide detail tabs until a task is selected', async () => {
@@ -795,11 +821,13 @@ describe('ThreeColumnPage', () => {
       'true',
     )
     expect(screen.getByText('Production Summary')).toBeDefined()
-    expect(screen.queryByText('Workflow')).toBeNull()
+    expect(screen.queryByRole('complementary', { name: 'Workflow' })).toBeNull()
 
     await userEvent.click(screen.getByRole('tab', { name: 'Activity' }))
 
-    expect(screen.getByText('Workflow')).toBeDefined()
+    expect(
+      screen.getByRole('complementary', { name: 'Workflow' }),
+    ).toBeDefined()
     expect(screen.queryByText('Production Summary')).toBeNull()
   })
 

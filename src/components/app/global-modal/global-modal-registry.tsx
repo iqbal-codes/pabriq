@@ -112,8 +112,11 @@ function TaskDetailModalWrapper({
 }: GlobalOverlayProps) {
   const { openModal } = useGlobalModal()
   // Route context is guaranteed since the container mounts inside _org layout
-  const ctx = useRouteContext({ from: '/_org' }) as { org: { id: string } }
-  const canApprove = canApproveProductionTask('owner' as Role)
+  const ctx = useRouteContext({ from: '/_org' }) as {
+    org: { id: string }
+    role: Role
+  }
+  const canApprove = canApproveProductionTask(ctx.role)
 
   if (!id) return null
 
