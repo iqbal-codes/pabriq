@@ -21,6 +21,7 @@ import {
   listTasksByOrderIdFn,
   rejectTaskAdvanceFn,
   reorderStagesFn,
+  saveRequirementResponsesFn,
   saveTaskCommentFn,
   toggleStageFn,
   updateStageFn,
@@ -250,6 +251,31 @@ export function useTaskMutations() {
     },
   })
 
+  const saveRequirementResponse = useMutation<
+    MutationResult,
+    Error,
+    {
+      taskId: string
+      requirementResponses: Record<
+        string,
+        { value?: string; assetIds?: string[] }
+      >
+    }
+  >({
+    mutationFn: (input) => saveRequirementResponsesFn({ data: input }),
+    onError: handleMutationError,
+    onSuccess: (result, vars) => {
+      if ('error' in result) {
+        toast.error(result.error)
+        return
+      }
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.production.task(vars.taskId) },
+        { queryKey: [queryKeys.production.all[0], 'board'] },
+      ])
+    },
+  })
+
   const approveAdvance = useMutation<
     { ok: true; pendingApproval: boolean } | { ok: false; error: string },
     Error,
@@ -317,7 +343,13 @@ export function useTaskMutations() {
     },
   })
 
-  return { advanceTask, approveAdvance, rejectAdvance, saveComment }
+  return {
+    advanceTask,
+    saveRequirementResponse,
+    approveAdvance,
+    rejectAdvance,
+    saveComment,
+  }
 }
 
 export function useOrderTasksTimeline(orderId: string) {

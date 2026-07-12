@@ -300,27 +300,60 @@ async function reconcilePayment(
   }
 }
 
-function loadMidtransSnapScript(opts: {
+async function loadMidtransSnapScript(opts: {
   clientKey: string
   isProduction: boolean
-}) {
+}): Promise<boolean> {
   const src = opts.isProduction
     ? 'https://app.midtrans.com/snap/snap.js'
     : 'https://app.sandbox.midtrans.com/snap/snap.js'
-  const existing = document.querySelector('script[data-midtrans-snap="true"]')
-  if (existing) {
+  const existing = document.querySelector<HTMLScriptElement>(
+    'script[data-midtrans-snap="true"]',
+  )
+  let script = existing
+
+  if (script) {
     const isStale =
-      existing.getAttribute('src') !== src ||
-      existing.getAttribute('data-client-key') !== opts.clientKey
-    if (isStale) existing.remove()
-    else return
+      script.getAttribute('src') !== src ||
+      script.getAttribute('data-client-key') !== opts.clientKey
+    if (isStale) {
+      script.remove()
+      Reflect.deleteProperty(window, 'snap')
+      script = null
+    } else if (window.snap) {
+      return true
+    }
   }
-  const script = document.createElement('script')
-  script.src = src
-  script.setAttribute('data-client-key', opts.clientKey)
-  script.setAttribute('data-midtrans-snap', 'true')
-  script.async = true
-  document.head.appendChild(script)
+
+  if (!script) {
+    script = document.createElement('script')
+    script.src = src
+    script.setAttribute('data-client-key', opts.clientKey)
+    script.setAttribute('data-midtrans-snap', 'true')
+    script.async = true
+  }
+
+  const { promise, resolve } = Promise.withResolvers<boolean>()
+  script.addEventListener(
+    'load',
+    () => {
+      const isLoaded = Boolean(window.snap)
+      if (!isLoaded) script.remove()
+      resolve(isLoaded)
+    },
+    { once: true },
+  )
+  script.addEventListener(
+    'error',
+    () => {
+      script.remove()
+      resolve(false)
+    },
+    { once: true },
+  )
+
+  if (!script.isConnected) document.head.appendChild(script)
+  return promise
 }
 
 function PayNowButton({
@@ -354,12 +387,12 @@ function PayNowButton({
         return
       }
 
-      loadMidtransSnapScript({
+      const isSnapLoaded = await loadMidtransSnapScript({
         clientKey: res.clientKey,
         isProduction: res.isProduction,
       })
 
-      if (!window.snap) {
+      if (!isSnapLoaded || !window.snap) {
         toast.error(t('midtransSdkNotLoaded'))
         setIsLoading(false)
         return

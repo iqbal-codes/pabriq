@@ -80,7 +80,7 @@ function ExistingFileRow({
         />
       )}
       <div className="flex-1 min-w-0">
-        <p className="truncate text-sm font-medium">
+        <p className="text-left truncate text-sm font-medium">
           {metadata.originalFilename}
         </p>
         <div className="flex items-center gap-2 mt-1">
