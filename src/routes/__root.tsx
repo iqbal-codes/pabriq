@@ -98,7 +98,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       {
         name: 'apple-mobile-web-app-title',
-        content: 'labq.dev',
+        content: 'AKZ Production',
       },
       {
         name: 'apple-mobile-web-app-status-bar-style',
