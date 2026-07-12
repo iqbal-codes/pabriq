@@ -1,1 +1,0 @@
-ALTER TABLE "organization" ADD COLUMN "logo_asset_id" text REFERENCES "assets"("id") ON DELETE SET NULL;
