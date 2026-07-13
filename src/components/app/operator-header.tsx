@@ -12,7 +12,8 @@ import {
 import { useTheme } from 'next-themes'
 import { useLocale, useTranslations } from 'use-intl'
 import { AssetImage } from '#/components/app/asset-image'
-import { switchLocale } from '#/components/app/header-controls'
+import { switchLocale } from '#/components/app/header-controls-utils'
+import { signOutAndNavigate } from '#/components/app/operator-header-utils'
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar'
 import { Button } from '#/components/ui/button'
 import {
@@ -26,17 +27,6 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
-import { authClient } from '#/lib/auth-client'
-
-export async function signOutAndNavigate(
-  router: ReturnType<typeof useRouter>,
-): Promise<void> {
-  await authClient.signOut()
-  await Promise.all([
-    router.invalidate(),
-    router.navigate({ to: '/sign-in', search: { redirect: undefined } }),
-  ])
-}
 
 export function OperatorHeader({
   org,

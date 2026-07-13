@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { ImageOff, Landmark } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLocale, useTranslations } from 'use-intl'
 import { ExistingFileList } from '#/components/app/form/file-upload-field'
 import { Button } from '#/components/ui/button'
@@ -37,6 +37,14 @@ export function ManualPaymentConfirmationDialog({
   const t = useTranslations('invoices')
   const ct = useTranslations('common')
   const locale = useLocale()
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }),
+    [locale],
+  )
   const { data: invoiceDetail } = useInvoice(invoice.id)
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -159,10 +167,7 @@ export function ManualPaymentConfirmationDialog({
                 className="text-sm"
                 dateTime={latestProof.createdAt.toISOString()}
               >
-                {new Intl.DateTimeFormat(locale, {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                }).format(latestProof.createdAt)}
+                {dateFormatter.format(latestProof.createdAt)}
               </time>
             </div>
           )}

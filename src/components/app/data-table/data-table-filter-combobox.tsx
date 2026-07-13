@@ -62,6 +62,10 @@ export function DataTableFilterCombobox(props: DataTableFilterComboboxProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const filtered = useOptions(options, search)
+  const valueSet = useMemo(
+    () => new Set(Array.isArray(props.value) ? props.value : ([] as string[])),
+    [props.value],
+  )
 
   if (props.mode === 'single') {
     const { value, onChange, mode: _m } = props
@@ -185,7 +189,7 @@ export function DataTableFilterCombobox(props: DataTableFilterComboboxProps) {
             </CommandEmpty>
             <CommandGroup>
               {filtered.map((opt) => {
-                const isSelected = value.includes(opt.value)
+                const isSelected = valueSet.has(opt.value)
                 return (
                   <CommandItem
                     key={opt.value}

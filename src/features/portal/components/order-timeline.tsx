@@ -1,4 +1,5 @@
 import { ArrowRight, CheckCircle2, File } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
 import { getReadyForProductionLabel } from '#/features/production/ready-for-production-label'
@@ -86,6 +87,10 @@ export function OrderTimeline({
 }: Props) {
   const t = useTranslations('portal')
   const locale = useLocale()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
   const sortedEvents = [...events].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   )
@@ -175,11 +180,14 @@ export function OrderTimeline({
           </div>
           <div className="min-w-0 flex-1 pb-3 last:pb-0">
             <p className="text-xs text-muted-foreground tabular-nums">
-              {formatShortDate(String(event.createdAt), locale)}{' '}
-              {new Date(event.createdAt).toLocaleTimeString(locale, {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {mounted
+                ? `${formatShortDate(String(event.createdAt), locale)} ${new Date(
+                    event.createdAt,
+                  ).toLocaleTimeString(locale, {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}`
+                : ''}
             </p>
             <p className="mt-0.5 flex items-center gap-1.5 text-sm text-foreground">
               <span>{getDescription(event)}</span>

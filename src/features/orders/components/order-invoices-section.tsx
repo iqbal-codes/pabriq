@@ -157,6 +157,7 @@ export function OrderInvoicesSection({
                           href={`/api/documents/invoices/${inv.id}/pdf`}
                           target="_blank"
                           rel="noopener noreferrer"
+                          aria-label="Print invoice"
                         >
                           <Printer className="size-3.5" />
                         </a>
@@ -178,6 +179,11 @@ export function OrderInvoicesSection({
             variant="ghost"
             size="sm"
             className="w-full rounded-none text-xs"
+            aria-label={
+              expanded
+                ? 'Show fewer invoices'
+                : `Show all ${remainingCount} invoices`
+            }
             onClick={() => setExpanded((prev) => !prev)}
           >
             {expanded

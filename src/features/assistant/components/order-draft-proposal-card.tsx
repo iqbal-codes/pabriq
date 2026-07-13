@@ -10,6 +10,12 @@ import {
   useGetProposal,
 } from '#/features/assistant/hooks'
 
+const idrCurrencyFormatter = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+})
+
 type OrderDraftProposalCardProps = {
   metadata: Extract<
     AssistantChatMessageMetadata,
@@ -131,11 +137,7 @@ export function OrderDraftProposalCard({
               {lineItem.productName} × {lineItem.quantity}
             </span>
             <span className="font-mono">
-              {new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                minimumFractionDigits: 0,
-              }).format(lineItem.total)}
+              {idrCurrencyFormatter.format(lineItem.total)}
             </span>
           </div>
         ))}
@@ -151,11 +153,7 @@ export function OrderDraftProposalCard({
       <div className="border-t pt-1.5 flex justify-between text-xs font-semibold">
         <span>{t('proposal.total')}</span>
         <span className="font-mono">
-          {new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0,
-          }).format(payload.total)}
+          {idrCurrencyFormatter.format(payload.total)}
         </span>
       </div>
 
