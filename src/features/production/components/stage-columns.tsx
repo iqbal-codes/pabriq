@@ -85,7 +85,7 @@ export function useStageColumns({
   ]
 }
 
-export function StageReorderActions({
+function StageReorderActions({
   isFirst,
   isLast,
   isReordering,

@@ -44,7 +44,7 @@ vi.mock('#/components/app/asset-image', () => ({
   ),
 }))
 
-vi.mock('#/components/app/header-controls', () => ({
+vi.mock('#/components/app/header-controls-utils', () => ({
   switchLocale: vi.fn(),
 }))
 

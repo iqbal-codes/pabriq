@@ -1,5 +1,5 @@
 import { FileIcon, RefreshCw, X } from 'lucide-react'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useTranslations } from 'use-intl'
 import { CircularProgress } from '#/components/customized/progress/progress-08'
@@ -116,22 +116,27 @@ export function FileListUpload(props: FileListUploadProps) {
     }
   }, [items])
 
+  const acceptedMimeTypesSet = useMemo(
+    () => new Set(props.acceptedMimeTypes),
+    [props.acceptedMimeTypes],
+  )
+
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       const validFiles = acceptedFiles.filter((file) => {
         const ext = `.${file.name.split('.').pop()?.toLowerCase()}`
         return (
           file.size <= props.maxBytes &&
-          (props.acceptedMimeTypes.length === 0 ||
-            props.acceptedMimeTypes.includes(file.type) ||
-            props.acceptedMimeTypes.includes(ext))
+          (acceptedMimeTypesSet.size === 0 ||
+            acceptedMimeTypesSet.has(file.type) ||
+            acceptedMimeTypesSet.has(ext))
         )
       })
       if (validFiles.length > 0) {
         addFiles(validFiles)
       }
     },
-    [addFiles, props.acceptedMimeTypes, props.maxBytes],
+    [addFiles, acceptedMimeTypesSet, props.maxBytes],
   )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

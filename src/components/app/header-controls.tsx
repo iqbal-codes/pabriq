@@ -1,10 +1,9 @@
 'use client'
 
-import Cookies from 'js-cookie'
 import { CheckIcon, Languages, Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useLocale, useTranslations } from 'use-intl'
-
+import { switchLocale } from '#/components/app/header-controls-utils'
 import { Button } from '#/components/ui/button'
 import {
   DropdownMenu,
@@ -12,13 +11,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
-import { LOCALE_KEY } from '#/lib/i18n'
-
-export function switchLocale(targetLocale: string) {
-  localStorage.setItem(LOCALE_KEY, targetLocale)
-  Cookies.set(LOCALE_KEY, targetLocale, { path: '/', expires: 365 })
-  window.location.reload()
-}
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()

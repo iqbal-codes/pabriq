@@ -6,12 +6,11 @@ import {
 } from '../pdf-format'
 import { PDF_LOCALE } from '../pdf-locale'
 import type { QuotationPdfData } from '../types'
+import { createPdfStyles, registerPdfFonts } from './pdf-template-constants'
 import {
-  createPdfStyles,
   PdfAddressBlock,
   PdfMetaRow,
   PdfPricingLine,
-  registerPdfFonts,
 } from './pdf-template-shared'
 
 registerPdfFonts()

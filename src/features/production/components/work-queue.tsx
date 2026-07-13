@@ -1,5 +1,5 @@
 import { Archive, ArchiveRestore, Clock, Search } from 'lucide-react'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocale, useTranslations } from 'use-intl'
 import { Badge } from '#/components/ui/badge'
 import { Input } from '#/components/ui/input'
@@ -47,6 +47,11 @@ export function WorkQueue({
   const t = useTranslations('production')
   const ct = useTranslations('common')
   const locale = useLocale()
+
+  const [referenceDate, setReferenceDate] = useState<Date | null>(null)
+  useEffect(() => {
+    setReferenceDate(new Date())
+  }, [])
 
   const stageOrder = useMemo(
     () => new Map(activeStages.map((s, i) => [s.id, i] as const)),
@@ -195,11 +200,11 @@ export function WorkQueue({
                           </span>
                         ) : null}
                       </div>
-                      {!isQueued ? (
+                      {!isQueued && referenceDate ? (
                         <DeadlineLine
                           ctx={ctx}
                           locale={locale}
-                          referenceDate={new Date()}
+                          referenceDate={referenceDate}
                         />
                       ) : null}
                     </button>

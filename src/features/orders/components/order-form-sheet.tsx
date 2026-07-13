@@ -421,9 +421,9 @@ export function OrderFormSheet({
           notes: li.notes ?? '',
           attachments: [] as string[],
           addonIds:
-            (li.selectedAddons
-              ?.map((a) => a.productAddonId)
-              .filter(Boolean) as string[]) ?? [],
+            (li.selectedAddons?.flatMap((a) =>
+              a.productAddonId ? [a.productAddonId] : [],
+            ) as string[]) ?? [],
           isRepeatOrder: li.isRepeatOrder ?? false,
           deadline:
             li.manualDeadline && li.deadline

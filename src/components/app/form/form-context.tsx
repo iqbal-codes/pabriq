@@ -1,5 +1,5 @@
 import { createFormHook } from '@tanstack/react-form'
-import { useMemo } from 'react'
+import { useInsertionEffect, useMemo, useRef } from 'react'
 import { fieldContext, formContext } from './form-context-base'
 import { FormError } from './form-error'
 import {
@@ -72,13 +72,24 @@ export const useAppForm: typeof useAppFormBase = (options) => {
   // Cast form to overwrite read-only AppField property on the library type
   const formMutable = form as unknown as { AppField: unknown }
 
+  const appFieldBaseRef = useRef(AppFieldBase)
+  const schemaRef = useRef(schema)
+  useInsertionEffect(() => {
+    appFieldBaseRef.current = AppFieldBase
+    schemaRef.current = schema
+  })
+
   formMutable.AppField = useMemo(() => {
-    return function AppFieldWrapper(props: Parameters<typeof AppFieldBase>[0]) {
+    return function AppFieldWrapper(
+      props: Parameters<typeof appFieldBaseRef.current>[0],
+    ) {
+      const currentSchema = schemaRef.current
+      const FieldBase = appFieldBaseRef.current
       let fieldValidatorFn:
         | ((params: { value: unknown }) => string | undefined)
         | undefined
-      if (schema && props.name) {
-        const fieldSchema = getSchemaForPath(schema, props.name) as {
+      if (currentSchema && props.name) {
+        const fieldSchema = getSchemaForPath(currentSchema, props.name) as {
           safeParse?: (value: unknown) => {
             success: boolean
             error?: { issues: { message: string }[] }
@@ -108,9 +119,9 @@ export const useAppForm: typeof useAppFormBase = (options) => {
         }
       }
 
-      return <AppFieldBase {...props} validators={mergedValidators} />
+      return <FieldBase {...props} validators={mergedValidators} />
     }
-  }, [AppFieldBase, schema])
+  }, [])
 
   return form
 }

@@ -71,31 +71,34 @@ function TriggerButton({
   onRemove?: () => void
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(triggerBase, active ? triggerActive : triggerIdle)}
-    >
-      {active && valueText ? (
-        <>
-          <span className="text-muted-foreground">{label}:</span>
-          <span className="truncate max-w-[8rem]">{valueText}</span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onRemove?.()
-            }}
-            className="ml-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-none text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          >
-            <X className="size-3" />
-          </button>
-        </>
-      ) : (
-        <span className="text-muted-foreground">{label}</span>
+    <div className={cn(triggerBase, active ? triggerActive : triggerIdle)}>
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex-1 inline-flex items-center gap-1.5"
+        aria-label={`Filter by ${label}`}
+      >
+        {active && valueText ? (
+          <>
+            <span className="text-muted-foreground">{label}:</span>
+            <span className="truncate max-w-[8rem]">{valueText}</span>
+          </>
+        ) : (
+          <span className="text-muted-foreground">{label}</span>
+        )}
+        {!active && <ChevronsUpDown className="size-3.5 shrink-0 opacity-50" />}
+      </button>
+      {active && valueText && onRemove && (
+        <button
+          type="button"
+          onClick={onRemove}
+          className="ml-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-none text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          aria-label={`Clear ${label} filter`}
+        >
+          <X className="size-3" />
+        </button>
       )}
-      {!active && <ChevronsUpDown className="size-3.5 shrink-0 opacity-50" />}
-    </button>
+    </div>
   )
 }
 
@@ -200,6 +203,7 @@ function InlineComboboxMulti({
         o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q),
     )
   }, [options, search])
+  const valueSet = useMemo(() => new Set(value), [value])
 
   const valueText =
     value.length > 0
@@ -232,7 +236,7 @@ function InlineComboboxMulti({
             <CommandEmpty>No options</CommandEmpty>
             <CommandGroup>
               {filtered.map((opt) => {
-                const isSelected = value.includes(opt.value)
+                const isSelected = valueSet.has(opt.value)
                 return (
                   <CommandItem
                     key={opt.value}

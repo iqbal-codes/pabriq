@@ -278,13 +278,14 @@ function ComboboxFieldMulti({
     }
   }, [query, search, searchDelay])
 
-  const values = field.state.value ?? []
+  const values = useMemo(() => field.state.value ?? [], [field.state.value])
   const activeOptions = staticOptions ?? knownOptions
   const clientSide = !!staticOptions
   const filtered = useFiltered(activeOptions, query, clientSide)
+  const valuesSet = useMemo(() => new Set(values), [values])
 
   function handleSelect(selectedValue: string) {
-    const next = values.includes(selectedValue)
+    const next = valuesSet.has(selectedValue)
       ? values.filter((v) => v !== selectedValue)
       : [...values, selectedValue]
     field.handleChange(next)
