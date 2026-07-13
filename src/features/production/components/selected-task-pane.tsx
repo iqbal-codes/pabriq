@@ -10,12 +10,12 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Skeleton } from '#/components/ui/skeleton'
+import type { Requirement } from '#/db/schema'
 import { getAssetsForLineItemFn } from '#/features/orders/server'
 import { useGlobalModal } from '#/hooks/use-global-overlay'
 import { cn } from '#/lib/utils'
 import { useTaskDetail, useTaskMutations } from '../hooks'
 import type { ProductionTask, Stage } from '../model'
-import type { Requirement } from '#/db/schema'
 import { StageBadge } from './stage-badge'
 import {
   type DeadlineInfo,
@@ -134,7 +134,10 @@ type TaskPaneInfoSectionProps = {
   lineItemAssets: Array<{ id: string }> | undefined
 }
 
-function TaskPaneInfoSection({ ctx, lineItemAssets }: TaskPaneInfoSectionProps) {
+function TaskPaneInfoSection({
+  ctx,
+  lineItemAssets,
+}: TaskPaneInfoSectionProps) {
   const t = useTranslations('production')
   const ct = useTranslations('common')
 
@@ -164,9 +167,7 @@ function TaskPaneInfoSection({ ctx, lineItemAssets }: TaskPaneInfoSectionProps) 
             <span className="text-xs text-muted-foreground">
               {t('customerLabel')}
             </span>
-            <p className="font-medium text-foreground">
-              {customerName || '—'}
-            </p>
+            <p className="font-medium text-foreground">{customerName || '—'}</p>
           </div>
           <div className="space-y-1">
             <span className="text-xs text-muted-foreground">
@@ -224,13 +225,13 @@ type PaneFormValues = {
     assetIds: string[]
   }>
 }
-function _paneFormFactory() {
+function usePaneForm() {
   return useAppForm({
     defaultValues: { requirements: [] as PaneFormValues['requirements'] },
     onSubmit: async () => {},
   })
 }
-type PaneForm = ReturnType<typeof _paneFormFactory>
+type PaneForm = ReturnType<typeof usePaneForm>
 
 // TaskPaneRequirements – requirements form with text/number/upload fields
 // ---------------------------------------------------------------------------
@@ -241,7 +242,9 @@ type TaskPaneRequirementsProps = {
   form: PaneForm
   responses: Record<string, { value?: string; assetIds?: string[] }>
   isPendingApproval: boolean
-  saveRequirementResponse: ReturnType<typeof useTaskMutations>['saveRequirementResponse']
+  saveRequirementResponse: ReturnType<
+    typeof useTaskMutations
+  >['saveRequirementResponse']
 }
 
 function TaskPaneRequirements({
@@ -310,9 +313,7 @@ function TaskPaneRequirements({
                       <Input
                         type="text"
                         value={field.state.value}
-                        onChange={(e) =>
-                          field.handleChange(e.target.value)
-                        }
+                        onChange={(e) => field.handleChange(e.target.value)}
                         onBlur={async () => {
                           const val = field.state.value
                           await saveRequirementResponse.mutateAsync({
@@ -323,8 +324,7 @@ function TaskPaneRequirements({
                           })
                         }}
                         disabled={
-                          isPendingApproval ||
-                          saveRequirementResponse.isPending
+                          isPendingApproval || saveRequirementResponse.isPending
                         }
                         placeholder={t('paneEnterText')}
                         className="h-8 text-xs font-mono rounded-none"
@@ -333,9 +333,7 @@ function TaskPaneRequirements({
                   </form.AppField>
                 )}
                 {req.type === 'number' && (
-                  <form.AppField
-                    name={`requirements[${index}].numberValue`}
-                  >
+                  <form.AppField name={`requirements[${index}].numberValue`}>
                     {(field) => (
                       <div className="relative flex items-center">
                         <Input
@@ -354,8 +352,7 @@ function TaskPaneRequirements({
                               taskId,
                               requirementResponses: {
                                 [req.id]: {
-                                  value:
-                                    val !== null ? String(val) : '',
+                                  value: val !== null ? String(val) : '',
                                 },
                               },
                             })
@@ -375,18 +372,14 @@ function TaskPaneRequirements({
                   </form.AppField>
                 )}
                 {req.type === 'upload' && (
-                  <form.AppField
-                    name={`requirements[${index}].assetIds`}
-                  >
+                  <form.AppField name={`requirements[${index}].assetIds`}>
                     {(field) => {
                       // Delegate to field prototype and cast to preserve FieldApi type
                       const interceptedField = Object.create(
                         field,
                       ) as unknown as typeof field
                       interceptedField.handleChange = (
-                        updater:
-                          | string[]
-                          | ((prev: string[]) => string[]),
+                        updater: string[] | ((prev: string[]) => string[]),
                       ) => {
                         const prev = field.state.value ?? []
                         const val =
@@ -499,8 +492,10 @@ function TaskPaneActionBar({
     ? currentStage.requirements.some((req) => {
         if (!req.required) return false
         const resp = responses[req.id]
-        if (req.type === 'upload') return !resp?.assetIds || resp.assetIds.length === 0
-        if (req.type === 'number') return !resp || resp.value === undefined || resp.value === ''
+        if (req.type === 'upload')
+          return !resp?.assetIds || resp.assetIds.length === 0
+        if (req.type === 'number')
+          return !resp || resp.value === undefined || resp.value === ''
         return !resp?.value
       })
     : false
@@ -508,7 +503,10 @@ function TaskPaneActionBar({
   const remainingCount = currentStage?.requirements
     ? currentStage.requirements.filter((r) => {
         const resp = responses[r.id]
-        return !(resp && (resp.value || (resp.assetIds && resp.assetIds.length > 0)))
+        return !(
+          resp &&
+          (resp.value || (resp.assetIds && resp.assetIds.length > 0))
+        )
       }).length
     : 0
   return (
@@ -677,7 +675,15 @@ export function SelectedTaskPane({
     form.reset()
   }, [taskId, currentStage?.id, form])
 
-  if (!taskId) return <section className="flex h-full min-h-0 items-center justify-center border-r border-border" aria-label={t('noTasks')}><p className="text-sm text-muted-foreground">{t('noTasks')}</p></section>
+  if (!taskId)
+    return (
+      <section
+        className="flex h-full min-h-0 items-center justify-center border-r border-border"
+        aria-label={t('noTasks')}
+      >
+        <p className="text-sm text-muted-foreground">{t('noTasks')}</p>
+      </section>
+    )
 
   if (isLoading || !task) return <TaskPaneSkeleton />
 

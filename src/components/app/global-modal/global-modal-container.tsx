@@ -4,9 +4,9 @@ import {
   InviteMemberDialogWrapper,
   PaymentMethodFormDialogWrapper,
   RecordPaymentDialogWrapper,
+  ReviewModalWrapper,
   StageFormWrapper,
   TaskDetailModalWrapper,
-  ReviewModalWrapper,
 } from './global-modal-registry-map'
 
 const GLOBAL_MODALS = {

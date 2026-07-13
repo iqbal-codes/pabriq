@@ -1,6 +1,6 @@
 import { Link, useParams, useRouteContext } from '@tanstack/react-router'
 import { Copy, Mail, Phone } from 'lucide-react'
-import { useTranslations, type _Translator, type Messages } from 'use-intl'
+import { type _Translator, type Messages, useTranslations } from 'use-intl'
 import { AvatarPhoto } from '#/components/app/avatar-photo'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
@@ -16,10 +16,10 @@ import {
   TableHeader,
   TableRow,
 } from '#/components/ui/table'
-import type { Customer } from '#/features/customers/model'
 import { useCustomer } from '#/features/customers/hooks'
-import type { InvoiceRow } from '#/features/invoices/model'
+import type { Customer } from '#/features/customers/model'
 import { useInvoicesList } from '#/features/invoices/hooks'
+import type { InvoiceRow } from '#/features/invoices/model'
 import {
   currencyFormatter,
   dateFormatter,
@@ -233,11 +233,7 @@ interface CustomerProfileProps {
   citizenship: string
 }
 
-function CustomerProfile({
-  customer,
-  t,
-  citizenship,
-}: CustomerProfileProps) {
+function CustomerProfile({ customer, t, citizenship }: CustomerProfileProps) {
   return (
     <Card>
       <CardContent className="pt-6">
@@ -260,12 +256,7 @@ function CustomerProfile({
             </div>
             {customer.email && (
               <div className="flex items-center gap-1 ml-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-6"
-                  asChild
-                >
+                <Button variant="ghost" size="icon" className="size-6" asChild>
                   <a href={`mailto:${customer.email}`} aria-label="Send email">
                     <Mail className="size-3" />
                   </a>
@@ -283,12 +274,7 @@ function CustomerProfile({
             </div>
             {customer.phone && (
               <div className="flex items-center gap-1 ml-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-6"
-                  asChild
-                >
+                <Button variant="ghost" size="icon" className="size-6" asChild>
                   <a
                     href={`https://wa.me/${customer.phone.replace(/^0/, '62')}`}
                     target="_blank"
@@ -305,9 +291,7 @@ function CustomerProfile({
 
           {/* Citizenship */}
           <div>
-            <p className="text-sm text-muted-foreground">
-              {t('citizenship')}
-            </p>
+            <p className="text-sm text-muted-foreground">{t('citizenship')}</p>
             <p>{citizenship}</p>
           </div>
 
@@ -429,9 +413,7 @@ export function ViewCustomerPage() {
     .filter((inv) => inv.status === 'paid')
     .reduce((sum, inv) => sum + inv.total, 0)
   const outstandingBalance = invoices
-    .filter(
-      (inv) => inv.status === 'unpaid' || inv.status === 'partially_paid',
-    )
+    .filter((inv) => inv.status === 'unpaid' || inv.status === 'partially_paid')
     .reduce((sum, inv) => sum + inv.total, 0)
 
   const citizenship = customer.isWni ? at('isWni') : at('isWna')

@@ -205,7 +205,6 @@ function InlineComboboxMulti({
   }, [options, search])
   const valueSet = useMemo(() => new Set(value), [value])
 
-
   const valueText =
     value.length > 0
       ? value.length === 1

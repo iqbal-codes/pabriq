@@ -3,10 +3,7 @@ import { Badge } from '#/components/ui/badge'
 import { cn } from '#/lib/utils'
 import type { ProductionTask, Stage } from '../model'
 
-import {
-  getStageBadgeVariant,
-  stageBadgeStyles,
-} from './stage-badge-utils'
+import { getStageBadgeVariant, stageBadgeStyles } from './stage-badge-utils'
 
 export function StageBadge({
   task,

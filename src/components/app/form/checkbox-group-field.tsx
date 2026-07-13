@@ -23,9 +23,6 @@ function CheckboxGroupField({
   const values = useMemo(() => field.state.value ?? [], [field.state.value])
   const valuesSet = useMemo(() => new Set(values), [values])
 
-
-
-
   function handleToggle(optionValue: string) {
     const next = valuesSet.has(optionValue)
       ? values.filter((v) => v !== optionValue)

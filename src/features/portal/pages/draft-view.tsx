@@ -74,7 +74,7 @@ export function DraftView({
         }),
       ),
     })
-  }, [hasCustomer, showAreaSearch, t, order.customerIsWni])
+  }, [hasCustomer, showAreaSearch, t])
 
   const form = useAppForm({
     defaultValues: {

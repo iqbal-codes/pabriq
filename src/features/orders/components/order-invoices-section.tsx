@@ -179,7 +179,11 @@ export function OrderInvoicesSection({
             variant="ghost"
             size="sm"
             className="w-full rounded-none text-xs"
-            aria-label={expanded ? 'Show fewer invoices' : `Show all ${remainingCount} invoices`}
+            aria-label={
+              expanded
+                ? 'Show fewer invoices'
+                : `Show all ${remainingCount} invoices`
+            }
             onClick={() => setExpanded((prev) => !prev)}
           >
             {expanded

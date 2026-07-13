@@ -63,10 +63,7 @@ export function DataTableFilterCombobox(props: DataTableFilterComboboxProps) {
   const [search, setSearch] = useState('')
   const filtered = useOptions(options, search)
   const valueSet = useMemo(
-    () =>
-      new Set(
-        Array.isArray(props.value) ? props.value : ([] as string[]),
-      ),
+    () => new Set(Array.isArray(props.value) ? props.value : ([] as string[])),
     [props.value],
   )
 
@@ -139,7 +136,6 @@ export function DataTableFilterCombobox(props: DataTableFilterComboboxProps) {
   const removeValue = (v: string) => {
     onChange(value.filter((x) => x !== v))
   }
-
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

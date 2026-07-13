@@ -226,7 +226,12 @@ export function OrderFlowTimeline({ events, className }: Props) {
           <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6 space-y-3">
             {displayEvents.map((event, i) => {
               const { icon, description } = getEventMeta(event, translate)
-              const statusLabel = getStatusLabel(event, translate, locale, mounted)
+              const statusLabel = getStatusLabel(
+                event,
+                translate,
+                locale,
+                mounted,
+              )
               const invoiceSuffix = event.invoiceNumber
                 ? ` · ${event.invoiceNumber}`
                 : ''

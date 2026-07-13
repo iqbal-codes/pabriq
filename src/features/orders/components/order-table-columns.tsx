@@ -5,8 +5,8 @@ import type {
   DataTableFiltersConfig,
 } from '#/components/app/data-table'
 import { Badge } from '#/components/ui/badge'
-import { getOrderStatusLabel } from '#/features/orders/components/order-status-badge-utils'
 import { OrderStatusBadge } from '#/features/orders/components/order-status-badge'
+import { getOrderStatusLabel } from '#/features/orders/components/order-status-badge-utils'
 import type { OrderRow } from '#/features/orders/model'
 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {

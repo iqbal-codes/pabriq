@@ -284,7 +284,6 @@ function ComboboxFieldMulti({
   const filtered = useFiltered(activeOptions, query, clientSide)
   const valuesSet = useMemo(() => new Set(values), [values])
 
-
   function handleSelect(selectedValue: string) {
     const next = valuesSet.has(selectedValue)
       ? values.filter((v) => v !== selectedValue)

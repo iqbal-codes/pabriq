@@ -16,14 +16,11 @@ import type { PageAction } from '#/components/app/page-shell/page-shell-types'
 import type { ShippingAddress } from '#/features/address/model'
 import { CreateInvoiceModal } from '#/features/invoices/components/create-invoice-modal'
 import { ManualPaymentConfirmationDialog } from '#/features/invoices/components/manual-payment-confirmation-dialog'
-import type {
-  InvoicePaymentProof,
-  InvoiceRow,
-} from '#/features/invoices/model'
 import {
   useInvoicePaymentProofs,
   useInvoicesList,
 } from '#/features/invoices/hooks'
+import type { InvoicePaymentProof, InvoiceRow } from '#/features/invoices/model'
 import { CompleteProductionModal } from '#/features/orders/components/complete-production-modal'
 import { OrderDetailSection } from '#/features/orders/components/order-detail-section'
 import { OrderInvoicesSection } from '#/features/orders/components/order-invoices-section'
@@ -40,16 +37,16 @@ import {
   currencyFormatter,
   dateFormatter,
 } from '#/features/orders/components/view-order-utils'
-import type { Order, OrderLineItem } from '#/features/orders/model'
 import { useOrder, useOrderAdminTimeline } from '#/features/orders/hooks'
+import type { Order, OrderLineItem } from '#/features/orders/model'
 import {
   canAdjustConfirmedOrder,
   type Role,
 } from '#/features/permissions/model'
 import { OrderFlowTimeline } from '#/features/portal/components/order-flow-timeline'
 import { useTasksByOrderId } from '#/features/production/hooks'
-import type { ProductRow } from '#/features/products/model'
 import { useProductsList } from '#/features/products/hooks'
+import type { ProductRow } from '#/features/products/model'
 
 // ── buildOrderActions ───────────────────────────────────────────
 

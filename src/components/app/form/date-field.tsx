@@ -153,9 +153,11 @@ export function DateField({
     return parseDateValue(field.state.value, mode)
   }, [field.state.value, mode])
 
-  const parsedSingleValue = mode === 'single' ? (parsedValue as Date | undefined) : undefined
+  const parsedSingleValue =
+    mode === 'single' ? (parsedValue as Date | undefined) : undefined
 
-  const parsedRangeValue = mode === 'range' ? (parsedValue as DateRange | undefined) : undefined
+  const parsedRangeValue =
+    mode === 'range' ? (parsedValue as DateRange | undefined) : undefined
 
   const isStringValue = useMemo(() => {
     if (valueFormat === 'string') return true
@@ -170,8 +172,8 @@ export function DateField({
 
   const serverLabel =
     mode === 'single'
-      ? (placeholder || t('pickDate'))
-      : (placeholder || t('pickDateRange'))
+      ? placeholder || t('pickDate')
+      : placeholder || t('pickDateRange')
   const [formattedLabel, setFormattedLabel] = useState(serverLabel)
   useEffect(() => {
     if (mode === 'single') {
@@ -195,7 +197,15 @@ export function DateField({
       const toStr = dateFormatterShort.format(val.to)
       setFormattedLabel(`${fromStr} - ${toStr}`)
     }
-  }, [parsedSingleValue, parsedRangeValue, mode, placeholder, t, dateFormatterLong, dateFormatterShort])
+  }, [
+    parsedSingleValue,
+    parsedRangeValue,
+    mode,
+    placeholder,
+    t,
+    dateFormatterLong,
+    dateFormatterShort,
+  ])
 
   const today = startOfDay(new Date())
 
@@ -233,7 +243,11 @@ export function DateField({
     ]
   }, [mode, today, t])
 
-  const presetItems = Array.isArray(presets) ? presets : presets === true ? defaultPresets : []
+  const presetItems = Array.isArray(presets)
+    ? presets
+    : presets === true
+      ? defaultPresets
+      : []
 
   const showPresets = presetItems.length > 0
 

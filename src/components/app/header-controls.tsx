@@ -3,7 +3,7 @@
 import { CheckIcon, Languages, Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useLocale, useTranslations } from 'use-intl'
-
+import { switchLocale } from '#/components/app/header-controls-utils'
 import { Button } from '#/components/ui/button'
 import {
   DropdownMenu,
@@ -11,7 +11,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
-import { switchLocale } from '#/components/app/header-controls-utils'
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()

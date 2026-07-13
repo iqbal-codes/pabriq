@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import { ArrowRight, CheckCircle2, File } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'use-intl'
 import { AssetFileList } from '#/components/app/asset-file'
 import { getReadyForProductionLabel } from '#/features/production/ready-for-production-label'
@@ -181,7 +181,9 @@ export function OrderTimeline({
           <div className="min-w-0 flex-1 pb-3 last:pb-0">
             <p className="text-xs text-muted-foreground tabular-nums">
               {mounted
-                ? `${formatShortDate(String(event.createdAt), locale)} ${new Date(event.createdAt).toLocaleTimeString(locale, {
+                ? `${formatShortDate(String(event.createdAt), locale)} ${new Date(
+                    event.createdAt,
+                  ).toLocaleTimeString(locale, {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}`

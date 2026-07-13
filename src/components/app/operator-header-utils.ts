@@ -1,4 +1,4 @@
-import { useRouter } from '@tanstack/react-router'
+import type { useRouter } from '@tanstack/react-router'
 
 import { authClient } from '#/lib/auth-client'
 

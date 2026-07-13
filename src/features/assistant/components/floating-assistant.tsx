@@ -38,10 +38,19 @@ export function FloatingAssistant({ orgId, userId }: FloatingAssistantProps) {
     [historyQuery.data],
   )
 
-  // Combined: history + locally-added messages (deduplicated by id)
+  // Combined: history + locally-added messages (deduplicated by id and content)
   const messages = useMemo(() => {
     const seen = new Set(historyMessages.map((m) => m.id))
-    return [...historyMessages, ...localMessages.filter((m) => !seen.has(m.id))]
+    // Also catch optimistic messages whose persisted copy has a different ID
+    const seenContent = new Set(
+      historyMessages.map((m) => `${m.role}::${m.content}`),
+    )
+    return [
+      ...historyMessages,
+      ...localMessages.filter(
+        (m) => !seen.has(m.id) && !seenContent.has(`${m.role}::${m.content}`),
+      ),
+    ]
   }, [historyMessages, localMessages])
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll trigger on new messages

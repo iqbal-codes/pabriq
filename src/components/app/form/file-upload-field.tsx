@@ -153,10 +153,7 @@ function FileUploadFieldBase({
   const error = firstError(field.state.meta.errors)
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([])
   const [optimisticAssets, setOptimisticAssets] = useState<AssetMetadata[]>([])
-  const assetIds = useMemo(
-    () => field.state.value ?? [],
-    [field.state.value],
-  )
+  const assetIds = useMemo(() => field.state.value ?? [], [field.state.value])
 
   const mimeTypes = acceptedMimeTypes ?? getAcceptedMimeTypes(usage)
   const maxBytes = getMaxBytes(usage)

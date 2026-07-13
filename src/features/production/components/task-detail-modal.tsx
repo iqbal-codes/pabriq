@@ -14,13 +14,13 @@ import {
 import { useMembers } from '#/features/members/hooks'
 import { getAssetsForLineItemFn } from '#/features/orders/server'
 import { cn } from '#/lib/utils'
-import type { Stage, TaskActivity } from '../model'
 import {
   useStages,
   useTaskActivities,
   useTaskDetail,
   useTaskMutations,
 } from '../hooks'
+import type { Stage, TaskActivity } from '../model'
 import { ActivityRow } from './activity-row'
 import { RequirementForm } from './requirement-form'
 import {
@@ -169,6 +169,21 @@ function TaskDetailFooter({
 }: TaskDetailFooterProps) {
   const t = useTranslations('production')
 
+  if (isPendingApproval && canApprove) {
+    return (
+      <div className="px-5 py-3 border-b bg-muted/30">
+        <Button
+          className="w-full"
+          onClick={onReview}
+          isLoading={isAdvancePending}
+          disabled={isAdvancePending}
+        >
+          {t('reviewAdvancement')}
+        </Button>
+      </div>
+    )
+  }
+
   const label =
     taskStatus === 'queued' && nextStageName
       ? t('advanceTo', { stage: nextStageName })
@@ -188,11 +203,11 @@ function TaskDetailFooter({
     <div className="px-5 py-3 border-b bg-muted/30">
       <Button
         className="w-full"
-        onClick={isPendingApproval && canApprove ? onReview : onAdvance}
+        onClick={onAdvance}
         isLoading={isAdvancePending}
         disabled={isAdvancePending}
       >
-        {isPendingApproval && canApprove ? t('reviewAdvancement') : label}
+        {label}
       </Button>
     </div>
   )
@@ -243,9 +258,7 @@ function TaskDetailsTab({
             <span className="text-xs text-muted-foreground">
               {t('customerLabel')}
             </span>
-            <p className="font-medium text-foreground">
-              {customerName || '-'}
-            </p>
+            <p className="font-medium text-foreground">{customerName || '-'}</p>
           </div>
           <div className="space-y-1">
             <span className="text-xs text-muted-foreground">

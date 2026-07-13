@@ -236,7 +236,7 @@ export {
   InviteMemberDialogWrapper,
   PaymentMethodFormDialogWrapper,
   RecordPaymentDialogWrapper,
+  ReviewModalWrapper,
   StageFormWrapper,
   TaskDetailModalWrapper,
-  ReviewModalWrapper,
 }
