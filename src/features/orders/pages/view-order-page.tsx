@@ -194,7 +194,7 @@ type OrderModalsProps = {
   products: ProductRow[]
 }
 
-export function OrderModals({
+function OrderModals({
   order,
   derived,
   customerName,

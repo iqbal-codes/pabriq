@@ -20,8 +20,10 @@ function CheckboxGroupField({
 }) {
   const field = useFieldContext<string[]>()
   const error = firstError(field.state.meta.errors)
-  const values = field.state.value ?? []
+  const values = useMemo(() => field.state.value ?? [], [field.state.value])
   const valuesSet = useMemo(() => new Set(values), [values])
+
+
 
 
   function handleToggle(optionValue: string) {

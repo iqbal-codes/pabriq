@@ -152,11 +152,12 @@ export function OrderInvoicesSection({
                 <div className="ml-auto">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="outline" size="icon-sm" aria-label="Print invoice" asChild>
+                      <Button variant="outline" size="icon-sm" asChild>
                         <a
                           href={`/api/documents/invoices/${inv.id}/pdf`}
                           target="_blank"
                           rel="noopener noreferrer"
+                          aria-label="Print invoice"
                         >
                           <Printer className="size-3.5" />
                         </a>

@@ -43,13 +43,13 @@ export function ShipmentTrackingCard({
               variant="ghost"
               size="icon"
               className="size-5 text-muted-foreground hover:text-foreground"
-              aria-label={t('trackShipment')}
               asChild
             >
               <a
                 href={`https://cekresi.com/?noresi=${trackingNumber}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label={t('trackShipment')}
               >
                 <ExternalLink className="size-3" />
               </a>

@@ -137,7 +137,7 @@ export function PhotoGridUpload(props: PhotoGridUploadProps) {
         addFiles(validFiles)
       }
     },
-    [addFiles, props.acceptedMimeTypes, props.maxBytes],
+    [addFiles, acceptedMimeTypesSet, props.maxBytes],
   )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

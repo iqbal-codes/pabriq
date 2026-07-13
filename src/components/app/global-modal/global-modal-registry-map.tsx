@@ -224,12 +224,19 @@ function ReviewModalWrapper({ open, onOpenChange, id }: GlobalOverlayProps) {
   )
 }
 
-// Mapping of overlay keys to their container wrappers
-export const GLOBAL_MODALS = {
-  'invite-member': InviteMemberDialogWrapper,
-  'payment-method-form': PaymentMethodFormDialogWrapper,
-  'record-payment': RecordPaymentDialogWrapper,
-  'stage-form': StageFormWrapper,
-  'task-detail': TaskDetailModalWrapper,
-  'review-task': ReviewModalWrapper,
-} as const
+export type GlobalModalKey =
+  | 'invite-member'
+  | 'payment-method-form'
+  | 'record-payment'
+  | 'stage-form'
+  | 'task-detail'
+  | 'review-task'
+
+export {
+  InviteMemberDialogWrapper,
+  PaymentMethodFormDialogWrapper,
+  RecordPaymentDialogWrapper,
+  StageFormWrapper,
+  TaskDetailModalWrapper,
+  ReviewModalWrapper,
+}

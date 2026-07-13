@@ -5,6 +5,7 @@
     "files": [
       "src/components/ui/**",
       ".sandcastle/Dockerfile",
+      ".worktree/**",
       "drizzle/0003_slow_matthew_murdock.sql",
       "drizzle/0019_invoices_redo.sql",
       "drizzle/0026_keen_natasha_romanoff.sql",
@@ -12,12 +13,6 @@
       "src/features/documents/templates/invoice.tsx",
       "src/features/documents/templates/quotation.tsx",
       "src/features/documents/templates/pdf-template-shared.tsx"
-    ],
-    "overrides": [
-      {
-        "files": [".worktree/**"],
-        "rules": ["react-doctor/supabase-rls-policy-risk", "react-doctor/rules-of-hooks"]
-      }
     ]
   }
 }

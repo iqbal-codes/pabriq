@@ -73,20 +73,23 @@ export const useAppForm: typeof useAppFormBase = (options) => {
   const formMutable = form as unknown as { AppField: unknown }
 
   const appFieldBaseRef = useRef(AppFieldBase)
+  const schemaRef = useRef(schema)
   useInsertionEffect(() => {
     appFieldBaseRef.current = AppFieldBase
+    schemaRef.current = schema
   })
 
   formMutable.AppField = useMemo(() => {
     return function AppFieldWrapper(
       props: Parameters<typeof appFieldBaseRef.current>[0],
     ) {
+      const currentSchema = schemaRef.current
       const FieldBase = appFieldBaseRef.current
       let fieldValidatorFn:
         | ((params: { value: unknown }) => string | undefined)
         | undefined
-      if (schema && props.name) {
-        const fieldSchema = getSchemaForPath(schema, props.name) as {
+      if (currentSchema && props.name) {
+        const fieldSchema = getSchemaForPath(currentSchema, props.name) as {
           safeParse?: (value: unknown) => {
             success: boolean
             error?: { issues: { message: string }[] }
@@ -118,7 +121,7 @@ export const useAppForm: typeof useAppFormBase = (options) => {
 
       return <FieldBase {...props} validators={mergedValidators} />
     }
-  }, [schema])
+  }, [])
 
   return form
 }

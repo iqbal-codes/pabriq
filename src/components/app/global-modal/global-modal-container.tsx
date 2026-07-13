@@ -1,6 +1,22 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useGlobalModal, useGlobalSheet } from '#/hooks/use-global-overlay'
-import { GLOBAL_MODALS } from './global-modal-registry-map'
+import {
+  InviteMemberDialogWrapper,
+  PaymentMethodFormDialogWrapper,
+  RecordPaymentDialogWrapper,
+  StageFormWrapper,
+  TaskDetailModalWrapper,
+  ReviewModalWrapper,
+} from './global-modal-registry-map'
+
+const GLOBAL_MODALS = {
+  'invite-member': InviteMemberDialogWrapper,
+  'payment-method-form': PaymentMethodFormDialogWrapper,
+  'record-payment': RecordPaymentDialogWrapper,
+  'stage-form': StageFormWrapper,
+  'task-detail': TaskDetailModalWrapper,
+  'review-task': ReviewModalWrapper,
+} as const
 
 export function GlobalModalContainer() {
   const { modal, modalId, closeModal: closeModalState } = useGlobalModal()

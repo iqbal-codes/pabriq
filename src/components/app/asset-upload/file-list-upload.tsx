@@ -136,7 +136,7 @@ export function FileListUpload(props: FileListUploadProps) {
         addFiles(validFiles)
       }
     },
-    [addFiles, props.acceptedMimeTypes, props.maxBytes],
+    [addFiles, acceptedMimeTypesSet, props.maxBytes],
   )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

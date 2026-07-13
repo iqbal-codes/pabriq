@@ -76,7 +76,7 @@ interface CustomerOrdersProps {
   ot: _Translator<Messages, 'orders'>
 }
 
-export function CustomerOrders({
+function CustomerOrders({
   title,
   orders,
   ordersLoading,
@@ -151,7 +151,7 @@ interface CustomerInvoicesProps {
   it: _Translator<Messages, 'invoices'>
 }
 
-export function CustomerInvoices({
+function CustomerInvoices({
   title,
   invoices,
   invoicesLoading,
@@ -233,7 +233,7 @@ interface CustomerProfileProps {
   citizenship: string
 }
 
-export function CustomerProfile({
+function CustomerProfile({
   customer,
   t,
   citizenship,
@@ -264,10 +264,9 @@ export function CustomerProfile({
                   variant="ghost"
                   size="icon"
                   className="size-6"
-                  aria-label="Send email"
                   asChild
                 >
-                  <a href={`mailto:${customer.email}`}>
+                  <a href={`mailto:${customer.email}`} aria-label="Send email">
                     <Mail className="size-3" />
                   </a>
                 </Button>
@@ -288,13 +287,13 @@ export function CustomerProfile({
                   variant="ghost"
                   size="icon"
                   className="size-6"
-                  aria-label="Message on WhatsApp"
                   asChild
                 >
                   <a
                     href={`https://wa.me/${customer.phone.replace(/^0/, '62')}`}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Message on WhatsApp"
                   >
                     <Phone className="size-3" />
                   </a>
@@ -349,7 +348,7 @@ interface CustomerFinancialSummaryProps {
   t: _Translator<Messages, 'customers'>
 }
 
-export function CustomerFinancialSummary({
+function CustomerFinancialSummary({
   totalOrders,
   totalSpent,
   outstandingBalance,

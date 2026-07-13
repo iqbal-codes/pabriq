@@ -195,7 +195,7 @@ export function DateField({
       const toStr = dateFormatterShort.format(val.to)
       setFormattedLabel(`${fromStr} - ${toStr}`)
     }
-  }, [parsedSingleValue, parsedRangeValue, mode, placeholder, t, locale])
+  }, [parsedSingleValue, parsedRangeValue, mode, placeholder, t, dateFormatterLong, dateFormatterShort])
 
   const today = startOfDay(new Date())
 
