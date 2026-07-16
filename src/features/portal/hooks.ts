@@ -7,13 +7,10 @@ import type {
 } from './model'
 import {
   confirmPortalOrderFn,
-  generateOrderTokenFn,
   getOrderTasksTimelineFn,
   getOrderTimelineFn,
   getPortalOrderFn,
-  portalGetInvoiceUploadUrlFn,
   savePortalAddressFn,
-  submitPaymentProofFn,
   updatePortalLineItemFn,
 } from './server'
 
@@ -53,19 +50,6 @@ export function useConfirmPortalOrder() {
   })
 }
 
-export function useGenerateOrderToken() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (input: { orderId: string }) =>
-      generateOrderTokenFn({ data: input }),
-    onSuccess: () => {
-      return invalidateMutationQueries(queryClient, [
-        { queryKey: queryKeys.orders.lists() },
-      ])
-    },
-  })
-}
-
 export function useUpdatePortalLineItem() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -88,44 +72,6 @@ export function useSavePortalAddress() {
       areaName: string
       streetAddress: string
     }) => savePortalAddressFn({ data: input }),
-    onSuccess: () => {
-      return invalidateMutationQueries(queryClient, [
-        { queryKey: queryKeys.portal.all },
-      ])
-    },
-  })
-}
-
-export function usePortalGetInvoiceUploadUrl() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (input: {
-      token: string
-      invoiceId: string
-      fileName: string
-      fileType: string
-      fileSize: number
-    }) => portalGetInvoiceUploadUrlFn({ data: input }),
-    onSuccess: () => {
-      return invalidateMutationQueries(queryClient, [
-        { queryKey: queryKeys.portal.all },
-      ])
-    },
-  })
-}
-
-export function useSubmitPaymentProof() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (input: {
-      token: string
-      invoiceId: string
-      assetId: string
-      originalFilename: string
-      mimeType: string
-      sizeBytes: number
-      storageKey: string
-    }) => submitPaymentProofFn({ data: input }),
     onSuccess: () => {
       return invalidateMutationQueries(queryClient, [
         { queryKey: queryKeys.portal.all },

@@ -91,8 +91,7 @@ export const auth = betterAuth({
         member,
       },
       async sendInvitationEmail(data) {
-        const link = `${process.env.BETTER_AUTH_URL}/invite/accept?invitationId=${data.id}`
-        logger.warn({ email: data.email, link }, 'invite email not configured')
+        logger.warn({ invitationId: data.id }, 'invite email not configured')
       },
     }),
   ],

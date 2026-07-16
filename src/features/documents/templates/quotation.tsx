@@ -21,6 +21,7 @@ interface QuotationDocumentProps {
   data: QuotationPdfData
 }
 
+// fallow-ignore-next-line unused-export — dynamically imported by documents/server.tsx
 export function QuotationDocument({ data }: QuotationDocumentProps) {
   return (
     <Document>

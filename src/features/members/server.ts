@@ -1,36 +1,20 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import { eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { db } from '#/db/index'
-import { member } from '#/db/schema'
 import {
   type InviteMemberResult,
   inviteOrganizationMember,
 } from '#/features/members/model'
 import type { Role } from '#/features/permissions/model'
 import { canManageMembers } from '#/features/permissions/model'
-import { resolveOrgId } from '#/lib/auth-session-server'
+import { resolveOrgAndRole, resolveOrgId } from '#/lib/auth-session-server'
 
 async function resolveManageMembersOrgId(): Promise<string> {
-  // Dynamic import keeps #/lib/auth out of the client bundle (project-wide
-  // convention for server functions).
-  const { auth } = await import('#/lib/auth')
-  const headers = getRequestHeaders()
-  const session = await auth.api.getSession({ headers })
-  if (!session) throw new Error('Not authenticated')
-
-  const memberships = await db
-    .select({ orgId: member.organizationId, role: member.role })
-    .from(member)
-    .where(eq(member.userId, session.user.id))
-    .limit(1)
-
-  if (memberships.length === 0) throw new Error('No organization')
-  if (!canManageMembers(memberships[0].role as Role)) {
+  const { orgId, role } = await resolveOrgAndRole()
+  if (!canManageMembers(role as Role)) {
     throw new Error('Not authorized')
   }
-  return memberships[0].orgId
+  return orgId
 }
 
 const inviteMemberSchema = z.object({

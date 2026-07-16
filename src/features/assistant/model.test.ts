@@ -7,15 +7,18 @@ import {
   member,
   orders,
   organization,
+  pricingBreakpoints,
   productionStages,
   productionTasks,
   products,
+  user,
 } from '#/db/schema'
 import {
   buildAssistantMemoryScope,
   getAssistantAllowedDomains,
   getAssistantBusinessOverview,
   normalizeMastraMemoryMessages,
+  resolveOrderDraft,
   searchAssistantBusinessRecords,
 } from './model'
 
@@ -23,10 +26,9 @@ const org1Id = '00000000-0000-0000-0000-000000000001'
 const org2Id = '00000000-0000-0000-0000-000000000002'
 const user1Id = '00000000-0000-0000-0000-000000000011'
 const user2Id = '00000000-0000-0000-0000-000000000012'
-
 beforeEach(async () => {
   await db.execute(
-    sql`TRUNCATE organization, member, customers, products, orders, invoices, production_stages, production_tasks CASCADE`,
+    sql`TRUNCATE organization, "user", member, customers, products, orders, invoices, production_stages, production_tasks CASCADE`,
   )
 
   const now = new Date()
@@ -35,6 +37,24 @@ beforeEach(async () => {
   await db.insert(organization).values([
     { id: org1Id, name: 'Org 1', slug: 'org-1', createdAt: now },
     { id: org2Id, name: 'Org 2', slug: 'org-2', createdAt: now },
+  ])
+  await db.insert(user).values([
+    {
+      id: user1Id,
+      name: 'Owner One',
+      email: 'owner-one@example.test',
+      emailVerified: true,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: user2Id,
+      name: 'Member Two',
+      email: 'member-two@example.test',
+      emailVerified: true,
+      createdAt: now,
+      updatedAt: now,
+    },
   ])
 
   // Seed members
@@ -556,5 +576,75 @@ describe('normalizeMastraMemoryMessages', () => {
     const result = normalizeMastraMemoryMessages(messages)
     expect(result).toHaveLength(1)
     expect(result[0].content).toBe('Valid')
+  })
+})
+
+describe('resolveOrderDraft', () => {
+  it('preserves duplicate candidates for the same product', async () => {
+    await db
+      .update(products)
+      .set({ basePrice: 10, minQuantity: 1 })
+      .where(sql`${products.id} = 'prod-1'`)
+    await db.insert(pricingBreakpoints).values({
+      id: 'bp-1',
+      orgId: org1Id,
+      productId: 'prod-1',
+      minQuantity: 1,
+      unitPrice: 10,
+    })
+
+    const result = await resolveOrderDraft({
+      orgId: org1Id,
+      candidates: [
+        { productHint: 'Widget A', quantity: 2 },
+        { productHint: 'Widget A', quantity: 3 },
+      ],
+    })
+
+    expect(result).toMatchObject({
+      status: 'resolved',
+      total: 50,
+      lineItems: [
+        { productId: 'prod-1', quantity: 2, total: 20 },
+        { productId: 'prod-1', quantity: 3, total: 30 },
+      ],
+    })
+  })
+
+  it('preserves LIKE underscore wildcard matching', async () => {
+    const now = new Date()
+    await db.insert(products).values([
+      {
+        id: 'prod-like-1',
+        orgId: org1Id,
+        name: 'Code_A',
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: 'prod-like-2',
+        orgId: org1Id,
+        name: 'CodeXA',
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ])
+
+    const result = await resolveOrderDraft({
+      orgId: org1Id,
+      candidates: [{ productHint: 'Code_A', quantity: 1 }],
+    })
+
+    expect(result).toMatchObject({
+      status: 'ambiguous',
+      missing: [
+        {
+          productHint: 'Code_A',
+          matchedProductIds: ['prod-like-2', 'prod-like-1'],
+        },
+      ],
+    })
   })
 })

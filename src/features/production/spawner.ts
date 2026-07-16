@@ -124,17 +124,6 @@ export async function spawnProductionTasks(
   })
 }
 
-export async function archiveBoardTasks(
-  orderId: string,
-  board: string,
-): Promise<void> {
-  const now = new Date()
-  await db
-    .update(tasksTable)
-    .set({ status: 'completed', archivedAt: now, updatedAt: now })
-    .where(and(eq(tasksTable.orderId, orderId), eq(tasksTable.board, board)))
-}
-
 export async function startProductionForOrder(
   orderId: string,
   orgId: string,

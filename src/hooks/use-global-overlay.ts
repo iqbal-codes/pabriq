@@ -8,10 +8,6 @@ export const globalOverlaySearchSchema = z.object({
   sheetId: z.string().nullable().optional(),
 })
 
-export type GlobalOverlaySearchParams = z.infer<
-  typeof globalOverlaySearchSchema
->
-
 export function useGlobalModal() {
   const [modal, setModal] = useQueryState('modal', parseAsString)
   const [modalId, setModalId] = useQueryState('modalId', parseAsString)

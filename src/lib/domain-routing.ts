@@ -1,4 +1,4 @@
-export type AppSubdomain = 'app' | 'operator' | 'portal'
+type AppSubdomain = 'app' | 'operator' | 'portal'
 
 const APP_SUBDOMAINS = [
   'app',

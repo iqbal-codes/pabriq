@@ -32,7 +32,3 @@ export const db = drizzle(pool, { schema })
 export async function checkDatabaseHealth(): Promise<void> {
   await pool.query('SELECT 1')
 }
-
-export async function closeDatabasePool(): Promise<void> {
-  await pool.end()
-}

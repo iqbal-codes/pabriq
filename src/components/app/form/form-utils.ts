@@ -202,7 +202,7 @@ function isTypeRequired(schema: unknown): boolean {
   return true
 }
 
-export function isZodFieldRequired(schema: unknown, path: string): boolean {
+function isZodFieldRequired(schema: unknown, path: string): boolean {
   if (!schema) return false
 
   const parts = path.split('.')
@@ -361,13 +361,6 @@ export function isFieldRequired(field: unknown): boolean {
   }
 
   return false
-}
-
-export function fieldValidator(schema: z.ZodTypeAny) {
-  return ({ value }: { value: unknown }) => {
-    const r = schema.safeParse(value)
-    return r.success ? undefined : r.error.issues[0]?.message
-  }
 }
 
 export function getSchemaForPath(

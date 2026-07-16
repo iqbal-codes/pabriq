@@ -224,14 +224,6 @@ function ReviewModalWrapper({ open, onOpenChange, id }: GlobalOverlayProps) {
   )
 }
 
-export type GlobalModalKey =
-  | 'invite-member'
-  | 'payment-method-form'
-  | 'record-payment'
-  | 'stage-form'
-  | 'task-detail'
-  | 'review-task'
-
 export {
   InviteMemberDialogWrapper,
   PaymentMethodFormDialogWrapper,
