@@ -9,44 +9,32 @@ import {
   buildAssistantMemoryScope,
   normalizeMastraMemoryMessages,
 } from '#/features/assistant/model'
+import { resolveOrgAndRole } from '#/lib/auth-session-server'
 
 async function resolveAssistantAuthContext(): Promise<{
   userId: string
   orgId: string
   role: AssistantRole
 }> {
-  const [{ getRequestHeaders }, { auth }, { db }, { member }, { eq }] =
-    await Promise.all([
-      import('@tanstack/react-start/server'),
-      import('#/lib/auth'),
-      import('#/db/index'),
-      import('#/db/schema'),
-      import('drizzle-orm'),
-    ])
+  const [{ getRequestHeaders }, { auth }] = await Promise.all([
+    import('@tanstack/react-start/server'),
+    import('#/lib/auth'),
+  ])
+
+  const { orgId, role } = await resolveOrgAndRole()
+
+  const validRoles: readonly string[] = ['owner', 'admin', 'member']
+  if (!validRoles.includes(role)) {
+    throw new Error('Not authorized')
+  }
 
   const headers = getRequestHeaders()
   const session = await auth.api.getSession({ headers })
   if (!session) throw new Error('Not authenticated')
 
-  const memberships = await db
-    .select({
-      orgId: member.organizationId,
-      role: member.role,
-    })
-    .from(member)
-    .where(eq(member.userId, session.user.id))
-    .limit(1)
-
-  if (memberships.length === 0) throw new Error('No organization')
-
-  const role = memberships[0].role as string
-  if (role !== 'owner' && role !== 'admin' && role !== 'member') {
-    throw new Error('Not authorized')
-  }
-
   return {
     userId: session.user.id,
-    orgId: memberships[0].orgId,
+    orgId,
     role: role as AssistantRole,
   }
 }
@@ -143,77 +131,6 @@ export const sendAssistantMessageFn = createServerFn({ method: 'POST' })
           return { ok: false, error: 'AI assistant is not configured' }
         }
         return { ok: false, error: message }
-      }
-    },
-  )
-
-// Dynamic imports below prevent server-only modules from bundling into client code (TanStack Start convention).
-
-export const proposeOrderDraftFn = createServerFn({ method: 'POST' })
-  .inputValidator(
-    z.object({
-      proposal: z.object({
-        lineItems: z
-          .array(
-            z.object({
-              productId: z.string(),
-              quantity: z.number().int().positive(),
-              unitPrice: z.number().nonnegative(),
-              total: z.number().nonnegative(),
-              productName: z.string(),
-              minQuantity: z.number().int().positive(),
-            }),
-          )
-          .min(1),
-        customerId: z.string().nullable(),
-        customerName: z.string().nullable(),
-        total: z.number().nonnegative(),
-      }),
-      expiresAt: z.string().datetime(),
-      threadId: z.string(),
-      resourceId: z.string(),
-    }),
-  )
-  .handler(
-    async ({
-      data,
-    }): Promise<
-      { ok: true; actionId: string } | { ok: false; error: string }
-    > => {
-      try {
-        const authCtx = await resolveAssistantAuthContext()
-        const [{ db }, { assistantActions }] = await Promise.all([
-          import('#/db/index'),
-          import('#/db/schema'),
-        ])
-
-        const expiresAt = new Date(data.expiresAt)
-        const now = new Date()
-        const maxTtl = new Date(now.getTime() + 15 * 60_000 + 60_000) // 16min tolerance for clock drift
-        if (expiresAt.getTime() > maxTtl.getTime()) {
-          return { ok: false, error: 'Invalid expiry time' }
-        }
-
-        const actionId = crypto.randomUUID()
-        await db.insert(assistantActions).values({
-          id: actionId,
-          orgId: authCtx.orgId,
-          userId: authCtx.userId,
-          threadId: data.threadId,
-          kind: 'order_draft_proposal',
-          status: 'pending',
-          payload: data.proposal as AssistantActionPayload,
-          expiresAt,
-          createdAt: now,
-          updatedAt: now,
-        })
-
-        return { ok: true, actionId }
-      } catch (err: unknown) {
-        return {
-          ok: false,
-          error: err instanceof Error ? err.message : 'Unknown error',
-        }
       }
     },
   )

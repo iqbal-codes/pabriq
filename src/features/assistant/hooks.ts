@@ -4,7 +4,6 @@ import {
   consumeOrderDraftProposalFn,
   getProposalFn,
   loadAssistantChatFn,
-  type proposeOrderDraftFn,
   sendAssistantMessageFn,
 } from '#/features/assistant/server'
 import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
@@ -41,10 +40,6 @@ export function useSendAssistantMessage(scope: AssistantChatScope) {
     },
   })
 }
-
-export type ProposeOrderDraftInput = Parameters<
-  typeof proposeOrderDraftFn
->[0]['data']
 
 export function useConsumeOrderDraftProposal(scope: AssistantChatScope) {
   const queryClient = useQueryClient()

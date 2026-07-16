@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, like, or, sql } from 'drizzle-orm'
 import { db } from '#/db/index'
 import * as schema from '#/db/schema'
 import { listCustomers } from '#/features/customers/model'
@@ -6,7 +6,7 @@ import { listInvoices } from '#/features/invoices/model'
 import { listOrders } from '#/features/orders/model'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
 import { listBoardTasks } from '#/features/production/model'
-import { listBreakpoints, listProducts } from '#/features/products/model'
+import { listProducts } from '#/features/products/model'
 
 export const assistantDomains = [
   'customers',
@@ -397,50 +397,35 @@ export async function getAssistantBusinessOverview(
   }
 }
 
-async function resolveProductPricing(params: {
-  orgId: string
-  productId: string
+function resolveProductPricing(params: {
+  product: {
+    id: string
+    basePrice: number
+    minQuantity: number
+    pricingMode: string
+  }
+  breakpoints: Array<{ minQuantity: number; unitPrice: number }>
   quantity: number
-}): Promise<{ unitPrice: number; total: number; minQuantity: number }> {
-  const productRows = await db
-    .select({
-      id: schema.products.id,
-      name: schema.products.name,
-      basePrice: schema.products.basePrice,
-      minQuantity: schema.products.minQuantity,
-      pricingMode: schema.products.pricingMode,
-    })
-    .from(schema.products)
-    .where(
-      and(
-        eq(schema.products.id, params.productId),
-        eq(schema.products.orgId, params.orgId),
-      ),
-    )
-    .limit(1)
-  const product = productRows[0]
-  if (!product) throw new Error('Product not found')
-
-  const breakpointRows = await listBreakpoints(params.productId)
-  const breakpoints: Breakpoint[] = breakpointRows.map((bp) => ({
+}): { unitPrice: number; total: number; minQuantity: number } {
+  const breakpoints: Breakpoint[] = params.breakpoints.map((bp) => ({
     minQuantity: bp.minQuantity,
     unitPrice: bp.unitPrice,
   }))
 
   const hasExplicitAtMinQty = breakpoints.some(
-    (bp) => bp.minQuantity === product.minQuantity,
+    (bp) => bp.minQuantity === params.product.minQuantity,
   )
   if (!hasExplicitAtMinQty) {
     breakpoints.unshift({
-      minQuantity: product.minQuantity,
-      unitPrice: product.basePrice,
+      minQuantity: params.product.minQuantity,
+      unitPrice: params.product.basePrice,
     })
   }
 
   const result = calculateUnitPrice({
     quantity: params.quantity,
     breakpoints,
-    mode: product.pricingMode as 'interpolated' | 'step',
+    mode: params.product.pricingMode as 'interpolated' | 'step',
   })
   if ('code' in result) {
     throw new Error(result.message)
@@ -449,8 +434,30 @@ async function resolveProductPricing(params: {
   return {
     unitPrice: result.unitPrice.amount,
     total: result.lineTotal.amount,
-    minQuantity: product.minQuantity,
+    minQuantity: params.product.minQuantity,
   }
+}
+
+function createLikeMatcher(search: string): RegExp {
+  let source = ''
+  let isEscaped = false
+
+  for (const char of `%${search}%`) {
+    if (isEscaped) {
+      source += char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      isEscaped = false
+    } else if (char === '\\') {
+      isEscaped = true
+    } else if (char === '%') {
+      source += '.*'
+    } else if (char === '_') {
+      source += '.'
+    } else {
+      source += char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    }
+  }
+
+  return new RegExp(`^${source}$`, 'su')
 }
 
 export async function resolveOrderDraft(params: {
@@ -465,16 +472,47 @@ export async function resolveOrderDraft(params: {
     matchedProductIds: string[]
   }> = []
 
-  for (const candidate of params.candidates) {
-    const products = await listProducts({
-      orgId: params.orgId,
-      search: candidate.productHint,
-      activeOnly: true,
-      sortBy: 'name',
-      sortDir: 'asc',
-    })
+  const uniqueHints = [
+    ...new Set(params.candidates.map((candidate) => candidate.productHint)),
+  ]
+  const productSearchConditions = uniqueHints.map((hint) =>
+    like(schema.products.name, `%${hint}%`),
+  )
+  const allOrgProducts =
+    productSearchConditions.length === 0
+      ? []
+      : await db
+          .select({
+            id: schema.products.id,
+            name: schema.products.name,
+            basePrice: schema.products.basePrice,
+            minQuantity: schema.products.minQuantity,
+            maxProductionQuantity: schema.products.maxProductionQuantity,
+            pricingMode: schema.products.pricingMode,
+          })
+          .from(schema.products)
+          .where(
+            and(
+              eq(schema.products.orgId, params.orgId),
+              eq(schema.products.active, true),
+              isNull(schema.products.deletedAt),
+              or(...productSearchConditions),
+            ),
+          )
+          .orderBy(asc(schema.products.name))
 
-    if (products.length === 0) {
+  const pricingCandidates: Array<{
+    product: (typeof allOrgProducts)[number]
+    quantity: number
+  }> = []
+
+  for (const candidate of params.candidates) {
+    const matchesLike = createLikeMatcher(candidate.productHint)
+    const matched = allOrgProducts.filter((product) =>
+      matchesLike.test(product.name),
+    )
+
+    if (matched.length === 0) {
       missing.push({
         productHint: candidate.productHint,
         quantity: candidate.quantity,
@@ -483,16 +521,16 @@ export async function resolveOrderDraft(params: {
       continue
     }
 
-    if (products.length > 1) {
+    if (matched.length > 1) {
       missing.push({
         productHint: candidate.productHint,
         quantity: candidate.quantity,
-        matchedProductIds: products.map((p) => p.id),
+        matchedProductIds: matched.map((p) => p.id),
       })
       continue
     }
 
-    const product = products[0]
+    const product = matched[0]
 
     if (candidate.quantity < product.minQuantity) {
       missing.push({
@@ -515,16 +553,52 @@ export async function resolveOrderDraft(params: {
       continue
     }
 
-    const pricing = await resolveProductPricing({
-      orgId: params.orgId,
-      productId: product.id,
-      quantity: candidate.quantity,
+    pricingCandidates.push({ product, quantity: candidate.quantity })
+  }
+
+  const pricingProductIds = [
+    ...new Set(pricingCandidates.map(({ product }) => product.id)),
+  ]
+  const allBreakpoints =
+    pricingProductIds.length > 0
+      ? await db
+          .select({
+            productId: schema.pricingBreakpoints.productId,
+            minQuantity: schema.pricingBreakpoints.minQuantity,
+            unitPrice: schema.pricingBreakpoints.unitPrice,
+          })
+          .from(schema.pricingBreakpoints)
+          .where(
+            and(
+              eq(schema.pricingBreakpoints.orgId, params.orgId),
+              inArray(schema.pricingBreakpoints.productId, pricingProductIds),
+            ),
+          )
+          .orderBy(asc(schema.pricingBreakpoints.minQuantity))
+      : []
+
+  // Group breakpoints by productId for O(1) lookup.
+  const breakpointsByProduct = new Map<
+    string,
+    Array<{ minQuantity: number; unitPrice: number }>
+  >()
+  for (const bp of allBreakpoints) {
+    const list = breakpointsByProduct.get(bp.productId) ?? []
+    list.push({ minQuantity: bp.minQuantity, unitPrice: bp.unitPrice })
+    breakpointsByProduct.set(bp.productId, list)
+  }
+
+  for (const { product, quantity } of pricingCandidates) {
+    const pricing = resolveProductPricing({
+      product,
+      breakpoints: breakpointsByProduct.get(product.id) ?? [],
+      quantity,
     })
 
     lineItems.push({
       productId: product.id,
       productName: product.name,
-      quantity: candidate.quantity,
+      quantity,
       unitPrice: pricing.unitPrice,
       total: pricing.total,
       minQuantity: pricing.minQuantity,
