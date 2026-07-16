@@ -82,21 +82,6 @@ type ProductPriceResult =
   | { ok: true; unitPrice: number; total: number }
   | { ok: false; error: string }
 
-export function useProductPrice(
-  productId: string,
-  quantity: number,
-  pricingMode?: 'interpolated' | 'step',
-  options?: { isRepeatOrder?: boolean; addonIds?: string[] },
-) {
-  return useQuery({
-    queryKey: queryKeys.products.pricing(productId, quantity, options),
-    queryFn: () =>
-      calculateProductPriceFn({
-        data: { productId, quantity, pricingMode, ...options },
-      }) as Promise<ProductPriceResult>,
-    enabled: quantity > 0 && !!productId,
-  })
-}
 export function useCalculateProductPrice() {
   return useMutation({
     mutationFn: (input: {

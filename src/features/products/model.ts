@@ -417,26 +417,3 @@ export async function deleteBreakpoint(
     .delete(breakpointsTable)
     .where(and(eq(breakpointsTable.id, id), eq(breakpointsTable.orgId, orgId)))
 }
-
-export type ProductAddon = {
-  id: string
-  orgId: string
-  productId: string
-  name: string
-  unitSurcharge: number
-  createdAt: Date
-  updatedAt: Date
-}
-
-export async function listProductAddons(
-  productId: string,
-  orgId: string,
-): Promise<ProductAddon[]> {
-  return db
-    .select()
-    .from(addonsTable)
-    .where(
-      and(eq(addonsTable.productId, productId), eq(addonsTable.orgId, orgId)),
-    )
-    .orderBy(asc(addonsTable.createdAt)) as Promise<ProductAddon[]>
-}

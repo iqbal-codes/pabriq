@@ -1,7 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { and, eq } from 'drizzle-orm'
 import { addresses, customers } from '#/db/schema'
-import { logger } from '#/lib/logger'
 
 export type BiteshipArea = {
   id: string
@@ -24,7 +23,7 @@ export type ShippingAddress = {
   streetAddress: string
 }
 
-export function validateAddressInput(input: AddressInput): string | null {
+function validateAddressInput(input: AddressInput): string | null {
   if (!input.orgId) {
     return 'orgIdRequired'
   }
@@ -186,167 +185,6 @@ export const searchAreasFn = createServerFn({ method: 'GET' })
     return searchAreas(data.query)
   })
 
-export type ShippingRateInput = {
-  originAreaId: string
-  destinationAreaId: string
-  weightGrams: number
-  orderValue: number
-}
-
-export type ShippingRate = {
-  courierCode: string
-  courierName: string
-  serviceCode: string
-  serviceName: string
-  description: string | null
-  price: number
-  estimatedDays: string | null
-}
-
-export type ShippingRatesResult =
-  | { ok: true; rates: ShippingRate[] }
-  | { ok: false; error: string }
-
-export async function calculateShippingRates(
-  input: ShippingRateInput,
-): Promise<ShippingRatesResult> {
-  const apiKey = process.env.BITESHIP_API_KEY
-  if (!apiKey) {
-    return { ok: false, error: 'biteshipApiKeyMissing' }
-  }
-
-  if (!input.originAreaId || !input.destinationAreaId) {
-    return { ok: false, error: 'shippingAreaRequired' }
-  }
-
-  if (input.weightGrams <= 0) {
-    return { ok: false, error: 'packageWeightRequired' }
-  }
-
-  try {
-    const res = await fetch('https://api.biteship.com/v1/rates/couriers', {
-      method: 'POST',
-      headers: {
-        authorization: apiKey,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        origin_area_id: input.originAreaId,
-        destination_area_id: input.destinationAreaId,
-        couriers: 'jne,sicepat,jnt,anteraja,tiki',
-        items: [
-          {
-            name: 'Order Shipment',
-            value: Math.max(1, Math.round(input.orderValue)),
-            quantity: 1,
-            weight: Math.round(input.weightGrams),
-          },
-        ],
-      }),
-    })
-
-    if (!res.ok) {
-      const errorBody = await res.text().catch(() => 'unknown')
-      let errorMessage: string
-      try {
-        const parsed = JSON.parse(errorBody) as Record<string, unknown>
-        errorMessage =
-          (typeof parsed.message === 'string' ? parsed.message : undefined) ??
-          (typeof parsed.error === 'string' ? parsed.error : undefined) ??
-          `HTTP ${res.status}`
-        logger.error(
-          { status: res.status, body: errorBody, parsedMessage: errorMessage },
-          'biteship rate calculation failed',
-        )
-      } catch {
-        errorMessage = `HTTP ${res.status}`
-        logger.error(
-          { status: res.status, body: errorBody },
-          'biteship rate calculation failed (unparseable body)',
-        )
-      }
-      return { ok: false, error: errorMessage }
-    }
-
-    const body = (await res.json()) as {
-      success: boolean
-      pricing?: Array<{
-        courier_code?: string
-        courier_name?: string
-        courier_service_code?: string
-        courier_service_name?: string
-        description?: string
-        price?: number
-        shipping_fee?: number
-        duration?: string
-      }>
-      pricings?: Array<{
-        courier_code?: string
-        courier_name?: string
-        courier_service_code?: string
-        courier_service_name?: string
-        description?: string
-        price?: number
-        shipping_fee?: number
-        duration?: string
-      }>
-      couriers?: Array<{
-        courier_code?: string
-        courier_name?: string
-        courier_service_code?: string
-        courier_service_name?: string
-        description?: string
-        price?: number
-        shipping_fee?: number
-        duration?: string
-      }>
-    }
-
-    if (!body.success) {
-      logger.error({ body }, 'biteship rate calculation returned success:false')
-      return { ok: false, error: 'biteshipRateCalculationFailed' }
-    }
-
-    const rawRates = body.pricing ?? body.pricings ?? body.couriers ?? []
-
-    const rates: ShippingRate[] = rawRates
-      .filter(
-        (
-          r,
-        ): r is typeof r & {
-          courier_code: string
-          courier_service_code: string
-        } =>
-          Boolean(r.courier_code) &&
-          Boolean(r.courier_service_code) &&
-          (r.price ?? 0) > 0,
-      )
-      .map((r) => ({
-        courierCode: r.courier_code,
-        courierName: r.courier_name ?? r.courier_code,
-        serviceCode: r.courier_service_code,
-        serviceName: r.courier_service_name ?? r.courier_service_code,
-        description: r.description ?? null,
-        price: r.price ?? r.shipping_fee ?? 0,
-        estimatedDays: r.duration ?? null,
-      }))
-      .sort((a, b) => a.price - b.price)
-
-    return { ok: true, rates }
-  } catch (err) {
-    logger.error({ err }, 'biteship rate calculation threw')
-    return { ok: false, error: 'biteshipRateCalculationFailed' }
-  }
-}
-
-export const calculateShippingRatesFn = createServerFn({
-  method: 'POST',
-})
-  .inputValidator((input: unknown) => input as ShippingRateInput)
-  .handler(async ({ data }): Promise<ShippingRatesResult> => {
-    return calculateShippingRates(data)
-  })
-
 export async function getCustomerAddress(
   customerId: string,
   orgId: string,
@@ -387,45 +225,3 @@ export async function getCustomerAddress(
     isWni: rows[0].isWni,
   }
 }
-
-export const prefillOrderAddress = createServerFn({ method: 'GET' })
-  .inputValidator((data: { customerId: string; orgId: string }) => data)
-  .handler(async ({ data }): Promise<ShippingAddress | null> => {
-    const addr = await getCustomerAddress(data.customerId, data.orgId)
-    if (!addr) return null
-    return {
-      areaId: addr.areaId ?? '',
-      areaName: addr.areaName ?? '',
-      streetAddress: addr.streetAddress ?? '',
-    }
-  })
-
-export const updateCustomerAddress = createServerFn({ method: 'POST' })
-  .inputValidator(
-    (input: {
-      customerId: string
-      orgId: string
-      addressId: string | null
-      isWni: boolean
-    }) => input,
-  )
-  .handler(
-    async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
-      const db = await getDb()
-      await db
-        .update(customers)
-        .set({
-          addressId: data.addressId,
-          isWni: data.isWni,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(customers.id, data.customerId),
-            eq(customers.orgId, data.orgId),
-          ),
-        )
-
-      return { ok: true }
-    },
-  )
