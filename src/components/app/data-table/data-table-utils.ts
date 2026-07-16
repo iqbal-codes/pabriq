@@ -1,12 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import {
-  decodeSort,
-  encodeSort,
-  type SortDirection,
-  type SortState,
-} from '#/lib/sorting'
+import { decodeSort, encodeSort, type SortState } from '#/lib/sorting'
 
-export type { SortDirection, SortState }
+export type { SortState }
 export { decodeSort, encodeSort }
 
 export type AppColumnMeta = {

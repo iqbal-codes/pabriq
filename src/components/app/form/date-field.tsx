@@ -24,12 +24,12 @@ import type { FieldProps } from './form-fields-shared'
 import { FormLabel } from './form-label'
 import { firstError } from './form-utils'
 
-export type DateRangeLike = {
+type DateRangeLike = {
   from: string | Date | null | undefined
   to?: string | Date | null | undefined
 }
 
-export type DateFieldValue =
+type DateFieldValue =
   | string
   | Date
   | DateRange
