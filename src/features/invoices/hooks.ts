@@ -12,22 +12,16 @@ import type {
   PaymentMethod,
 } from './model'
 import {
-  confirmPaymentFn,
   createInvoiceFn,
   createPaymentFn,
   createPaymentMethodFn,
   deletePaymentMethodFn,
   getInvoiceFn,
   getInvoicePaymentProofsForInvoicesFn,
-  getInvoicePaymentsFn,
-  getOrderForInvoiceFn,
   listInvoicesFn,
   listPaymentMethodsFn,
   markInvoicePaidFn,
-  reconcileInvoicePaymentFn,
-  rejectPaymentFn,
   updatePaymentMethodFn,
-  voidInvoiceFn,
 } from './server'
 
 export function useInvoicesList(filters: ListInvoicesParams) {
@@ -104,13 +98,6 @@ export function useDeletePaymentMethod() {
 
 // ── Payment Hooks ──────────────────────────────────────────────
 
-export function useInvoicePayments(invoiceId: string) {
-  return useSuspenseQuery({
-    queryKey: queryKeys.invoices.payments(invoiceId),
-    queryFn: () => getInvoicePaymentsFn({ data: { invoiceId } }),
-  })
-}
-
 export function useInvoicePaymentProofs(invoiceIds: string[]) {
   return useQuery({
     queryKey: [...queryKeys.invoices.all, 'payment-proofs', ...invoiceIds],
@@ -132,70 +119,10 @@ export function useCreatePayment() {
   })
 }
 
-export function useConfirmPayment() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (paymentId: string) =>
-      confirmPaymentFn({ data: { paymentId } }),
-    onSuccess: () =>
-      invalidateMutationQueries(queryClient, [
-        { queryKey: queryKeys.invoices.all },
-        { queryKey: queryKeys.notifications.all },
-      ]),
-  })
-}
-
-export function useRejectPayment() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (input: { paymentId: string; reason: string }) =>
-      rejectPaymentFn({ data: input }),
-    onSuccess: () =>
-      invalidateMutationQueries(queryClient, [
-        { queryKey: queryKeys.invoices.all },
-        { queryKey: queryKeys.notifications.all },
-      ]),
-  })
-}
-
 export function useMarkInvoicePaid() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => markInvoicePaidFn({ data: { id } }),
-    onSuccess: () =>
-      invalidateMutationQueries(queryClient, [
-        { queryKey: queryKeys.invoices.all },
-        { queryKey: queryKeys.notifications.all },
-      ]),
-  })
-}
-
-export function useVoidInvoice() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (id: string) => voidInvoiceFn({ data: { id } }),
-    onSuccess: () =>
-      invalidateMutationQueries(queryClient, [
-        { queryKey: queryKeys.invoices.all },
-        { queryKey: queryKeys.notifications.all },
-      ]),
-  })
-}
-
-export function useOrderForInvoice(orderId: string | undefined) {
-  const safeOrderId = orderId ?? ''
-  return useQuery({
-    queryKey: queryKeys.invoices.orderForInvoice(safeOrderId),
-    queryFn: () => getOrderForInvoiceFn({ data: { orderId: safeOrderId } }),
-    enabled: !!orderId,
-  })
-}
-
-export function useReconcileInvoicePayment() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (invoiceId: string) =>
-      reconcileInvoicePaymentFn({ data: { invoiceId } }),
     onSuccess: () =>
       invalidateMutationQueries(queryClient, [
         { queryKey: queryKeys.invoices.all },

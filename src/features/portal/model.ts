@@ -830,6 +830,7 @@ export type TimelineTaskRow = {
   status: string
 }
 
+// fallow-ignore-next-line unused-export — imported by production/server.ts via dynamic import
 export function extractActivityIndexes(
   activities: ActivityRow[],
 ): ActivityIndexes {
@@ -845,6 +846,189 @@ export function extractActivityIndexes(
   return { createdByTaskId, completedByTaskId }
 }
 
+function formatRequirementResponses(
+  stageReqs: Array<{ id: string; label: string; type: string }>,
+  activityData: Record<string, unknown> | null,
+  taskContext: Record<string, unknown> | null,
+  stageName: string,
+): OrderTaskEvent['requirementResponses'] {
+  let requirementResponses = activityData?.responses as Record<
+    string,
+    { value?: string; assetIds?: string[] }
+  > | null
+  if (!requirementResponses || Object.keys(requirementResponses).length === 0) {
+    requirementResponses = taskContext?.requirementResponses as Record<
+      string,
+      { value?: string; assetIds?: string[] }
+    > | null
+  }
+
+  const formattedResponses = stageReqs.map((req) => {
+    const response = requirementResponses?.[req.id]
+    return {
+      requirementName: req.label,
+      value: response?.value as string | undefined,
+      assetIds: response?.assetIds as string[] | undefined,
+    }
+  })
+
+  const hasResponses = formattedResponses.some(
+    (r) => r.value || (r.assetIds && r.assetIds.length > 0),
+  )
+
+  if (hasResponses) {
+    return [
+      {
+        stageName,
+        responses: formattedResponses,
+      },
+    ]
+  }
+  return undefined
+}
+
+function buildStageTransitionEvent(
+  trans: ActivityRow,
+  task: TimelineTaskRow,
+  stageNameMap: Map<string, string>,
+  stageReqMap: Map<string, Array<{ id: string; label: string; type: string }>>,
+  _activityIndexes: ActivityIndexes,
+): OrderTaskEvent {
+  const productName = task.context?.productName ?? ''
+  const fromStageId = trans.fromStageId ?? ''
+  const stageReqs = stageReqMap.get(fromStageId) ?? []
+  const activityData = trans.data as Record<string, unknown> | null
+  const taskContext = task.context as Record<string, unknown> | null
+  const stageName =
+    stageNameMap.get(fromStageId) ?? trans.fromStageId ?? 'Unknown Stage'
+  const requirementResponses = formatRequirementResponses(
+    stageReqs,
+    activityData,
+    taskContext,
+    stageName,
+  )
+  const readyForProduction = activityData?.readyForProduction === true
+
+  return {
+    id: trans.id,
+    taskId: task.id,
+    lineItemId: task.lineItemId,
+    taskNumber: task.taskNumber ?? null,
+    productName,
+    type: 'stage_transition',
+    fromStageName: trans.fromStageId
+      ? (stageNameMap.get(trans.fromStageId) ?? null)
+      : null,
+    toStageName: trans.toStageId
+      ? (stageNameMap.get(trans.toStageId) ?? null)
+      : null,
+    createdAt: trans.createdAt,
+    requirementResponses,
+    metadata: readyForProduction ? { readyForProduction: true } : undefined,
+  }
+}
+
+function buildBoardTransitionEvent(
+  trans: ActivityRow,
+  task: TimelineTaskRow,
+  stageNameMap: Map<string, string>,
+  stageReqMap: Map<string, Array<{ id: string; label: string; type: string }>>,
+  _activityIndexes: ActivityIndexes,
+): OrderTaskEvent {
+  const productName = task.context?.productName ?? ''
+  const activityData = trans.data as Record<string, unknown> | null
+  const fromBoard = activityData?.fromBoard as string | undefined
+  const toBoard = activityData?.toBoard as string | undefined
+  const fromStageId = trans.fromStageId ?? ''
+  const stageReqs = stageReqMap.get(fromStageId) ?? []
+  const taskContext = task.context as Record<string, unknown> | null
+  const stageName =
+    stageNameMap.get(fromStageId) ?? trans.fromStageId ?? 'Unknown Stage'
+  const requirementResponses = formatRequirementResponses(
+    stageReqs,
+    activityData,
+    taskContext,
+    stageName,
+  )
+
+  return {
+    id: trans.id,
+    taskId: task.id,
+    lineItemId: task.lineItemId,
+    taskNumber: task.taskNumber ?? null,
+    productName,
+    type: 'board_transition',
+    fromStageName: trans.fromStageId
+      ? (stageNameMap.get(trans.fromStageId) ?? null)
+      : null,
+    toStageName: trans.toStageId
+      ? (stageNameMap.get(trans.toStageId) ?? null)
+      : null,
+    createdAt: trans.createdAt,
+    requirementResponses,
+    metadata: {
+      fromBoard: fromBoard ?? null,
+      toBoard: toBoard ?? null,
+    },
+  }
+}
+
+function buildCompletedEvent(
+  task: TimelineTaskRow,
+  completedActivity: ActivityRow | undefined,
+  lastTransition: ActivityRow | undefined,
+  stageNameMap: Map<string, string>,
+  stageReqMap: Map<string, Array<{ id: string; label: string; type: string }>>,
+  _activityIndexes: ActivityIndexes,
+): OrderTaskEvent {
+  const productName = task.context?.productName ?? ''
+
+  let requirementResponsesData: OrderTaskEvent['requirementResponses']
+
+  if (lastTransition) {
+    const fromStageId = lastTransition.fromStageId ?? ''
+    const stageReqs = stageReqMap.get(fromStageId) ?? []
+    const activityData = lastTransition.data as Record<string, unknown> | null
+    const taskContext = task.context as Record<string, unknown> | null
+    const stageName = lastTransition.fromStageId
+      ? (stageNameMap.get(lastTransition.fromStageId) ?? 'Unknown Stage')
+      : 'Unknown Stage'
+    requirementResponsesData = formatRequirementResponses(
+      stageReqs,
+      activityData,
+      taskContext,
+      stageName,
+    )
+  }
+
+  const fromStageName = lastTransition
+    ? completedActivity?.fromStageId
+      ? (stageNameMap.get(completedActivity.fromStageId) ?? null)
+      : lastTransition.fromStageId
+        ? (stageNameMap.get(lastTransition.fromStageId) ?? null)
+        : (stageNameMap.get(task.stageId ?? '') ?? null)
+    : (stageNameMap.get(task.stageId ?? '') ?? null)
+
+  return {
+    id: completedActivity
+      ? completedActivity.id
+      : lastTransition
+        ? `completed-${lastTransition.id}`
+        : `completed-${task.id}`,
+    taskId: task.id,
+    lineItemId: task.lineItemId,
+    taskNumber: task.taskNumber ?? null,
+    productName,
+    type: 'completed',
+    fromStageName,
+    toStageName: null,
+    createdAt:
+      completedActivity?.createdAt ?? lastTransition?.createdAt ?? new Date(),
+    requirementResponses: requirementResponsesData,
+  }
+}
+
+// fallow-ignore-next-line unused-export — imported by production/server.ts via dynamic import
 export function buildTimelineEvents(params: {
   tasks: TimelineTaskRow[]
   stageNameMap: Map<string, string>
@@ -863,7 +1047,6 @@ export function buildTimelineEvents(params: {
 
   const events: OrderTaskEvent[] = []
   for (const task of tasks) {
-    const productName = task.context?.productName ?? ''
     const taskActivities = activitiesByTaskId.get(task.id) ?? []
     const createdActivity = createdByTaskId.get(task.id)
     if (createdActivity) {
@@ -872,7 +1055,7 @@ export function buildTimelineEvents(params: {
         taskId: task.id,
         lineItemId: task.lineItemId,
         taskNumber: task.taskNumber ?? null,
-        productName,
+        productName: task.context?.productName ?? '',
         type: 'created',
         fromStageName: null,
         toStageName: stageNameMap.get(task.stageId ?? '') ?? null,
@@ -892,8 +1075,6 @@ export function buildTimelineEvents(params: {
     const completedActivity = completedByTaskId.get(task.id)
 
     for (const trans of transitions) {
-      // Skip the last transition if task is completed and it ends with null
-      // (it will be added as a 'completed' event below)
       if (
         task.status === 'completed' &&
         lastTransitionEndsNull &&
@@ -901,71 +1082,17 @@ export function buildTimelineEvents(params: {
       ) {
         continue
       }
-
-      const fromStageId = trans.fromStageId ?? ''
-      // Look up requirements for the SOURCE stage (where work was done)
-      const stageReqs = stageReqMap.get(fromStageId) ?? []
-      const activityData = trans.data as Record<string, unknown> | null
-      // First try activity data, then fall back to task.context for existing tasks
-      let requirementResponses = activityData?.responses as Record<
-        string,
-        { value?: string; assetIds?: string[] }
-      > | null
-      if (
-        !requirementResponses ||
-        Object.keys(requirementResponses).length === 0
-      ) {
-        const taskContext = task.context as Record<string, unknown> | null
-        requirementResponses = taskContext?.requirementResponses as Record<
-          string,
-          { value?: string; assetIds?: string[] }
-        > | null
-      }
-
-      const formattedResponses = stageReqs.map((req) => {
-        const response = requirementResponses?.[req.id]
-        return {
-          requirementName: req.label,
-          value: response?.value as string | undefined,
-          assetIds: response?.assetIds as string[] | undefined,
-        }
-      })
-
-      const hasResponses = formattedResponses.some(
-        (r) => r.value || (r.assetIds && r.assetIds.length > 0),
+      events.push(
+        buildStageTransitionEvent(
+          trans,
+          task,
+          stageNameMap,
+          stageReqMap,
+          activityIndexes,
+        ),
       )
-
-      const readyForProduction = activityData?.readyForProduction === true
-      events.push({
-        id: trans.id,
-        taskId: task.id,
-        lineItemId: task.lineItemId,
-        taskNumber: task.taskNumber ?? null,
-        productName,
-        type: 'stage_transition',
-        fromStageName: trans.fromStageId
-          ? (stageNameMap.get(trans.fromStageId) ?? null)
-          : null,
-        toStageName: trans.toStageId
-          ? (stageNameMap.get(trans.toStageId) ?? null)
-          : null,
-        createdAt: trans.createdAt,
-        requirementResponses: hasResponses
-          ? [
-              {
-                stageName:
-                  stageNameMap.get(fromStageId) ??
-                  trans.fromStageId ??
-                  'Unknown Stage',
-                responses: formattedResponses,
-              },
-            ]
-          : undefined,
-        metadata: readyForProduction ? { readyForProduction: true } : undefined,
-      })
     }
 
-    // Handle board transitions (pre-production → production)
     const boardTransitions = taskActivities
       .filter((a) => a.type === 'board_transition')
       .sort(
@@ -974,170 +1101,28 @@ export function buildTimelineEvents(params: {
       )
 
     for (const trans of boardTransitions) {
-      const activityData = trans.data as Record<string, unknown> | null
-      const fromBoard = activityData?.fromBoard as string | undefined
-      const toBoard = activityData?.toBoard as string | undefined
-      const fromStageId = trans.fromStageId ?? ''
-
-      // Look up requirements for the SOURCE stage (where work was done)
-      const stageReqs = stageReqMap.get(fromStageId) ?? []
-      // First try activity data, then fall back to task.context for existing tasks
-      let requirementResponses = activityData?.responses as Record<
-        string,
-        { value?: string; assetIds?: string[] }
-      > | null
-      if (
-        !requirementResponses ||
-        Object.keys(requirementResponses).length === 0
-      ) {
-        const taskContext = task.context as Record<string, unknown> | null
-        requirementResponses = taskContext?.requirementResponses as Record<
-          string,
-          { value?: string; assetIds?: string[] }
-        > | null
-      }
-
-      const formattedResponses = stageReqs.map((req) => {
-        const response = requirementResponses?.[req.id]
-        return {
-          requirementName: req.label,
-          value: response?.value as string | undefined,
-          assetIds: response?.assetIds as string[] | undefined,
-        }
-      })
-
-      const hasResponses = formattedResponses.some(
-        (r) => r.value || (r.assetIds && r.assetIds.length > 0),
+      events.push(
+        buildBoardTransitionEvent(
+          trans,
+          task,
+          stageNameMap,
+          stageReqMap,
+          activityIndexes,
+        ),
       )
-
-      events.push({
-        id: trans.id,
-        taskId: task.id,
-        lineItemId: task.lineItemId,
-        taskNumber: task.taskNumber ?? null,
-        productName,
-        type: 'board_transition',
-        fromStageName: trans.fromStageId
-          ? (stageNameMap.get(trans.fromStageId) ?? null)
-          : null,
-        toStageName: trans.toStageId
-          ? (stageNameMap.get(trans.toStageId) ?? null)
-          : null,
-        createdAt: trans.createdAt,
-        requirementResponses: hasResponses
-          ? [
-              {
-                stageName:
-                  stageNameMap.get(fromStageId) ??
-                  trans.fromStageId ??
-                  'Unknown Stage',
-                responses: formattedResponses,
-              },
-            ]
-          : undefined,
-        metadata: {
-          fromBoard: fromBoard ?? null,
-          toBoard: toBoard ?? null,
-        },
-      })
     }
-    // Add completed event if task is completed
-    // Add completed event if task is completed
-    if (task.status === 'completed') {
-      let requirementResponsesData:
-        | Array<{
-            stageName: string
-            responses: Array<{
-              requirementName: string
-              value?: string
-              assetIds?: string[]
-            }>
-          }>
-        | undefined
 
-      if (lastTransition) {
-        const fromStageId = lastTransition.fromStageId ?? ''
-        const stageReqs = stageReqMap.get(fromStageId) ?? []
-        const activityData = lastTransition.data as Record<
-          string,
-          unknown
-        > | null
-        let requirementResponses = activityData?.responses as Record<
-          string,
-          { value?: string; assetIds?: string[] }
-        > | null
-        if (
-          !requirementResponses ||
-          Object.keys(requirementResponses).length === 0
-        ) {
-          const taskContext = task.context as Record<string, unknown> | null
-          requirementResponses = taskContext?.requirementResponses as Record<
-            string,
-            { value?: string; assetIds?: string[] }
-          > | null
-        }
-
-        const formattedResponses = stageReqs.map((req) => {
-          const response = requirementResponses?.[req.id]
-          return {
-            requirementName: req.label,
-            value: response?.value as string | undefined,
-            assetIds: response?.assetIds as string[] | undefined,
-          }
-        })
-
-        const hasResponses = formattedResponses.some(
-          (r) => r.value || (r.assetIds && r.assetIds.length > 0),
-        )
-
-        if (hasResponses) {
-          requirementResponsesData = [
-            {
-              stageName: lastTransition.fromStageId
-                ? (stageNameMap.get(lastTransition.fromStageId) ??
-                  'Unknown Stage')
-                : 'Unknown Stage',
-              responses: formattedResponses,
-            },
-          ]
-        }
-      }
-
-      events.push({
-        id: completedActivity
-          ? completedActivity.id
-          : lastTransition
-            ? `completed-${lastTransition.id}`
-            : `completed-${task.id}`,
-        taskId: task.id,
-        lineItemId: task.lineItemId,
-        taskNumber: task.taskNumber ?? null,
-        productName,
-        type: 'completed',
-        fromStageName: completedActivity?.fromStageId
-          ? (stageNameMap.get(completedActivity.fromStageId) ?? null)
-          : lastTransition?.fromStageId
-            ? (stageNameMap.get(lastTransition.fromStageId) ?? null)
-            : (stageNameMap.get(task.stageId ?? '') ?? null),
-        toStageName: null,
-        createdAt:
-          completedActivity?.createdAt ??
-          lastTransition?.createdAt ??
-          new Date(),
-        requirementResponses: requirementResponsesData,
-      })
-    } else if (completedActivity) {
-      events.push({
-        id: completedActivity.id,
-        taskId: task.id,
-        lineItemId: task.lineItemId,
-        taskNumber: task.taskNumber ?? null,
-        productName,
-        type: 'completed',
-        fromStageName: stageNameMap.get(task.stageId ?? '') ?? null,
-        toStageName: null,
-        createdAt: completedActivity.createdAt,
-      })
+    if (task.status === 'completed' || completedActivity) {
+      events.push(
+        buildCompletedEvent(
+          task,
+          completedActivity,
+          task.status === 'completed' ? lastTransition : undefined,
+          stageNameMap,
+          stageReqMap,
+          activityIndexes,
+        ),
+      )
     }
   }
 
