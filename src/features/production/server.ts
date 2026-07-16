@@ -1,30 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import type { OrderTaskEvent } from '#/features/portal/model'
-import { resolveOrgId } from '#/lib/auth-session-server'
+import { resolveOrgAndRole, resolveOrgId } from '#/lib/auth-session-server'
 import type { MutationResult } from '#/lib/server-results'
 import type { CreateStageInput, Stage, UpdateStageInput } from './model'
 
-async function resolveOrgAndRole(): Promise<{ orgId: string; role: string }> {
-  const [{ auth }, { db }, { member }, { eq }] = await Promise.all([
-    import('#/lib/auth'),
-    import('#/db/index'),
-    import('#/db/schema'),
-    import('drizzle-orm'),
-  ])
-  const headers = getRequestHeaders()
-  const session = await auth.api.getSession({ headers })
-  if (!session) throw new Error('Not authenticated')
-
-  const memberships = await db
-    .select({ orgId: member.organizationId, role: member.role })
-    .from(member)
-    .where(eq(member.userId, session.user.id))
-    .limit(1)
-
-  if (memberships.length === 0) throw new Error('No organization')
-  return { orgId: memberships[0].orgId, role: memberships[0].role }
-}
 async function resolveManageStagesOrgId(): Promise<string> {
   const { orgId, role } = await resolveOrgAndRole()
   const { canManageStages } = await import('#/features/permissions/model')
@@ -375,16 +355,6 @@ export const listArchivedTasksFn = createServerFn({ method: 'GET' })
       page: data.page,
       perPage: data.perPage,
     })
-  })
-
-export const getTaskCountsFn = createServerFn({ method: 'GET' })
-  .inputValidator((input: { board?: string }) => input)
-  .handler(async ({ data }) => {
-    const [orgId, { getTaskCounts }] = await Promise.all([
-      resolveOrgId(),
-      import('./model'),
-    ])
-    return getTaskCounts(orgId, data.board)
   })
 
 export const listTasksByOrderIdFn = createServerFn({ method: 'GET' })

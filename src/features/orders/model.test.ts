@@ -19,6 +19,7 @@ import {
 import {
   adjustOrderQuantity,
   createDraftOrder,
+  createDraftOrderFromAction,
   getOrder,
   getOrderCreationReadiness,
   listOrders,
@@ -1213,6 +1214,49 @@ describe('listOrders payment status aggregation', () => {
     )
   })
 })
+describe('createDraftOrderFromAction', () => {
+  it('loads duplicate product references through one batched lookup', async () => {
+    const now = new Date()
+    await db.insert(productsTable).values({
+      id: 'action-prod-1',
+      orgId: org1Id,
+      name: 'Action Product',
+      active: true,
+      productionDays: 2,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    const result = await createDraftOrderFromAction(org1Id, {
+      lineItems: [
+        {
+          productId: 'action-prod-1',
+          productName: 'Action Product',
+          quantity: 2,
+          unitPrice: 10,
+          total: 20,
+          minQuantity: 1,
+        },
+        {
+          productId: 'action-prod-1',
+          productName: 'Action Product',
+          quantity: 3,
+          unitPrice: 10,
+          total: 30,
+          minQuantity: 1,
+        },
+      ],
+      customerId: null,
+      customerName: null,
+      total: 50,
+    })
+
+    expect(result.lineItems).toHaveLength(2)
+    expect(result.lineItems.map((item) => item.quantity)).toEqual([2, 3])
+    expect(result.order.total).toBe(50)
+  })
+})
+
 describe('adjustOrderQuantity', () => {
   it('reprices line item and updates order total', async () => {
     const now = new Date()
@@ -1498,6 +1542,11 @@ describe('adjustOrderQuantity', () => {
       .where(eq(tasksTable.id, 'adj-task-1'))
       .limit(1)
 
-    expect(task[0].context).toMatchObject({ quantity: 30 })
+    expect(task[0].context).toMatchObject({
+      productName: 'Task Product',
+      customerName: 'Test',
+      requirements: null,
+      quantity: 30,
+    })
   })
 })

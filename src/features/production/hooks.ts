@@ -12,7 +12,6 @@ import {
   createStageFn,
   deleteStageFn,
   getOrderTasksTimelineFn,
-  getTaskCountsFn,
   getTaskDetailFn,
   listArchivedTasksFn,
   listBoardTasksFn,
@@ -175,13 +174,6 @@ export function useArchivedTasks(
     queryKey: queryKeys.production.archived(filters),
     queryFn: () => listArchivedTasksFn({ data: filters }),
     ...options,
-  })
-}
-
-export function useTaskCounts(board?: string) {
-  return useQuery({
-    queryKey: queryKeys.production.counts(board),
-    queryFn: () => getTaskCountsFn({ data: { board } }),
   })
 }
 

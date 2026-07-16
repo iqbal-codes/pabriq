@@ -13,7 +13,6 @@ import type {
   ListOrdersParams,
   ListOrdersResult,
   OrderCreationReadiness,
-  OrderHistoryEvent,
   UpdateDraftOrderInput,
 } from './model'
 
@@ -154,52 +153,6 @@ export const advanceOrderStatusFn = createServerFn({ method: 'POST' })
     const userId = session?.user.id ?? 'unknown'
     try {
       await advanceOrderStatus(data.id, orgId, userId)
-      return { ok: true }
-    } catch (e) {
-      return {
-        ok: false,
-        error: e instanceof Error ? e.message : 'Unknown error',
-      }
-    }
-  })
-
-export const setDeliveryInfoFn = createServerFn({ method: 'POST' })
-  .inputValidator(
-    (input: { id: string; courier?: string; trackingNumber?: string }) => input,
-  )
-  .handler(async ({ data }): Promise<MutationResult> => {
-    const [orgId, { setDeliveryInfo }] = await Promise.all([
-      resolveOrgId(),
-      import('./model'),
-    ])
-    try {
-      await setDeliveryInfo(data.id, orgId, {
-        courier: data.courier,
-        trackingNumber: data.trackingNumber,
-      })
-      return { ok: true }
-    } catch (e) {
-      return {
-        ok: false,
-        error: e instanceof Error ? e.message : 'Unknown error',
-      }
-    }
-  })
-
-export const markShippedFn = createServerFn({ method: 'POST' })
-  .inputValidator(
-    (input: { id: string; courier?: string; trackingNumber?: string }) => input,
-  )
-  .handler(async ({ data }): Promise<MutationResult> => {
-    const [orgId, { markShipped }] = await Promise.all([
-      resolveOrgId(),
-      import('./model'),
-    ])
-    try {
-      await markShipped(data.id, orgId, {
-        courier: data.courier,
-        trackingNumber: data.trackingNumber,
-      })
       return { ok: true }
     } catch (e) {
       return {
@@ -457,16 +410,6 @@ export const adjustOrderQuantityFn = createServerFn({ method: 'POST' })
         error: e instanceof Error ? e.message : 'Unknown error',
       }
     }
-  })
-
-export const listOrderHistoryEventsFn = createServerFn({ method: 'GET' })
-  .inputValidator((input: { orderId: string }) => input)
-  .handler(async ({ data }): Promise<OrderHistoryEvent[]> => {
-    const [orgId, { listOrderHistoryEvents }] = await Promise.all([
-      resolveOrgId(),
-      import('./model'),
-    ])
-    return listOrderHistoryEvents(data.orderId, orgId)
   })
 
 export const getOrderAdminTimelineFn = createServerFn({ method: 'GET' })
