@@ -20,3 +20,28 @@ export async function resolveOrgId(): Promise<string> {
   if (memberships.length === 0) throw new Error('No organization')
   return memberships[0].orgId
 }
+
+export type OrgAndRole = { orgId: string; role: string }
+
+export async function resolveOrgAndRole(): Promise<OrgAndRole> {
+  const [{ getRequestHeaders }, { auth }, { db }, { member }, { eq }] =
+    await Promise.all([
+      import('@tanstack/react-start/server'),
+      import('#/lib/auth'),
+      import('#/db/index'),
+      import('#/db/schema'),
+      import('drizzle-orm'),
+    ])
+  const headers = getRequestHeaders()
+  const session = await auth.api.getSession({ headers })
+  if (!session) throw new Error('Not authenticated')
+
+  const memberships = await db
+    .select({ orgId: member.organizationId, role: member.role })
+    .from(member)
+    .where(eq(member.userId, session.user.id))
+    .limit(1)
+
+  if (memberships.length === 0) throw new Error('No organization')
+  return { orgId: memberships[0].orgId, role: memberships[0].role }
+}
