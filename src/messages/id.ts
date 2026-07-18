@@ -295,6 +295,7 @@ const id: Messages = {
     completeOrderData: "Lengkapi Data Pesanan",
     acceptInvitation: "Terima Undangan",
     notifications: "Notifikasi",
+    channels: "Saluran",
   },
   status: {
     draft: "Draf",
@@ -400,6 +401,7 @@ const id: Messages = {
       "Potong nominal ini dari invoice pelunasan untuk setiap hari kalender setelah deadline pesanan. Isi 0 untuk menonaktifkan.",
     midtransWebhookCopied: "Disalin",
     save: "Simpan",
+    channels: "Saluran",
   },
   members: {
     title: "Operator",
@@ -1288,6 +1290,120 @@ const id: Messages = {
     last30Days: "30 Hari Terakhir",
     thisMonth: "Bulan Ini",
     lastMonth: "Bulan Lalu",
+  },
+  channels: {
+    title: "Saluran",
+    subtitle:
+      "Hubungkan bot Telegram organisasi Anda dan kendalikan siapa yang dapat berkomunikasi dan mengirimkan data.",
+    tabs: {
+      connections: "Koneksi",
+      accounts: "Akun",
+    },
+    access: "Akses Saluran",
+    accessDescription:
+      "Hanya identitas pesan yang disetujui yang dapat mengirim pesan atau data melalui bot ini.",
+    loading: "Memuat akses saluran...",
+    empty:
+      "Tidak ada identitas pesan yang sesuai dengan status ini. Pengguna akan muncul di sini setelah memulai bot yang terhubung.",
+    error: {
+      loadFailed: "Gagal memuat akun akses saluran",
+    },
+    telegram: {
+      title: "Bot Telegram",
+      connectedAs: "Terhubung sebagai {bot}.",
+      connectDescription:
+        "Hubungkan satu bot khusus untuk organisasi ini. Tokennya disimpan secara aman dan tidak akan ditampilkan lagi.",
+      active: "Koneksi aktif",
+      inactive: "Belum terhubung",
+      botId: "ID Bot {id}",
+      token: "Token BotFather",
+      replaceToken: "Ganti token BotFather",
+      verificationNote:
+        "Pabriq memverifikasi token ini dan mendaftarkan pengiriman terautentikasi sebelum menyimpannya.",
+      botTokenPlaceholder: "123456789:ABCdefGHIjklMNOpqrsTUVwxyZ",
+      invalidToken: "Format token bot tidak valid",
+      tokenRequired: "Token wajib diisi",
+      defaultBotName: "Bot Telegram",
+    },
+    whatsapp: {
+      comingSoon: "Segera Hadir",
+      description:
+        "Hubungkan akun resmi WhatsApp Business Anda untuk menerima pesan dan mengelola alur kerja pelanggan.",
+      notifyMe: "Belum tersedia",
+    },
+    status: {
+      label: "Status",
+      all: "Semua",
+      pending: "Menunggu",
+      approved: "Disetujui",
+      revoked: "Dicabut",
+    },
+    table: {
+      identity: "Identitas Pesan",
+      telegramId: "ID Telegram",
+      status: "Status",
+      lifecycle: "Siklus Hidup",
+      actions: "Tindakan",
+      searchPlaceholder: "Cari akun...",
+    },
+    lifecycle: {
+      requested: "Diminta {date}",
+      approved: "Disetujui {date}",
+      revoked: "Dicabut {date}",
+    },
+    actions: {
+      disconnect: "Putuskan",
+      verifying: "Memverifikasi...",
+      verifyReplace: "Verifikasi dan ganti",
+      verifyConnect: "Verifikasi dan hubungkan",
+      approve: "Setujui",
+      reapprove: "Setujui lagi",
+      decline: "Tolak",
+      revoke: "Cabut",
+      cancel: "Batal",
+      saving: "Menyimpan...",
+      confirm: "Konfirmasi",
+    },
+    toast: {
+      connected: "Bot Telegram terhubung",
+      replaced: "Bot Telegram diganti",
+      disconnected: "Bot Telegram diputuskan",
+      approved: "{identity} disetujui",
+      declined: "{identity} ditolak",
+      revoked: "{identity} dicabut",
+    },
+    dialog: {
+      disconnectTitle: "Putuskan bot Telegram?",
+      approveTitle: "Setujui {identity}?",
+      declineTitle: "Tolak {identity}?",
+      revokeTitle: "Cabut {identity}?",
+      disconnectDescription:
+        "{bot} akan berhenti menerima pesan masuk. Riwayat Akses Saluran tetap terlihat.",
+      approveDescription:
+        "{identity} akan diberi tahu dan dapat mengirim pesan ke asisten.",
+      revokeDescription:
+        "{identity} akan diberi tahu dan tetap disimpan sebagai dicabut. Hanya pemilik atau administrator yang dapat menyetujui identitas ini lagi.",
+    },
+    telegramReplies: {
+      requestSent:
+        "Permintaan akses Anda telah dikirim ke administrator organisasi untuk disetujui.",
+      stillPending:
+        "Permintaan akses Anda masih menunggu persetujuan dari administrator organisasi.",
+      revoked: "Akses Anda ke saluran ini telah dicabut oleh administrator.",
+      welcome:
+        "Selamat datang! Akses Anda telah disetujui. Anda sekarang dapat mengirim pesan dan dokumen.",
+      startRequired: "Silakan kirim /start untuk meminta akses ke bot ini.",
+      replaced:
+        "Koneksi bot Telegram ini telah diganti dengan konfigurasi bot baru.",
+      photoDownloadFailed:
+        "Gagal mengunduh foto yang dilampirkan. Silakan coba kirim ulang.",
+      processingFailed:
+        "Maaf, terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti.",
+      approvedNotification:
+        "Permintaan akses Anda telah disetujui! Anda sekarang dapat mengirim pesan ke bot ini.",
+      revokedNotification:
+        "Akses Anda ke saluran ini telah dicabut oleh administrator.",
+    },
   },
 };
 
