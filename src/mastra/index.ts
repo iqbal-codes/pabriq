@@ -8,7 +8,11 @@ import {
   resolveOrderDraftTool,
 } from '#/mastra/tools/business-tools'
 
-await ensureMastraSchemaSeparation()
+// Fire-and-forget: schema separation runs in the background at startup.
+// The migration (0032) handles this synchronously; this is a safety net.
+ensureMastraSchemaSeparation().catch((err) => {
+  console.error('[mastra] schema separation failed:', err)
+})
 const mastraStorage = createMastraStore()
 const businessAssistantAgent = createBusinessAssistantAgent(mastraStorage)
 
