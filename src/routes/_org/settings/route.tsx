@@ -22,8 +22,6 @@ function SettingsLayout() {
     ? 'members'
     : pathname.includes('/settings/profile')
       ? 'profile'
-      : pathname.includes('/settings/channels')
-        ? 'channels'
         : pathname.includes('/settings/production-stages')
           ? 'stages'
           : pathname.includes('/settings/payment-methods')
@@ -45,9 +43,6 @@ function SettingsLayout() {
             </TabsTrigger>
             <TabsTrigger value="members" asChild>
               <Link to="/settings/members">{st('members')}</Link>
-            </TabsTrigger>
-            <TabsTrigger value="channels" asChild>
-              <Link to="/settings/channels">{st('channels')}</Link>
             </TabsTrigger>
             <TabsTrigger value="stages" asChild>
               <Link to="/settings/production-stages">
