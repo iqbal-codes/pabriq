@@ -1,12 +1,16 @@
 import { Mastra } from '@mastra/core'
 import { PinoLogger } from '@mastra/loggers'
-import { businessAssistantAgent } from '#/mastra/agents/business-assistant-agent'
-import { mastraStorage } from '#/mastra/model'
+import { createBusinessAssistantAgent } from '#/mastra/agents/business-assistant-agent'
+import { createMastraStore, ensureMastraSchemaSeparation } from '#/mastra/model'
 import {
   businessOverviewTool,
   businessSearchTool,
   resolveOrderDraftTool,
 } from '#/mastra/tools/business-tools'
+
+await ensureMastraSchemaSeparation()
+const mastraStorage = createMastraStore()
+const businessAssistantAgent = createBusinessAssistantAgent(mastraStorage)
 
 export const mastra = new Mastra({
   agents: { businessAssistantAgent },
