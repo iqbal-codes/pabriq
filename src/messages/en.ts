@@ -294,6 +294,7 @@ const en: Messages = {
     completeOrderData: "Complete Order Data",
     acceptInvitation: "Accept Invitation",
     notifications: "Notifications",
+    channels: "Channels",
   },
   status: {
     draft: "Draft",
@@ -400,6 +401,7 @@ const en: Messages = {
       "Deduct this amount from the final invoice for each calendar day after the order deadline. Set 0 to disable.",
     midtransWebhookCopied: "Copied",
     save: "Save",
+    channels: "Channels",
   },
   members: {
     title: "Operators",
@@ -1285,6 +1287,120 @@ const en: Messages = {
     last30Days: "Last 30 Days",
     thisMonth: "This Month",
     lastMonth: "Last Month",
+  },
+  channels: {
+    title: "Channels",
+    subtitle:
+      "Connect your organization's Telegram bot and control who can communicate and submit inputs.",
+    tabs: {
+      connections: "Connections",
+      accounts: "Accounts",
+    },
+    access: "Channel Access",
+    accessDescription:
+      "Only approved messaging identities can send messages or submit inputs through this bot.",
+    loading: "Loading channel access...",
+    empty:
+      "No messaging identities match this status. People appear here after they start the connected bot.",
+    error: {
+      loadFailed: "Failed to load channel access accounts",
+    },
+    telegram: {
+      title: "Telegram Bot",
+      connectedAs: "Connected as {bot}.",
+      connectDescription:
+        "Connect one dedicated bot for this organization. Its token is stored securely and is never shown again.",
+      active: "Active connection",
+      inactive: "Not connected",
+      botId: "Bot ID {id}",
+      token: "BotFather token",
+      replaceToken: "Replace BotFather token",
+      verificationNote:
+        "Pabriq verifies this token and registers authenticated delivery before saving it.",
+      botTokenPlaceholder: "123456789:ABCdefGHIjklMNOpqrsTUVwxyZ",
+      invalidToken: "Invalid bot token format",
+      tokenRequired: "Token is required",
+      defaultBotName: "Telegram Bot",
+    },
+    whatsapp: {
+      comingSoon: "Coming Soon",
+      description:
+        "Connect your official WhatsApp Business account to receive messages and manage customer workflows.",
+      notifyMe: "Unavailable",
+    },
+    status: {
+      label: "Status",
+      all: "All",
+      pending: "Pending",
+      approved: "Approved",
+      revoked: "Revoked",
+    },
+    table: {
+      identity: "Messaging Identity",
+      telegramId: "Telegram ID",
+      status: "Status",
+      lifecycle: "Lifecycle",
+      actions: "Actions",
+      searchPlaceholder: "Search accounts...",
+    },
+    lifecycle: {
+      requested: "Requested {date}",
+      approved: "Approved {date}",
+      revoked: "Revoked {date}",
+    },
+    actions: {
+      disconnect: "Disconnect",
+      verifying: "Verifying...",
+      verifyReplace: "Verify and replace",
+      verifyConnect: "Verify and connect",
+      approve: "Approve",
+      reapprove: "Reapprove",
+      decline: "Decline",
+      revoke: "Revoke",
+      cancel: "Cancel",
+      saving: "Saving...",
+      confirm: "Confirm",
+    },
+    toast: {
+      connected: "Telegram bot connected",
+      replaced: "Telegram bot replaced",
+      disconnected: "Telegram bot disconnected",
+      approved: "{identity} is approved",
+      declined: "{identity} was declined",
+      revoked: "{identity} was revoked",
+    },
+    dialog: {
+      disconnectTitle: "Disconnect Telegram bot?",
+      approveTitle: "Approve {identity}?",
+      declineTitle: "Decline {identity}?",
+      revokeTitle: "Revoke {identity}?",
+      disconnectDescription:
+        "{bot} will stop receiving inbound messages. Channel Access history will remain visible.",
+      approveDescription:
+        "{identity} will be notified and can send messages to the assistant.",
+      revokeDescription:
+        "{identity} will be notified and retained as revoked. Only an owner or administrator can approve this identity again.",
+    },
+    telegramReplies: {
+      requestSent:
+        "Your access request has been sent to the organization administrator for approval.",
+      stillPending:
+        "Your access request is still pending approval from an organization administrator.",
+      revoked: "Your access to this channel has been revoked by an administrator.",
+      welcome:
+        "Welcome! Your access is approved. You can now send messages and documents.",
+      startRequired: "Please send /start to request access to this bot.",
+      replaced:
+        "This Telegram bot connection was replaced with a new bot configuration.",
+      photoDownloadFailed:
+        "Failed to download the attached photo. Please try sending it again.",
+      processingFailed:
+        "Sorry, an error occurred while processing your request. Please try again later.",
+      approvedNotification:
+        "Your access request has been approved! You can now send messages to this bot.",
+      revokedNotification:
+        "Your access to this channel has been revoked by an administrator.",
+    },
   },
 };
 

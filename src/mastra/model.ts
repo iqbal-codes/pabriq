@@ -1,9 +1,73 @@
 import { PostgresStore } from '@mastra/pg'
+import { sql } from 'drizzle-orm'
+import { db } from '#/db/index'
+
+export const MASTRA_SCHEMA_NAME = 'mastra'
 
 function getDatabaseUrl(): string {
   const url = process.env.DATABASE_URL
   if (!url) throw new Error('DATABASE_URL is required for Mastra storage')
   return url
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function quoteIdentifier(identifier: string): string {
+  return `"${identifier.replaceAll('"', '""')}"`
+}
+
+function extractTableNames(result: unknown): string[] {
+  if (!isRecord(result) || !Array.isArray(result.rows)) return []
+
+  const names: string[] = []
+  for (const row of result.rows) {
+    if (isRecord(row) && typeof row.table_name === 'string') {
+      names.push(row.table_name)
+    }
+  }
+  return names
+}
+
+async function listMastraTables(schemaName: string): Promise<string[]> {
+  const result = await db.execute(sql`
+    SELECT table_name
+    FROM information_schema.tables
+    WHERE table_schema = ${schemaName}
+      AND table_name LIKE 'mastra\\_%' ESCAPE '\\'
+    ORDER BY table_name
+  `)
+  return extractTableNames(result)
+}
+
+export async function ensureMastraSchemaSeparation(): Promise<void> {
+  await db.execute(
+    sql.raw(
+      `CREATE SCHEMA IF NOT EXISTS ${quoteIdentifier(MASTRA_SCHEMA_NAME)}`,
+    ),
+  )
+
+  const publicTables = await listMastraTables('public')
+  if (publicTables.length === 0) return
+
+  const separatedTables = new Set(await listMastraTables(MASTRA_SCHEMA_NAME))
+  for (const tableName of publicTables) {
+    if (separatedTables.has(tableName)) continue
+    await db.execute(
+      sql.raw(
+        `ALTER TABLE ${quoteIdentifier('public')}.${quoteIdentifier(tableName)} SET SCHEMA ${quoteIdentifier(MASTRA_SCHEMA_NAME)}`,
+      ),
+    )
+  }
+}
+
+export function createMastraStore(): PostgresStore {
+  return new PostgresStore({
+    id: 'pabriq-mastra-storage',
+    connectionString: getDatabaseUrl(),
+    schemaName: MASTRA_SCHEMA_NAME,
+  })
 }
 
 export function getMastraModel(): string {
@@ -13,9 +77,3 @@ export function getMastraModel(): string {
   }
   return model
 }
-
-export const mastraStorage = new PostgresStore({
-  id: 'pabriq-mastra-storage',
-  connectionString: getDatabaseUrl(),
-  schemaName: 'mastra',
-})

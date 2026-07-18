@@ -67,24 +67,25 @@ export const useAppForm: typeof useAppFormBase = (options) => {
 
   const form = useAppFormBase(formOptions)
 
-  const AppFieldBase = form.AppField
+  // Capture the original AppField once — never read form.AppField after overwriting it
+  const originalAppFieldRef = useRef<typeof form.AppField | null>(null)
+  if (originalAppFieldRef.current === null) {
+    originalAppFieldRef.current = form.AppField
+  }
 
-  // Cast form to overwrite read-only AppField property on the library type
-  const formMutable = form as unknown as { AppField: unknown }
-
-  const appFieldBaseRef = useRef(AppFieldBase)
   const schemaRef = useRef(schema)
   useInsertionEffect(() => {
-    appFieldBaseRef.current = AppFieldBase
     schemaRef.current = schema
   })
 
+  // Overwrite form.AppField with our wrapper that injects schema-based validation
+  const formMutable = form as unknown as { AppField: unknown }
   formMutable.AppField = useMemo(() => {
+    const OriginalAppField = originalAppFieldRef.current as typeof form.AppField
     return function AppFieldWrapper(
-      props: Parameters<typeof appFieldBaseRef.current>[0],
+      props: Parameters<typeof OriginalAppField>[0],
     ) {
       const currentSchema = schemaRef.current
-      const FieldBase = appFieldBaseRef.current
       let fieldValidatorFn:
         | ((params: { value: unknown }) => string | undefined)
         | undefined
@@ -119,7 +120,7 @@ export const useAppForm: typeof useAppFormBase = (options) => {
         }
       }
 
-      return <FieldBase {...props} validators={mergedValidators} />
+      return <OriginalAppField {...props} validators={mergedValidators} />
     }
   }, [])
 

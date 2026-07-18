@@ -597,3 +597,135 @@ export type AssistantActionPayload = {
   customerName: string | null
   total: number
 }
+
+export const CONNECTED_CHANNEL_STATUSES = ['connected', 'disconnected'] as const
+export type ConnectedChannelStatus = (typeof CONNECTED_CHANNEL_STATUSES)[number]
+
+export const CHANNEL_ACCESS_STATUSES = [
+  'pending',
+  'approved',
+  'revoked',
+] as const
+export type ChannelAccessStatus = (typeof CHANNEL_ACCESS_STATUSES)[number]
+
+export const CHANNEL_TYPES = ['telegram'] as const
+export type ChannelType = (typeof CHANNEL_TYPES)[number]
+
+export const connectedChannels = pgTable(
+  'connected_channels',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    channelType: text('channel_type')
+      .$type<ChannelType>()
+      .notNull()
+      .default('telegram'),
+    status: text('status')
+      .$type<ConnectedChannelStatus>()
+      .notNull()
+      .default('connected'),
+    telegramBotId: text('telegram_bot_id').notNull(),
+    telegramBotUsername: text('telegram_bot_username'),
+    telegramBotName: text('telegram_bot_name').notNull(),
+    botToken: text('bot_token').notNull(),
+    webhookSecret: text('webhook_secret').notNull(),
+    connectionVersion: integer('connection_version').notNull().default(1),
+    connectedAt: timestamp('connected_at').notNull().defaultNow(),
+    disconnectedAt: timestamp('disconnected_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('idx_connected_channels_org_type').on(
+      table.orgId,
+      table.channelType,
+    ),
+    uniqueIndex('idx_connected_channels_webhook_secret').on(
+      table.webhookSecret,
+    ),
+    uniqueIndex('idx_connected_channels_type_bot').on(
+      table.channelType,
+      table.telegramBotId,
+    ),
+  ],
+)
+
+export const messagingIdentities = pgTable(
+  'messaging_identities',
+  {
+    id: text('id').primaryKey(),
+    channelType: text('channel_type')
+      .$type<ChannelType>()
+      .notNull()
+      .default('telegram'),
+    providerUserId: text('provider_user_id').notNull(),
+    displayName: text('display_name').notNull(),
+    username: text('username'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('idx_messaging_identities_provider').on(
+      table.channelType,
+      table.providerUserId,
+    ),
+  ],
+)
+
+export const channelAccesses = pgTable(
+  'channel_accesses',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    connectedChannelId: text('connected_channel_id')
+      .notNull()
+      .references(() => connectedChannels.id, { onDelete: 'cascade' }),
+    messagingIdentityId: text('messaging_identity_id')
+      .notNull()
+      .references(() => messagingIdentities.id, { onDelete: 'cascade' }),
+    status: text('status')
+      .$type<ChannelAccessStatus>()
+      .notNull()
+      .default('pending'),
+    requestedAt: timestamp('requested_at').notNull().defaultNow(),
+    approvedAt: timestamp('approved_at'),
+    revokedAt: timestamp('revoked_at'),
+    startedConnectionVersion: integer('started_connection_version'),
+    startedAt: timestamp('started_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('idx_channel_accesses_channel_identity').on(
+      table.connectedChannelId,
+      table.messagingIdentityId,
+    ),
+    index('idx_channel_accesses_org_status').on(table.orgId, table.status),
+  ],
+)
+
+export const telegramProcessedUpdates = pgTable(
+  'telegram_processed_updates',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    connectedChannelId: text('connected_channel_id')
+      .notNull()
+      .references(() => connectedChannels.id, { onDelete: 'cascade' }),
+    updateId: text('update_id').notNull(),
+    processedAt: timestamp('processed_at').notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('idx_telegram_updates_channel_update').on(
+      table.connectedChannelId,
+      table.updateId,
+    ),
+    index('idx_telegram_updates_org').on(table.orgId),
+  ],
+)

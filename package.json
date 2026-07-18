@@ -31,7 +31,8 @@
     "db:pull": "drizzle-kit pull",
     "db:studio": "drizzle-kit studio",
     "mastra:dev": "mastra dev",
-    "mastra:build": "mastra build"
+    "mastra:build": "mastra build",
+    "telegram:webhook:set": "bun run scripts/telegram-webhook-set.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1041.0",

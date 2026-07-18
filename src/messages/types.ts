@@ -128,6 +128,7 @@ export type Messages = {
     lateFeePerDayDescription: string;
     midtransWebhookCopied: string;
     save: string;
+    channels: string;
   };
   members: {
     title: string;
@@ -378,6 +379,7 @@ export type Messages = {
     completeOrderData: string;
     acceptInvitation: string;
     notifications: string;
+    channels: string;
   };
   status: {
     draft: string;
@@ -1216,5 +1218,102 @@ export type Messages = {
     last30Days: string;
     thisMonth: string;
     lastMonth: string;
+  };
+  channels: {
+    title: string;
+    subtitle: string;
+    tabs: {
+      connections: string;
+      accounts: string;
+    };
+    access: string;
+    accessDescription: string;
+    loading: string;
+    empty: string;
+    error: {
+      loadFailed: string;
+    };
+    telegram: {
+      title: string;
+      connectedAs: string;
+      connectDescription: string;
+      active: string;
+      inactive: string;
+      botId: string;
+      token: string;
+      replaceToken: string;
+      verificationNote: string;
+      botTokenPlaceholder: string;
+      invalidToken: string;
+      tokenRequired: string;
+      defaultBotName: string;
+    };
+    whatsapp: {
+      comingSoon: string;
+      description: string;
+      notifyMe: string;
+    };
+    status: {
+      label: string;
+      all: string;
+      pending: string;
+      approved: string;
+      revoked: string;
+    };
+    table: {
+      identity: string;
+      telegramId: string;
+      status: string;
+      lifecycle: string;
+      actions: string;
+      searchPlaceholder: string;
+    };
+    lifecycle: {
+      requested: string;
+      approved: string;
+      revoked: string;
+    };
+    actions: {
+      disconnect: string;
+      verifying: string;
+      verifyReplace: string;
+      verifyConnect: string;
+      approve: string;
+      reapprove: string;
+      decline: string;
+      revoke: string;
+      cancel: string;
+      saving: string;
+      confirm: string;
+    };
+    toast: {
+      connected: string;
+      replaced: string;
+      disconnected: string;
+      approved: string;
+      declined: string;
+      revoked: string;
+    };
+    dialog: {
+      disconnectTitle: string;
+      approveTitle: string;
+      declineTitle: string;
+      revokeTitle: string;
+      disconnectDescription: string;
+      approveDescription: string;
+      revokeDescription: string;
+    };
+    telegramReplies: {
+      requestSent: string;
+      stillPending: string;
+      revoked: string;
+      welcome: string;
+      startRequired: string;
+      replaced: string;
+      photoDownloadFailed: string;
+      processingFailed: string;
+      approvedNotification: string;
+      revokedNotification: string;
+    };
   };
 };

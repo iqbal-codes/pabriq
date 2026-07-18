@@ -28,6 +28,7 @@ import { Route as OrgProductsIndexRouteImport } from './routes/_org/products/ind
 import { Route as OrgProductionIndexRouteImport } from './routes/_org/production/index'
 import { Route as OrgOrdersIndexRouteImport } from './routes/_org/orders/index'
 import { Route as OrgCustomersIndexRouteImport } from './routes/_org/customers/index'
+import { Route as ApiWebhooksTelegramRouteImport } from './routes/api/webhooks/telegram'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as OrgSettingsProfileRouteImport } from './routes/_org/settings/profile'
 import { Route as OrgSettingsProductionStagesRouteImport } from './routes/_org/settings/production-stages'
@@ -35,6 +36,7 @@ import { Route as OrgSettingsPaymentMethodsRouteImport } from './routes/_org/set
 import { Route as OrgSettingsMembersRouteImport } from './routes/_org/settings/members'
 import { Route as OrgSettingsInvoicingRouteImport } from './routes/_org/settings/invoicing'
 import { Route as OrgSettingsGeneralRouteImport } from './routes/_org/settings/general'
+import { Route as OrgSettingsChannelsRouteImport } from './routes/_org/settings/channels'
 import { Route as OrgProductsNewRouteImport } from './routes/_org/products/new'
 import { Route as OrgOrdersNewRouteImport } from './routes/_org/orders/new'
 import { Route as OrgCustomersNewRouteImport } from './routes/_org/customers/new'
@@ -142,6 +144,11 @@ const OrgCustomersIndexRoute = OrgCustomersIndexRouteImport.update({
   path: '/customers/',
   getParentRoute: () => OrgRoute,
 } as any)
+const ApiWebhooksTelegramRoute = ApiWebhooksTelegramRouteImport.update({
+  id: '/api/webhooks/telegram',
+  path: '/api/webhooks/telegram',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -177,6 +184,11 @@ const OrgSettingsInvoicingRoute = OrgSettingsInvoicingRouteImport.update({
 const OrgSettingsGeneralRoute = OrgSettingsGeneralRouteImport.update({
   id: '/general',
   path: '/general',
+  getParentRoute: () => OrgSettingsRouteRoute,
+} as any)
+const OrgSettingsChannelsRoute = OrgSettingsChannelsRouteImport.update({
+  id: '/channels',
+  path: '/channels',
   getParentRoute: () => OrgSettingsRouteRoute,
 } as any)
 const OrgProductsNewRoute = OrgProductsNewRouteImport.update({
@@ -261,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/customers/new': typeof OrgCustomersNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
   '/products/new': typeof OrgProductsNewRoute
+  '/settings/channels': typeof OrgSettingsChannelsRoute
   '/settings/general': typeof OrgSettingsGeneralRoute
   '/settings/invoicing': typeof OrgSettingsInvoicingRoute
   '/settings/members': typeof OrgSettingsMembersRoute
@@ -268,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/settings/profile': typeof OrgSettingsProfileRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/webhooks/telegram': typeof ApiWebhooksTelegramRoute
   '/customers/': typeof OrgCustomersIndexRoute
   '/orders/': typeof OrgOrdersIndexRoute
   '/production/': typeof OrgProductionIndexRoute
@@ -298,6 +312,7 @@ export interface FileRoutesByTo {
   '/customers/new': typeof OrgCustomersNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
   '/products/new': typeof OrgProductsNewRoute
+  '/settings/channels': typeof OrgSettingsChannelsRoute
   '/settings/general': typeof OrgSettingsGeneralRoute
   '/settings/invoicing': typeof OrgSettingsInvoicingRoute
   '/settings/members': typeof OrgSettingsMembersRoute
@@ -305,6 +320,7 @@ export interface FileRoutesByTo {
   '/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/settings/profile': typeof OrgSettingsProfileRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/webhooks/telegram': typeof ApiWebhooksTelegramRoute
   '/customers': typeof OrgCustomersIndexRoute
   '/orders': typeof OrgOrdersIndexRoute
   '/production': typeof OrgProductionIndexRoute
@@ -339,6 +355,7 @@ export interface FileRoutesById {
   '/_org/customers/new': typeof OrgCustomersNewRoute
   '/_org/orders/new': typeof OrgOrdersNewRoute
   '/_org/products/new': typeof OrgProductsNewRoute
+  '/_org/settings/channels': typeof OrgSettingsChannelsRoute
   '/_org/settings/general': typeof OrgSettingsGeneralRoute
   '/_org/settings/invoicing': typeof OrgSettingsInvoicingRoute
   '/_org/settings/members': typeof OrgSettingsMembersRoute
@@ -346,6 +363,7 @@ export interface FileRoutesById {
   '/_org/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/_org/settings/profile': typeof OrgSettingsProfileRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/webhooks/telegram': typeof ApiWebhooksTelegramRoute
   '/_org/customers/': typeof OrgCustomersIndexRoute
   '/_org/orders/': typeof OrgOrdersIndexRoute
   '/_org/production/': typeof OrgProductionIndexRoute
@@ -380,6 +398,7 @@ export interface FileRouteTypes {
     | '/customers/new'
     | '/orders/new'
     | '/products/new'
+    | '/settings/channels'
     | '/settings/general'
     | '/settings/invoicing'
     | '/settings/members'
@@ -387,6 +406,7 @@ export interface FileRouteTypes {
     | '/settings/production-stages'
     | '/settings/profile'
     | '/api/auth/$'
+    | '/api/webhooks/telegram'
     | '/customers/'
     | '/orders/'
     | '/production/'
@@ -417,6 +437,7 @@ export interface FileRouteTypes {
     | '/customers/new'
     | '/orders/new'
     | '/products/new'
+    | '/settings/channels'
     | '/settings/general'
     | '/settings/invoicing'
     | '/settings/members'
@@ -424,6 +445,7 @@ export interface FileRouteTypes {
     | '/settings/production-stages'
     | '/settings/profile'
     | '/api/auth/$'
+    | '/api/webhooks/telegram'
     | '/customers'
     | '/orders'
     | '/production'
@@ -457,6 +479,7 @@ export interface FileRouteTypes {
     | '/_org/customers/new'
     | '/_org/orders/new'
     | '/_org/products/new'
+    | '/_org/settings/channels'
     | '/_org/settings/general'
     | '/_org/settings/invoicing'
     | '/_org/settings/members'
@@ -464,6 +487,7 @@ export interface FileRouteTypes {
     | '/_org/settings/production-stages'
     | '/_org/settings/profile'
     | '/api/auth/$'
+    | '/api/webhooks/telegram'
     | '/_org/customers/'
     | '/_org/orders/'
     | '/_org/production/'
@@ -493,6 +517,7 @@ export interface RootRouteChildren {
   InviteAcceptRoute: typeof InviteAcceptRoute
   OrderTokenRoute: typeof OrderTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiWebhooksTelegramRoute: typeof ApiWebhooksTelegramRoute
   ApiDocumentsInvoicesIdPdfRoute: typeof ApiDocumentsInvoicesIdPdfRoute
   ApiDocumentsInvoicesTokenTokenRoute: typeof ApiDocumentsInvoicesTokenTokenRoute
   ApiDocumentsOrdersIdQuotationRoute: typeof ApiDocumentsOrdersIdQuotationRoute
@@ -634,6 +659,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgCustomersIndexRouteImport
       parentRoute: typeof OrgRoute
     }
+    '/api/webhooks/telegram': {
+      id: '/api/webhooks/telegram'
+      path: '/api/webhooks/telegram'
+      fullPath: '/api/webhooks/telegram'
+      preLoaderRoute: typeof ApiWebhooksTelegramRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -681,6 +713,13 @@ declare module '@tanstack/react-router' {
       path: '/general'
       fullPath: '/settings/general'
       preLoaderRoute: typeof OrgSettingsGeneralRouteImport
+      parentRoute: typeof OrgSettingsRouteRoute
+    }
+    '/_org/settings/channels': {
+      id: '/_org/settings/channels'
+      path: '/channels'
+      fullPath: '/settings/channels'
+      preLoaderRoute: typeof OrgSettingsChannelsRouteImport
       parentRoute: typeof OrgSettingsRouteRoute
     }
     '/_org/products/new': {
@@ -771,6 +810,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface OrgSettingsRouteRouteChildren {
+  OrgSettingsChannelsRoute: typeof OrgSettingsChannelsRoute
   OrgSettingsGeneralRoute: typeof OrgSettingsGeneralRoute
   OrgSettingsInvoicingRoute: typeof OrgSettingsInvoicingRoute
   OrgSettingsMembersRoute: typeof OrgSettingsMembersRoute
@@ -781,6 +821,7 @@ interface OrgSettingsRouteRouteChildren {
 }
 
 const OrgSettingsRouteRouteChildren: OrgSettingsRouteRouteChildren = {
+  OrgSettingsChannelsRoute: OrgSettingsChannelsRoute,
   OrgSettingsGeneralRoute: OrgSettingsGeneralRoute,
   OrgSettingsInvoicingRoute: OrgSettingsInvoicingRoute,
   OrgSettingsMembersRoute: OrgSettingsMembersRoute,
@@ -854,6 +895,7 @@ const rootRouteChildren: RootRouteChildren = {
   InviteAcceptRoute: InviteAcceptRoute,
   OrderTokenRoute: OrderTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiWebhooksTelegramRoute: ApiWebhooksTelegramRoute,
   ApiDocumentsInvoicesIdPdfRoute: ApiDocumentsInvoicesIdPdfRoute,
   ApiDocumentsInvoicesTokenTokenRoute: ApiDocumentsInvoicesTokenTokenRoute,
   ApiDocumentsOrdersIdQuotationRoute: ApiDocumentsOrdersIdQuotationRoute,
