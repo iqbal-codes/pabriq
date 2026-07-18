@@ -403,10 +403,7 @@ describe('Telegram webhook', () => {
   })
 
   it('skips processing when update_id was already processed', async () => {
-    queryQueues.push(
-      [connectedChannel],
-      [{ id: 'existing' }],
-    )
+    queryQueues.push([connectedChannel], [{ id: 'existing' }])
 
     const response = await post(telegramMessage('/start'))
     expect(response.status).toBe(200)

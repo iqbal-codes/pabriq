@@ -81,7 +81,7 @@ export const useAppForm: typeof useAppFormBase = (options) => {
   // Overwrite form.AppField with our wrapper that injects schema-based validation
   const formMutable = form as unknown as { AppField: unknown }
   formMutable.AppField = useMemo(() => {
-    const OriginalAppField = originalAppFieldRef.current!
+    const OriginalAppField = originalAppFieldRef.current as typeof form.AppField
     return function AppFieldWrapper(
       props: Parameters<typeof OriginalAppField>[0],
     ) {
