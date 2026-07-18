@@ -11,10 +11,10 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '#/components/ui/sidebar'
+import { FloatingAssistant } from '#/features/assistant/components/floating-assistant'
 import { NotificationBell } from '#/features/notifications/components/notification-bell'
 import type { Role } from '#/features/permissions/model'
 import { globalOverlaySearchSchema } from '#/hooks/use-global-overlay'
-import { FloatingAssistant } from '#/features/assistant/components/floating-assistant'
 import { resolveOrgContext } from '#/lib/auth-session'
 
 export const Route = createFileRoute('/_org')({
