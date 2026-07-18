@@ -14,7 +14,6 @@ import {
   downloadTelegramFile,
   sendTelegramMessage as sendTelegramMessageUnsafe,
 } from '#/lib/telegram'
-import { mastra } from '#/mastra'
 import { messages } from '#/messages'
 
 // ── Telegram Bot API types ────────────────────────────────────────
@@ -82,6 +81,23 @@ async function replyToTelegram(input: {
     console.error('[telegram] failed to send reply:', error)
   }
 }
+async function recordProcessedUpdate(
+  channel: typeof connectedChannels.$inferSelect,
+  updateIdKey: string | null,
+): Promise<void> {
+  if (!updateIdKey) return
+  try {
+    await db.insert(telegramProcessedUpdates).values({
+      id: randomUUID(),
+      orgId: channel.orgId,
+      connectedChannelId: channel.id,
+      updateId: updateIdKey,
+    })
+  } catch (err) {
+    if (isUniqueViolation(err)) return
+    console.error('[telegram] failed to record processed update:', err)
+  }
+}
 
 // ── Core handler (exported for test seam) ─────────────────────────
 
@@ -128,25 +144,21 @@ export async function handleTelegramWebhook(
     return Response.json({ ok: true })
   }
 
-  // Idempotency: record update_id scoped to this channel.
-  // PostgreSQL unique (connectedChannelId, updateId) rejects duplicates.
+  // Idempotency: skip if already processed
   const updateIdKey =
     update.update_id === undefined ? null : String(update.update_id)
   if (updateIdKey) {
-    try {
-      await db.insert(telegramProcessedUpdates).values({
-        id: randomUUID(),
-        orgId: channel.orgId,
-        connectedChannelId: channel.id,
-        updateId: updateIdKey,
-      })
-    } catch (err) {
-      if (isUniqueViolation(err)) {
-        return Response.json({ ok: true })
-      }
-      console.error('[telegram] failed to record processed update:', err)
-      // Fall through — better one duplicate than lost work
-    }
+    const [existing] = await db
+      .select({ id: telegramProcessedUpdates.id })
+      .from(telegramProcessedUpdates)
+      .where(
+        and(
+          eq(telegramProcessedUpdates.connectedChannelId, channel.id),
+          eq(telegramProcessedUpdates.updateId, updateIdKey),
+        ),
+      )
+      .limit(1)
+    if (existing) return Response.json({ ok: true })
   }
 
   // Filter: only private-chat messages from non-bots
@@ -280,6 +292,7 @@ export async function handleTelegramWebhook(
         text: replyText(locale, 'welcome'),
       })
     }
+    await recordProcessedUpdate(channel, updateIdKey)
     return Response.json({ ok: true })
   }
 
@@ -291,6 +304,7 @@ export async function handleTelegramWebhook(
       chatId,
       text: replyText(locale, 'startRequired'),
     })
+    await recordProcessedUpdate(channel, updateIdKey)
     return Response.json({ ok: true })
   }
   if (access.status === 'pending') {
@@ -299,6 +313,7 @@ export async function handleTelegramWebhook(
       chatId,
       text: replyText(locale, 'stillPending'),
     })
+    await recordProcessedUpdate(channel, updateIdKey)
     return Response.json({ ok: true })
   }
   if (access.status === 'revoked') {
@@ -307,6 +322,7 @@ export async function handleTelegramWebhook(
       chatId,
       text: replyText(locale, 'revoked'),
     })
+    await recordProcessedUpdate(channel, updateIdKey)
     return Response.json({ ok: true })
   }
   if (access.startedConnectionVersion !== channel.connectionVersion) {
@@ -315,6 +331,7 @@ export async function handleTelegramWebhook(
       chatId,
       text: replyText(locale, 'replaced'),
     })
+    await recordProcessedUpdate(channel, updateIdKey)
     return Response.json({ ok: true })
   }
 
@@ -342,6 +359,7 @@ export async function handleTelegramWebhook(
         chatId,
         text: replyText(locale, 'photoDownloadFailed'),
       })
+      await recordProcessedUpdate(channel, updateIdKey)
       return Response.json({ ok: true })
     }
   }
@@ -356,6 +374,7 @@ export async function handleTelegramWebhook(
   requestContext.set('userId', `telegram:${identity.id}`)
   requestContext.set('role', 'admin')
 
+  const { mastra } = await import('#/mastra')
   const agent = mastra.getAgentById('business-assistant')
   const memoryScope = `telegram:${channel.id}:${identity.id}`
 
@@ -394,6 +413,7 @@ export async function handleTelegramWebhook(
       text: replyText(locale, 'processingFailed'),
     })
   }
+  await recordProcessedUpdate(channel, updateIdKey)
 
   return Response.json({ ok: true })
 }

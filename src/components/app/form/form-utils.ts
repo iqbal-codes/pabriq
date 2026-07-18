@@ -66,7 +66,17 @@ function getDef(
 function unwrap(s: unknown): unknown {
   if (!s) return s
   let current: unknown = s
+  const maxIterations = 100
+  let iterations = 0
+  const seen = new Set<unknown>()
+
   while (current) {
+    // Safety guards: prevent infinite loops from circular references
+    iterations++
+    if (iterations > maxIterations) break
+    if (seen.has(current)) break
+    seen.add(current)
+
     const def = getDef(current)
     if (!def) break
     const typeName = def.type || def.typeName

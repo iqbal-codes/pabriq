@@ -189,13 +189,13 @@ describe('Telegram webhook', () => {
 
   it('creates a pending access on /start from new identity', async () => {
     // channel lookup, identity lookup (empty), access lookup (empty)
-    queryQueues.push([connectedChannel], [], [])
+    queryQueues.push([connectedChannel], [], [], [])
     const response = await post(telegramMessage('/start'))
     expect(response.status).toBe(200)
 
-    // Insert: processed update, identity, access
+    // Insert: identity, access, record
     expect(mockInsert).toHaveBeenCalledTimes(3)
-    const accessValues = mockInsert.mock.results[2]?.value
+    const accessValues = mockInsert.mock.results[1]?.value
     expect(accessValues).toBeDefined()
     expect(accessValues.values).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -216,6 +216,7 @@ describe('Telegram webhook', () => {
   it('replies "still pending" on /start when access is already pending', async () => {
     queryQueues.push(
       [connectedChannel],
+      [],
       [identity],
       [{ id: 'access-1', status: 'pending' }],
     )
@@ -234,6 +235,7 @@ describe('Telegram webhook', () => {
   it('replies "revoked" on /start when access is revoked', async () => {
     queryQueues.push(
       [connectedChannel],
+      [],
       [identity],
       [{ id: 'access-1', status: 'revoked' }],
     )
@@ -251,6 +253,7 @@ describe('Telegram webhook', () => {
   it('refreshes connection version stamp on /start from approved identity', async () => {
     queryQueues.push(
       [connectedChannel],
+      [],
       [identity],
       [{ id: 'access-1', status: 'approved', startedConnectionVersion: 2 }],
     )
@@ -266,7 +269,7 @@ describe('Telegram webhook', () => {
   })
 
   it('blocks non-start message when no access exists', async () => {
-    queryQueues.push([connectedChannel], [identity], [])
+    queryQueues.push([connectedChannel], [], [identity], [])
     const response = await post(telegramMessage('Hello'))
     expect(response.status).toBe(200)
     expect(mockGenerate).not.toHaveBeenCalled()
@@ -282,6 +285,7 @@ describe('Telegram webhook', () => {
   it('blocks pending identity from sending messages', async () => {
     queryQueues.push(
       [connectedChannel],
+      [],
       [identity],
       [{ id: 'access-1', status: 'pending' }],
     )
@@ -293,6 +297,7 @@ describe('Telegram webhook', () => {
   it('blocks revoked identity from sending messages', async () => {
     queryQueues.push(
       [connectedChannel],
+      [],
       [identity],
       [{ id: 'access-1', status: 'revoked' }],
     )
@@ -304,6 +309,7 @@ describe('Telegram webhook', () => {
   it('blocks approved identity when connection version mismatched', async () => {
     queryQueues.push(
       [connectedChannel],
+      [],
       [identity],
       [{ id: 'access-1', status: 'approved', startedConnectionVersion: 1 }],
     )
@@ -322,6 +328,7 @@ describe('Telegram webhook', () => {
   it('routes approved text to the business-assistant agent', async () => {
     queryQueues.push(
       [connectedChannel],
+      [],
       [identity],
       [{ id: 'access-1', status: 'approved', startedConnectionVersion: 2 }],
     )
@@ -341,6 +348,7 @@ describe('Telegram webhook', () => {
   it('passes photo bytes as image context without persistence', async () => {
     queryQueues.push(
       [connectedChannel],
+      [],
       [identity],
       [{ id: 'access-1', status: 'approved', startedConnectionVersion: 2 }],
     )
@@ -379,6 +387,7 @@ describe('Telegram webhook', () => {
   it('replies localized error when agent throws', async () => {
     queryQueues.push(
       [connectedChannel],
+      [],
       [identity],
       [{ id: 'access-1', status: 'approved', startedConnectionVersion: 2 }],
     )
@@ -393,21 +402,18 @@ describe('Telegram webhook', () => {
     )
   })
 
-  it('returns 200 on idempotent duplicate update_id', async () => {
-    const uniqueViolation = Object.assign(new Error('dup'), {
-      code: '23505',
-    })
-    mockInsert.mockImplementationOnce(() => {
-      throw uniqueViolation
-    })
-    queryQueues.push([connectedChannel])
-
-    const response = await post(
-      telegramMessage('/start', { languageCode: 'en' }),
+  it('skips processing when update_id was already processed', async () => {
+    queryQueues.push(
+      [connectedChannel],
+      [{ id: 'existing' }],
     )
+
+    const response = await post(telegramMessage('/start'))
     expect(response.status).toBe(200)
-    // Short-circuits after idempotency conflict — no further DB lookups
-    expect(mockSelect).toHaveBeenCalledTimes(1)
+    // Short-circuits after idempotency check — no further processing
+    expect(mockSelect).toHaveBeenCalledTimes(2)
+    expect(mockInsert).not.toHaveBeenCalled()
+    expect(mockGenerate).not.toHaveBeenCalled()
   })
 
   it('ignores messages from group chats', async () => {
@@ -423,7 +429,7 @@ describe('Telegram webhook', () => {
     const response = await post(body)
     expect(response.status).toBe(200)
     // Only channel lookup happened — no identity or access queries
-    expect(mockSelect).toHaveBeenCalledTimes(1)
+    expect(mockSelect).toHaveBeenCalledTimes(2)
   })
 
   it('ignores bot messages', async () => {
@@ -438,6 +444,6 @@ describe('Telegram webhook', () => {
     }
     const response = await post(body)
     expect(response.status).toBe(200)
-    expect(mockSelect).toHaveBeenCalledTimes(1)
+    expect(mockSelect).toHaveBeenCalledTimes(2)
   })
 })
