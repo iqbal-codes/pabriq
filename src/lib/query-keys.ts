@@ -126,6 +126,12 @@ export const queryKeys = {
     timeline: (orderId: string) =>
       [...queryKeys.production.all, 'timeline', orderId] as const,
   },
+  channels: {
+    all: ['channels'] as const,
+    connection: () => [...queryKeys.channels.all, 'connection'] as const,
+    accesses: (status?: string) =>
+      [...queryKeys.channels.all, 'accesses', status ?? 'all'] as const,
+  },
   notifications: {
     all: ['notifications'] as const,
     list: (filters: { limit?: number }) =>
