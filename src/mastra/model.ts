@@ -106,6 +106,6 @@ export function getMastraModel(): string {
 export function getInjectionDetectorModel(): string {
   return (
     process.env.INJECTION_DETECTOR_MODEL ??
-    'openrouter/nvidia/nemotron-3.5-content-safety:free'
+    'openrouter/openai/gpt-oss-safeguard-20b:free'
   )
 }
