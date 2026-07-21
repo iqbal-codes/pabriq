@@ -73,6 +73,16 @@ export const Route = createFileRoute('/api/assistant/chat')({
             },
           },
           version: 'v6',
+          onError: (error) => {
+            const msg = String(error)
+            if (
+              msg.includes('prompt injection detected') ||
+              msg.includes('tripwire')
+            ) {
+              return 'Message blocked for security reasons. Please rephrase your request.'
+            }
+            return 'An error occurred. Please try again.'
+          },
         })
         return createUIMessageStreamResponse({ stream })
       },
