@@ -9,6 +9,7 @@ import type { PostgresStore } from '@mastra/pg'
 import {
   createMastraEmbedder,
   createMastraVector,
+  getInjectionDetectorModel,
   getMastraModel,
 } from '#/mastra/model'
 import {
@@ -209,7 +210,7 @@ export function createBusinessAssistantAgent(storage: PostgresStore): Agent {
     inputProcessors: [
       new PromptInjectionDetector({
         strategy: 'block',
-        model: 'openrouter/google/gemini-3.1-flash-lite',
+        model: getInjectionDetectorModel(),
         threshold: 0.8,
         detectionTypes: [
           'injection',

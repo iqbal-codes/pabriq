@@ -1,6 +1,7 @@
 import type { MastraDBMessage } from '@mastra/core/agent'
 import { PromptInjectionDetector } from '@mastra/core/processors'
 import { describe, expect, it, vi } from 'vitest'
+import { getInjectionDetectorModel } from '#/mastra/model'
 import {
   createBusinessAssistantAgent,
   roleAdherenceValidator,
@@ -199,7 +200,7 @@ describe('PromptInjectionDetector', () => {
   it('can be instantiated with the expected config', () => {
     const detector = new PromptInjectionDetector({
       strategy: 'block',
-      model: 'openrouter/google/gemini-3.1-flash-lite',
+      model: getInjectionDetectorModel(),
       threshold: 0.8,
       detectionTypes: [
         'injection',
