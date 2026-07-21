@@ -66,7 +66,7 @@ export type OrderDraftResolution = {
     quantity: number
     matchedProductIds: string[]
   }>
-  customer?: { id: string; name: string } | null
+  customer?: { id: string; name: string; phone: string | null } | null
   customerAmbiguous?: Array<{ id: string; name: string }>
   total: number
 }
@@ -80,12 +80,21 @@ export type AssistantChatMessageMetadata =
   | { kind: 'order_draft_cancelled'; actionId: string }
   | { kind: 'order_draft_error'; actionId: string; reason: string }
 
+export type AssistantStreamToolCall = {
+  toolCallId: string
+  toolName: string
+  status: 'running' | 'done' | 'error'
+  summary: string | null
+}
+
 export type AssistantChatMessage = {
   id: string
   role: 'user' | 'assistant'
   content: string
   createdAt: string
+  clientMessageId?: string | null
   metadata?: AssistantChatMessageMetadata
+  toolCalls?: AssistantStreamToolCall[]
 }
 
 export type AssistantMemoryScope = {
@@ -605,7 +614,7 @@ export async function resolveOrderDraft(params: {
     })
   }
 
-  let customer: { id: string; name: string } | null = null
+  let customer: { id: string; name: string; phone: string | null } | null = null
   let customerAmbiguous: Array<{ id: string; name: string }> | undefined
 
   if (params.customerHint?.trim()) {
@@ -619,6 +628,7 @@ export async function resolveOrderDraft(params: {
       customer = {
         id: customerResult.rows[0].id,
         name: customerResult.rows[0].name,
+        phone: customerResult.rows[0].phone ?? null,
       }
     } else if (customerResult.rows.length > 1) {
       customerAmbiguous = customerResult.rows.map((r) => ({
@@ -646,4 +656,115 @@ export async function resolveOrderDraft(params: {
 
   const total = lineItems.reduce((sum, li) => sum + li.total, 0)
   return { status: 'resolved', lineItems, customer, customerAmbiguous, total }
+}
+
+function generateId(): string {
+  return crypto.randomUUID()
+}
+
+export async function proposeOrderDraft(params: {
+  orgId: string
+  userId: string
+  candidates: Array<{ productHint: string; quantity: number }>
+  customerHint?: string | null
+}): Promise<OrderDraftResolution & { actionId?: string }> {
+  // First resolve the draft to validate products and pricing
+  const resolution = await resolveOrderDraft({
+    orgId: params.orgId,
+    candidates: params.candidates,
+    customerHint: params.customerHint,
+  })
+
+  if (resolution.status !== 'resolved') {
+    return resolution
+  }
+
+  const actionId = generateId()
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+
+  await db.insert(schema.assistantActions).values({
+    id: actionId,
+    orgId: params.orgId,
+    userId: params.userId,
+    threadId: `assistant:${params.orgId}:${params.userId}`,
+    kind: 'order_draft',
+    status: 'pending',
+    payload: {
+      lineItems: resolution.lineItems ?? [],
+      customerId: resolution.customer?.id ?? null,
+      customerName: resolution.customer?.name ?? null,
+      total: resolution.total,
+    },
+    expiresAt,
+  })
+
+  return { ...resolution, actionId }
+}
+
+export async function confirmOrderDraft(params: {
+  actionId: string
+  orgId: string
+  userId: string
+}): Promise<{
+  status: 'confirmed' | 'expired' | 'not_found'
+  orderId?: string
+  orderNumber?: string
+  portalUrl?: string
+  adminUrl?: string
+}> {
+  const [action] = await db
+    .select()
+    .from(schema.assistantActions)
+    .where(
+      and(
+        eq(schema.assistantActions.id, params.actionId),
+        eq(schema.assistantActions.orgId, params.orgId),
+        eq(schema.assistantActions.kind, 'order_draft'),
+      ),
+    )
+    .limit(1)
+
+  if (!action) {
+    return { status: 'not_found' }
+  }
+
+  if (action.status !== 'pending') {
+    return { status: 'not_found' }
+  }
+
+  if (action.expiresAt && new Date(action.expiresAt) < new Date()) {
+    return { status: 'expired' }
+  }
+
+  // Create the actual order from the draft payload
+  const payload =
+    typeof action.payload === 'string'
+      ? JSON.parse(action.payload)
+      : action.payload
+
+  const { createDraftOrderFromAction } = await import(
+    '#/features/assistant/create-draft-order'
+  )
+  const order = await createDraftOrderFromAction({
+    orgId: params.orgId,
+    userId: params.userId,
+    actionId: params.actionId,
+    lineItems: payload.lineItems,
+    customer: payload.customer,
+    total: payload.total,
+  })
+
+  // Mark action as used
+  await db
+    .update(schema.assistantActions)
+    .set({ status: 'used', updatedAt: new Date() })
+    .where(eq(schema.assistantActions.id, params.actionId))
+
+  return {
+    status: 'confirmed',
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    portalUrl: order.portalUrl,
+    adminUrl: order.adminUrl,
+  }
 }
