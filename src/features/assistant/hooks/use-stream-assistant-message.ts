@@ -136,6 +136,27 @@ export function useStreamAssistantMessage(_scope: AssistantChatScope) {
         let buffer = ''
         let pendingFinish = false
 
+        const completeTurn = (): void => {
+          if (pendingFinish) return
+          pendingFinish = true
+          const completed: AssistantStreamTurn = {
+            ...turn,
+            status: 'finished',
+            errorMessage: null,
+          }
+          pushTurn(completed)
+          callbacks.onComplete?.({
+            id: completed.assistantId,
+            role: 'assistant',
+            content: completed.text,
+            createdAt: new Date().toISOString(),
+            clientMessageId,
+            metadata: completed.metadata ?? undefined,
+            toolCalls: completed.toolCalls,
+          })
+          setIsStreaming(false)
+        }
+
         const handleEvent = (event: StreamEvent): void => {
           switch (event.type) {
             case 'ready': {
@@ -203,12 +224,7 @@ export function useStreamAssistantMessage(_scope: AssistantChatScope) {
               break
             }
             case 'finish': {
-              pushTurn({
-                ...turn,
-                status: 'finished',
-                errorMessage: null,
-              })
-              pendingFinish = true
+              completeTurn()
               break
             }
             case 'error': {
@@ -219,6 +235,7 @@ export function useStreamAssistantMessage(_scope: AssistantChatScope) {
               })
               callbacks.onError?.(turn.assistantId, event.message)
               pendingFinish = true
+              setIsStreaming(false)
               break
             }
           }
@@ -255,20 +272,7 @@ export function useStreamAssistantMessage(_scope: AssistantChatScope) {
 
         await pump()
 
-        if (!pendingFinish) {
-          pushTurn({ ...turn, status: 'finished', errorMessage: null })
-        }
-
-        const assistantMessage: AssistantChatMessage = {
-          id: turn.assistantId,
-          role: 'assistant',
-          content: turn.text,
-          createdAt: new Date().toISOString(),
-          clientMessageId,
-          metadata: turn.metadata ?? undefined,
-          toolCalls: turn.toolCalls,
-        }
-        callbacks.onComplete?.(assistantMessage)
+        if (!pendingFinish) completeTurn()
       } catch (err: unknown) {
         if (controller.signal.aborted) {
           return
