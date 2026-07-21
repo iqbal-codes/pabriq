@@ -192,7 +192,7 @@ describe.sequential('customer-tools', () => {
       const [found] = await db
         .select()
         .from(customers)
-        .where(eq(customers.id, result.id!))
+        .where(eq(customers.id, result.id as string))
 
       expect(found).toBeDefined()
       expect(found.address).toBeNull()

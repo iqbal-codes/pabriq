@@ -1235,8 +1235,10 @@ export async function updateAssistantDraftOrder(params: {
       // but computeLineItemPricing adds surcharges on top of manualUnitPrice, so strip
       // them first to avoid double-counting.
       lineItems = existing.lineItems.map((li) => {
-        const addonSurcharge = (li.selectedAddons ?? [])
-          .reduce((sum, a) => sum + (a.unitSurcharge ?? 0), 0)
+        const addonSurcharge = (li.selectedAddons ?? []).reduce(
+          (sum, a) => sum + (a.unitSurcharge ?? 0),
+          0,
+        )
         return {
           id: li.id,
           productId: li.productId,
