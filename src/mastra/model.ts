@@ -1,5 +1,5 @@
-import { PgVector, PostgresStore } from '@mastra/pg'
 import { ModelRouterEmbeddingModel } from '@mastra/core/llm'
+import { PgVector, PostgresStore } from '@mastra/pg'
 import { sql } from 'drizzle-orm'
 import { db } from '#/db/index'
 

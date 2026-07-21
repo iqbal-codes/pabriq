@@ -5,9 +5,9 @@ import { createMastraStore, ensureMastraSchemaSeparation } from '#/mastra/model'
 import {
   businessOverviewTool,
   businessSearchTool,
-  resolveOrderDraftTool,
-  proposeOrderDraftTool,
   confirmOrderDraftTool,
+  proposeOrderDraftTool,
+  resolveOrderDraftTool,
 } from '#/mastra/tools/business-tools'
 
 const mastraStorage = createMastraStore()
