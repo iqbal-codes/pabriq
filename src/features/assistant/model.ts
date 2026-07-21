@@ -1231,21 +1231,27 @@ export async function updateAssistantDraftOrder(params: {
         manualDeadline: li.manualDeadline,
       }))
     } else {
-      // Preserve existing line items with their current unit prices
-      lineItems = existing.lineItems.map((li) => ({
-        id: li.id,
-        productId: li.productId,
-        quantity: li.quantity,
-        unitPrice: li.unitPrice,
-        designName: li.designName ?? undefined,
-        notes: li.notes ?? undefined,
-        addonIds: li.selectedAddons
-          ?.map((a) => a.productAddonId)
-          .filter((id): id is string => id !== null),
-        isRepeatOrder: li.isRepeatOrder,
-        deadline: li.deadline,
-        manualDeadline: li.manualDeadline,
-      }))
+      // Preserve existing line items. The stored unitPrice includes addon surcharges,
+      // but computeLineItemPricing adds surcharges on top of manualUnitPrice, so strip
+      // them first to avoid double-counting.
+      lineItems = existing.lineItems.map((li) => {
+        const addonSurcharge = (li.selectedAddons ?? [])
+          .reduce((sum, a) => sum + (a.unitSurcharge ?? 0), 0)
+        return {
+          id: li.id,
+          productId: li.productId,
+          quantity: li.quantity,
+          unitPrice: li.unitPrice - addonSurcharge,
+          designName: li.designName ?? undefined,
+          notes: li.notes ?? undefined,
+          addonIds: li.selectedAddons
+            ?.map((a) => a.productAddonId)
+            .filter((id): id is string => id !== null),
+          isRepeatOrder: li.isRepeatOrder,
+          deadline: li.deadline,
+          manualDeadline: li.manualDeadline,
+        }
+      })
     }
 
     const result = await updateDraftOrder(params.orderId, params.orgId, {
