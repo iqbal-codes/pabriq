@@ -774,7 +774,7 @@ describe('proposeOrderDraft', () => {
     expect(result.actionId).toBeDefined()
     expect(result.total).toBe(100)
     expect(result.lineItems).toHaveLength(1)
-    expect(result.lineItems![0]).toMatchObject({
+    expect(result.lineItems?.[0]).toMatchObject({
       productId: 'prod-1',
       productName: 'Widget A',
       quantity: 10,
