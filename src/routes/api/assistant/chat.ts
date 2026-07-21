@@ -3,6 +3,7 @@ import { RequestContext } from '@mastra/core/request-context'
 import { createFileRoute } from '@tanstack/react-router'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { createUIMessageStreamResponse } from 'ai'
+import { canUseAssistant } from '#/features/permissions/model'
 import { auth } from '#/lib/auth'
 import { resolveOrgAndRole } from '#/lib/auth-session-server'
 import { mastra } from '#/mastra'
@@ -10,11 +11,10 @@ import { mastra } from '#/mastra'
 async function resolveAssistantRole(): Promise<{
   userId: string
   orgId: string
-  role: 'owner' | 'admin' | 'member'
+  role: 'owner' | 'admin'
 }> {
   const { orgId, role } = await resolveOrgAndRole()
-  const validRoles = ['owner', 'admin', 'member']
-  if (!validRoles.includes(role)) {
+  if (!canUseAssistant(role as never)) {
     throw new Error('Not authorized')
   }
   const headers = getRequestHeaders()
@@ -23,7 +23,7 @@ async function resolveAssistantRole(): Promise<{
   return {
     userId: session.user.id,
     orgId,
-    role: role as 'owner' | 'admin' | 'member',
+    role: role as 'owner' | 'admin',
   }
 }
 
@@ -34,7 +34,7 @@ export const Route = createFileRoute('/api/assistant/chat')({
         let authContext: {
           userId: string
           orgId: string
-          role: 'owner' | 'admin' | 'member'
+          role: 'owner' | 'admin'
         }
         try {
           authContext = await resolveAssistantRole()
@@ -52,7 +52,7 @@ export const Route = createFileRoute('/api/assistant/chat')({
         const requestContext = new RequestContext<{
           orgId: string
           userId: string
-          role: 'owner' | 'admin' | 'member'
+          role: 'owner' | 'admin'
         }>()
         requestContext.set('orgId', authContext.orgId)
         requestContext.set('userId', authContext.userId)

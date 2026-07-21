@@ -4,10 +4,10 @@ import {
   type AssistantDomain,
   type AssistantToolContext,
   assistantDomains,
-  getAssistantBusinessOverview,
-  resolveOrderDraft,
-  proposeOrderDraft,
   confirmOrderDraft,
+  getAssistantBusinessOverview,
+  proposeOrderDraft,
+  resolveOrderDraft,
   searchAssistantBusinessRecords,
 } from '#/features/assistant/model'
 
@@ -28,7 +28,7 @@ function readAssistantToolContext(context: unknown): AssistantToolContext {
   if (
     typeof orgId !== 'string' ||
     typeof userId !== 'string' ||
-    (role !== 'owner' && role !== 'admin' && role !== 'member')
+    (role !== 'owner' && role !== 'admin')
   ) {
     throw new Error('Assistant request context is missing')
   }
@@ -130,7 +130,11 @@ export const resolveOrderDraftTool = createTool({
       )
       .optional(),
     customer: z
-      .object({ id: z.string(), name: z.string(), phone: z.string().nullable() })
+      .object({
+        id: z.string(),
+        name: z.string(),
+        phone: z.string().nullable(),
+      })
       .nullable()
       .optional(),
     customerAmbiguous: z
@@ -188,7 +192,11 @@ export const proposeOrderDraftTool = createTool({
       )
       .optional(),
     customer: z
-      .object({ id: z.string(), name: z.string(), phone: z.string().nullable() })
+      .object({
+        id: z.string(),
+        name: z.string(),
+        phone: z.string().nullable(),
+      })
       .nullable()
       .optional(),
     total: z.number(),

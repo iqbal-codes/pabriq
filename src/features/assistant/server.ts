@@ -9,6 +9,7 @@ import {
   buildAssistantMemoryScope,
   normalizeMastraMemoryMessages,
 } from '#/features/assistant/model'
+import { canUseAssistant } from '#/features/permissions/model'
 import { resolveOrgAndRole } from '#/lib/auth-session-server'
 
 async function resolveAssistantAuthContext(): Promise<{
@@ -23,8 +24,7 @@ async function resolveAssistantAuthContext(): Promise<{
 
   const { orgId, role } = await resolveOrgAndRole()
 
-  const validRoles: readonly string[] = ['owner', 'admin', 'member']
-  if (!validRoles.includes(role)) {
+  if (!canUseAssistant(role as never)) {
     throw new Error('Not authorized')
   }
 

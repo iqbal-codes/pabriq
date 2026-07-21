@@ -11,6 +11,7 @@ import {
   canManageProducts,
   canManageSettings,
   canManageStages,
+  canUseAssistant,
   canViewProduction,
   type Role,
 } from './model'
@@ -92,5 +93,10 @@ describe('canManageSettings', () => {
 describe('canAdjustConfirmedOrder', () => {
   it('allows owner and admin', () => {
     expectPermissions(canAdjustConfirmedOrder, ['owner', 'admin'])
+  })
+})
+describe('canUseAssistant', () => {
+  it('allows owner and admin only', () => {
+    expectPermissions(canUseAssistant, ['owner', 'admin'])
   })
 })

@@ -18,7 +18,7 @@ export const assistantDomains = [
 
 export type AssistantDomain = (typeof assistantDomains)[number]
 
-export type AssistantRole = 'owner' | 'admin' | 'member'
+export type AssistantRole = 'owner' | 'admin'
 
 export type AssistantToolContext = {
   orgId: string
@@ -103,13 +103,9 @@ export type AssistantMemoryScope = {
 }
 
 export function getAssistantAllowedDomains(
-  role: AssistantRole,
+  _role: AssistantRole,
 ): readonly AssistantDomain[] {
-  if (role === 'owner' || role === 'admin') {
-    return assistantDomains
-  }
-  // member can only access production
-  return ['production'] as const
+  return assistantDomains
 }
 
 export function buildAssistantMemoryScope(

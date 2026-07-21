@@ -262,11 +262,6 @@ describe('getAssistantAllowedDomains', () => {
       'production',
     ])
   })
-
-  it('returns only production for member', () => {
-    const domains = getAssistantAllowedDomains('member')
-    expect(domains).toEqual(['production'])
-  })
 })
 
 describe('searchAssistantBusinessRecords', () => {
@@ -311,34 +306,6 @@ describe('searchAssistantBusinessRecords', () => {
     expect(result.records[0].title).toBe('ORD-001')
     expect(result.records[0].domain).toBe('orders')
   })
-
-  it('restricts member to production only', async () => {
-    const result = await searchAssistantBusinessRecords({
-      context: { orgId: org1Id, userId: user2Id, role: 'member' },
-      query: 'Acme',
-      domains: ['customers', 'production'],
-      limit: 5,
-    })
-
-    expect(result.omittedDomains).toContain('customers')
-    // Production search may or may not find results, but customers must be omitted
-    const customerRecords = result.records.filter(
-      (r) => r.domain === 'customers',
-    )
-    expect(customerRecords).toHaveLength(0)
-  })
-
-  it('returns empty records when all requested domains are omitted', async () => {
-    const result = await searchAssistantBusinessRecords({
-      context: { orgId: org1Id, userId: user2Id, role: 'member' },
-      query: 'test',
-      domains: ['customers', 'orders', 'invoices'],
-      limit: 5,
-    })
-
-    expect(result.records).toEqual([])
-    expect(result.omittedDomains).toEqual(['customers', 'orders', 'invoices'])
-  })
 })
 
 describe('getAssistantBusinessOverview', () => {
@@ -355,26 +322,6 @@ describe('getAssistantBusinessOverview', () => {
     expect(overview.unpaidInvoices).toBe(1) // INV-001
     expect(overview.activeProductionTasks).toBe(1) // task-1
     expect(overview.omittedDomains).toEqual([])
-  })
-
-  it('returns null for restricted domains for member', async () => {
-    const overview = await getAssistantBusinessOverview({
-      orgId: org1Id,
-      userId: user2Id,
-      role: 'member',
-    })
-
-    expect(overview.customers).toBeNull()
-    expect(overview.activeProducts).toBeNull()
-    expect(overview.openOrders).toBeNull()
-    expect(overview.unpaidInvoices).toBeNull()
-    expect(overview.activeProductionTasks).toBe(1)
-    expect(overview.omittedDomains).toEqual([
-      'customers',
-      'products',
-      'orders',
-      'invoices',
-    ])
   })
 
   it('counts only org-scoped data', async () => {
