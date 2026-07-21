@@ -105,7 +105,6 @@ export function getMastraModel(): string {
 
 export function getInjectionDetectorModel(): string {
   return (
-    process.env.INJECTION_DETECTOR_MODEL ??
-    'openrouter/google/gemini-2.0-flash'
+    process.env.INJECTION_DETECTOR_MODEL ?? 'openrouter/google/gemini-2.0-flash'
   )
 }
