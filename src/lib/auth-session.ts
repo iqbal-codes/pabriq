@@ -45,8 +45,13 @@ export const getCurrentSession = createServerFn({ method: 'GET' }).handler(
       import('@tanstack/react-start/server'),
       import('#/lib/auth'),
     ])
+    const rawHeaders = getRequestHeaders()
+    const headers = new Headers()
+    for (const [key, value] of rawHeaders.entries()) {
+      headers.set(key, value)
+    }
     return auth.api.getSession({
-      headers: getRequestHeaders(),
+      headers,
     })
   },
 )
