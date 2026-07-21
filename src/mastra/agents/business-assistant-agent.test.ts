@@ -199,7 +199,7 @@ describe('PromptInjectionDetector', () => {
   it('can be instantiated with the expected config', () => {
     const detector = new PromptInjectionDetector({
       strategy: 'block',
-      model: 'openrouter/openai/gpt-4o-mini',
+      model: 'openrouter/google/gemini-3.1-flash-lite',
       threshold: 0.8,
       detectionTypes: [
         'injection',

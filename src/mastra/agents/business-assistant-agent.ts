@@ -209,7 +209,7 @@ export function createBusinessAssistantAgent(storage: PostgresStore): Agent {
     inputProcessors: [
       new PromptInjectionDetector({
         strategy: 'block',
-        model: 'openrouter/openai/gpt-4o-mini',
+        model: 'openrouter/google/gemini-3.1-flash-lite',
         threshold: 0.8,
         detectionTypes: [
           'injection',
