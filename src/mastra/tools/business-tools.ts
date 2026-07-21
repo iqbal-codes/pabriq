@@ -6,6 +6,8 @@ import {
   assistantDomains,
   getAssistantBusinessOverview,
   resolveOrderDraft,
+  proposeOrderDraft,
+  confirmOrderDraft,
   searchAssistantBusinessRecords,
 } from '#/features/assistant/model'
 
@@ -128,7 +130,7 @@ export const resolveOrderDraftTool = createTool({
       )
       .optional(),
     customer: z
-      .object({ id: z.string(), name: z.string() })
+      .object({ id: z.string(), name: z.string(), phone: z.string().nullable() })
       .nullable()
       .optional(),
     customerAmbiguous: z
@@ -142,6 +144,86 @@ export const resolveOrderDraftTool = createTool({
       orgId: toolContext.orgId,
       candidates: inputData.candidates,
       customerHint: inputData.customerHint ?? null,
+    })
+  },
+})
+
+export const proposeOrderDraftTool = createTool({
+  id: 'propose-order-draft',
+  description:
+    'Resolve free-form product hints into priced line items and persist a pending order proposal. Returns the resolved proposal summary or lists issues.',
+  inputSchema: z.object({
+    candidates: z
+      .array(
+        z.object({
+          productHint: z.string().trim().min(1),
+          quantity: z.number().int().positive(),
+        }),
+      )
+      .min(1),
+    customerHint: z.string().trim().min(1).nullable().optional(),
+  }),
+  outputSchema: z.object({
+    status: z.enum(['resolved', 'ambiguous', 'invalid']),
+    actionId: z.string().optional(),
+    lineItems: z
+      .array(
+        z.object({
+          productId: z.string(),
+          productName: z.string(),
+          quantity: z.number(),
+          unitPrice: z.number(),
+          total: z.number(),
+          minQuantity: z.number(),
+        }),
+      )
+      .optional(),
+    missing: z
+      .array(
+        z.object({
+          productHint: z.string(),
+          quantity: z.number(),
+          matchedProductIds: z.array(z.string()),
+        }),
+      )
+      .optional(),
+    customer: z
+      .object({ id: z.string(), name: z.string(), phone: z.string().nullable() })
+      .nullable()
+      .optional(),
+    total: z.number(),
+  }),
+  execute: async (inputData, context) => {
+    const toolContext = readAssistantToolContext(context)
+    return proposeOrderDraft({
+      orgId: toolContext.orgId,
+      userId: toolContext.userId,
+      candidates: inputData.candidates,
+      customerHint: inputData.customerHint ?? null,
+    })
+  },
+})
+
+export const confirmOrderDraftTool = createTool({
+  id: 'confirm-order-draft',
+  description:
+    'Confirm a previously proposed order draft and create the actual order. Returns URLs for the created order.',
+  inputSchema: z.object({
+    actionId: z.string().trim().min(1),
+  }),
+  outputSchema: z.object({
+    status: z.enum(['confirmed', 'expired', 'not_found']),
+    orderId: z.string().optional(),
+    orderNumber: z.string().optional(),
+    portalUrl: z.string().optional(),
+    adminUrl: z.string().optional(),
+  }),
+  execute: async (inputData, context) => {
+    const toolContext = readAssistantToolContext(context)
+    return confirmOrderDraft({
+      actionId: inputData.actionId,
+      orgId: toolContext.orgId,
+      userId: toolContext.userId,
     })
   },
 })
