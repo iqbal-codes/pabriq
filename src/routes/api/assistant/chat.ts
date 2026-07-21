@@ -58,32 +58,73 @@ export const Route = createFileRoute('/api/assistant/chat')({
         requestContext.set('userId', authContext.userId)
         requestContext.set('role', authContext.role)
 
-        const stream = await handleChatStream({
-          mastra,
-          agentId: 'business-assistant',
-          params: {
-            ...params,
-            threadId,
-            resourceId,
-            requestContext,
-            memory: {
-              ...params.memory,
-              thread: threadId,
-              resource: resourceId,
+        let stream
+        try {
+          stream = await handleChatStream({
+            mastra,
+            agentId: 'business-assistant',
+            params: {
+              ...params,
+              threadId,
+              resourceId,
+              requestContext,
+              memory: {
+                ...params.memory,
+                thread: threadId,
+                resource: resourceId,
+              },
             },
-          },
-          version: 'v6',
-          onError: (error) => {
-            const msg = String(error)
-            if (
-              msg.includes('prompt injection detected') ||
-              msg.includes('tripwire')
-            ) {
-              return 'Message blocked for security reasons. Please rephrase your request.'
-            }
-            return 'An error occurred. Please try again.'
-          },
-        })
+            version: 'v6',
+          })
+        } catch (err: unknown) {
+          const message =
+            err instanceof Error ? err.message : 'Unknown error'
+          const isTripwire =
+            message.includes('prompt injection detected') ||
+            message.includes('tripwire')
+          const text = isTripwire
+            ? 'Message blocked for security reasons. Please rephrase your request.'
+            : 'An error occurred. Please try again.'
+          const encoder = new TextEncoder()
+          stream = new ReadableStream({
+            start(controller) {
+              const sse = (data: string) =>
+                encoder.encode(`data: ${data}\n\n`)
+              controller.enqueue(
+                sse(JSON.stringify({ type: 'start', messageId: 'blocked' })),
+              )
+              controller.enqueue(
+                sse(
+                  JSON.stringify({
+                    type: 'text-start',
+                    id: 'text-blocked',
+                  }),
+                ),
+              )
+              controller.enqueue(
+                sse(
+                  JSON.stringify({
+                    type: 'text-delta',
+                    id: 'text-blocked',
+                    delta: text,
+                  }),
+                ),
+              )
+              controller.enqueue(
+                sse(
+                  JSON.stringify({
+                    type: 'text-end',
+                    id: 'text-blocked',
+                  }),
+                ),
+              )
+              controller.enqueue(
+                sse(JSON.stringify({ type: 'finish', finishReason: 'stop' })),
+              )
+              controller.close()
+            },
+          })
+        }
         return createUIMessageStreamResponse({ stream })
       },
     },
