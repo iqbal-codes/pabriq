@@ -1,4 +1,5 @@
-import { PostgresStore } from '@mastra/pg'
+import { PgVector, PostgresStore } from '@mastra/pg'
+import { ModelRouterEmbeddingModel } from '@mastra/core/llm'
 import { sql } from 'drizzle-orm'
 import { db } from '#/db/index'
 
@@ -62,6 +63,21 @@ export async function ensureMastraSchemaSeparation(): Promise<void> {
   }
 }
 
+export function createMastraVector(): PgVector {
+  return new PgVector({
+    id: 'pabriq-mastra-vector',
+    connectionString: getDatabaseUrl(),
+    schemaName: MASTRA_SCHEMA_NAME,
+  })
+}
+
+export function createMastraEmbedder() {
+  return new ModelRouterEmbeddingModel({
+    providerId: 'google',
+    modelId: 'gemini-embedding-2',
+  })
+}
+
 export function createMastraStore(): PostgresStore {
   return new PostgresStore({
     id: 'pabriq-mastra-storage',
@@ -70,10 +86,19 @@ export function createMastraStore(): PostgresStore {
   })
 }
 
+const SUPPORTED_MODEL_PREFIXES = ['openrouter/'] as const
+
 export function getMastraModel(): string {
   const model = process.env.MASTRA_MODEL
   if (!model?.includes('/')) {
-    throw new Error('MASTRA_MODEL must be set using provider/model-name format')
+    throw new Error(
+      'MASTRA_MODEL must be set using provider/model-name format (e.g. openrouter/openai/gpt-4o)',
+    )
+  }
+  if (!SUPPORTED_MODEL_PREFIXES.some((prefix) => model.startsWith(prefix))) {
+    throw new Error(
+      `MASTRA_MODEL must start with one of: ${SUPPORTED_MODEL_PREFIXES.join(', ')} (got "${model}")`,
+    )
   }
   return model
 }
