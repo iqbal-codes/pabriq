@@ -106,6 +106,6 @@ export function getMastraModel(): string {
 export function getInjectionDetectorModel(): string {
   return (
     process.env.INJECTION_DETECTOR_MODEL ??
-    'openrouter/openai/gpt-oss-safeguard-20b:free'
+    'openrouter/google/gemini-2.0-flash'
   )
 }
