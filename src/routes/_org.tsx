@@ -11,7 +11,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '#/components/ui/sidebar'
-import { FloatingAssistant } from '#/features/assistant/components/floating-assistant'
+import { FloatingAssistantV2 } from '#/features/assistant/components/floating-assistant-v2'
 import { NotificationBell } from '#/features/notifications/components/notification-bell'
 import type { Role } from '#/features/permissions/model'
 import { globalOverlaySearchSchema } from '#/hooks/use-global-overlay'
@@ -129,7 +129,7 @@ function AdminLayout({
         </header>
         <div className="relative flex-1 min-w-0 overflow-x-auto">
           <Outlet />
-          <FloatingAssistant orgId={org.id} userId={session.user.id} />
+          <FloatingAssistantV2 orgId={org.id} userId={session.user.id} />
           <GlobalModalContainer />
           <RoutePendingOverlay />
         </div>

@@ -1,9 +1,10 @@
 import { and, asc, eq, inArray, isNull, like, or, sql } from 'drizzle-orm'
 import { db } from '#/db/index'
+import type { AssistantActionPayload } from '#/db/schema'
 import * as schema from '#/db/schema'
 import { listCustomers } from '#/features/customers/model'
 import { listInvoices } from '#/features/invoices/model'
-import { listOrders } from '#/features/orders/model'
+import { createDraftOrderFromAction, listOrders } from '#/features/orders/model'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
 import { listBoardTasks } from '#/features/production/model'
 import { listProducts } from '#/features/products/model'
@@ -18,7 +19,7 @@ export const assistantDomains = [
 
 export type AssistantDomain = (typeof assistantDomains)[number]
 
-export type AssistantRole = 'owner' | 'admin' | 'member'
+export type AssistantRole = 'owner' | 'admin'
 
 export type AssistantToolContext = {
   orgId: string
@@ -66,7 +67,7 @@ export type OrderDraftResolution = {
     quantity: number
     matchedProductIds: string[]
   }>
-  customer?: { id: string; name: string } | null
+  customer?: { id: string; name: string; phone: string | null } | null
   customerAmbiguous?: Array<{ id: string; name: string }>
   total: number
 }
@@ -80,12 +81,21 @@ export type AssistantChatMessageMetadata =
   | { kind: 'order_draft_cancelled'; actionId: string }
   | { kind: 'order_draft_error'; actionId: string; reason: string }
 
+export type AssistantStreamToolCall = {
+  toolCallId: string
+  toolName: string
+  status: 'running' | 'done' | 'error'
+  summary: string | null
+}
+
 export type AssistantChatMessage = {
   id: string
   role: 'user' | 'assistant'
   content: string
   createdAt: string
+  clientMessageId?: string | null
   metadata?: AssistantChatMessageMetadata
+  toolCalls?: AssistantStreamToolCall[]
 }
 
 export type AssistantMemoryScope = {
@@ -94,13 +104,9 @@ export type AssistantMemoryScope = {
 }
 
 export function getAssistantAllowedDomains(
-  role: AssistantRole,
+  _role: AssistantRole,
 ): readonly AssistantDomain[] {
-  if (role === 'owner' || role === 'admin') {
-    return assistantDomains
-  }
-  // member can only access production
-  return ['production'] as const
+  return assistantDomains
 }
 
 export function buildAssistantMemoryScope(
@@ -135,7 +141,8 @@ export function normalizeMastraMemoryMessages(
       | undefined
 
     const text = extractTextContent(record.content)
-    if (!text && !metadata) continue
+    const toolCalls = extractToolCalls(record.content)
+    if (!text && !metadata && toolCalls.length === 0) continue
 
     result.push({
       id,
@@ -146,6 +153,7 @@ export function normalizeMastraMemoryMessages(
           ? createdAt.toISOString()
           : (createdAt ?? new Date().toISOString()),
       metadata,
+      toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     })
   }
 
@@ -155,29 +163,68 @@ export function normalizeMastraMemoryMessages(
   return result
 }
 
+function getContentParts(content: unknown): unknown[] {
+  if (Array.isArray(content)) return content
+  if (!content || typeof content !== 'object') return []
+  const parts = (content as Record<string, unknown>).parts
+  return Array.isArray(parts) ? parts : []
+}
+
 function extractTextContent(content: unknown): string | null {
   if (typeof content === 'string' && content.trim()) return content.trim()
-  if (content && typeof content === 'object') {
-    const obj = content as Record<string, unknown>
-    if (typeof obj.text === 'string' && obj.text.trim()) return obj.text.trim()
-    if (typeof obj.content === 'string' && obj.content.trim())
-      return obj.content.trim()
-    if (Array.isArray(obj)) {
-      const texts: string[] = []
-      for (const part of obj) {
-        if (
-          part &&
-          typeof part === 'object' &&
-          (part as Record<string, unknown>).type === 'text' &&
-          typeof (part as Record<string, unknown>).text === 'string'
-        ) {
-          texts.push((part as Record<string, unknown>).text as string)
-        }
-      }
-      if (texts.length > 0) return texts.join('\n').trim()
-    }
+  if (!content || typeof content !== 'object') return null
+
+  const obj = content as Record<string, unknown>
+  if (typeof obj.text === 'string' && obj.text.trim()) return obj.text.trim()
+  if (typeof obj.content === 'string' && obj.content.trim())
+    return obj.content.trim()
+
+  const texts = getContentParts(content).flatMap((part) => {
+    if (!part || typeof part !== 'object') return []
+    const record = part as Record<string, unknown>
+    return record.type === 'text' && typeof record.text === 'string'
+      ? [record.text]
+      : []
+  })
+  return texts.length > 0 ? texts.join('\n').trim() : null
+}
+
+function extractToolCalls(content: unknown): AssistantStreamToolCall[] {
+  const calls = new Map<string, AssistantStreamToolCall>()
+  for (const part of getContentParts(content)) {
+    const call = normalizeToolInvocation(part)
+    if (call) calls.set(call.toolCallId, call)
   }
-  return null
+  return [...calls.values()]
+}
+
+function normalizeToolInvocation(
+  part: unknown,
+): AssistantStreamToolCall | null {
+  if (!part || typeof part !== 'object') return null
+  const record = part as Record<string, unknown>
+  if (record.type !== 'tool-invocation') return null
+
+  const invocation = record.toolInvocation
+  if (!invocation || typeof invocation !== 'object') return null
+  const data = invocation as Record<string, unknown>
+  if (
+    typeof data.toolCallId !== 'string' ||
+    typeof data.toolName !== 'string'
+  ) {
+    return null
+  }
+  return {
+    toolCallId: data.toolCallId,
+    toolName: data.toolName,
+    status:
+      data.state === 'result'
+        ? 'done'
+        : data.state === 'error'
+          ? 'error'
+          : 'running',
+    summary: null,
+  }
 }
 
 export async function searchAssistantBusinessRecords(input: {
@@ -605,7 +652,7 @@ export async function resolveOrderDraft(params: {
     })
   }
 
-  let customer: { id: string; name: string } | null = null
+  let customer: { id: string; name: string; phone: string | null } | null = null
   let customerAmbiguous: Array<{ id: string; name: string }> | undefined
 
   if (params.customerHint?.trim()) {
@@ -619,6 +666,7 @@ export async function resolveOrderDraft(params: {
       customer = {
         id: customerResult.rows[0].id,
         name: customerResult.rows[0].name,
+        phone: customerResult.rows[0].phone ?? null,
       }
     } else if (customerResult.rows.length > 1) {
       customerAmbiguous = customerResult.rows.map((r) => ({
@@ -646,4 +694,118 @@ export async function resolveOrderDraft(params: {
 
   const total = lineItems.reduce((sum, li) => sum + li.total, 0)
   return { status: 'resolved', lineItems, customer, customerAmbiguous, total }
+}
+
+function generateId(): string {
+  return crypto.randomUUID()
+}
+
+export async function proposeOrderDraft(params: {
+  orgId: string
+  userId: string
+  candidates: Array<{ productHint: string; quantity: number }>
+  customerHint?: string | null
+}): Promise<OrderDraftResolution & { actionId?: string }> {
+  // First resolve the draft to validate products and pricing
+  const resolution = await resolveOrderDraft({
+    orgId: params.orgId,
+    candidates: params.candidates,
+    customerHint: params.customerHint,
+  })
+
+  if (resolution.status !== 'resolved') {
+    return resolution
+  }
+
+  const actionId = generateId()
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+
+  await db.insert(schema.assistantActions).values({
+    id: actionId,
+    orgId: params.orgId,
+    userId: params.userId,
+    threadId: `assistant:${params.orgId}:${params.userId}`,
+    kind: 'order_draft',
+    status: 'pending',
+    payload: {
+      lineItems: resolution.lineItems ?? [],
+      customerId: resolution.customer?.id ?? null,
+      customerName: resolution.customer?.name ?? null,
+      total: resolution.total,
+    },
+    expiresAt,
+  })
+
+  return { ...resolution, actionId }
+}
+
+export async function confirmOrderDraft(params: {
+  actionId: string
+  orgId: string
+  userId: string
+}): Promise<{
+  status: 'confirmed' | 'expired' | 'not_found'
+  orderId?: string
+  orderNumber?: string
+  adminUrl?: string
+}> {
+  const result = await db.transaction(async (tx) => {
+    // Atomically claim the proposal with FOR UPDATE lock
+    const [action] = await tx
+      .select({
+        id: schema.assistantActions.id,
+        payload: schema.assistantActions.payload,
+        expiresAt: schema.assistantActions.expiresAt,
+      })
+      .from(schema.assistantActions)
+      .where(
+        and(
+          eq(schema.assistantActions.id, params.actionId),
+          eq(schema.assistantActions.orgId, params.orgId),
+          eq(schema.assistantActions.kind, 'order_draft'),
+          eq(schema.assistantActions.status, 'pending'),
+        ),
+      )
+      .for('update')
+      .limit(1)
+
+    if (!action) {
+      return { status: 'not_found' as const }
+    }
+
+    if (action.expiresAt && new Date(action.expiresAt) < new Date()) {
+      return { status: 'expired' as const }
+    }
+
+    const payload =
+      typeof action.payload === 'string'
+        ? JSON.parse(action.payload)
+        : action.payload
+
+    // Use the canonical order creator from the orders module
+    const orderResult = await createDraftOrderFromAction(
+      params.orgId,
+      payload as AssistantActionPayload,
+    )
+
+    // Mark action as confirmed within the same transaction
+    await tx
+      .update(schema.assistantActions)
+      .set({
+        status: 'confirmed',
+        resultOrderId: orderResult.order.id,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.assistantActions.id, params.actionId))
+
+    const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001'
+    return {
+      status: 'confirmed' as const,
+      orderId: orderResult.order.id,
+      orderNumber: orderResult.order.orderNumber ?? undefined,
+      adminUrl: `${base}/_org/orders/${orderResult.order.id}`,
+    }
+  })
+
+  return result
 }

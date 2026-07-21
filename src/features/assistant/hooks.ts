@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import {
   cancelOrderDraftProposalFn,
   consumeOrderDraftProposalFn,
@@ -10,20 +15,32 @@ import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 import { queryKeys } from '#/lib/query-keys'
 
 export type {
+  AssistantStreamCallbacks,
+  AssistantStreamTurn,
+} from '#/features/assistant/hooks/use-stream-assistant-message'
+export { useStreamAssistantMessage } from '#/features/assistant/hooks/use-stream-assistant-message'
+export type {
   AssistantChatMessage,
   AssistantChatMessageMetadata,
+  AssistantStreamToolCall,
 } from '#/features/assistant/model'
-
 export type AssistantChatScope = { orgId: string; userId: string }
 
 function buildResource(scope: AssistantChatScope): string {
   return `org:${scope.orgId}:user:${scope.userId}`
 }
-
 export function useAssistantChatHistory(scope: AssistantChatScope) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: queryKeys.assistant.chat(scope),
-    queryFn: () => loadAssistantChatFn({ data: {} }),
+    queryFn: ({ pageParam = 0 }) =>
+      loadAssistantChatFn({ data: { page: pageParam } }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.ok && lastPage.hasMore) {
+        return lastPage.page + 1
+      }
+      return undefined
+    },
   })
 }
 

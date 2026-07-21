@@ -262,11 +262,6 @@ describe('getAssistantAllowedDomains', () => {
       'production',
     ])
   })
-
-  it('returns only production for member', () => {
-    const domains = getAssistantAllowedDomains('member')
-    expect(domains).toEqual(['production'])
-  })
 })
 
 describe('searchAssistantBusinessRecords', () => {
@@ -311,34 +306,6 @@ describe('searchAssistantBusinessRecords', () => {
     expect(result.records[0].title).toBe('ORD-001')
     expect(result.records[0].domain).toBe('orders')
   })
-
-  it('restricts member to production only', async () => {
-    const result = await searchAssistantBusinessRecords({
-      context: { orgId: org1Id, userId: user2Id, role: 'member' },
-      query: 'Acme',
-      domains: ['customers', 'production'],
-      limit: 5,
-    })
-
-    expect(result.omittedDomains).toContain('customers')
-    // Production search may or may not find results, but customers must be omitted
-    const customerRecords = result.records.filter(
-      (r) => r.domain === 'customers',
-    )
-    expect(customerRecords).toHaveLength(0)
-  })
-
-  it('returns empty records when all requested domains are omitted', async () => {
-    const result = await searchAssistantBusinessRecords({
-      context: { orgId: org1Id, userId: user2Id, role: 'member' },
-      query: 'test',
-      domains: ['customers', 'orders', 'invoices'],
-      limit: 5,
-    })
-
-    expect(result.records).toEqual([])
-    expect(result.omittedDomains).toEqual(['customers', 'orders', 'invoices'])
-  })
 })
 
 describe('getAssistantBusinessOverview', () => {
@@ -355,26 +322,6 @@ describe('getAssistantBusinessOverview', () => {
     expect(overview.unpaidInvoices).toBe(1) // INV-001
     expect(overview.activeProductionTasks).toBe(1) // task-1
     expect(overview.omittedDomains).toEqual([])
-  })
-
-  it('returns null for restricted domains for member', async () => {
-    const overview = await getAssistantBusinessOverview({
-      orgId: org1Id,
-      userId: user2Id,
-      role: 'member',
-    })
-
-    expect(overview.customers).toBeNull()
-    expect(overview.activeProducts).toBeNull()
-    expect(overview.openOrders).toBeNull()
-    expect(overview.unpaidInvoices).toBeNull()
-    expect(overview.activeProductionTasks).toBe(1)
-    expect(overview.omittedDomains).toEqual([
-      'customers',
-      'products',
-      'orders',
-      'invoices',
-    ])
   })
 
   it('counts only org-scoped data', async () => {
@@ -549,6 +496,90 @@ describe('normalizeMastraMemoryMessages', () => {
     const result = normalizeMastraMemoryMessages(messages)
     expect(result).toHaveLength(1)
     expect(result[0].content).toBe('Part 1\nPart 2')
+  })
+
+  it('extracts text and completed tool calls from Mastra format 2 content', () => {
+    const messages = [
+      {
+        id: '1',
+        role: 'assistant',
+        content: {
+          format: 2,
+          parts: [
+            {
+              type: 'tool-invocation',
+              toolInvocation: {
+                state: 'result',
+                toolCallId: 'tc-1',
+                toolName: 'businessSearch',
+                args: { query: 'LeBron' },
+                result: { count: 1 },
+              },
+            },
+            { type: 'text', text: 'I found one customer.' },
+          ],
+        },
+        createdAt: '2024-01-01T00:00:00Z',
+      },
+    ]
+
+    const result = normalizeMastraMemoryMessages(messages)
+
+    expect(result).toEqual([
+      {
+        id: '1',
+        role: 'assistant',
+        content: 'I found one customer.',
+        createdAt: '2024-01-01T00:00:00Z',
+        metadata: undefined,
+        toolCalls: [
+          {
+            toolCallId: 'tc-1',
+            toolName: 'businessSearch',
+            status: 'done',
+            summary: null,
+          },
+        ],
+      },
+    ])
+  })
+
+  it('keeps tool-only assistant history visible', () => {
+    const messages = [
+      {
+        id: '1',
+        role: 'assistant',
+        content: {
+          format: 2,
+          parts: [
+            {
+              type: 'tool-invocation',
+              toolInvocation: {
+                state: 'result',
+                toolCallId: 'tc-1',
+                toolName: 'businessOverview',
+                args: {},
+                result: { status: 'ok' },
+              },
+            },
+          ],
+        },
+        createdAt: '2024-01-01T00:00:00Z',
+      },
+    ]
+
+    const result = normalizeMastraMemoryMessages(messages)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].content).toBe('')
+    expect(result[0].toolCalls).toEqual([
+      {
+        toolCallId: 'tc-1',
+        toolName: 'businessOverview',
+        status: 'done',
+        summary: null,
+      },
+    ])
   })
 
   it('skips messages with no extractable text', () => {

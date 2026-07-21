@@ -1147,6 +1147,26 @@ export type Messages = {
     assistant: string;
     notConfigured: string;
     genericError: string;
+    responding: string;
+    historyError: string;
+    retry: string;
+    jumpToLatest: string;
+    loadEarlier: string;
+    loadingEarlier: string;
+    keyboardHint: string;
+    today: string;
+    yesterday: string;
+    starterOrderDraft: string;
+    starterPendingWork: string;
+    starterPriorities: string;
+    toolCall: {
+      generic: string;
+      search: string;
+      overview: string;
+      propose: string;
+      resolve: string;
+      confirm: string;
+    };
     proposal: {
       title: string;
       subtotal: string;

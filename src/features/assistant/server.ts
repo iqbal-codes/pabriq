@@ -9,6 +9,7 @@ import {
   buildAssistantMemoryScope,
   normalizeMastraMemoryMessages,
 } from '#/features/assistant/model'
+import { canUseAssistant } from '#/features/permissions/model'
 import { resolveOrgAndRole } from '#/lib/auth-session-server'
 
 async function resolveAssistantAuthContext(): Promise<{
@@ -23,8 +24,7 @@ async function resolveAssistantAuthContext(): Promise<{
 
   const { orgId, role } = await resolveOrgAndRole()
 
-  const validRoles: readonly string[] = ['owner', 'admin', 'member']
-  if (!validRoles.includes(role)) {
+  if (!canUseAssistant(role as never)) {
     throw new Error('Not authorized')
   }
 
@@ -40,13 +40,27 @@ async function resolveAssistantAuthContext(): Promise<{
 }
 
 export const loadAssistantChatFn = createServerFn({ method: 'GET' })
-  .inputValidator((input: Record<string, never>) => input)
+  .inputValidator(
+    z
+      .object({
+        page: z.number().int().min(0).optional(),
+      })
+      .optional(),
+  )
   .handler(
-    async (): Promise<
-      | { ok: true; messages: AssistantChatMessage[] }
+    async ({
+      data,
+    }): Promise<
+      | {
+          ok: true
+          messages: AssistantChatMessage[]
+          page: number
+          hasMore: boolean
+        }
       | { ok: false; error: string }
     > => {
       try {
+        const page = data?.page ?? 0
         const authCtx = await resolveAssistantAuthContext()
         const scope = buildAssistantMemoryScope(authCtx)
 
@@ -55,18 +69,24 @@ export const loadAssistantChatFn = createServerFn({ method: 'GET' })
         const memory = await agent.getMemory()
 
         if (!memory) {
-          return { ok: true, messages: [] }
+          return { ok: true, messages: [], page, hasMore: false }
         }
 
         const result = await memory.recall({
           threadId: scope.thread,
           resourceId: scope.resource,
           perPage: 50,
-          page: 0,
+          page,
+          orderBy: { field: 'createdAt', direction: 'DESC' },
         })
 
         const messages = normalizeMastraMemoryMessages(result.messages ?? [])
-        return { ok: true, messages }
+        return {
+          ok: true,
+          messages,
+          page,
+          hasMore: Boolean(result.hasMore),
+        }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Unknown error'
         if (

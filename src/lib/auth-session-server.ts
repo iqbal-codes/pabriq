@@ -1,14 +1,35 @@
+export async function getDetachedHeaders(): Promise<Headers> {
+  const { getRequestHeaders } = await import('@tanstack/react-start/server')
+  const rawHeaders = getRequestHeaders()
+  const headers = new Headers()
+  for (const [key, value] of rawHeaders.entries()) {
+    headers.set(key, value)
+  }
+  return headers
+}
+
+export async function getSessionServer(inputHeaders?: Headers) {
+  const { auth } = await import('#/lib/auth')
+  let headers: Headers
+  if (inputHeaders) {
+    headers = new Headers()
+    for (const [key, value] of inputHeaders.entries()) {
+      headers.set(key, value)
+    }
+  } else {
+    headers = await getDetachedHeaders()
+  }
+  return auth.api.getSession({ headers })
+}
+
 export async function resolveOrgId(): Promise<string> {
-  const [{ getRequestHeaders }, { auth }, { db }, { member }, { eq }] =
-    await Promise.all([
-      import('@tanstack/react-start/server'),
-      import('#/lib/auth'),
-      import('#/db/index'),
-      import('#/db/schema'),
-      import('drizzle-orm'),
-    ])
-  const headers = getRequestHeaders()
-  const session = await auth.api.getSession({ headers })
+  const [{ db }, { member }, { eq }] = await Promise.all([
+    import('#/db/index'),
+    import('#/db/schema'),
+    import('drizzle-orm'),
+  ])
+
+  const session = await getSessionServer()
   if (!session) throw new Error('Not authenticated')
 
   const memberships = await db
@@ -24,16 +45,13 @@ export async function resolveOrgId(): Promise<string> {
 export type OrgAndRole = { orgId: string; role: string }
 
 export async function resolveOrgAndRole(): Promise<OrgAndRole> {
-  const [{ getRequestHeaders }, { auth }, { db }, { member }, { eq }] =
-    await Promise.all([
-      import('@tanstack/react-start/server'),
-      import('#/lib/auth'),
-      import('#/db/index'),
-      import('#/db/schema'),
-      import('drizzle-orm'),
-    ])
-  const headers = getRequestHeaders()
-  const session = await auth.api.getSession({ headers })
+  const [{ db }, { member }, { eq }] = await Promise.all([
+    import('#/db/index'),
+    import('#/db/schema'),
+    import('drizzle-orm'),
+  ])
+
+  const session = await getSessionServer()
   if (!session) throw new Error('Not authenticated')
 
   const memberships = await db
