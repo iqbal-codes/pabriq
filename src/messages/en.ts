@@ -1205,6 +1205,7 @@ const en: Messages = {
     send: "Send",
     sending: "Sending...",
     you: "You",
+    me: "Me",
     assistant: "Assistant",
     notConfigured: "AI assistant is not configured.",
     genericError: "The assistant could not answer. Try again.",
