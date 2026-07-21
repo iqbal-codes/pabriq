@@ -223,7 +223,6 @@ export const confirmOrderDraftTool = createTool({
     status: z.enum(['confirmed', 'expired', 'not_found']),
     orderId: z.string().optional(),
     orderNumber: z.string().optional(),
-    portalUrl: z.string().optional(),
     adminUrl: z.string().optional(),
   }),
   execute: async (inputData, context) => {

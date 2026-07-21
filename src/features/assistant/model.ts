@@ -1,9 +1,10 @@
 import { and, asc, eq, inArray, isNull, like, or, sql } from 'drizzle-orm'
 import { db } from '#/db/index'
+import type { AssistantActionPayload } from '#/db/schema'
 import * as schema from '#/db/schema'
 import { listCustomers } from '#/features/customers/model'
 import { listInvoices } from '#/features/invoices/model'
-import { listOrders } from '#/features/orders/model'
+import { createDraftOrderFromAction, listOrders } from '#/features/orders/model'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
 import { listBoardTasks } from '#/features/production/model'
 import { listProducts } from '#/features/products/model'
@@ -746,62 +747,65 @@ export async function confirmOrderDraft(params: {
   status: 'confirmed' | 'expired' | 'not_found'
   orderId?: string
   orderNumber?: string
-  portalUrl?: string
   adminUrl?: string
 }> {
-  const [action] = await db
-    .select()
-    .from(schema.assistantActions)
-    .where(
-      and(
-        eq(schema.assistantActions.id, params.actionId),
-        eq(schema.assistantActions.orgId, params.orgId),
-        eq(schema.assistantActions.kind, 'order_draft'),
-      ),
+  const result = await db.transaction(async (tx) => {
+    // Atomically claim the proposal with FOR UPDATE lock
+    const [action] = await tx
+      .select({
+        id: schema.assistantActions.id,
+        payload: schema.assistantActions.payload,
+        expiresAt: schema.assistantActions.expiresAt,
+      })
+      .from(schema.assistantActions)
+      .where(
+        and(
+          eq(schema.assistantActions.id, params.actionId),
+          eq(schema.assistantActions.orgId, params.orgId),
+          eq(schema.assistantActions.kind, 'order_draft'),
+          eq(schema.assistantActions.status, 'pending'),
+        ),
+      )
+      .for('update')
+      .limit(1)
+
+    if (!action) {
+      return { status: 'not_found' as const }
+    }
+
+    if (action.expiresAt && new Date(action.expiresAt) < new Date()) {
+      return { status: 'expired' as const }
+    }
+
+    const payload =
+      typeof action.payload === 'string'
+        ? JSON.parse(action.payload)
+        : action.payload
+
+    // Use the canonical order creator from the orders module
+    const orderResult = await createDraftOrderFromAction(
+      params.orgId,
+      payload as AssistantActionPayload,
     )
-    .limit(1)
 
-  if (!action) {
-    return { status: 'not_found' }
-  }
+    // Mark action as confirmed within the same transaction
+    await tx
+      .update(schema.assistantActions)
+      .set({
+        status: 'confirmed',
+        resultOrderId: orderResult.order.id,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.assistantActions.id, params.actionId))
 
-  if (action.status !== 'pending') {
-    return { status: 'not_found' }
-  }
-
-  if (action.expiresAt && new Date(action.expiresAt) < new Date()) {
-    return { status: 'expired' }
-  }
-
-  // Create the actual order from the draft payload
-  const payload =
-    typeof action.payload === 'string'
-      ? JSON.parse(action.payload)
-      : action.payload
-
-  const { createDraftOrderFromAction } = await import(
-    '#/features/assistant/create-draft-order'
-  )
-  const order = await createDraftOrderFromAction({
-    orgId: params.orgId,
-    userId: params.userId,
-    actionId: params.actionId,
-    lineItems: payload.lineItems,
-    customer: payload.customer,
-    total: payload.total,
+    const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001'
+    return {
+      status: 'confirmed' as const,
+      orderId: orderResult.order.id,
+      orderNumber: orderResult.order.orderNumber ?? undefined,
+      adminUrl: `${base}/_org/orders/${orderResult.order.id}`,
+    }
   })
 
-  // Mark action as used
-  await db
-    .update(schema.assistantActions)
-    .set({ status: 'used', updatedAt: new Date() })
-    .where(eq(schema.assistantActions.id, params.actionId))
-
-  return {
-    status: 'confirmed',
-    orderId: order.id,
-    orderNumber: order.orderNumber,
-    portalUrl: order.portalUrl,
-    adminUrl: order.adminUrl,
-  }
+  return result
 }

@@ -25,8 +25,11 @@ import {
   SheetTitle,
 } from '#/components/ui/sheet'
 import { Skeleton } from '#/components/ui/skeleton'
+import AssistantToolCallBubble from '#/features/assistant/components/assistant-tool-call-bubble'
+import { OrderDraftProposalCard } from '#/features/assistant/components/order-draft-proposal-card'
 import {
   type AssistantChatScope,
+  type AssistantStreamToolCall,
   useAssistantChatHistory,
 } from '#/features/assistant/hooks'
 
@@ -335,60 +338,60 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                                   if (part.type === 'text') {
                                     return <MarkdownText />
                                   }
-                                  // if (part.type === "tool-call") {
-                                  //   const result = part.result as
-                                  //     | {
-                                  //         actionId?: string;
-                                  //         expiresAt?: string;
-                                  //         reason?: string;
-                                  //       }
-                                  //     | undefined;
-                                  //   const isProposal =
-                                  //     part.toolName ===
-                                  //       "proposeOrderDraftTool" &&
-                                  //     result?.actionId;
-                                  //   const isError = result?.reason;
+                                  if (part.type === 'tool-call') {
+                                    const result = part.result as
+                                      | {
+                                          actionId?: string
+                                          expiresAt?: string
+                                          reason?: string
+                                        }
+                                      | undefined
+                                    const isProposal =
+                                      part.toolName ===
+                                        'proposeOrderDraftTool' &&
+                                      result?.actionId
+                                    const isError = result?.reason
 
-                                  //   const call: AssistantStreamToolCall = {
-                                  //     toolCallId: part.toolCallId,
-                                  //     toolName: part.toolName,
-                                  //     status: part.result ? "done" : "running",
-                                  //     summary: null,
-                                  //   };
+                                    const call: AssistantStreamToolCall = {
+                                      toolCallId: part.toolCallId,
+                                      toolName: part.toolName,
+                                      status: part.result ? 'done' : 'running',
+                                      summary: null,
+                                    }
 
-                                  //   return (
-                                  //     <div className="space-y-2">
-                                  //       <AssistantToolCallBubble call={call} />
-                                  //       {isProposal &&
-                                  //         result?.actionId &&
-                                  //         !isError && (
-                                  //           <OrderDraftProposalCard
-                                  //             metadata={{
-                                  //               kind: "order_draft_proposal",
-                                  //               actionId: result.actionId,
-                                  //               expiresAt:
-                                  //                 result.expiresAt ||
-                                  //                 new Date().toISOString(),
-                                  //             }}
-                                  //             scope={{ orgId, userId }}
-                                  //           />
-                                  //         )}
-                                  //       {isError && (
-                                  //         <div
-                                  //           role="alert"
-                                  //           className="border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive"
-                                  //         >
-                                  //           <p className="[overflow-wrap:anywhere]">
-                                  //             {result.reason}
-                                  //           </p>
-                                  //           <p className="mt-1 text-muted-foreground">
-                                  //             {t("error.tryAgain")}
-                                  //           </p>
-                                  //         </div>
-                                  //       )}
-                                  //     </div>
-                                  //   );
-                                  // }
+                                    return (
+                                      <div className="space-y-2">
+                                        <AssistantToolCallBubble call={call} />
+                                        {isProposal &&
+                                          result?.actionId &&
+                                          !isError && (
+                                            <OrderDraftProposalCard
+                                              metadata={{
+                                                kind: 'order_draft_proposal',
+                                                actionId: result.actionId,
+                                                expiresAt:
+                                                  result.expiresAt ||
+                                                  new Date().toISOString(),
+                                              }}
+                                              scope={{ orgId, userId }}
+                                            />
+                                          )}
+                                        {isError && (
+                                          <div
+                                            role="alert"
+                                            className="border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+                                          >
+                                            <p className="[overflow-wrap:anywhere]">
+                                              {result.reason}
+                                            </p>
+                                            <p className="mt-1 text-muted-foreground">
+                                              {t('error.tryAgain')}
+                                            </p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )
+                                  }
                                   return null
                                 }}
                               </MessagePrimitive.Parts>
