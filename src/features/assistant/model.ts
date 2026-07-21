@@ -144,7 +144,8 @@ export function normalizeMastraMemoryMessages(
       | undefined
 
     const text = extractTextContent(record.content)
-    if (!text && !metadata) continue
+    const toolCalls = extractToolCalls(record.content)
+    if (!text && !metadata && toolCalls.length === 0) continue
 
     result.push({
       id,
@@ -155,6 +156,7 @@ export function normalizeMastraMemoryMessages(
           ? createdAt.toISOString()
           : (createdAt ?? new Date().toISOString()),
       metadata,
+      toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     })
   }
 
@@ -164,29 +166,68 @@ export function normalizeMastraMemoryMessages(
   return result
 }
 
+function getContentParts(content: unknown): unknown[] {
+  if (Array.isArray(content)) return content
+  if (!content || typeof content !== 'object') return []
+  const parts = (content as Record<string, unknown>).parts
+  return Array.isArray(parts) ? parts : []
+}
+
 function extractTextContent(content: unknown): string | null {
   if (typeof content === 'string' && content.trim()) return content.trim()
-  if (content && typeof content === 'object') {
-    const obj = content as Record<string, unknown>
-    if (typeof obj.text === 'string' && obj.text.trim()) return obj.text.trim()
-    if (typeof obj.content === 'string' && obj.content.trim())
-      return obj.content.trim()
-    if (Array.isArray(obj)) {
-      const texts: string[] = []
-      for (const part of obj) {
-        if (
-          part &&
-          typeof part === 'object' &&
-          (part as Record<string, unknown>).type === 'text' &&
-          typeof (part as Record<string, unknown>).text === 'string'
-        ) {
-          texts.push((part as Record<string, unknown>).text as string)
-        }
-      }
-      if (texts.length > 0) return texts.join('\n').trim()
-    }
+  if (!content || typeof content !== 'object') return null
+
+  const obj = content as Record<string, unknown>
+  if (typeof obj.text === 'string' && obj.text.trim()) return obj.text.trim()
+  if (typeof obj.content === 'string' && obj.content.trim())
+    return obj.content.trim()
+
+  const texts = getContentParts(content).flatMap((part) => {
+    if (!part || typeof part !== 'object') return []
+    const record = part as Record<string, unknown>
+    return record.type === 'text' && typeof record.text === 'string'
+      ? [record.text]
+      : []
+  })
+  return texts.length > 0 ? texts.join('\n').trim() : null
+}
+
+function extractToolCalls(content: unknown): AssistantStreamToolCall[] {
+  const calls = new Map<string, AssistantStreamToolCall>()
+  for (const part of getContentParts(content)) {
+    const call = normalizeToolInvocation(part)
+    if (call) calls.set(call.toolCallId, call)
   }
-  return null
+  return [...calls.values()]
+}
+
+function normalizeToolInvocation(
+  part: unknown,
+): AssistantStreamToolCall | null {
+  if (!part || typeof part !== 'object') return null
+  const record = part as Record<string, unknown>
+  if (record.type !== 'tool-invocation') return null
+
+  const invocation = record.toolInvocation
+  if (!invocation || typeof invocation !== 'object') return null
+  const data = invocation as Record<string, unknown>
+  if (
+    typeof data.toolCallId !== 'string' ||
+    typeof data.toolName !== 'string'
+  ) {
+    return null
+  }
+  return {
+    toolCallId: data.toolCallId,
+    toolName: data.toolName,
+    status:
+      data.state === 'result'
+        ? 'done'
+        : data.state === 'error'
+          ? 'error'
+          : 'running',
+    summary: null,
+  }
 }
 
 export async function searchAssistantBusinessRecords(input: {

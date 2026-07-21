@@ -551,6 +551,90 @@ describe('normalizeMastraMemoryMessages', () => {
     expect(result[0].content).toBe('Part 1\nPart 2')
   })
 
+  it('extracts text and completed tool calls from Mastra format 2 content', () => {
+    const messages = [
+      {
+        id: '1',
+        role: 'assistant',
+        content: {
+          format: 2,
+          parts: [
+            {
+              type: 'tool-invocation',
+              toolInvocation: {
+                state: 'result',
+                toolCallId: 'tc-1',
+                toolName: 'businessSearch',
+                args: { query: 'LeBron' },
+                result: { count: 1 },
+              },
+            },
+            { type: 'text', text: 'I found one customer.' },
+          ],
+        },
+        createdAt: '2024-01-01T00:00:00Z',
+      },
+    ]
+
+    const result = normalizeMastraMemoryMessages(messages)
+
+    expect(result).toEqual([
+      {
+        id: '1',
+        role: 'assistant',
+        content: 'I found one customer.',
+        createdAt: '2024-01-01T00:00:00Z',
+        metadata: undefined,
+        toolCalls: [
+          {
+            toolCallId: 'tc-1',
+            toolName: 'businessSearch',
+            status: 'done',
+            summary: null,
+          },
+        ],
+      },
+    ])
+  })
+
+  it('keeps tool-only assistant history visible', () => {
+    const messages = [
+      {
+        id: '1',
+        role: 'assistant',
+        content: {
+          format: 2,
+          parts: [
+            {
+              type: 'tool-invocation',
+              toolInvocation: {
+                state: 'result',
+                toolCallId: 'tc-1',
+                toolName: 'businessOverview',
+                args: {},
+                result: { status: 'ok' },
+              },
+            },
+          ],
+        },
+        createdAt: '2024-01-01T00:00:00Z',
+      },
+    ]
+
+    const result = normalizeMastraMemoryMessages(messages)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].content).toBe('')
+    expect(result[0].toolCalls).toEqual([
+      {
+        toolCallId: 'tc-1',
+        toolName: 'businessOverview',
+        status: 'done',
+        summary: null,
+      },
+    ])
+  })
+
   it('skips messages with no extractable text', () => {
     const messages = [
       {
