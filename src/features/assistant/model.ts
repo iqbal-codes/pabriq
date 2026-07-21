@@ -2,12 +2,30 @@ import { and, asc, eq, inArray, isNull, like, or, sql } from 'drizzle-orm'
 import { db } from '#/db/index'
 import type { AssistantActionPayload } from '#/db/schema'
 import * as schema from '#/db/schema'
-import { listCustomers } from '#/features/customers/model'
+import {
+  createCustomer,
+  getCustomer,
+  listCustomers,
+  updateCustomer,
+} from '#/features/customers/model'
 import { listInvoices } from '#/features/invoices/model'
-import { createDraftOrderFromAction, listOrders } from '#/features/orders/model'
+import {
+  createDraftOrderFromAction,
+  getOrder,
+  getOrderCreationReadiness,
+  listOrders,
+  updateDraftOrder,
+} from '#/features/orders/model'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
 import { listBoardTasks } from '#/features/production/model'
-import { listProducts } from '#/features/products/model'
+import {
+  createProduct,
+  getProduct,
+  listProductRows,
+  listProducts,
+  updateProduct,
+} from '#/features/products/model'
+import { buildPortalUrl } from '#/lib/domain-routing'
 
 export const assistantDomains = [
   'customers',
@@ -67,7 +85,18 @@ export type OrderDraftResolution = {
     quantity: number
     matchedProductIds: string[]
   }>
-  customer?: { id: string; name: string; phone: string | null } | null
+  missingPrerequisites?: Array<
+    | 'business_address'
+    | 'production_stages'
+    | 'active_products'
+    | 'payment_methods'
+  >
+  customer?: {
+    id: string
+    name: string
+    phone: string | null
+    hasAddress: boolean
+  } | null
   customerAmbiguous?: Array<{ id: string; name: string }>
   total: number
 }
@@ -652,7 +681,12 @@ export async function resolveOrderDraft(params: {
     })
   }
 
-  let customer: { id: string; name: string; phone: string | null } | null = null
+  let customer: {
+    id: string
+    name: string
+    phone: string | null
+    hasAddress: boolean
+  } | null = null
   let customerAmbiguous: Array<{ id: string; name: string }> | undefined
 
   if (params.customerHint?.trim()) {
@@ -663,10 +697,21 @@ export async function resolveOrderDraft(params: {
       perPage: 3,
     })
     if (customerResult.rows.length === 1) {
+      const fullCustomer = await getCustomer(
+        customerResult.rows[0].id,
+        params.orgId,
+      )
+      const hasAddress =
+        fullCustomer?.address != null &&
+        typeof fullCustomer.address.areaId === 'string' &&
+        fullCustomer.address.areaId.trim().length > 0 &&
+        typeof fullCustomer.address.streetAddress === 'string' &&
+        fullCustomer.address.streetAddress.trim().length > 0
       customer = {
         id: customerResult.rows[0].id,
         name: customerResult.rows[0].name,
         phone: customerResult.rows[0].phone ?? null,
+        hasAddress: hasAddress ?? false,
       }
     } else if (customerResult.rows.length > 1) {
       customerAmbiguous = customerResult.rows.map((r) => ({
@@ -706,7 +751,27 @@ export async function proposeOrderDraft(params: {
   candidates: Array<{ productHint: string; quantity: number }>
   customerHint?: string | null
 }): Promise<OrderDraftResolution & { actionId?: string }> {
-  // First resolve the draft to validate products and pricing
+  // Check order creation readiness before resolving
+  const readiness = await getOrderCreationReadiness(params.orgId)
+  if (!readiness.isReady) {
+    const missingPrerequisites: Array<
+      | 'business_address'
+      | 'production_stages'
+      | 'active_products'
+      | 'payment_methods'
+    > = []
+    if (!readiness.businessAddressComplete)
+      missingPrerequisites.push('business_address')
+    if (readiness.productionStageCount === 0)
+      missingPrerequisites.push('production_stages')
+    if (readiness.activeProductCount === 0)
+      missingPrerequisites.push('active_products')
+    if (readiness.paymentMethodCount === 0)
+      missingPrerequisites.push('payment_methods')
+    return { status: 'invalid', total: 0, missingPrerequisites }
+  }
+
+  // Resolve the draft to validate products and pricing
   const resolution = await resolveOrderDraft({
     orgId: params.orgId,
     candidates: params.candidates,
@@ -739,6 +804,14 @@ export async function proposeOrderDraft(params: {
   return { ...resolution, actionId }
 }
 
+function getAssistantBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001'
+}
+
+function buildAssistantAdminUrl(path: string): string {
+  return new URL(path, getAssistantBaseUrl()).toString()
+}
+
 export async function confirmOrderDraft(params: {
   actionId: string
   orgId: string
@@ -748,6 +821,7 @@ export async function confirmOrderDraft(params: {
   orderId?: string
   orderNumber?: string
   adminUrl?: string
+  portalUrl?: string
 }> {
   const result = await db.transaction(async (tx) => {
     // Atomically claim the proposal with FOR UPDATE lock
@@ -798,14 +872,400 @@ export async function confirmOrderDraft(params: {
       })
       .where(eq(schema.assistantActions.id, params.actionId))
 
-    const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001'
+    const base = getAssistantBaseUrl()
+    const adminUrl = buildAssistantAdminUrl(`/orders/${orderResult.order.id}`)
+
+    if (!orderResult.order.orderToken) {
+      throw new Error('Created order is missing portal token')
+    }
+    const portalUrl = buildPortalUrl(orderResult.order.orderToken, base)
+
     return {
       status: 'confirmed' as const,
       orderId: orderResult.order.id,
       orderNumber: orderResult.order.orderNumber ?? undefined,
-      adminUrl: `${base}/_org/orders/${orderResult.order.id}`,
+      adminUrl,
+      portalUrl,
     }
   })
 
   return result
+}
+// ─── Customer Assistant Functions ────────────────────────────────────────────
+
+export async function searchAssistantCustomers(params: {
+  orgId: string
+  query: string
+}): Promise<import('#/features/customers/model').CustomerRow[]> {
+  const result = await listCustomers({
+    orgId: params.orgId,
+    search: params.query,
+    page: 1,
+    perPage: 10,
+  })
+  return result.rows
+}
+
+export async function createAssistantCustomer(params: {
+  orgId: string
+  name: string
+  email?: string
+  phone?: string
+  notes?: string
+  active?: boolean
+  isWni?: boolean
+}): Promise<
+  { ok: true; id: string; url: string } | { ok: false; error: string }
+> {
+  if (!params.name || params.name.trim().length === 0) {
+    return { ok: false, error: 'Customer name is required' }
+  }
+  try {
+    const id = await createCustomer({
+      orgId: params.orgId,
+      name: params.name.trim(),
+      email: params.email?.trim() || undefined,
+      phone: params.phone?.trim() || undefined,
+      notes: params.notes?.trim() || undefined,
+      active: params.active ?? true,
+      isWni: params.isWni ?? true,
+    })
+    const url = buildAssistantAdminUrl(`/customers/${id}`)
+    return { ok: true, id, url }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return { ok: false, error: message }
+  }
+}
+
+export async function updateAssistantCustomer(params: {
+  orgId: string
+  id: string
+  name?: string
+  email?: string
+  phone?: string
+  notes?: string
+  active?: boolean
+}): Promise<
+  { ok: true; id: string; url: string } | { ok: false; error: string }
+> {
+  if (params.name !== undefined && params.name.trim().length === 0) {
+    return { ok: false, error: 'Customer name is required' }
+  }
+  try {
+    const existing = await getCustomer(params.id, params.orgId)
+    if (!existing) {
+      return { ok: false, error: 'Customer not found' }
+    }
+    await updateCustomer(params.id, params.orgId, {
+      name: params.name ?? existing.name,
+      email: params.email !== undefined ? params.email : existing.email,
+      phone: params.phone !== undefined ? params.phone : existing.phone,
+      notes: params.notes !== undefined ? params.notes : existing.notes,
+      active: params.active !== undefined ? params.active : existing.active,
+      isWni: existing.isWni,
+      photoAssetId: existing.photoAssetId,
+      address: existing.address,
+    })
+    const url = buildAssistantAdminUrl(`/customers/${params.id}`)
+    return { ok: true, id: params.id, url }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return { ok: false, error: message }
+  }
+}
+
+// ─── Product Assistant Functions ─────────────────────────────────────────────
+
+export async function searchAssistantProducts(params: {
+  orgId: string
+  query?: string
+  activeOnly?: boolean
+}): Promise<import('#/features/products/model').ProductRow[]> {
+  const result = await listProductRows({
+    orgId: params.orgId,
+    search: params.query,
+    status: params.activeOnly ? 'active' : undefined,
+    page: 1,
+    perPage: 10,
+  })
+  return result.rows
+}
+
+export async function createAssistantProduct(params: {
+  orgId: string
+  name: string
+  description?: string
+  category?: string
+  basePrice: number
+  minQuantity: number
+  pricingMode: 'interpolated' | 'step'
+  productionDays: number
+  maxProductionQuantity?: number
+  repeatOrderMinQuantity?: number
+}): Promise<
+  { ok: true; id: string; url: string } | { ok: false; error: string }
+> {
+  if (!params.name || params.name.trim().length === 0) {
+    return { ok: false, error: 'Product name is required' }
+  }
+  if (params.basePrice < 0) {
+    return { ok: false, error: 'Base price must not be negative' }
+  }
+  if (params.minQuantity < 1) {
+    return { ok: false, error: 'Minimum quantity must be at least 1' }
+  }
+  if (params.productionDays < 1) {
+    return { ok: false, error: 'Production days must be at least 1' }
+  }
+  if (
+    params.maxProductionQuantity !== undefined &&
+    params.maxProductionQuantity < 1
+  ) {
+    return {
+      ok: false,
+      error: 'Maximum production quantity must be at least 1',
+    }
+  }
+  if (
+    params.repeatOrderMinQuantity !== undefined &&
+    params.repeatOrderMinQuantity < 1
+  ) {
+    return {
+      ok: false,
+      error: 'Repeat order minimum quantity must be at least 1',
+    }
+  }
+  try {
+    const product = await createProduct({
+      orgId: params.orgId,
+      name: params.name.trim(),
+      description: params.description,
+      category: params.category,
+      basePrice: params.basePrice,
+      minQuantity: params.minQuantity,
+      pricingMode: params.pricingMode,
+      productionDays: params.productionDays,
+      maxProductionQuantity: params.maxProductionQuantity,
+      repeatOrderMinQuantity: params.repeatOrderMinQuantity,
+    })
+    const url = buildAssistantAdminUrl(`/products/${product.id}`)
+    return { ok: true, id: product.id, url }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return { ok: false, error: message }
+  }
+}
+
+export async function updateAssistantProduct(params: {
+  orgId: string
+  id: string
+  name?: string
+  description?: string
+  basePrice?: number
+  minQuantity?: number
+  productionDays?: number
+  active?: boolean
+}): Promise<
+  { ok: true; id: string; url: string } | { ok: false; error: string }
+> {
+  if (params.name !== undefined && params.name.trim().length === 0) {
+    return { ok: false, error: 'Product name is required' }
+  }
+  if (params.basePrice !== undefined && params.basePrice < 0) {
+    return { ok: false, error: 'Base price must not be negative' }
+  }
+  if (params.minQuantity !== undefined && params.minQuantity < 1) {
+    return { ok: false, error: 'Minimum quantity must be at least 1' }
+  }
+  if (params.productionDays !== undefined && params.productionDays < 1) {
+    return { ok: false, error: 'Production days must be at least 1' }
+  }
+  try {
+    const existing = await getProduct(params.id, params.orgId)
+    if (!existing) {
+      return { ok: false, error: 'Product not found' }
+    }
+    const updated = await updateProduct({
+      id: params.id,
+      orgId: params.orgId,
+      name: params.name,
+      description: params.description,
+      basePrice: params.basePrice,
+      minQuantity: params.minQuantity,
+      productionDays: params.productionDays,
+      active: params.active,
+    })
+    const url = buildAssistantAdminUrl(`/products/${updated.id}`)
+    return { ok: true, id: updated.id, url }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return { ok: false, error: message }
+  }
+}
+
+// ─── Order Assistant Functions ───────────────────────────────────────────────
+
+export type AssistantLineItemInput = Pick<
+  import('#/features/orders/model').LineItemInput,
+  | 'id'
+  | 'productId'
+  | 'quantity'
+  | 'designName'
+  | 'notes'
+  | 'addonIds'
+  | 'isRepeatOrder'
+  | 'manualDeadline'
+> & { deadline?: string }
+
+export async function searchAssistantOrders(params: {
+  orgId: string
+  query?: string
+  status?: string
+  customerId?: string
+  dateFrom?: string
+  dateTo?: string
+}): Promise<
+  Array<{
+    id: string
+    orderNumber: string | null
+    customerName: string | null
+    status: string
+    total: number
+    createdAt: string
+  }>
+> {
+  const dateFrom = params.dateFrom
+    ? new Date(`${params.dateFrom}T00:00:00.000Z`)
+    : undefined
+  const dateTo = params.dateTo
+    ? new Date(`${params.dateTo}T23:59:59.999Z`)
+    : undefined
+
+  if (dateFrom && dateTo && dateFrom > dateTo) {
+    throw new Error('dateFrom must be on or before dateTo')
+  }
+
+  const result = await listOrders({
+    orgId: params.orgId,
+    search: params.query,
+    status: params.status,
+    customerId: params.customerId,
+    dateFrom,
+    dateTo,
+    page: 1,
+    perPage: 10,
+  })
+
+  return result.rows.map((row: import('#/features/orders/model').OrderRow) => ({
+    id: row.id,
+    orderNumber: row.orderNumber,
+    customerName: row.customerName,
+    status: row.status,
+    total: row.total,
+    createdAt: row.createdAt.toISOString(),
+  }))
+}
+
+export async function getAssistantOrder(params: {
+  orgId: string
+  orderId: string
+}): Promise<
+  | {
+      ok: true
+      order: import('#/features/orders/model').Order
+      lineItems: import('#/features/orders/model').OrderLineItem[]
+      customerName: string | null
+    }
+  | { ok: false; error: string }
+> {
+  const result = await getOrder(params.orderId, params.orgId)
+  if (!result) {
+    return { ok: false, error: 'Order not found' }
+  }
+  return {
+    ok: true,
+    order: result.order,
+    lineItems: result.lineItems,
+    customerName: result.customerName,
+  }
+}
+
+export async function updateAssistantDraftOrder(params: {
+  orgId: string
+  orderId: string
+  customerId?: string
+  notes?: string
+  lineItems?: AssistantLineItemInput[]
+  deadline?: string
+}): Promise<
+  { ok: true; orderId: string; adminUrl: string } | { ok: false; error: string }
+> {
+  try {
+    const existing = await getOrder(params.orderId, params.orgId)
+    if (!existing) {
+      return { ok: false, error: 'Order not found' }
+    }
+    if (existing.order.status !== 'draft') {
+      return { ok: false, error: 'Can only modify draft orders' }
+    }
+
+    const deadline = params.deadline
+      ? new Date(`${params.deadline}T00:00:00.000Z`)
+      : undefined
+
+    // Build line items: if supplied, use them as complete replacement; otherwise preserve existing
+    let lineItems: import('#/features/orders/model').LineItemInput[]
+    if (params.lineItems) {
+      lineItems = params.lineItems.map((li) => ({
+        id: li.id,
+        productId: li.productId,
+        quantity: li.quantity,
+        designName: li.designName,
+        notes: li.notes,
+        addonIds: li.addonIds,
+        isRepeatOrder: li.isRepeatOrder,
+        deadline: li.deadline
+          ? new Date(`${li.deadline}T00:00:00.000Z`)
+          : undefined,
+        manualDeadline: li.manualDeadline,
+      }))
+    } else {
+      // Preserve existing line items with their current unit prices
+      lineItems = existing.lineItems.map((li) => ({
+        id: li.id,
+        productId: li.productId,
+        quantity: li.quantity,
+        unitPrice: li.unitPrice,
+        designName: li.designName ?? undefined,
+        notes: li.notes ?? undefined,
+        addonIds: li.selectedAddons
+          ?.map((a) => a.productAddonId)
+          .filter((id): id is string => id !== null),
+        isRepeatOrder: li.isRepeatOrder,
+        deadline: li.deadline,
+        manualDeadline: li.manualDeadline,
+      }))
+    }
+
+    const result = await updateDraftOrder(params.orderId, params.orgId, {
+      customerId:
+        params.customerId !== undefined
+          ? params.customerId
+          : existing.order.customerId,
+      notes:
+        params.notes !== undefined
+          ? params.notes
+          : (existing.order.notes ?? undefined),
+      lineItems,
+      deadline,
+      manualDeadline: params.deadline ? true : undefined,
+    })
+
+    const adminUrl = buildAssistantAdminUrl(`/orders/${result.order.id}`)
+    return { ok: true, orderId: result.order.id, adminUrl }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return { ok: false, error: message }
+  }
 }

@@ -2,11 +2,15 @@ import { sql } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '#/db/index'
 import {
+  addresses,
+  assistantActions,
   customers,
   invoices,
   member,
   orders,
   organization,
+  organizationProfiles,
+  paymentMethods,
   pricingBreakpoints,
   productionStages,
   productionTasks,
@@ -18,6 +22,7 @@ import {
   getAssistantAllowedDomains,
   getAssistantBusinessOverview,
   normalizeMastraMemoryMessages,
+  proposeOrderDraft,
   resolveOrderDraft,
   searchAssistantBusinessRecords,
 } from './model'
@@ -28,7 +33,7 @@ const user1Id = '00000000-0000-0000-0000-000000000011'
 const user2Id = '00000000-0000-0000-0000-000000000012'
 beforeEach(async () => {
   await db.execute(
-    sql`TRUNCATE organization, "user", member, customers, products, orders, invoices, production_stages, production_tasks CASCADE`,
+    sql`TRUNCATE organization, "user", member, customers, products, orders, invoices, production_stages, production_tasks, organization_profiles, addresses, payment_methods, assistant_actions CASCADE`,
   )
 
   const now = new Date()
@@ -676,6 +681,182 @@ describe('resolveOrderDraft', () => {
           matchedProductIds: ['prod-like-2', 'prod-like-1'],
         },
       ],
+    })
+  })
+})
+describe('proposeOrderDraft', () => {
+  it('returns missingPrerequisites when org is not ready', async () => {
+    // org1Id has active products but no address, no production stages (board=production), no payment methods
+    const result = await proposeOrderDraft({
+      orgId: org1Id,
+      userId: user1Id,
+      candidates: [{ productHint: 'Widget A', quantity: 10 }],
+    })
+
+    expect(result.status).toBe('invalid')
+    expect(result.total).toBe(0)
+    expect(result.missingPrerequisites).toBeDefined()
+    expect(result.missingPrerequisites).toContain('business_address')
+    expect(result.missingPrerequisites).toContain('production_stages')
+    expect(result.missingPrerequisites).toContain('payment_methods')
+    expect(result.missingPrerequisites).not.toContain('active_products')
+    expect(result.actionId).toBeUndefined()
+
+    // Verify no assistant action was created
+    const actions = await db
+      .select()
+      .from(assistantActions)
+      .where(sql`${assistantActions.orgId} = ${org1Id}`)
+    expect(actions).toHaveLength(0)
+  })
+
+  it('creates proposal when org meets all prerequisites', async () => {
+    const now = new Date()
+
+    // Seed business address
+    await db.insert(addresses).values({
+      id: 'addr-1',
+      orgId: org1Id,
+      areaId: 'area-1',
+      areaName: 'Jakarta',
+      streetAddress: 'Jl. Sudirman 123',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(organizationProfiles).values({
+      id: 'profile-1',
+      orgId: org1Id,
+      addressId: 'addr-1',
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    // Seed production stage with board='production'
+    await db.insert(productionStages).values({
+      id: 'stage-prod-1',
+      orgId: org1Id,
+      name: 'Production',
+      board: 'production',
+      orderIndex: 0,
+      createdAt: now,
+    })
+
+    // Seed payment method
+    await db.insert(paymentMethods).values({
+      id: 'pm-1',
+      orgId: org1Id,
+      name: 'Bank Transfer',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    // Set up product pricing
+    await db
+      .update(products)
+      .set({ basePrice: 10, minQuantity: 1 })
+      .where(sql`${products.id} = 'prod-1'`)
+    await db.insert(pricingBreakpoints).values({
+      id: 'bp-test-1',
+      orgId: org1Id,
+      productId: 'prod-1',
+      minQuantity: 1,
+      unitPrice: 10,
+    })
+
+    const result = await proposeOrderDraft({
+      orgId: org1Id,
+      userId: user1Id,
+      candidates: [{ productHint: 'Widget A', quantity: 10 }],
+    })
+
+    expect(result.status).toBe('resolved')
+    expect(result.actionId).toBeDefined()
+    expect(result.total).toBe(100)
+    expect(result.lineItems).toHaveLength(1)
+    expect(result.lineItems![0]).toMatchObject({
+      productId: 'prod-1',
+      productName: 'Widget A',
+      quantity: 10,
+      unitPrice: 10,
+      total: 100,
+    })
+    expect(result.missingPrerequisites).toBeUndefined()
+
+    // Verify assistant action was created
+    const actions = await db
+      .select()
+      .from(assistantActions)
+      .where(sql`${assistantActions.orgId} = ${org1Id}`)
+    expect(actions).toHaveLength(1)
+    expect(actions[0].status).toBe('pending')
+    expect(actions[0].kind).toBe('order_draft')
+  })
+
+  it('warns when customer has no address but continues', async () => {
+    const now = new Date()
+
+    // Seed all prerequisites for org1Id
+    await db.insert(addresses).values({
+      id: 'addr-2',
+      orgId: org1Id,
+      areaId: 'area-1',
+      areaName: 'Jakarta',
+      streetAddress: 'Jl. Sudirman 123',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(organizationProfiles).values({
+      id: 'profile-2',
+      orgId: org1Id,
+      addressId: 'addr-2',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(productionStages).values({
+      id: 'stage-prod-2',
+      orgId: org1Id,
+      name: 'Production',
+      board: 'production',
+      orderIndex: 0,
+      createdAt: now,
+    })
+    await db.insert(paymentMethods).values({
+      id: 'pm-2',
+      orgId: org1Id,
+      name: 'Bank Transfer',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    // Set up product pricing
+    await db
+      .update(products)
+      .set({ basePrice: 10, minQuantity: 1 })
+      .where(sql`${products.id} = 'prod-1'`)
+    await db.insert(pricingBreakpoints).values({
+      id: 'bp-test-2',
+      orgId: org1Id,
+      productId: 'prod-1',
+      minQuantity: 1,
+      unitPrice: 10,
+    })
+
+    // Acme Corp (cust-1) has no address
+    const result = await proposeOrderDraft({
+      orgId: org1Id,
+      userId: user1Id,
+      candidates: [{ productHint: 'Widget A', quantity: 10 }],
+      customerHint: 'Acme Corp',
+    })
+
+    expect(result.status).toBe('resolved')
+    expect(result.actionId).toBeDefined()
+    expect(result.customer).toMatchObject({
+      id: 'cust-1',
+      name: 'Acme Corp',
+      hasAddress: false,
     })
   })
 })

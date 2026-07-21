@@ -59,6 +59,7 @@ const defaultProducts = [
     maxProductionQuantity: null,
     minDiscountPrice: null,
     pricingMode: 'step' as const,
+    category: null,
     createdAt: new Date(),
   },
 ]
