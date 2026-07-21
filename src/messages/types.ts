@@ -1145,6 +1145,7 @@ export type Messages = {
     sending: string;
     you: string;
     assistant: string;
+    me: string;
     notConfigured: string;
     genericError: string;
     responding: string;

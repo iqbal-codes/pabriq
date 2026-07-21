@@ -10,11 +10,11 @@ import {
   AssistantChatTransport,
   useAISDKRuntime,
 } from '@assistant-ui/react-ai-sdk'
-import { MarkdownTextPrimitive } from '@assistant-ui/react-markdown'
+import { MarkdownText } from "#/components/assistant-ui/markdown-text";
+import { DotMatrix } from "#/components/assistant-ui/dot-matrix";
 import type { UIMessage } from 'ai'
 import { Bot, ChevronUp, Loader2, Send, Square } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import remarkGfm from 'remark-gfm'
 import { useTranslations } from 'use-intl'
 import { Button } from '#/components/ui/button'
 import {
@@ -44,31 +44,6 @@ function formatMessageTime(dateInput?: Date | string | number) {
   })
 }
 
-function ThinkingIndicator() {
-  const t = useTranslations('assistant')
-  return (
-    <div
-      role="status"
-      aria-label={t('responding')}
-      className="flex items-center gap-2 py-0.5 text-xs text-muted-foreground select-none"
-    >
-      <span className="inline-flex items-center gap-0.5 ml-0.5">
-        <span className="size-1 rounded-full bg-primary/70 animate-bounce [animation-delay:-0.32s]" />
-        <span className="size-1 rounded-full bg-primary/70 animate-bounce [animation-delay:-0.16s]" />
-        <span className="size-1 rounded-full bg-primary/70 animate-bounce" />
-      </span>
-    </div>
-  )
-}
-
-function MarkdownText() {
-  return (
-    <MarkdownTextPrimitive
-      remarkPlugins={[remarkGfm]}
-      className="prose prose-sm dark:prose-invert max-w-none break-words"
-    />
-  )
-}
 function AssistantRuntimeWrapper({
   orgId,
   userId,
@@ -171,7 +146,6 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
           type: 'dynamic-tool' as const,
           toolCallId: call.toolCallId,
           toolName: call.toolName,
-          state: 'output-available' as const,
           input: {},
           output:
             msg.metadata?.kind === 'order_draft_proposal'
@@ -191,7 +165,6 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
     <>
       <Button
         className="fixed right-4 bottom-4 z-40 size-12 rounded-full shadow-md md:right-6 md:bottom-6"
-        size="icon"
         onClick={() => setOpen(true)}
         aria-label={t('trigger')}
       >
@@ -201,7 +174,7 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="right"
-          className="flex w-full! max-w-none! flex-col p-0 sm:w-[30rem]! sm:max-w-[calc(100vw-2rem)]!"
+          className="flex w-full! max-w-none! flex-col p-0 sm:w-[35rem]! sm:max-w-[calc(100vw-2rem)]!"
         >
           <SheetHeader className="shrink-0 border-b px-4 py-3 pr-12">
             <SheetTitle className="flex items-center gap-2 text-sm font-semibold">

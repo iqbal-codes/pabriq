@@ -1,7 +1,7 @@
-import { ModelRouterEmbeddingModel } from '@mastra/core/llm'
-import { PgVector, PostgresStore } from '@mastra/pg'
-import { sql } from 'drizzle-orm'
-import { db } from '#/db/index'
+import { ModelRouterEmbeddingModel } from "@mastra/core/llm";
+import { PgVector, PostgresStore } from "@mastra/pg";
+import { sql } from "drizzle-orm";
+import { db } from "#/db/index";
 
 export const MASTRA_SCHEMA_NAME = 'mastra'
 

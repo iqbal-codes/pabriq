@@ -1208,6 +1208,7 @@ const id: Messages = {
     send: "Kirim",
     sending: "Mengirim...",
     you: "Anda",
+    me: "Saya",
     assistant: "Asisten",
     notConfigured: "Asisten AI belum dikonfigurasi.",
     genericError: "Asisten belum bisa menjawab. Coba lagi.",
