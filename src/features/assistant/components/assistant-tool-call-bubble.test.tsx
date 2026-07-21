@@ -48,7 +48,7 @@ describe('AssistantToolCallBubble', () => {
           status: 'done',
           summary: '3 records',
         }}
-      />
+      />,
     )
     expect(screen.getByText('Searching records')).toBeInTheDocument()
     expect(screen.getByText('3 records')).toBeInTheDocument()
@@ -63,7 +63,7 @@ describe('AssistantToolCallBubble', () => {
           status: 'running',
           summary: null,
         }}
-      />
+      />,
     )
     expect(screen.getByText('Calling customTool')).toBeInTheDocument()
   })

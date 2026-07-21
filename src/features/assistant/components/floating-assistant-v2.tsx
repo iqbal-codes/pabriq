@@ -1,55 +1,52 @@
-import { useChat } from "@ai-sdk/react";
+import { useChat } from '@ai-sdk/react'
 import {
   AssistantRuntimeProvider,
   AuiIf,
   ComposerPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
-} from "@assistant-ui/react";
+} from '@assistant-ui/react'
 import {
   AssistantChatTransport,
   useAISDKRuntime,
-} from "@assistant-ui/react-ai-sdk";
-import { MarkdownTextPrimitive } from "@assistant-ui/react-markdown";
-import type { UIMessage } from "ai";
-import { Bot, ChevronUp, Loader2, Send, Square } from "lucide-react";
-import { useMemo, useState } from "react";
-import remarkGfm from "remark-gfm";
-import { useTranslations } from "use-intl";
-import { Button } from "#/components/ui/button";
+} from '@assistant-ui/react-ai-sdk'
+import { MarkdownTextPrimitive } from '@assistant-ui/react-markdown'
+import type { UIMessage } from 'ai'
+import { Bot, ChevronUp, Loader2, Send, Square } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import remarkGfm from 'remark-gfm'
+import { useTranslations } from 'use-intl'
+import { Button } from '#/components/ui/button'
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "#/components/ui/sheet";
-import { Skeleton } from "#/components/ui/skeleton";
-import AssistantToolCallBubble from "#/features/assistant/components/assistant-tool-call-bubble";
-import { OrderDraftProposalCard } from "#/features/assistant/components/order-draft-proposal-card";
+} from '#/components/ui/sheet'
+import { Skeleton } from '#/components/ui/skeleton'
 import {
   type AssistantChatScope,
-  type AssistantStreamToolCall,
   useAssistantChatHistory,
-} from "#/features/assistant/hooks";
+} from '#/features/assistant/hooks'
 
 function formatMessageTime(dateInput?: Date | string | number) {
-  if (!dateInput) return "";
-  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
-  if (Number.isNaN(date.getTime())) return "";
+  if (!dateInput) return ''
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput)
+  if (Number.isNaN(date.getTime())) return ''
   return date.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
+    hour: '2-digit',
+    minute: '2-digit',
     hour12: false,
-  });
+  })
 }
 
 function ThinkingIndicator() {
-  const t = useTranslations("assistant");
+  const t = useTranslations('assistant')
   return (
     <div
       role="status"
-      aria-label={t("responding")}
+      aria-label={t('responding')}
       className="flex items-center gap-2 py-0.5 text-xs text-muted-foreground select-none"
     >
       <span className="inline-flex items-center gap-0.5 ml-0.5">
@@ -58,7 +55,7 @@ function ThinkingIndicator() {
         <span className="size-1 rounded-full bg-primary/70 animate-bounce" />
       </span>
     </div>
-  );
+  )
 }
 
 function MarkdownText() {
@@ -67,7 +64,7 @@ function MarkdownText() {
       remarkPlugins={[remarkGfm]}
       className="prose prose-sm dark:prose-invert max-w-none break-words"
     />
-  );
+  )
 }
 function AssistantRuntimeWrapper({
   orgId,
@@ -75,17 +72,17 @@ function AssistantRuntimeWrapper({
   messages,
   children,
 }: {
-  orgId: string;
-  userId: string;
-  messages: UIMessage[];
-  children: React.ReactNode;
+  orgId: string
+  userId: string
+  messages: UIMessage[]
+  children: React.ReactNode
 }) {
-  const threadId = `assistant:${orgId}:${userId}`;
-  const resourceId = `org:${orgId}:user:${userId}`;
+  const threadId = `assistant:${orgId}:${userId}`
+  const resourceId = `org:${orgId}:user:${userId}`
   const transport = useMemo(
     () =>
       new AssistantChatTransport({
-        api: "/api/assistant/chat",
+        api: '/api/assistant/chat',
         prepareSendMessagesRequest({
           messages,
           body,
@@ -110,35 +107,35 @@ function AssistantRuntimeWrapper({
                 resource: resourceId,
               },
             },
-          };
+          }
         },
       }),
     [resourceId, threadId],
-  );
-  const chat = useChat({ id: threadId, messages, transport });
-  const runtime = useAISDKRuntime(chat);
+  )
+  const chat = useChat({ id: threadId, messages, transport })
+  const runtime = useAISDKRuntime(chat)
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       {children}
     </AssistantRuntimeProvider>
-  );
+  )
 }
 
 type FloatingAssistantProps = {
-  orgId: string;
-  userId: string;
-};
+  orgId: string
+  userId: string
+}
 
 export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
-  const t = useTranslations("assistant");
-  const [open, setOpen] = useState(false);
+  const t = useTranslations('assistant')
+  const [open, setOpen] = useState(false)
 
   const scope = useMemo<AssistantChatScope>(
     () => ({ orgId, userId }),
     [orgId, userId],
-  );
-  const historyQuery = useAssistantChatHistory(scope);
-  const historyError = historyQuery.data?.pages.find((page) => !page.ok);
+  )
+  const historyQuery = useAssistantChatHistory(scope)
+  const historyError = historyQuery.data?.pages.find((page) => !page.ok)
 
   const historyMessages = useMemo(() => {
     return (
@@ -146,18 +143,18 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
         .slice()
         .reverse()
         .flatMap((page) => (page.ok ? page.messages : [])) ?? []
-    );
-  }, [historyQuery.data]);
+    )
+  }, [historyQuery.data])
 
   const historyMessageTimeMap = useMemo(() => {
-    const map = new Map<string, string>();
+    const map = new Map<string, string>()
     for (const msg of historyMessages) {
       if (msg.id && msg.createdAt) {
-        map.set(msg.id, msg.createdAt);
+        map.set(msg.id, msg.createdAt)
       }
     }
-    return map;
-  }, [historyMessages]);
+    return map
+  }, [historyMessages])
 
   const messages = useMemo<UIMessage[]>(() => {
     return historyMessages.map((msg) => ({
@@ -166,26 +163,26 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
       content: msg.content,
       createdAt: new Date(msg.createdAt),
       parts: [
-        { type: "text" as const, text: msg.content },
+        { type: 'text' as const, text: msg.content },
         ...(msg.toolCalls?.map((call) => ({
-          type: "dynamic-tool" as const,
+          type: 'dynamic-tool' as const,
           toolCallId: call.toolCallId,
           toolName: call.toolName,
-          state: "output-available" as const,
+          state: 'output-available' as const,
           input: {},
           output:
-            msg.metadata?.kind === "order_draft_proposal"
+            msg.metadata?.kind === 'order_draft_proposal'
               ? {
                   actionId: msg.metadata.actionId,
                   expiresAt: msg.metadata.expiresAt,
                 }
-              : msg.metadata?.kind === "order_draft_error"
+              : msg.metadata?.kind === 'order_draft_error'
                 ? { reason: msg.metadata.reason }
                 : { summary: call.summary },
         })) ?? []),
       ],
-    }));
-  }, [historyMessages]);
+    }))
+  }, [historyMessages])
 
   return (
     <>
@@ -193,7 +190,7 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
         className="fixed right-4 bottom-4 z-40 size-12 rounded-full shadow-md md:right-6 md:bottom-6"
         size="icon"
         onClick={() => setOpen(true)}
-        aria-label={t("trigger")}
+        aria-label={t('trigger')}
       >
         <Bot className="size-5" />
       </Button>
@@ -208,10 +205,10 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
               <span className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <Bot className="size-4" aria-hidden="true" />
               </span>
-              {t("title")}
+              {t('title')}
             </SheetTitle>
             <SheetDescription className="max-w-[46ch] text-xs/relaxed">
-              {t("description")}
+              {t('description')}
             </SheetDescription>
           </SheetHeader>
 
@@ -219,7 +216,7 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
             <div className="relative min-h-0 flex-1 bg-muted/30 px-3 py-4 sm:px-4">
               <div
                 role="status"
-                aria-label={t("loadingHistory")}
+                aria-label={t('loadingHistory')}
                 className="space-y-5"
               >
                 <div className="space-y-2">
@@ -243,13 +240,13 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                 className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center"
               >
                 <p className="text-sm font-medium text-destructive">
-                  {t("historyError")}
+                  {t('historyError')}
                 </p>
                 <Button
                   variant="outline"
                   onClick={() => void historyQuery.refetch()}
                 >
-                  {t("retry")}
+                  {t('retry')}
                 </Button>
               </div>
             </div>
@@ -280,8 +277,8 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                             <ChevronUp />
                           )}
                           {historyQuery.isFetchingNextPage
-                            ? t("loadingEarlier")
-                            : t("loadEarlier")}
+                            ? t('loadingEarlier')
+                            : t('loadEarlier')}
                         </Button>
                       </div>
                     )}
@@ -292,10 +289,10 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                           <Bot className="size-5" aria-hidden="true" />
                         </div>
                         <h3 className="text-base font-semibold text-foreground">
-                          {t("emptyTitle")}
+                          {t('emptyTitle')}
                         </h3>
                         <p className="mt-1 max-w-[36ch] text-sm/relaxed text-muted-foreground">
-                          {t("emptyDescription")}
+                          {t('emptyDescription')}
                         </p>
                       </div>
                     </AuiIf>
@@ -304,9 +301,9 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                       {({ message }) => {
                         const rawTime =
                           historyMessageTimeMap.get(message.id) ??
-                          message.createdAt;
-                        const formattedTime = formatMessageTime(rawTime);
-                        if (message.role === "user") {
+                          message.createdAt
+                        const formattedTime = formatMessageTime(rawTime)
+                        if (message.role === 'user') {
                           return (
                             <MessagePrimitive.Root className="flex flex-col items-end pt-3 first:pt-0">
                               <div className="max-w-[84%] bg-primary px-3 py-2.5 text-primary-foreground text-sm/relaxed whitespace-pre-wrap [overflow-wrap:anywhere]">
@@ -320,14 +317,14 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                                 </span>
                               )}
                             </MessagePrimitive.Root>
-                          );
+                          )
                         }
                         return (
                           <MessagePrimitive.Root className="flex flex-col items-start pt-3 first:pt-0">
                             <div className="max-w-[92%] border bg-background px-3 py-2.5 text-foreground text-sm/relaxed gap-y-2">
                               <AuiIf
                                 condition={(s) =>
-                                  s.message.status?.type === "running" &&
+                                  s.message.status?.type === 'running' &&
                                   s.message.content.length === 0
                                 }
                               >
@@ -335,8 +332,8 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                               </AuiIf>
                               <MessagePrimitive.Parts>
                                 {({ part }) => {
-                                  if (part.type === "text") {
-                                    return <MarkdownText />;
+                                  if (part.type === 'text') {
+                                    return <MarkdownText />
                                   }
                                   // if (part.type === "tool-call") {
                                   //   const result = part.result as
@@ -392,7 +389,7 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                                   //     </div>
                                   //   );
                                   // }
-                                  return null;
+                                  return null
                                 }}
                               </MessagePrimitive.Parts>
                             </div>
@@ -402,7 +399,7 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                               </span>
                             )}
                           </MessagePrimitive.Root>
-                        );
+                        )
                       }}
                     </ThreadPrimitive.Messages>
                   </ThreadPrimitive.Viewport>
@@ -413,7 +410,7 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                 <ComposerPrimitive.Root className="flex flex-col gap-2">
                   <div className="flex items-end gap-2">
                     <ComposerPrimitive.Input
-                      placeholder={t("messagePlaceholder")}
+                      placeholder={t('messagePlaceholder')}
                       className="max-h-36 min-h-11 flex-1 resize-none bg-background px-3 py-3 text-sm placeholder:text-muted-foreground md:text-sm border rounded-md focus:outline-none"
                       rows={1}
                     />
@@ -424,7 +421,7 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                           size="icon"
                           variant="outline"
                           className="size-11 shrink-0"
-                          aria-label={t("responding")}
+                          aria-label={t('responding')}
                         >
                           <Square className="size-4" />
                         </Button>
@@ -436,7 +433,7 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                           type="submit"
                           size="icon"
                           className="size-11 shrink-0"
-                          aria-label={t("send")}
+                          aria-label={t('send')}
                         >
                           <Send className="size-4" />
                         </Button>
@@ -445,7 +442,7 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                   </div>
                 </ComposerPrimitive.Root>
                 <p className="hidden text-xs text-muted-foreground sm:block mt-2">
-                  {t("keyboardHint")}
+                  {t('keyboardHint')}
                 </p>
               </div>
             </AssistantRuntimeWrapper>
@@ -453,5 +450,5 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
         </SheetContent>
       </Sheet>
     </>
-  );
+  )
 }
