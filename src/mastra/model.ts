@@ -106,6 +106,6 @@ export function getMastraModel(): string {
 export function getInjectionDetectorModel(): string {
   return (
     process.env.INJECTION_DETECTOR_MODEL ??
-    'openrouter/google/gemini-3.1-flash-lite'
+    'openrouter/nvidia/nemotron-3.5-content-safety:free'
   )
 }
