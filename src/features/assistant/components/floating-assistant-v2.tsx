@@ -10,12 +10,11 @@ import {
   AssistantChatTransport,
   useAISDKRuntime,
 } from '@assistant-ui/react-ai-sdk'
-import { MarkdownText } from "#/components/assistant-ui/markdown-text";
-import { DotMatrix } from "#/components/assistant-ui/dot-matrix";
 import type { UIMessage } from 'ai'
 import { Bot, ChevronUp, Loader2, Send, Square } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'use-intl'
+import { MarkdownText } from '#/components/assistant-ui/markdown-text'
 import { Button } from '#/components/ui/button'
 import {
   Sheet,
@@ -25,11 +24,8 @@ import {
   SheetTitle,
 } from '#/components/ui/sheet'
 import { Skeleton } from '#/components/ui/skeleton'
-import AssistantToolCallBubble from '#/features/assistant/components/assistant-tool-call-bubble'
-import { OrderDraftProposalCard } from '#/features/assistant/components/order-draft-proposal-card'
 import {
   type AssistantChatScope,
-  type AssistantStreamToolCall,
   useAssistantChatHistory,
 } from '#/features/assistant/hooks'
 
@@ -146,6 +142,7 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
           type: 'dynamic-tool' as const,
           toolCallId: call.toolCallId,
           toolName: call.toolName,
+          state: 'output-available' as const,
           input: {},
           output:
             msg.metadata?.kind === 'order_draft_proposal'
@@ -165,6 +162,7 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
     <>
       <Button
         className="fixed right-4 bottom-4 z-40 size-12 rounded-full shadow-md md:right-6 md:bottom-6"
+        size="icon"
         onClick={() => setOpen(true)}
         aria-label={t('trigger')}
       >
@@ -282,6 +280,9 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                         if (message.role === 'user') {
                           return (
                             <MessagePrimitive.Root className="flex flex-col items-end pt-3 first:pt-0">
+                              <span className="mb-1 px-1 text-[10px] font-medium text-muted-foreground">
+                                {t('me')}
+                              </span>
                               <div className="max-w-[84%] bg-primary px-3 py-2.5 text-primary-foreground text-sm/relaxed whitespace-pre-wrap [overflow-wrap:anywhere]">
                                 <MessagePrimitive.Parts
                                   components={{ Text: MarkdownText }}
@@ -297,15 +298,10 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                         }
                         return (
                           <MessagePrimitive.Root className="flex flex-col items-start pt-3 first:pt-0">
+                            <span className="mb-1 px-1 text-[10px] font-medium text-muted-foreground">
+                              {t('assistant')}{' '}
+                            </span>
                             <div className="max-w-[92%] border bg-background px-3 py-2.5 text-foreground text-sm/relaxed gap-y-2">
-                              <AuiIf
-                                condition={(s) =>
-                                  s.message.status?.type === 'running' &&
-                                  s.message.content.length === 0
-                                }
-                              >
-                                <ThinkingIndicator />
-                              </AuiIf>
                               <MessagePrimitive.Parts>
                                 {({ part }) => {
                                   if (part.type === 'text') {
@@ -319,28 +315,28 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                                           reason?: string
                                         }
                                       | undefined
-                                    const isProposal =
-                                      part.toolName ===
-                                        'proposeOrderDraftTool' &&
-                                      result?.actionId
+                                    // const isProposal =
+                                    //   part.toolName ===
+                                    //     "proposeOrderDraftTool" &&
+                                    //   result?.actionId;
                                     const isError = result?.reason
 
-                                    const call: AssistantStreamToolCall = {
-                                      toolCallId: part.toolCallId,
-                                      toolName: part.toolName,
-                                      status: part.result ? 'done' : 'running',
-                                      summary: null,
-                                    }
+                                    // const call: AssistantStreamToolCall = {
+                                    //   toolCallId: part.toolCallId,
+                                    //   toolName: part.toolName,
+                                    //   status: part.result ? "done" : "running",
+                                    //   summary: null,
+                                    // };
 
                                     return (
                                       <div className="space-y-2">
-                                        <AssistantToolCallBubble call={call} />
-                                        {isProposal &&
+                                        {/*<AssistantToolCallBubble call={call} />*/}
+                                        {/*{isProposal &&
                                           result?.actionId &&
                                           !isError && (
                                             <OrderDraftProposalCard
                                               metadata={{
-                                                kind: 'order_draft_proposal',
+                                                kind: "order_draft_proposal",
                                                 actionId: result.actionId,
                                                 expiresAt:
                                                   result.expiresAt ||
@@ -348,7 +344,7 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                                               }}
                                               scope={{ orgId, userId }}
                                             />
-                                          )}
+                                          )}*/}
                                         {isError && (
                                           <div
                                             role="alert"
