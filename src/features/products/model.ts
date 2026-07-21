@@ -1,10 +1,22 @@
-import { and, asc, desc, eq, isNull, like } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  isNull,
+  like,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   productAddons as addonsTable,
   pricingBreakpoints as breakpointsTable,
   products as productsTable,
 } from '#/db/schema'
+import { buildOrderBy, type SortColumnMap } from '#/lib/sorting'
 
 export type DbClient = Pick<typeof db, 'select'>
 export type Product = {
@@ -25,6 +37,7 @@ export type Product = {
   repeatOrderMinQuantity: number | null
   maxProductionQuantity: number | null
   pricingMode: 'interpolated' | 'step'
+  category: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -43,6 +56,7 @@ export type CreateProductInput = {
   repeatOrderUnitPrice?: number
   repeatOrderMinQuantity?: number
   maxProductionQuantity?: number
+  category?: string
   pricingMode?: 'interpolated' | 'step'
   pricingBreakpoints?: Array<{ minQuantity: number; unitPrice: number }>
   productAddons?: Array<{ name: string; unitSurcharge: number }>
@@ -66,6 +80,7 @@ export type UpdateProductInput = {
   maxProductionQuantity?: number | null
   active?: boolean
   pricingMode?: 'interpolated' | 'step'
+  category?: string | null
   pricingBreakpoints?: Array<{ minQuantity: number; unitPrice: number }>
   productAddons?: Array<{ name: string; unitSurcharge: number }>
 }
@@ -108,6 +123,7 @@ export type ProductRow = {
   maxProductionQuantity: number | null
   minDiscountPrice: number | null
   pricingMode: 'step' | 'interpolated'
+  category: string | null
   createdAt: Date
 }
 
@@ -142,6 +158,7 @@ export async function createProduct(
     repeatOrderMinQuantity: toNull(input.repeatOrderMinQuantity),
     maxProductionQuantity: toNull(input.maxProductionQuantity),
     pricingMode: input.pricingMode ?? 'interpolated',
+    category: toNull(input.category),
     active: true,
     createdAt: now,
     updatedAt: now,
@@ -211,6 +228,7 @@ export async function updateProduct(
     updates.maxProductionQuantity = toNull(input.maxProductionQuantity)
   if (input.active !== undefined) updates.active = input.active
   if (input.pricingMode !== undefined) updates.pricingMode = input.pricingMode
+  if (input.category !== undefined) updates.category = toNull(input.category)
 
   await db
     .update(productsTable)
@@ -222,7 +240,12 @@ export async function updateProduct(
   if (input.pricingBreakpoints !== undefined) {
     await db
       .delete(breakpointsTable)
-      .where(eq(breakpointsTable.productId, input.id))
+      .where(
+        and(
+          eq(breakpointsTable.productId, input.id),
+          eq(breakpointsTable.orgId, input.orgId),
+        ),
+      )
 
     if (input.pricingBreakpoints.length > 0) {
       const breakpoints = input.pricingBreakpoints.map((bp) => ({
@@ -239,7 +262,14 @@ export async function updateProduct(
   }
 
   if (input.productAddons !== undefined) {
-    await db.delete(addonsTable).where(eq(addonsTable.productId, input.id))
+    await db
+      .delete(addonsTable)
+      .where(
+        and(
+          eq(addonsTable.productId, input.id),
+          eq(addonsTable.orgId, input.orgId),
+        ),
+      )
 
     if (input.productAddons.length > 0) {
       const addons = input.productAddons.map((a) => ({
@@ -258,9 +288,12 @@ export async function updateProduct(
   const rows = await db
     .select()
     .from(productsTable)
-    .where(eq(productsTable.id, input.id))
+    .where(
+      and(eq(productsTable.id, input.id), eq(productsTable.orgId, input.orgId)),
+    )
     .limit(1)
 
+  if (rows.length === 0) throw new Error('Product not found')
   return rows[0] as Product
 }
 
@@ -297,6 +330,90 @@ export async function listProducts(
     .orderBy(orderBy)
 
   return rows as Product[]
+}
+const PRODUCT_SORT_COLUMNS = {
+  name: productsTable.name,
+  createdAt: productsTable.createdAt,
+  basePrice: productsTable.basePrice,
+  productionDays: productsTable.productionDays,
+  minQuantity: productsTable.minQuantity,
+} satisfies SortColumnMap
+
+export async function listProductRows(
+  params: ListProductsParams,
+): Promise<ListProductsResult> {
+  const conditions: SQL[] = [
+    eq(productsTable.orgId, params.orgId),
+    isNull(productsTable.deletedAt),
+  ]
+
+  if (params.search?.trim()) {
+    const pattern = `%${params.search.trim()}%`
+    conditions.push(
+      or(
+        ilike(productsTable.name, pattern),
+        ilike(productsTable.category, pattern),
+      ) as SQL,
+    )
+  }
+
+  if (params.status === 'active') {
+    conditions.push(eq(productsTable.active, true))
+  } else if (params.status === 'inactive') {
+    conditions.push(eq(productsTable.active, false))
+  }
+
+  const allConditions = and(...conditions) as SQL
+
+  const orderBy = buildOrderBy(
+    params.sort,
+    PRODUCT_SORT_COLUMNS,
+    desc(productsTable.createdAt),
+  )
+
+  const page = params.page ?? 1
+  const perPage = params.perPage ?? 25
+
+  const [rows, countResult] = await Promise.all([
+    db
+      .select({
+        id: productsTable.id,
+        name: productsTable.name,
+        description: productsTable.description,
+        active: productsTable.active,
+        primaryImageAssetId: productsTable.primaryImageAssetId,
+        basePrice: productsTable.basePrice,
+        productionDays: productsTable.productionDays,
+        minQuantity: productsTable.minQuantity,
+        maxQuantity: productsTable.maxQuantity,
+        pricingMode: sql<'interpolated' | 'step'>`${productsTable.pricingMode}`,
+        category: productsTable.category,
+        negotiateAboveQuantity: productsTable.negotiateAboveQuantity,
+        repeatOrderUnitPrice: productsTable.repeatOrderUnitPrice,
+        repeatOrderMinQuantity: productsTable.repeatOrderMinQuantity,
+        maxProductionQuantity: productsTable.maxProductionQuantity,
+        minDiscountPrice: sql<number | null>`(
+        SELECT MIN(b.unit_price)
+        FROM ${breakpointsTable} b
+        WHERE b.product_id = products.id
+      )`,
+        createdAt: productsTable.createdAt,
+      })
+      .from(productsTable)
+      .where(allConditions)
+      .orderBy(orderBy)
+      .limit(perPage)
+      .offset((page - 1) * perPage),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(productsTable)
+      .where(allConditions),
+  ])
+
+  return {
+    rows,
+    totalRows: Number(countResult[0]?.count ?? 0),
+  }
 }
 
 export async function getProduct(

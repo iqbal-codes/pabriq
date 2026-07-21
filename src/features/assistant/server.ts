@@ -171,74 +171,29 @@ export const consumeOrderDraftProposalFn = createServerFn({ method: 'POST' })
     > => {
       try {
         const authCtx = await resolveAssistantAuthContext()
-        const [{ db }, { assistantActions }, { and, eq }] = await Promise.all([
-          import('#/db/index'),
-          import('#/db/schema'),
-          import('drizzle-orm'),
-        ])
+        const { confirmOrderDraft } = await import('#/features/assistant/model')
 
-        const orderId = await db.transaction(async (tx) => {
-          const rows = await tx
-            .select({
-              id: assistantActions.id,
-              payload: assistantActions.payload,
-              expiresAt: assistantActions.expiresAt,
-            })
-            .from(assistantActions)
-            .where(
-              and(
-                eq(assistantActions.id, data.actionId),
-                eq(assistantActions.status, 'pending'),
-                eq(assistantActions.orgId, authCtx.orgId),
-              ),
-            )
-            .for('update')
-            .limit(1)
-
-          if (rows.length === 0) {
-            throw new Error('NOT_PENDING')
-          }
-
-          const action = rows[0]
-          if (action.expiresAt < new Date()) {
-            throw new Error('EXPIRED')
-          }
-
-          const { createDraftOrderFromAction } = await import(
-            '#/features/orders/model'
-          )
-          const result = await createDraftOrderFromAction(
-            authCtx.orgId,
-            action.payload as AssistantActionPayload,
-          )
-
-          await tx
-            .update(assistantActions)
-            .set({
-              status: 'confirmed',
-              resultOrderId: result.order.id,
-              updatedAt: new Date(),
-            })
-            .where(eq(assistantActions.id, data.actionId))
-
-          return result.order.id
+        const result = await confirmOrderDraft({
+          actionId: data.actionId,
+          orgId: authCtx.orgId,
+          userId: authCtx.userId,
         })
 
-        return { ok: true, orderId }
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Unknown error'
-        if (message.includes('NOT_PENDING')) {
-          return {
-            ok: false,
-            error: 'Proposal already consumed or cancelled',
-          }
+        if (result.status === 'confirmed' && result.orderId) {
+          return { ok: true, orderId: result.orderId }
         }
-        if (message.includes('EXPIRED')) {
+        if (result.status === 'expired') {
           return {
             ok: false,
             error: 'Proposal expired; ask the assistant to create a fresh one',
           }
         }
+        return {
+          ok: false,
+          error: 'Proposal already consumed or cancelled',
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Unknown error'
         return { ok: false, error: message }
       }
     },

@@ -2,10 +2,12 @@ import {
   and,
   desc,
   eq,
+  gte,
   ilike,
   inArray,
   isNotNull,
   isNull,
+  lte,
   ne,
   or,
   type SQL,
@@ -181,6 +183,8 @@ export type ListOrdersParams = {
   customerId?: string
   search?: string
   status?: string
+  dateFrom?: Date
+  dateTo?: Date
   sort?: SortState | null
   page?: number
   perPage?: number
@@ -613,6 +617,13 @@ export async function listOrders(
 
   if (params.customerId) {
     conditions.push(eq(ordersTable.customerId, params.customerId))
+  }
+
+  if (params.dateFrom) {
+    conditions.push(gte(ordersTable.createdAt, params.dateFrom))
+  }
+  if (params.dateTo) {
+    conditions.push(lte(ordersTable.createdAt, params.dateTo))
   }
 
   const allConditions = and(...conditions) as SQL

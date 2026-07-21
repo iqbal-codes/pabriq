@@ -39,6 +39,40 @@ describe('agent instructions', () => {
     expect(instructions).toContain('## Out-of-Scope')
     expect(instructions).toContain('## Core Rules')
   })
+  it('registers exactly 14 tools', async () => {
+    const agent = createBusinessAssistantAgent({} as never)
+    const tools = await agent.listTools()
+    const toolKeys = Object.keys(tools)
+    expect(toolKeys).toHaveLength(14)
+    expect(toolKeys).toContain('businessSearchTool')
+    expect(toolKeys).toContain('businessOverviewTool')
+    expect(toolKeys).toContain('resolveOrderDraftTool')
+    expect(toolKeys).toContain('proposeOrderDraftTool')
+    expect(toolKeys).toContain('confirmOrderDraftTool')
+    expect(toolKeys).toContain('searchCustomerTool')
+    expect(toolKeys).toContain('createCustomerTool')
+    expect(toolKeys).toContain('updateCustomerTool')
+    expect(toolKeys).toContain('searchProductTool')
+    expect(toolKeys).toContain('createProductTool')
+    expect(toolKeys).toContain('updateProductTool')
+    expect(toolKeys).toContain('searchOrderTool')
+    expect(toolKeys).toContain('getOrderTool')
+    expect(toolKeys).toContain('updateDraftOrderTool')
+  })
+
+  it('mentions customer, product, and order capability groups', async () => {
+    const agent = createBusinessAssistantAgent({} as never)
+    const instructions = await agent.getInstructions()
+    expect(instructions).toContain('Customer Management')
+    expect(instructions).toContain('Product Management')
+    expect(instructions).toContain('Order Browse and Draft Update')
+  })
+
+  it('states UI-only boundaries for addresses, breakpoints, status transitions', async () => {
+    const agent = createBusinessAssistantAgent({} as never)
+    const instructions = await agent.getInstructions()
+    expect(instructions).toContain('remain UI-only')
+  })
 })
 
 describe('topicGuardrail', () => {

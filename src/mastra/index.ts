@@ -9,6 +9,21 @@ import {
   proposeOrderDraftTool,
   resolveOrderDraftTool,
 } from '#/mastra/tools/business-tools'
+import {
+  createCustomerTool,
+  searchCustomerTool,
+  updateCustomerTool,
+} from '#/mastra/tools/customer-tools'
+import {
+  getOrderTool,
+  searchOrderTool,
+  updateDraftOrderTool,
+} from '#/mastra/tools/order-tools'
+import {
+  createProductTool,
+  searchProductTool,
+  updateProductTool,
+} from '#/mastra/tools/product-tools'
 
 const mastraStorage = createMastraStore()
 
@@ -73,6 +88,15 @@ export const mastra = new Mastra({
     resolveOrderDraftTool,
     proposeOrderDraftTool,
     confirmOrderDraftTool,
+    searchCustomerTool,
+    createCustomerTool,
+    updateCustomerTool,
+    searchProductTool,
+    createProductTool,
+    updateProductTool,
+    searchOrderTool,
+    getOrderTool,
+    updateDraftOrderTool,
   },
   storage: mastraStorage,
   logger: new PinoLogger({

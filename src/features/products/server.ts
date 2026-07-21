@@ -1,12 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, desc, eq, ilike, isNull, type SQL, sql } from 'drizzle-orm'
-import {
-  pricingBreakpoints as breakpointsTable,
-  products as productsTable,
-} from '#/db/schema'
+import { and } from 'drizzle-orm'
 import { resolveOrgId } from '#/lib/auth-session-server'
 import type { MutationResult } from '#/lib/server-results'
-import { buildOrderBy, type SortColumnMap } from '#/lib/sorting'
 import type {
   CreateProductInput,
   ListProductsParams,
@@ -17,86 +12,11 @@ import type {
 
 export type { ProductRow } from './model'
 
-const PRODUCT_SORT_COLUMNS = {
-  name: productsTable.name,
-  basePrice: productsTable.basePrice,
-  productionDays: productsTable.productionDays,
-  createdAt: productsTable.createdAt,
-  active: productsTable.active,
-} satisfies SortColumnMap
-
 export const listProductsFn = createServerFn({ method: 'GET' })
   .inputValidator((data: ListProductsParams) => data)
   .handler(async ({ data }): Promise<ListProductsResult> => {
-    const { db } = await import('#/db/index')
-    const conditions: SQL[] = [
-      eq(productsTable.orgId, data.orgId),
-      isNull(productsTable.deletedAt),
-    ]
-
-    if (data.search?.trim()) {
-      const pattern = `%${data.search.trim()}%`
-      conditions.push(ilike(productsTable.name, pattern) as SQL)
-    }
-
-    if (data.status === 'active') {
-      conditions.push(eq(productsTable.active, true))
-    } else if (data.status === 'inactive') {
-      conditions.push(eq(productsTable.active, false))
-    }
-
-    const allConditions = and(...conditions) as SQL
-
-    const orderBy = buildOrderBy(
-      data.sort,
-      PRODUCT_SORT_COLUMNS,
-      desc(productsTable.createdAt),
-    )
-
-    const page = data.page ?? 1
-    const perPage = data.perPage ?? 25
-
-    const [rows, countResult] = await Promise.all([
-      db
-        .select({
-          id: productsTable.id,
-          name: productsTable.name,
-          description: productsTable.description,
-          active: productsTable.active,
-          primaryImageAssetId: productsTable.primaryImageAssetId,
-          basePrice: productsTable.basePrice,
-          productionDays: productsTable.productionDays,
-          minQuantity: productsTable.minQuantity,
-          maxQuantity: productsTable.maxQuantity,
-          pricingMode: sql<
-            'interpolated' | 'step'
-          >`${productsTable.pricingMode}`,
-          negotiateAboveQuantity: productsTable.negotiateAboveQuantity,
-          repeatOrderUnitPrice: productsTable.repeatOrderUnitPrice,
-          repeatOrderMinQuantity: productsTable.repeatOrderMinQuantity,
-          maxProductionQuantity: productsTable.maxProductionQuantity,
-          minDiscountPrice: sql<number | null>`(
-          SELECT MIN(b.unit_price)
-          FROM ${breakpointsTable} b
-          WHERE b.product_id = products.id
-        )`,
-          createdAt: productsTable.createdAt,
-        })
-        .from(productsTable)
-        .where(allConditions)
-        .orderBy(orderBy)
-        .limit(perPage)
-        .offset((page - 1) * perPage),
-      db
-        .select({ count: sql<number>`count(*)` })
-        .from(productsTable)
-        .where(allConditions),
-    ])
-
-    return {
-      rows,
-      totalRows: Number(countResult[0]?.count ?? 0),
-    }
+    const { listProductRows } = await import('./model')
+    return listProductRows(data)
   })
 
 export const getProductFn = createServerFn({ method: 'GET' })

@@ -11,7 +11,9 @@ import {
   searchAssistantBusinessRecords,
 } from '#/features/assistant/model'
 
-function readAssistantToolContext(context: unknown): AssistantToolContext {
+export function readAssistantToolContext(
+  context: unknown,
+): AssistantToolContext {
   const ctx = context as Record<string, unknown> | undefined
   const requestContext = ctx?.requestContext as
     | { get(key: string): unknown }
@@ -134,6 +136,7 @@ export const resolveOrderDraftTool = createTool({
         id: z.string(),
         name: z.string(),
         phone: z.string().nullable(),
+        hasAddress: z.boolean(),
       })
       .nullable()
       .optional(),
@@ -191,11 +194,22 @@ export const proposeOrderDraftTool = createTool({
         }),
       )
       .optional(),
+    missingPrerequisites: z
+      .array(
+        z.enum([
+          'business_address',
+          'production_stages',
+          'active_products',
+          'payment_methods',
+        ]),
+      )
+      .optional(),
     customer: z
       .object({
         id: z.string(),
         name: z.string(),
         phone: z.string().nullable(),
+        hasAddress: z.boolean(),
       })
       .nullable()
       .optional(),
@@ -224,6 +238,7 @@ export const confirmOrderDraftTool = createTool({
     orderId: z.string().optional(),
     orderNumber: z.string().optional(),
     adminUrl: z.string().optional(),
+    portalUrl: z.string().optional(),
   }),
   execute: async (inputData, context) => {
     const toolContext = readAssistantToolContext(context)
