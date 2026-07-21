@@ -265,7 +265,7 @@ export const Route = createFileRoute('/api/assistant/stream')({
                 },
               })
 
-              let metadataForFinish: AssistantChatMessageMetadata | undefined
+              let hasSentFinish = false
 
               for await (const chunk of handleStream.fullStream) {
                 if (closed) break
@@ -332,8 +332,16 @@ export const Route = createFileRoute('/api/assistant/stream')({
                     break
                   }
                   case 'finish': {
-                    metadataForFinish = pendingMetadata
-                    pendingMetadata = undefined
+                    if (pendingMetadata) {
+                      send({
+                        type: 'metadata',
+                        clientMessageId: cid,
+                        metadata: pendingMetadata,
+                      })
+                      pendingMetadata = undefined
+                    }
+                    send({ type: 'finish', clientMessageId: cid })
+                    hasSentFinish = true
                     break
                   }
                   case 'error': {
@@ -352,15 +360,16 @@ export const Route = createFileRoute('/api/assistant/stream')({
                 }
               }
 
-              if (metadataForFinish) {
-                send({
-                  type: 'metadata',
-                  clientMessageId: cid,
-                  metadata: metadataForFinish,
-                })
+              if (!hasSentFinish) {
+                if (pendingMetadata) {
+                  send({
+                    type: 'metadata',
+                    clientMessageId: cid,
+                    metadata: pendingMetadata,
+                  })
+                }
+                send({ type: 'finish', clientMessageId: cid })
               }
-
-              send({ type: 'finish', clientMessageId: cid })
             } catch (err: unknown) {
               if (closed) return
               const message =
