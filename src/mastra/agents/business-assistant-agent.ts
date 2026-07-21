@@ -209,7 +209,7 @@ export function createBusinessAssistantAgent(storage: PostgresStore): Agent {
     }),
     inputProcessors: [
       new PromptInjectionDetector({
-        strategy: 'warn',
+        strategy: 'rewrite',
         model: getInjectionDetectorModel(),
         threshold: 0.8,
         detectionTypes: [
