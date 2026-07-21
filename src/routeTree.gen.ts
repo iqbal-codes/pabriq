@@ -31,6 +31,7 @@ import { Route as OrgCustomersIndexRouteImport } from './routes/_org/customers/i
 import { Route as ApiWebhooksTelegramRouteImport } from './routes/api/webhooks/telegram'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAssistantStreamRouteImport } from './routes/api/assistant/stream'
+import { Route as ApiAssistantChatRouteImport } from './routes/api/assistant/chat'
 import { Route as OrgSettingsProfileRouteImport } from './routes/_org/settings/profile'
 import { Route as OrgSettingsProductionStagesRouteImport } from './routes/_org/settings/production-stages'
 import { Route as OrgSettingsPaymentMethodsRouteImport } from './routes/_org/settings/payment-methods'
@@ -160,6 +161,11 @@ const ApiAssistantStreamRoute = ApiAssistantStreamRouteImport.update({
   path: '/api/assistant/stream',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAssistantChatRoute = ApiAssistantChatRouteImport.update({
+  id: '/api/assistant/chat',
+  path: '/api/assistant/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrgSettingsProfileRoute = OrgSettingsProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -286,6 +292,7 @@ export interface FileRoutesByFullPath {
   '/settings/payment-methods': typeof OrgSettingsPaymentMethodsRoute
   '/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/settings/profile': typeof OrgSettingsProfileRoute
+  '/api/assistant/chat': typeof ApiAssistantChatRoute
   '/api/assistant/stream': typeof ApiAssistantStreamRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/webhooks/telegram': typeof ApiWebhooksTelegramRoute
@@ -326,6 +333,7 @@ export interface FileRoutesByTo {
   '/settings/payment-methods': typeof OrgSettingsPaymentMethodsRoute
   '/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/settings/profile': typeof OrgSettingsProfileRoute
+  '/api/assistant/chat': typeof ApiAssistantChatRoute
   '/api/assistant/stream': typeof ApiAssistantStreamRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/webhooks/telegram': typeof ApiWebhooksTelegramRoute
@@ -370,6 +378,7 @@ export interface FileRoutesById {
   '/_org/settings/payment-methods': typeof OrgSettingsPaymentMethodsRoute
   '/_org/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/_org/settings/profile': typeof OrgSettingsProfileRoute
+  '/api/assistant/chat': typeof ApiAssistantChatRoute
   '/api/assistant/stream': typeof ApiAssistantStreamRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/webhooks/telegram': typeof ApiWebhooksTelegramRoute
@@ -414,6 +423,7 @@ export interface FileRouteTypes {
     | '/settings/payment-methods'
     | '/settings/production-stages'
     | '/settings/profile'
+    | '/api/assistant/chat'
     | '/api/assistant/stream'
     | '/api/auth/$'
     | '/api/webhooks/telegram'
@@ -454,6 +464,7 @@ export interface FileRouteTypes {
     | '/settings/payment-methods'
     | '/settings/production-stages'
     | '/settings/profile'
+    | '/api/assistant/chat'
     | '/api/assistant/stream'
     | '/api/auth/$'
     | '/api/webhooks/telegram'
@@ -497,6 +508,7 @@ export interface FileRouteTypes {
     | '/_org/settings/payment-methods'
     | '/_org/settings/production-stages'
     | '/_org/settings/profile'
+    | '/api/assistant/chat'
     | '/api/assistant/stream'
     | '/api/auth/$'
     | '/api/webhooks/telegram'
@@ -528,6 +540,7 @@ export interface RootRouteChildren {
   ApiReadyRoute: typeof ApiReadyRoute
   InviteAcceptRoute: typeof InviteAcceptRoute
   OrderTokenRoute: typeof OrderTokenRoute
+  ApiAssistantChatRoute: typeof ApiAssistantChatRoute
   ApiAssistantStreamRoute: typeof ApiAssistantStreamRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiWebhooksTelegramRoute: typeof ApiWebhooksTelegramRoute
@@ -691,6 +704,13 @@ declare module '@tanstack/react-router' {
       path: '/api/assistant/stream'
       fullPath: '/api/assistant/stream'
       preLoaderRoute: typeof ApiAssistantStreamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/assistant/chat': {
+      id: '/api/assistant/chat'
+      path: '/api/assistant/chat'
+      fullPath: '/api/assistant/chat'
+      preLoaderRoute: typeof ApiAssistantChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_org/settings/profile': {
@@ -914,6 +934,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiReadyRoute: ApiReadyRoute,
   InviteAcceptRoute: InviteAcceptRoute,
   OrderTokenRoute: OrderTokenRoute,
+  ApiAssistantChatRoute: ApiAssistantChatRoute,
   ApiAssistantStreamRoute: ApiAssistantStreamRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiWebhooksTelegramRoute: ApiWebhooksTelegramRoute,
