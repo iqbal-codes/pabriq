@@ -18,7 +18,7 @@
     "test:e2e": "NODE_ENV=test bun --env-file=.env.test x playwright test",
     "test:e2e:headed": "NODE_ENV=test bun --env-file=.env.test x playwright test --headed",
     "test:e2e:debug": "NODE_ENV=test bun --env-file=.env.test x playwright test --debug=cli",
-    "check": "biome check .",
+    "check": "biome check src/",
     "load-env": "infisical run --env=dev --projectId=40d6476c-55e5-4e1b-8079-b251009c6772",
     "typecheck": "tsc --noEmit",
     "format": "biome format --write .",
