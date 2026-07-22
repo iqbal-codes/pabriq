@@ -5,6 +5,7 @@ import { getInjectionDetectorModel } from '#/mastra/model'
 import {
   createBusinessAssistantAgent,
   roleAdherenceValidator,
+  shouldBlockOrderConfirmation,
   topicGuardrail,
 } from './business-assistant-agent'
 
@@ -15,6 +16,35 @@ function makeMessages(content: string): MastraDBMessage[] {
 function makeOutputMessages(text: string): MastraDBMessage[] {
   return [{ content: text, role: 'assistant' } as unknown as MastraDBMessage]
 }
+
+describe('shouldBlockOrderConfirmation', () => {
+  it('blocks a recalled order confirmation during a customer request', () => {
+    expect(
+      shouldBlockOrderConfirmation(
+        'confirmOrderDraftTool',
+        'Oke, buat customer baru namanya Budi',
+      ),
+    ).toBe(true)
+  })
+
+  it('allows an explicitly requested order confirmation', () => {
+    expect(
+      shouldBlockOrderConfirmation(
+        'confirmOrderDraftTool',
+        'Konfirmasi pesanan tadi',
+      ),
+    ).toBe(false)
+  })
+
+  it('does not affect other tools', () => {
+    expect(
+      shouldBlockOrderConfirmation(
+        'createCustomerTool',
+        'Buat customer baru namanya Budi',
+      ),
+    ).toBe(false)
+  })
+})
 
 describe('agent instructions', () => {
   it('contains Bahasa Indonesia decline template', async () => {

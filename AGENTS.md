@@ -175,9 +175,10 @@ npx vitest run
 
 ## 8. Non-Negotiable Project Rules (Legacy)
 
-- Use Bun only: `bun install`, `bun run dev`, `bun run build`, `bun run check`, `bun run typecheck`.
+- Use Bun only: `bun install`, `bun run dev`, `bun run build`, targeted `bunx biome check`, `bun run typecheck`.
+
+- Run targeted `bunx biome check` on changed source files instead of `bun run check`, and run `bun run typecheck` before committing or final handoff.
 - `bun.lock` is authoritative. Do not add npm, pnpm, or yarn lockfiles.
-- Run `bun run check` and `bun run typecheck` before committing or final handoff.
 - Run `bun run build` when changes touch routing, server functions, auth, database, or deployment behavior.
 - Do not guess library APIs. If unsure, check official docs, Context7, or existing project patterns first.
 - Do not use raw internal `fetch`; use `createServerFn`.
