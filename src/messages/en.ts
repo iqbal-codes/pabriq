@@ -1210,6 +1210,7 @@ const en: Messages = {
     notConfigured: "AI assistant is not configured.",
     genericError: "The assistant could not answer. Try again.",
     responding: "Responding...",
+    thinking: "Thinking...",
     historyError: "Failed to load conversation history.",
     retry: "Retry",
     jumpToLatest: "Jump to latest",

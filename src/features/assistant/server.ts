@@ -11,6 +11,7 @@ import {
 } from '#/features/assistant/model'
 import { canUseAssistant } from '#/features/permissions/model'
 import { resolveOrgAndRole } from '#/lib/auth-session-server'
+import { shouldBlockOrderConfirmation } from '#/mastra/agents/business-assistant-agent'
 
 async function resolveAssistantAuthContext(): Promise<{
   userId: string
@@ -127,6 +128,20 @@ export const sendAssistantMessageFn = createServerFn({ method: 'POST' })
 
         const response = await agent.generate(ctx.data.message, {
           requestContext,
+          hooks: {
+            beforeToolCall: ({ toolName }) => {
+              if (shouldBlockOrderConfirmation(toolName, ctx.data.message)) {
+                return {
+                  proceed: false,
+                  output: {
+                    status: 'blocked',
+                    reason:
+                      'The latest user message did not explicitly authorize order confirmation.',
+                  },
+                }
+              }
+            },
+          },
           memory: {
             thread: scope.thread,
             resource: scope.resource,

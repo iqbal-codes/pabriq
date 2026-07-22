@@ -1213,6 +1213,7 @@ const id: Messages = {
     notConfigured: "Asisten AI belum dikonfigurasi.",
     genericError: "Asisten belum bisa menjawab. Coba lagi.",
     responding: "Merespons...",
+    thinking: "Berpikir...",
     historyError: "Gagal memuat riwayat percakapan.",
     retry: "Coba lagi",
     jumpToLatest: "Lompat ke terbaru",

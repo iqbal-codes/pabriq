@@ -1149,6 +1149,7 @@ export type Messages = {
     notConfigured: string;
     genericError: string;
     responding: string;
+    thinking: string;
     historyError: string;
     retry: string;
     jumpToLatest: string;

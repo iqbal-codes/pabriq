@@ -9,6 +9,7 @@ import {
   AssistantChatTransport,
   useChatRuntime,
 } from '@assistant-ui/react-ai-sdk'
+import type { UIMessage } from 'ai'
 import { Bot, ChevronUp, Loader2, Send, Square } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'use-intl'
@@ -38,13 +39,19 @@ function formatMessageTime(dateInput?: Date | string | number) {
     hour12: false,
   })
 }
-
-function AssistantRuntimeWrapper({ children }: { children: React.ReactNode }) {
+function AssistantRuntimeWrapper({
+  messages,
+  children,
+}: {
+  messages: UIMessage[]
+  children: React.ReactNode
+}) {
   // Canonical AI SDK v7 + assistant-ui wiring: useChatRuntime handles
   // messages, status, tool calls, and incremental UI message stream updates
   // out of the box. Server derives thread/resource from the session, so the
   // client only needs to point at the route.
   const runtime = useChatRuntime({
+    messages,
     transport: new AssistantChatTransport({ api: '/api/assistant/chat' }),
   })
 
@@ -78,6 +85,41 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
         .flatMap((page) => (page.ok ? page.messages : [])) ?? []
     )
   }, [historyQuery.data])
+  const messages = useMemo<UIMessage[]>(() => {
+    return historyMessages.map((msg) => ({
+      id: msg.id,
+      role: msg.role,
+      content: msg.content,
+      createdAt: new Date(msg.createdAt),
+      parts: [
+        { type: 'text' as const, text: msg.content },
+        ...((
+          msg.toolCalls as
+            | Array<{
+                toolCallId: string
+                toolName: string
+                summary?: string
+              }>
+            | undefined
+        )?.map((call) => ({
+          type: 'dynamic-tool' as const,
+          toolCallId: call.toolCallId,
+          toolName: call.toolName,
+          state: 'output-available' as const,
+          input: {},
+          output:
+            msg.metadata?.kind === 'order_draft_proposal'
+              ? {
+                  actionId: msg.metadata.actionId,
+                  expiresAt: msg.metadata.expiresAt,
+                }
+              : msg.metadata?.kind === 'order_draft_error'
+                ? { reason: msg.metadata.reason }
+                : { summary: call.summary },
+        })) ?? []),
+      ],
+    }))
+  }, [historyMessages])
 
   const historyMessageTimeMap = useMemo(() => {
     const map = new Map<string, string>()
@@ -88,12 +130,6 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
     }
     return map
   }, [historyMessages])
-
-  // History messages are loaded via the page-level query but not currently
-  // wired into the assistant-ui thread runtime (it only accepts initial seed
-  // messages, not incremental updates). The thread is initialized empty and
-  // new turns arrive via streaming.
-
   return (
     <>
       <Button
@@ -161,7 +197,7 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
               </div>
             </div>
           ) : (
-            <AssistantRuntimeWrapper>
+            <AssistantRuntimeWrapper messages={messages}>
               <div className="relative min-h-0 flex-1 bg-muted/30">
                 <ThreadPrimitive.Root className="flex h-full flex-col">
                   <ThreadPrimitive.Viewport
