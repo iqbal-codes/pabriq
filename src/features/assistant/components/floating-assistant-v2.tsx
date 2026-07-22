@@ -1,4 +1,3 @@
-import { useChat } from '@ai-sdk/react'
 import {
   AssistantRuntimeProvider,
   AuiIf,
@@ -8,13 +7,12 @@ import {
 } from '@assistant-ui/react'
 import {
   AssistantChatTransport,
-  useAISDKRuntime,
+  useChatRuntime,
 } from '@assistant-ui/react-ai-sdk'
-import type { UIMessage } from 'ai'
 import { Bot, ChevronUp, Loader2, Send, Square } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'use-intl'
-import { MarkdownText } from '#/components/assistant-ui/markdown-text'
+import { StreamdownText } from '#/components/assistant-ui/streamdown-text'
 import { Button } from '#/components/ui/button'
 import {
   Sheet,
@@ -28,6 +26,7 @@ import {
   type AssistantChatScope,
   useAssistantChatHistory,
 } from '#/features/assistant/hooks'
+import { DotMatrix } from '#/components/assistant-ui/dot-matrix'
 
 function formatMessageTime(dateInput?: Date | string | number) {
   if (!dateInput) return ''
@@ -40,61 +39,21 @@ function formatMessageTime(dateInput?: Date | string | number) {
   })
 }
 
-function AssistantRuntimeWrapper({
-  orgId,
-  userId,
-  messages,
-  children,
-}: {
-  orgId: string
-  userId: string
-  messages: UIMessage[]
-  children: React.ReactNode
-}) {
-  const threadId = `assistant:${orgId}:${userId}`
-  const resourceId = `org:${orgId}:user:${userId}`
-  const transport = useMemo(
-    () =>
-      new AssistantChatTransport({
-        api: '/api/assistant/chat',
-        prepareSendMessagesRequest({
-          messages,
-          body,
-          trigger,
-          messageId,
-          ...rest
-        }) {
-          return {
-            ...rest,
-            body: {
-              ...body,
-              messages:
-                messages.length > 0
-                  ? [messages[messages.length - 1]]
-                  : messages,
-              trigger,
-              messageId,
-              threadId,
-              resourceId,
-              memory: {
-                thread: threadId,
-                resource: resourceId,
-              },
-            },
-          }
-        },
-      }),
-    [resourceId, threadId],
-  )
-  const chat = useChat({ id: threadId, messages, transport })
-  const runtime = useAISDKRuntime(chat)
+function AssistantRuntimeWrapper({ children }: { children: React.ReactNode }) {
+  // Canonical AI SDK v7 + assistant-ui wiring: useChatRuntime handles
+  // messages, status, tool calls, and incremental UI message stream updates
+  // out of the box. Server derives thread/resource from the session, so the
+  // client only needs to point at the route.
+  const runtime = useChatRuntime({
+    transport: new AssistantChatTransport({ api: '/api/assistant/chat' }),
+  })
+
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       {children}
     </AssistantRuntimeProvider>
   )
 }
-
 type FloatingAssistantProps = {
   orgId: string
   userId: string
@@ -130,33 +89,10 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
     return map
   }, [historyMessages])
 
-  const messages = useMemo<UIMessage[]>(() => {
-    return historyMessages.map((msg) => ({
-      id: msg.id,
-      role: msg.role,
-      content: msg.content,
-      createdAt: new Date(msg.createdAt),
-      parts: [
-        { type: 'text' as const, text: msg.content },
-        ...(msg.toolCalls?.map((call) => ({
-          type: 'dynamic-tool' as const,
-          toolCallId: call.toolCallId,
-          toolName: call.toolName,
-          state: 'output-available' as const,
-          input: {},
-          output:
-            msg.metadata?.kind === 'order_draft_proposal'
-              ? {
-                  actionId: msg.metadata.actionId,
-                  expiresAt: msg.metadata.expiresAt,
-                }
-              : msg.metadata?.kind === 'order_draft_error'
-                ? { reason: msg.metadata.reason }
-                : { summary: call.summary },
-        })) ?? []),
-      ],
-    }))
-  }, [historyMessages])
+  // History messages are loaded via the page-level query but not currently
+  // wired into the assistant-ui thread runtime (it only accepts initial seed
+  // messages, not incremental updates). The thread is initialized empty and
+  // new turns arrive via streaming.
 
   return (
     <>
@@ -225,11 +161,7 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
               </div>
             </div>
           ) : (
-            <AssistantRuntimeWrapper
-              orgId={orgId}
-              userId={userId}
-              messages={messages}
-            >
+            <AssistantRuntimeWrapper>
               <div className="relative min-h-0 flex-1 bg-muted/30">
                 <ThreadPrimitive.Root className="flex h-full flex-col">
                   <ThreadPrimitive.Viewport
@@ -285,11 +217,11 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                               </span>
                               <div className="max-w-[84%] bg-primary px-3 py-2.5 text-primary-foreground text-sm/relaxed whitespace-pre-wrap [overflow-wrap:anywhere]">
                                 <MessagePrimitive.Parts
-                                  components={{ Text: MarkdownText }}
+                                  components={{ Text: StreamdownText }}
                                 />
                               </div>
                               {formattedTime && (
-                                <span className="mt-1 px-1 text-[10px] text-muted-foreground/80 font-mono">
+                                <span className="mt-1 px-1 text-xs text-muted-foreground/80 font-mono">
                                   {formattedTime}
                                 </span>
                               )}
@@ -298,73 +230,59 @@ export function FloatingAssistantV2({ orgId, userId }: FloatingAssistantProps) {
                         }
                         return (
                           <MessagePrimitive.Root className="flex flex-col items-start pt-3 first:pt-0">
-                            <span className="mb-1 px-1 text-[10px] font-medium text-muted-foreground">
-                              {t('assistant')}{' '}
+                            <span className="flex gap-2 mb-1 px-1 text-xs font-medium text-muted-foreground items-center">
+                              <Bot className="size-4" />
+                              {t('assistant')}
+                              <AuiIf
+                                condition={(state) =>
+                                  state.message.status?.type === 'running'
+                                }
+                              >
+                                <DotMatrix state="loading" />
+                              </AuiIf>
                             </span>
-                            <div className="max-w-[92%] border bg-background px-3 py-2.5 text-foreground text-sm/relaxed gap-y-2">
-                              <MessagePrimitive.Parts>
-                                {({ part }) => {
-                                  if (part.type === 'text') {
-                                    return <MarkdownText />
-                                  }
-                                  if (part.type === 'tool-call') {
-                                    const result = part.result as
-                                      | {
-                                          actionId?: string
-                                          expiresAt?: string
-                                          reason?: string
-                                        }
-                                      | undefined
-                                    // const isProposal =
-                                    //   part.toolName ===
-                                    //     "proposeOrderDraftTool" &&
-                                    //   result?.actionId;
-                                    const isError = result?.reason
 
-                                    // const call: AssistantStreamToolCall = {
-                                    //   toolCallId: part.toolCallId,
-                                    //   toolName: part.toolName,
-                                    //   status: part.result ? "done" : "running",
-                                    //   summary: null,
-                                    // };
-
-                                    return (
-                                      <div className="space-y-2">
-                                        {/*<AssistantToolCallBubble call={call} />*/}
-                                        {/*{isProposal &&
-                                          result?.actionId &&
-                                          !isError && (
-                                            <OrderDraftProposalCard
-                                              metadata={{
-                                                kind: "order_draft_proposal",
-                                                actionId: result.actionId,
-                                                expiresAt:
-                                                  result.expiresAt ||
-                                                  new Date().toISOString(),
-                                              }}
-                                              scope={{ orgId, userId }}
-                                            />
-                                          )}*/}
-                                        {isError && (
-                                          <div
-                                            role="alert"
-                                            className="border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive"
-                                          >
-                                            <p className="[overflow-wrap:anywhere]">
-                                              {result.reason}
-                                            </p>
-                                            <p className="mt-1 text-muted-foreground">
-                                              {t('error.tryAgain')}
-                                            </p>
-                                          </div>
-                                        )}
-                                      </div>
-                                    )
-                                  }
-                                  return null
-                                }}
-                              </MessagePrimitive.Parts>
-                            </div>
+                            <MessagePrimitive.Parts>
+                              {({ part }) => {
+                                if (part.type === 'text') {
+                                  return (
+                                    <div className="max-w-[92%] border bg-background px-3 py-2.5 text-foreground text-sm/relaxed gap-y-2">
+                                      <StreamdownText />
+                                    </div>
+                                  )
+                                }
+                                if (part.type === 'tool-call') {
+                                  const result = part.result as
+                                    | {
+                                        actionId?: string
+                                        expiresAt?: string
+                                        reason?: string
+                                      }
+                                    | undefined
+                                  const isError = result?.reason
+                                  return (
+                                    <div className="flex items-center gap-2 py-0.5 text-muted-foreground">
+                                      {part.status.type === 'running' && (
+                                        <Loader2 className="size-3 animate-spin" />
+                                      )}
+                                      <span className="font-medium">
+                                        {part.toolName}
+                                      </span>
+                                      {isError ? (
+                                        <span className="text-destructive">
+                                          {result.reason}
+                                        </span>
+                                      ) : part.result ? (
+                                        <span>done</span>
+                                      ) : (
+                                        <span>running...</span>
+                                      )}
+                                    </div>
+                                  )
+                                }
+                                return null
+                              }}
+                            </MessagePrimitive.Parts>
                             {formattedTime && (
                               <span className="mt-1 px-1 text-[10px] text-muted-foreground/80 font-mono">
                                 {formattedTime}
