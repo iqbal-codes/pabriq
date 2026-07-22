@@ -113,8 +113,8 @@ export type AssistantChatMessageMetadata =
 export type AssistantStreamToolCall = {
   toolCallId: string
   toolName: string
-  status: 'running' | 'done' | 'error'
-  summary: string | null
+  status: 'running' | 'done' | 'complete' | 'error'
+  summary?: string | null
 }
 
 export type AssistantChatMessage = {

@@ -52,7 +52,6 @@ type StreamEvent =
     }
   | { type: 'finish'; clientMessageId: string | null }
   | { type: 'error'; message: string }
-const STREAM_PATH = '/api/assistant/stream'
 
 function createTurn(
   clientMessageId: string,
@@ -110,7 +109,7 @@ export function useStreamAssistantMessage(_scope: AssistantChatScope) {
       }
 
       try {
-        const response = await fetch(STREAM_PATH, {
+        const response = await fetch('/api/assistant/stream', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
