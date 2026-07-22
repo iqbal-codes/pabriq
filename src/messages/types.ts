@@ -1136,8 +1136,12 @@ export type Messages = {
     trigger: string;
     title: string;
     description: string;
+    attachment: string;
+    cancel: string;
+    copyMessage: string;
     emptyTitle: string;
     emptyDescription: string;
+    editMessage: string;
     loadingHistory: string;
     messageLabel: string;
     messagePlaceholder: string;
@@ -1150,6 +1154,12 @@ export type Messages = {
     genericError: string;
     responding: string;
     thinking: string;
+    generatingResponse: string;
+    reasoning: string;
+    nextResponse: string;
+    previousResponse: string;
+    regenerateResponse: string;
+    rateLimitError: string;
     historyError: string;
     retry: string;
     jumpToLatest: string;
@@ -1161,6 +1171,7 @@ export type Messages = {
     starterOrderDraft: string;
     starterPendingWork: string;
     starterPriorities: string;
+    save: string;
     toolCall: {
       generic: string;
       search: string;
@@ -1168,6 +1179,14 @@ export type Messages = {
       propose: string;
       resolve: string;
       confirm: string;
+      running: string;
+      completed: string;
+      failed: string;
+      cancelled: string;
+      actionRequired: string;
+      details: string;
+      arguments: string;
+      result: string;
     };
     proposal: {
       title: string;
