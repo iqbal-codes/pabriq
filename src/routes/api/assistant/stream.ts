@@ -22,6 +22,7 @@ type StreamEvent =
       clientMessageId: string | null
     }
   | { type: 'text-delta'; delta: string }
+  | { type: 'reasoning-delta'; delta: string }
   | {
       type: 'tool-call'
       toolCallId: string
@@ -46,6 +47,7 @@ type StreamEvent =
 function sseEncode(event: StreamEvent): string {
   return `data: ${JSON.stringify(event)}\n\n`
 }
+const SSE_FLUSH_PREAMBLE = `${':'.padEnd(4096, ' ')}\n\n`
 
 function summariseToolResult(toolName: string, result: unknown): string {
   if (result == null) return ''
@@ -128,7 +130,7 @@ function detectMetadataFromToolResult(
         expiresAt = parsed.toISOString()
       }
     } catch {
-      // keep the fallback
+      // keep fallback
     }
     return {
       kind: 'order_draft_proposal',
@@ -185,10 +187,12 @@ export const Route = createFileRoute('/api/assistant/stream')({
         try {
           payload = await request.json()
         } catch {
+          logger.error('Failed to parse JSON body in assistant stream')
           return new Response('Invalid JSON body', { status: 400 })
         }
 
         if (!payload || typeof payload !== 'object') {
+          logger.error('Invalid payload object in assistant stream')
           return new Response('Invalid payload', { status: 400 })
         }
 
@@ -198,22 +202,42 @@ export const Route = createFileRoute('/api/assistant/stream')({
         }
 
         if (typeof message !== 'string' || message.trim().length === 0) {
+          logger.error('Message is missing or empty in assistant stream')
           return new Response('Message is required', { status: 400 })
         }
         if (message.length > 2000) {
+          logger.error(
+            { messageLength: message.length },
+            'Message too long in assistant stream',
+          )
           return new Response('Message too long', { status: 400 })
         }
 
+        logger.info(
+          { clientMessageId, messageLength: message.length },
+          'Assistant stream request received',
+        )
+
+        let authCtx: {
+          userId: string
+          orgId: string
+          role: 'owner' | 'admin'
+        }
         try {
-          await resolveAssistantRole()
+          authCtx = await resolveAssistantRole()
         } catch (err: unknown) {
-          const message = err instanceof Error ? err.message : 'Unauthorized'
-          if (message.includes('Not authorized')) {
+          const msg = err instanceof Error ? err.message : 'Unauthorized'
+          logger.warn({ err }, 'Assistant stream unauthorized request')
+          if (msg.includes('Not authorized')) {
             return new Response('Forbidden', { status: 403 })
           }
           return new Response('Unauthorized', { status: 401 })
         }
 
+        logger.info(
+          { userId: authCtx.userId, orgId: authCtx.orgId, role: authCtx.role },
+          'Assistant stream request authorized',
+        )
         const encoder = new TextEncoder()
         const assistantMessageId = crypto.randomUUID()
         const cid =
@@ -221,10 +245,21 @@ export const Route = createFileRoute('/api/assistant/stream')({
             ? clientMessageId
             : null
         const abortController = new AbortController()
+        const requestContext = new RequestContext<{
+          orgId: string
+          userId: string
+          role: 'owner' | 'admin'
+        }>()
+        requestContext.set('orgId', authCtx.orgId)
+        requestContext.set('userId', authCtx.userId)
+        requestContext.set('role', authCtx.role)
+        const threadId = `assistant:${authCtx.orgId}:${authCtx.userId}`
+        const resourceId = `org:${authCtx.orgId}:user:${authCtx.userId}`
 
+        let closed = false
+        let startAgent: (() => void) | undefined
         const stream = new ReadableStream<Uint8Array>({
-          async start(controller) {
-            let closed = false
+          start(controller) {
             const send = (event: StreamEvent) => {
               if (closed) return
               try {
@@ -234,170 +269,286 @@ export const Route = createFileRoute('/api/assistant/stream')({
               }
             }
 
-            let pendingMetadata: AssistantChatMessageMetadata | undefined
-
+            // Cross common reverse-proxy buffering thresholds before agent work starts.
             try {
-              const authCtx = await resolveAssistantRole()
-              const { mastra } = await import('#/mastra')
-              const agent = mastra.getAgentById('business-assistant')
+              controller.enqueue(encoder.encode(SSE_FLUSH_PREAMBLE))
+            } catch {
+              closed = true
+              return
+            }
 
-              const requestContext = new RequestContext<{
-                orgId: string
-                userId: string
-                role: 'owner' | 'admin'
-              }>()
-              requestContext.set('orgId', authCtx.orgId)
-              requestContext.set('userId', authCtx.userId)
-              requestContext.set('role', authCtx.role)
+            logger.info(
+              { assistantMessageId, clientMessageId: cid },
+              'Assistant stream sending ready event',
+            )
+            send({
+              type: 'ready',
+              assistantMessageId,
+              clientMessageId: cid,
+            })
 
-              send({
-                type: 'ready',
-                assistantMessageId,
-                clientMessageId: cid,
-              })
+            // Start after the first reader pull so initial SSE frames can flush.
+            startAgent = () => {
+              if (closed) return
+              void (async () => {
+                let pendingMetadata: AssistantChatMessageMetadata | undefined
 
-              const handleStream = await agent.stream(message.trim(), {
-                requestContext,
-                abortSignal: abortController.signal,
-                memory: {
-                  thread: `assistant:${authCtx.orgId}:${authCtx.userId}`,
-                  resource: `org:${authCtx.orgId}:user:${authCtx.userId}`,
-                },
-              })
+                try {
+                  const { mastra } = await import('#/mastra')
+                  const agent = mastra.getAgentById('business-assistant')
 
-              let hasSentFinish = false
+                  logger.info(
+                    { message: message.trim(), threadId, resourceId },
+                    'Starting agent.stream execution',
+                  )
+                  const handleStream = await agent.stream(message.trim(), {
+                    requestContext,
+                    abortSignal: abortController.signal,
+                    memory: {
+                      thread: threadId,
+                      resource: resourceId,
+                    },
+                  })
 
-              for await (const chunk of handleStream.fullStream) {
-                if (closed) break
+                  let hasSentFinish = false
 
-                switch (chunk.type) {
-                  case 'text-delta': {
-                    const payload = chunk.payload as { text?: unknown }
-                    if (typeof payload.text === 'string') {
-                      send({ type: 'text-delta', delta: payload.text })
+                  for await (const chunk of handleStream.fullStream) {
+                    if (closed) {
+                      logger.info('Stream closed internally; breaking loop')
+                      break
                     }
-                    break
+
+                    switch (chunk.type) {
+                      case 'text-delta': {
+                        const payload = chunk.payload as {
+                          text?: unknown
+                          delta?: unknown
+                          textDelta?: unknown
+                        }
+                        const textStr =
+                          typeof payload.text === 'string'
+                            ? payload.text
+                            : typeof payload.delta === 'string'
+                              ? payload.delta
+                              : typeof payload.textDelta === 'string'
+                                ? payload.textDelta
+                                : null
+                        if (textStr) {
+                          send({ type: 'text-delta', delta: textStr })
+                        }
+                        break
+                      }
+                      case 'reasoning-delta': {
+                        const payload = chunk.payload as {
+                          text?: unknown
+                          delta?: unknown
+                          reasoning?: unknown
+                        }
+                        const reasoningStr =
+                          typeof payload.text === 'string'
+                            ? payload.text
+                            : typeof payload.delta === 'string'
+                              ? payload.delta
+                              : typeof payload.reasoning === 'string'
+                                ? payload.reasoning
+                                : null
+                        if (reasoningStr) {
+                          send({ type: 'reasoning-delta', delta: reasoningStr })
+                        }
+                        break
+                      }
+                      case 'tool-call': {
+                        const payload = chunk.payload as {
+                          toolCallId?: unknown
+                          id?: unknown
+                          toolName?: unknown
+                          name?: unknown
+                          args?: unknown
+                        }
+                        const toolCallId =
+                          typeof payload.toolCallId === 'string'
+                            ? payload.toolCallId
+                            : typeof payload.id === 'string'
+                              ? payload.id
+                              : null
+                        const toolName =
+                          typeof payload.toolName === 'string'
+                            ? payload.toolName
+                            : typeof payload.name === 'string'
+                              ? payload.name
+                              : null
+                        if (toolCallId && toolName) {
+                          send({
+                            type: 'tool-call',
+                            toolCallId,
+                            toolName,
+                            args:
+                              payload.args && typeof payload.args === 'object'
+                                ? (payload.args as Record<string, unknown>)
+                                : null,
+                          })
+                        }
+                        break
+                      }
+                      case 'tool-result': {
+                        const payload = chunk.payload as {
+                          toolCallId?: unknown
+                          id?: unknown
+                          toolName?: unknown
+                          name?: unknown
+                          result?: unknown
+                          isError?: unknown
+                        }
+                        const toolCallId =
+                          typeof payload.toolCallId === 'string'
+                            ? payload.toolCallId
+                            : typeof payload.id === 'string'
+                              ? payload.id
+                              : null
+                        const toolName =
+                          typeof payload.toolName === 'string'
+                            ? payload.toolName
+                            : typeof payload.name === 'string'
+                              ? payload.name
+                              : null
+                        if (toolCallId && toolName) {
+                          const summary = summariseToolResult(
+                            toolName,
+                            payload.result,
+                          )
+                          const detected = detectMetadataFromToolResult(
+                            toolName,
+                            payload.result,
+                          )
+                          if (detected) {
+                            logger.info(
+                              { detectedMetadata: detected },
+                              'Pending metadata detected from tool result',
+                            )
+                            pendingMetadata = detected
+                          }
+
+                          logger.info(
+                            { toolName, toolCallId },
+                            'Sending tool-result event',
+                          )
+                          send({
+                            type: 'tool-result',
+                            toolCallId,
+                            toolName,
+                            isError: payload.isError === true,
+                            summary,
+                          })
+                        }
+                        break
+                      }
+                      case 'finish': {
+                        if (pendingMetadata) {
+                          logger.info(
+                            { pendingMetadata },
+                            'Sending pending metadata event on finish',
+                          )
+                          send({
+                            type: 'metadata',
+                            clientMessageId: cid,
+                            metadata: pendingMetadata,
+                          })
+                          pendingMetadata = undefined
+                        }
+                        logger.info({ cid }, 'Sending finish event')
+                        send({ type: 'finish', clientMessageId: cid })
+                        hasSentFinish = true
+                        break
+                      }
+                      case 'error': {
+                        const payload = chunk.payload as { message?: unknown }
+                        const errorMsg =
+                          typeof payload.message === 'string'
+                            ? payload.message
+                            : 'Unknown error'
+                        logger.error({ errorMsg }, 'Mastra stream chunk error')
+                        const lowerErr = errorMsg.toLowerCase()
+                        const formattedMsg =
+                          lowerErr.includes('429') ||
+                          lowerErr.includes('rate limit') ||
+                          lowerErr.includes('quota') ||
+                          lowerErr.includes('too many requests')
+                            ? 'Rate limit reached. Please try again in a moment.'
+                            : errorMsg
+                        send({
+                          type: 'error',
+                          message: formattedMsg,
+                        })
+                        break
+                      }
+                      default:
+                        break
+                    }
                   }
-                  case 'tool-call': {
-                    const payload = chunk.payload as {
-                      toolCallId?: unknown
-                      toolName?: unknown
-                      args?: unknown
-                    }
-                    if (
-                      typeof payload.toolCallId === 'string' &&
-                      typeof payload.toolName === 'string'
-                    ) {
-                      send({
-                        type: 'tool-call',
-                        toolCallId: payload.toolCallId,
-                        toolName: payload.toolName,
-                        args:
-                          payload.args && typeof payload.args === 'object'
-                            ? (payload.args as Record<string, unknown>)
-                            : null,
-                      })
-                    }
-                    break
-                  }
-                  case 'tool-result': {
-                    const payload = chunk.payload as {
-                      toolCallId?: unknown
-                      toolName?: unknown
-                      result?: unknown
-                      isError?: unknown
-                    }
-                    if (
-                      typeof payload.toolCallId === 'string' &&
-                      typeof payload.toolName === 'string'
-                    ) {
-                      const summary = summariseToolResult(
-                        payload.toolName,
-                        payload.result,
-                      )
-                      const detected = detectMetadataFromToolResult(
-                        payload.toolName,
-                        payload.result,
-                      )
-                      if (detected) pendingMetadata = detected
 
-                      send({
-                        type: 'tool-result',
-                        toolCallId: payload.toolCallId,
-                        toolName: payload.toolName,
-                        isError: payload.isError === true,
-                        summary,
-                      })
-                    }
-                    break
-                  }
-                  case 'finish': {
+                  if (!hasSentFinish) {
                     if (pendingMetadata) {
+                      logger.info(
+                        { pendingMetadata },
+                        'Sending fallback pending metadata event',
+                      )
                       send({
                         type: 'metadata',
                         clientMessageId: cid,
                         metadata: pendingMetadata,
                       })
-                      pendingMetadata = undefined
                     }
+                    logger.info({ cid }, 'Sending fallback finish event')
                     send({ type: 'finish', clientMessageId: cid })
-                    hasSentFinish = true
-                    break
                   }
-                  case 'error': {
-                    const payload = chunk.payload as { message?: unknown }
+                } catch (err: unknown) {
+                  if (closed) return
+                  const message =
+                    err instanceof Error ? err.message : 'Unknown error'
+                  logger.error({ err }, 'assistant stream failed in generator')
+                  const lowerMsg = message.toLowerCase()
+                  if (
+                    message.includes('MASTRA_MODEL') ||
+                    message.includes('provider/model-name')
+                  ) {
+                    send({
+                      type: 'error',
+                      message: 'AI assistant is not configured',
+                    })
+                  } else if (
+                    lowerMsg.includes('429') ||
+                    lowerMsg.includes('rate limit') ||
+                    lowerMsg.includes('quota') ||
+                    lowerMsg.includes('too many requests')
+                  ) {
                     send({
                       type: 'error',
                       message:
-                        typeof payload.message === 'string'
-                          ? payload.message
-                          : 'Unknown error',
+                        'Rate limit reached. Please try again in a moment.',
                     })
-                    break
+                  } else {
+                    send({ type: 'error', message })
                   }
-                  default:
-                    break
+                } finally {
+                  if (!closed) {
+                    closed = true
+                    try {
+                      controller.close()
+                    } catch {
+                      // already closed
+                    }
+                  }
                 }
-              }
-
-              if (!hasSentFinish) {
-                if (pendingMetadata) {
-                  send({
-                    type: 'metadata',
-                    clientMessageId: cid,
-                    metadata: pendingMetadata,
-                  })
-                }
-                send({ type: 'finish', clientMessageId: cid })
-              }
-            } catch (err: unknown) {
-              if (closed) return
-              const message =
-                err instanceof Error ? err.message : 'Unknown error'
-              logger.error({ err }, 'assistant stream failed')
-              if (
-                message.includes('MASTRA_MODEL') ||
-                message.includes('provider/model-name')
-              ) {
-                send({
-                  type: 'error',
-                  message: 'AI assistant is not configured',
-                })
-              } else {
-                send({ type: 'error', message })
-              }
-            } finally {
-              if (!closed) {
-                closed = true
-                try {
-                  controller.close()
-                } catch {
-                  // already closed
-                }
-              }
+              })()
             }
           },
+          pull() {
+            const launch = startAgent
+            startAgent = undefined
+            launch?.()
+          },
           cancel() {
+            closed = true
             abortController.abort()
           },
         })
@@ -407,8 +558,8 @@ export const Route = createFileRoute('/api/assistant/stream')({
           headers: {
             'Content-Type': 'text/event-stream; charset=utf-8',
             'Cache-Control': 'no-cache, no-transform',
-            Connection: 'keep-alive',
             'X-Accel-Buffering': 'no',
+            'x-no-compression': '1',
           },
         })
       },

@@ -49,6 +49,20 @@ export const Route = createFileRoute('/api/assistant/chat')({
         const params = await request.json()
         const threadId = `assistant:${authContext.orgId}:${authContext.userId}`
         const resourceId = `org:${authContext.orgId}:user:${authContext.userId}`
+
+        const MAX_RECENT_MESSAGES = 10
+        const rawMessages = Array.isArray(params.messages)
+          ? params.messages
+          : []
+        const messages = rawMessages.slice(-MAX_RECENT_MESSAGES)
+
+        console.log('[chat] POST', {
+          threadId,
+          totalClientMessages: rawMessages.length,
+          sentMessagesCount: messages.length,
+          lastMsg: messages[messages.length - 1]?.content?.slice(0, 120),
+        })
+
         const requestContext = new RequestContext<{
           orgId: string
           userId: string
@@ -61,8 +75,10 @@ export const Route = createFileRoute('/api/assistant/chat')({
         const stream = await handleChatStream({
           mastra,
           agentId: 'business-assistant',
+          sendReasoning: true,
           params: {
             ...params,
+            messages,
             threadId,
             resourceId,
             requestContext,

@@ -196,10 +196,10 @@ export function createBusinessAssistantAgent(storage: PostgresStore): Agent {
       vector: createMastraVector(),
       embedder: createMastraEmbedder(),
       options: {
-        lastMessages: 20,
+        lastMessages: 10,
         semanticRecall: {
-          topK: 4,
-          messageRange: { before: 1, after: 1 },
+          topK: 2,
+          messageRange: { before: 0, after: 0 },
           scope: 'resource',
         },
         workingMemory: {

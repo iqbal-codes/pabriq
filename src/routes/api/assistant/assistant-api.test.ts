@@ -16,13 +16,18 @@ vi.mock('@tanstack/react-start/server', () => ({
   getRequestHeaders: vi.fn(() => ({})),
 }))
 
+const assistantMocks = vi.hoisted(() => ({
+  agentStream: vi.fn(),
+}))
+
 vi.mock('#/mastra', () => ({
   mastra: {
     getAgentById: vi.fn(() => ({
-      stream: vi.fn(),
+      stream: assistantMocks.agentStream,
     })),
   },
 }))
+
 vi.mock('@mastra/ai-sdk', () => ({
   handleChatStream: vi.fn().mockResolvedValue(new ReadableStream()),
 }))
@@ -134,5 +139,136 @@ describe('POST /api/assistant/stream — role gating', () => {
 
     const response = await streamHandler({ request: makeRequest() })
     expect(response.status).not.toBe(403)
+  })
+
+  it('keeps the SSE response browser-readable and streams agent frames', async () => {
+    vi.clearAllMocks()
+    mockGetSession.mockResolvedValue({
+      user: { id: 'user-1' },
+    } as never)
+    expect(streamHandler).toBeDefined()
+    if (!streamHandler) return
+
+    mockResolveOrgAndRole.mockResolvedValue({ orgId: 'org-1', role: 'admin' })
+    assistantMocks.agentStream.mockResolvedValue({
+      fullStream: (async function* () {
+        yield { type: 'text-delta', payload: { text: 'Hello' } }
+        yield { type: 'finish', payload: {} }
+      })(),
+    })
+
+    const response = await streamHandler({ request: makeRequest() })
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toContain('text/event-stream')
+    expect(response.headers.get('content-encoding')).toBeNull()
+
+    const reader = response.body?.getReader()
+    expect(reader).toBeDefined()
+    if (!reader) return
+
+    const decoder = new TextDecoder()
+    let body = ''
+    while (!body.includes('"type":"ready"')) {
+      const { done, value } = await reader.read()
+      expect(done).toBe(false)
+      if (done) return
+      body += decoder.decode(value)
+    }
+
+    while (!body.includes('"type":"finish"')) {
+      const { done, value } = await reader.read()
+      if (done) break
+      body += decoder.decode(value)
+    }
+
+    expect(body).toContain('"type":"text-delta"')
+    expect(body).toContain('"delta":"Hello"')
+    expect(body).toContain('"type":"finish"')
+  })
+
+  it('flushes a large SSE preamble before the agent completes', async () => {
+    vi.clearAllMocks()
+    mockGetSession.mockResolvedValue({
+      user: { id: 'user-1' },
+    } as never)
+    expect(streamHandler).toBeDefined()
+    if (!streamHandler) return
+
+    mockResolveOrgAndRole.mockResolvedValue({ orgId: 'org-1', role: 'admin' })
+    let releaseAgent = () => {}
+    const agentGate = new Promise<void>((resolve) => {
+      releaseAgent = resolve
+    })
+    assistantMocks.agentStream.mockResolvedValue({
+      fullStream: (async function* () {
+        await agentGate
+        yield { type: 'finish', payload: {} }
+      })(),
+    })
+
+    const response = await streamHandler({ request: makeRequest() })
+    const reader = response.body?.getReader()
+    expect(reader).toBeDefined()
+    if (!reader) return
+
+    try {
+      const { done, value } = await reader.read()
+      expect(done).toBe(false)
+      expect(value).toBeDefined()
+      if (!value) return
+      expect(value.byteLength).toBeGreaterThanOrEqual(4096)
+    } finally {
+      releaseAgent()
+      await reader.cancel()
+    }
+  })
+  it('starts the agent after the initial SSE frames are readable', async () => {
+    vi.clearAllMocks()
+    mockGetSession.mockResolvedValue({
+      user: { id: 'user-1' },
+    } as never)
+    expect(streamHandler).toBeDefined()
+    if (!streamHandler) return
+
+    mockResolveOrgAndRole.mockResolvedValue({ orgId: 'org-1', role: 'admin' })
+    let releaseAgent = () => {}
+    const agentGate = new Promise<void>((resolve) => {
+      releaseAgent = resolve
+    })
+    let markAgentStarted = () => {}
+    const agentStarted = new Promise<void>((resolve) => {
+      markAgentStarted = resolve
+    })
+    assistantMocks.agentStream.mockImplementation(async () => {
+      markAgentStarted()
+      return {
+        fullStream: (async function* () {
+          await agentGate
+          yield { type: 'finish', payload: {} }
+        })(),
+      }
+    })
+
+    const response = await streamHandler({ request: makeRequest() })
+    expect(assistantMocks.agentStream).not.toHaveBeenCalled()
+    const reader = response.body?.getReader()
+    expect(reader).toBeDefined()
+    if (!reader) return
+
+    try {
+      const first = await reader.read()
+      expect(first.done).toBe(false)
+      expect(first.value?.byteLength).toBeGreaterThanOrEqual(4096)
+      expect(assistantMocks.agentStream).not.toHaveBeenCalled()
+
+      const second = await reader.read()
+      expect(second.done).toBe(false)
+      await agentStarted
+      expect(assistantMocks.agentStream).toHaveBeenCalledTimes(1)
+    } finally {
+      releaseAgent()
+      await reader.cancel()
+    }
   })
 })
