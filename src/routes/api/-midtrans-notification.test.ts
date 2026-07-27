@@ -5,6 +5,7 @@ import { db } from '#/db/index'
 import {
   customers as customersTable,
   invoices as invoicesTable,
+  midtransTransactions as midtransTransactionsTable,
   organization,
   organizationProfiles as organizationProfilesTable,
   payments as paymentsTable,
@@ -62,7 +63,6 @@ describe('/api/midtrans-notification', () => {
     expect(handler).toBeDefined()
     if (!handler) return
 
-    // Seed an invoice so the route can find it by midtransOrderId
     const result = await createInvoice(webhookOrgId, {
       customerId: 'webhook-cust',
       customerName: 'Webhook Customer',
@@ -70,10 +70,16 @@ describe('/api/midtrans-notification', () => {
       paymentProvider: 'midtrans',
       lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 10000 }],
     })
-    await db
-      .update(invoicesTable)
-      .set({ midtransOrderId: 'INV-123' })
-      .where(eq(invoicesTable.id, result.invoice.id))
+    await db.insert(midtransTransactionsTable).values({
+      id: 'webhook-attempt-invalid',
+      orgId: webhookOrgId,
+      invoiceId: result.invoice.id,
+      orderId: 'INV-123',
+      expectedAmount: 10000,
+      transactionStatus: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
 
     const body = {
       order_id: 'INV-123',
@@ -97,7 +103,7 @@ describe('/api/midtrans-notification', () => {
     expect(text).toBe('Unauthorized signature')
   })
 
-  it('returns 404 if invoice not found', async () => {
+  it('returns 404 if transaction not found', async () => {
     expect(handler).toBeDefined()
     if (!handler) return
 
@@ -126,11 +132,11 @@ describe('/api/midtrans-notification', () => {
         'Content-Type': 'application/json',
       },
     })
-
     const response = await handler({ request, params: {} })
+
     expect(response.status).toBe(404)
     const text = await response.text()
-    expect(text).toBe('Invoice not found')
+    expect(text).toBe('Transaction not found')
   })
 
   it('processes valid signature and confirms payment', async () => {
@@ -148,11 +154,26 @@ describe('/api/midtrans-notification', () => {
     const invoice = result.invoice
 
     const orderId = `${invoice.invoiceNumber}-1718291823`
-    // Set midtransOrderId so the route can find the invoice
-    await db
-      .update(invoicesTable)
-      .set({ midtransOrderId: orderId })
-      .where(eq(invoicesTable.id, invoice.id))
+    await db.insert(midtransTransactionsTable).values({
+      id: 'webhook-attempt-valid',
+      orgId: webhookOrgId,
+      invoiceId: invoice.id,
+      orderId,
+      expectedAmount: 100000,
+      transactionStatus: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    await db.insert(midtransTransactionsTable).values({
+      id: 'webhook-attempt-newer',
+      orgId: webhookOrgId,
+      invoiceId: invoice.id,
+      orderId: `${invoice.invoiceNumber}-newer`,
+      expectedAmount: 100000,
+      transactionStatus: 'pending',
+      createdAt: new Date(Date.now() + 1000),
+      updatedAt: new Date(Date.now() + 1000),
+    })
 
     const statusCode = '200'
     const grossAmount = '100000.00'
@@ -224,6 +245,64 @@ describe('/api/midtrans-notification', () => {
       .from(paymentsTable)
       .where(eq(paymentsTable.invoiceId, invoice.id))
     expect(paymentsAfter).toHaveLength(1)
+  })
+  it('ignores non-settlement statuses without confirming payment', async () => {
+    expect(handler).toBeDefined()
+    if (!handler) return
+
+    const result = await createInvoice(webhookOrgId, {
+      customerId: 'webhook-cust',
+      customerName: 'Webhook Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'midtrans',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 50000 }],
+    })
+    const invoice = result.invoice
+    const orderId = `${invoice.invoiceNumber}-pending-test`
+    await db.insert(midtransTransactionsTable).values({
+      id: 'webhook-attempt-pending',
+      orgId: webhookOrgId,
+      invoiceId: invoice.id,
+      orderId,
+      expectedAmount: 50000,
+      transactionStatus: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const statusCode = '201'
+    const grossAmount = '50000.00'
+    const serverKey = 'mock_server_key'
+
+    const signatureKey = crypto
+      .createHash('sha512')
+      .update(orderId + statusCode + grossAmount + serverKey)
+      .digest('hex')
+
+    const body = {
+      order_id: orderId,
+      status_code: statusCode,
+      gross_amount: grossAmount,
+      signature_key: signatureKey,
+      transaction_status: 'pending',
+    }
+
+    const request = new Request('http://localhost/api/midtrans-notification', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    const response = await handler({ request, params: {} })
+    expect(response.status).toBe(200)
+
+    const payments = await db
+      .select()
+      .from(paymentsTable)
+      .where(eq(paymentsTable.invoiceId, invoice.id))
+    expect(payments).toHaveLength(0)
   })
 
   it('returns generic error without leaking internal details', async () => {

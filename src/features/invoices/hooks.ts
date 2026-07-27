@@ -21,6 +21,7 @@ import {
   listInvoicesFn,
   listPaymentMethodsFn,
   markInvoicePaidFn,
+  reconcileInvoicePaymentFn,
   updatePaymentMethodFn,
 } from './server'
 
@@ -125,6 +126,20 @@ export function useMarkInvoicePaid() {
     mutationFn: (id: string) => markInvoicePaidFn({ data: { id } }),
     onSuccess: () =>
       invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.invoices.all },
+        { queryKey: queryKeys.notifications.all },
+      ]),
+  })
+}
+
+export function useReconcilePayment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (invoiceId: string) =>
+      reconcileInvoicePaymentFn({ data: { invoiceId } }),
+    onSuccess: (_result, invoiceId) =>
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.invoices.detail(invoiceId) },
         { queryKey: queryKeys.invoices.all },
         { queryKey: queryKeys.notifications.all },
       ]),

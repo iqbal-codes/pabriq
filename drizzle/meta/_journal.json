@@ -239,6 +239,20 @@
       "when": 1784640168590,
       "tag": "0033_dapper_franklin_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1785165072552,
+      "tag": "0034_quiet_winter_soldier",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1785168622853,
+      "tag": "0035_ambitious_power_pack",
+      "breakpoints": true
     }
   ]
 }

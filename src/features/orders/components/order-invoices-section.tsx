@@ -9,7 +9,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '#/components/ui/tooltip'
+import { InvoicePaymentDetail } from '#/features/invoices/components/invoice-payment-detail'
 import type { InvoiceRow } from '#/features/invoices/model'
+import type { Role } from '#/features/permissions/model'
 import { currencyFormatter } from './view-order-utils'
 
 function getInvoiceBadgeType(
@@ -32,15 +34,18 @@ function getInvoiceBadgeType(
 type Props = {
   orderInvoices: InvoiceRow[]
   invoicePayments: Record<string, Array<{ id: string; proofAssetId: string }>>
+  orgRole?: Role
 }
 
 export function OrderInvoicesSection({
   orderInvoices,
   invoicePayments,
+  orgRole,
 }: Props): React.ReactElement | null {
   const it = useTranslations('invoices')
   const pt = useTranslations('portal')
   const [expanded, setExpanded] = useState(false)
+  const invoiceRole: Role = orgRole ?? 'member'
 
   // Sort by invoice number so the DP invoice (first issued) sits above the
   // final/settlement invoice (last issued), matching the portal view.
@@ -167,6 +172,9 @@ export function OrderInvoicesSection({
                   </Tooltip>
                 </div>
               </div>
+              {orgRole && (
+                <InvoicePaymentDetail invoice={inv} orgRole={invoiceRole} />
+              )}
             </li>
           )
         })}

@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import {
   boolean,
   date,
@@ -373,7 +374,36 @@ export const invoices = pgTable(
     uniqueIndex('idx_invoices_org_number').on(table.orgId, table.invoiceNumber),
   ],
 )
-
+export const midtransTransactions = pgTable(
+  'midtrans_transactions',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    invoiceId: text('invoice_id')
+      .notNull()
+      .references(() => invoices.id, { onDelete: 'cascade' }),
+    orderId: text('order_id').notNull().unique(),
+    expectedAmount: real('expected_amount').notNull(),
+    grossAmount: real('gross_amount'),
+    transactionId: text('transaction_id'),
+    transactionStatus: text('transaction_status').notNull().default('created'),
+    errorMessage: text('error_message'),
+    failedAt: timestamp('failed_at'),
+    fraudStatus: text('fraud_status'),
+    paymentType: text('payment_type'),
+    settlementTime: timestamp('settlement_time'),
+    refundedAmount: real('refunded_amount').notNull().default(0),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_midtrans_transactions_org_id').on(table.orgId),
+    index('idx_midtrans_transactions_invoice_id').on(table.invoiceId),
+    index('idx_midtrans_transactions_status').on(table.transactionStatus),
+  ],
+)
 export const invoiceLineItems = pgTable('invoice_line_items', {
   id: text('id').primaryKey(),
   invoiceId: text('invoice_id')
@@ -423,6 +453,9 @@ export const payments = pgTable(
     index('idx_payments_org_id').on(table.orgId),
     index('idx_payments_invoice_id').on(table.invoiceId),
     index('idx_payments_status').on(table.status),
+    uniqueIndex('idx_payments_midtrans_reference')
+      .on(table.orgId, table.invoiceId, table.reference)
+      .where(sql`${table.method} = 'midtrans'`),
   ],
 )
 

@@ -7,6 +7,7 @@ import {
   customers as customersTable,
   invoices as invoicesTable,
   invoiceLineItems as lineItemsTable,
+  midtransTransactions as midtransTransactionsTable,
   orderLineItems as orderLineItemsTable,
   orders as ordersTable,
   organizationProfiles as organizationProfilesTable,
@@ -110,6 +111,7 @@ export type InvoiceRow = {
   dueDate: string
   paymentProvider: 'bank_transfer' | 'midtrans'
   paymentMethodId: string | null
+  midtransOrderId?: string | null
   createdAt: Date
   overdue: boolean
   shippingFee?: number
@@ -155,6 +157,23 @@ export type InvoiceBalance = {
   remaining: number
   isFullyPaid: boolean
 }
+export type MidtransTransactionAttempt = {
+  id: string
+  orgId: string
+  invoiceId: string
+  orderId: string
+  expectedAmount: number
+  grossAmount: number | null
+  transactionId: string | null
+  transactionStatus: string
+  errorMessage: string | null
+  failedAt: Date | null
+  fraudStatus: string | null
+  paymentType: string | null
+  settlementTime: Date | null
+  createdAt: Date
+  updatedAt: Date
+}
 
 export type ListInvoicesParams = {
   orgId: string
@@ -182,6 +201,8 @@ export type GetInvoiceResult = {
     phone: string | null
     photoAssetId: string | null
   } | null
+  payments: Payment[]
+  midtransAttempts: MidtransTransactionAttempt[]
 }
 
 export type OrderForInvoice = {
@@ -479,11 +500,33 @@ export async function getInvoice(
     }
   }
 
+  const [paymentRows, attemptRows] = await Promise.all([
+    db
+      .select()
+      .from(paymentsTable)
+      .where(
+        and(eq(paymentsTable.invoiceId, id), eq(paymentsTable.orgId, orgId)),
+      )
+      .orderBy(desc(paymentsTable.createdAt)),
+    db
+      .select()
+      .from(midtransTransactionsTable)
+      .where(
+        and(
+          eq(midtransTransactionsTable.invoiceId, id),
+          eq(midtransTransactionsTable.orgId, orgId),
+        ),
+      )
+      .orderBy(desc(midtransTransactionsTable.createdAt)),
+  ])
+
   return {
     invoice: invoiceRows[0] as Invoice,
     lineItems: itemRows as InvoiceLineItem[],
     paymentMethod,
     customer,
+    payments: paymentRows as Payment[],
+    midtransAttempts: attemptRows as MidtransTransactionAttempt[],
   }
 }
 
@@ -547,7 +590,9 @@ export async function listInvoices(
         total: invoicesTable.total,
         percentage: invoicesTable.percentage,
         dueDate: invoicesTable.dueDate,
+        paymentProvider: invoicesTable.paymentProvider,
         paymentMethodId: invoicesTable.paymentMethodId,
+        midtransOrderId: invoicesTable.midtransOrderId,
         createdAt: invoicesTable.createdAt,
         overdue: sql<boolean>`(${invoicesTable.status} IN ('unpaid') AND ${invoicesTable.dueDate} < ${today}::date)`,
         shippingFee: sql<number>`coalesce(${shippingFeeByInvoice.shippingFee}, 0)`,
@@ -759,12 +804,15 @@ export async function deletePaymentMethod(
 
 // ── Payment functions ──────────────────────────────────────────
 
+type DbClient = DbTransaction | typeof db
+
 export async function createPayment(
   orgId: string,
   input: CreatePaymentInput,
+  client: DbClient = db,
 ): Promise<Payment> {
   // Verify invoice belongs to this org
-  const invoiceRows = await db
+  const invoiceRows = await client
     .select()
     .from(invoicesTable)
     .where(
@@ -782,7 +830,7 @@ export async function createPayment(
   }
 
   // Validate amount does not exceed remaining balance
-  const balance = await getInvoiceBalance(input.invoiceId, orgId)
+  const balance = await getInvoiceBalance(input.invoiceId, orgId, client)
   if (input.amount > balance.remaining) {
     throw new Error(
       `Payment amount exceeds remaining balance of ${balance.remaining}`,
@@ -791,7 +839,7 @@ export async function createPayment(
 
   // Verify proof asset belongs to this org
   if (input.proofAssetId) {
-    const [asset] = await db
+    const [asset] = await client
       .select()
       .from(assetsTable)
       .where(
@@ -807,7 +855,7 @@ export async function createPayment(
   const now = new Date()
   const id = generateId()
 
-  await db.insert(paymentsTable).values({
+  await client.insert(paymentsTable).values({
     id,
     orgId,
     invoiceId: input.invoiceId,
@@ -824,7 +872,7 @@ export async function createPayment(
     updatedAt: now,
   })
 
-  const [payment] = await db
+  const [payment] = await client
     .select()
     .from(paymentsTable)
     .where(eq(paymentsTable.id, id))
@@ -837,13 +885,13 @@ export async function confirmPayment(
   orgId: string,
   paymentId: string,
   userId: string,
+  client: DbClient = db,
 ): Promise<{ payment: Payment; balance: InvoiceBalance }> {
-  const paymentRows = await db
+  const paymentRows = await client
     .select()
     .from(paymentsTable)
     .where(and(eq(paymentsTable.id, paymentId), eq(paymentsTable.orgId, orgId)))
     .limit(1)
-
   if (paymentRows.length === 0) throw new Error('Payment not found')
   if (paymentRows[0].status !== 'pending')
     throw new Error('Only pending payments can be confirmed')
@@ -851,7 +899,7 @@ export async function confirmPayment(
   const payment = paymentRows[0]
   const now = new Date()
 
-  await db
+  await client
     .update(paymentsTable)
     .set({
       status: 'confirmed',
@@ -862,10 +910,10 @@ export async function confirmPayment(
     .where(eq(paymentsTable.id, paymentId))
 
   // Update invoice status based on balance
-  const balance = await getInvoiceBalance(payment.invoiceId, orgId)
+  const balance = await getInvoiceBalance(payment.invoiceId, orgId, client)
 
   if (balance.remaining <= 0) {
-    await db
+    await client
       .update(invoicesTable)
       .set({
         status: 'paid',
@@ -875,18 +923,17 @@ export async function confirmPayment(
       })
       .where(eq(invoicesTable.id, payment.invoiceId))
   } else {
-    await db
+    await client
       .update(invoicesTable)
       .set({ status: 'partially_paid', updatedAt: now })
       .where(eq(invoicesTable.id, payment.invoiceId))
   }
 
-  const [updated] = await db
+  const [updated] = await client
     .select()
     .from(paymentsTable)
     .where(eq(paymentsTable.id, paymentId))
     .limit(1)
-
   return { payment: updated as Payment, balance }
 }
 
@@ -1058,8 +1105,9 @@ export async function getPaymentProofsForInvoices(
 export async function getInvoiceBalance(
   invoiceId: string,
   orgId: string,
+  client: DbClient = db,
 ): Promise<InvoiceBalance> {
-  const invoiceRows = await db
+  const invoiceRows = await client
     .select({ total: invoicesTable.total })
     .from(invoicesTable)
     .where(and(eq(invoicesTable.id, invoiceId), eq(invoicesTable.orgId, orgId)))
@@ -1067,7 +1115,7 @@ export async function getInvoiceBalance(
 
   if (invoiceRows.length === 0) throw new Error('Invoice not found')
 
-  const paymentRows = await db
+  const paymentRows = await client
     .select({ amount: paymentsTable.amount, status: paymentsTable.status })
     .from(paymentsTable)
     .where(
@@ -1319,25 +1367,18 @@ export async function createMidtransTransaction(
       invoiceNumber: invoicesTable.invoiceNumber,
       customerId: invoicesTable.customerId,
       paymentProvider: invoicesTable.paymentProvider,
-      paymentMethodId: invoicesTable.paymentMethodId,
     })
     .from(invoicesTable)
     .where(and(eq(invoicesTable.id, invoiceId), eq(invoicesTable.orgId, orgId)))
     .limit(1)
 
-  if (!invoice) {
-    throw new Error('Invoice not found')
-  }
-
+  if (!invoice) throw new Error('Invoice not found')
   if (invoice.paymentProvider !== 'midtrans') {
     throw new Error('Invoice is not configured for Midtrans payment')
   }
 
   const balance = await getInvoiceBalance(invoiceId, orgId)
-
-  if (balance.remaining <= 0) {
-    throw new Error('Invoice is already fully paid')
-  }
+  if (balance.remaining <= 0) throw new Error('Invoice is already fully paid')
 
   const [customer] = await db
     .select({
@@ -1354,45 +1395,65 @@ export async function createMidtransTransaction(
     )
     .limit(1)
 
-  const credentials = await getMidtransCredentials(orgId)
+  const expectedAmount = Math.round(balance.remaining)
+  const orderId = `${invoice.invoiceNumber}-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
+  const attemptId = generateId()
+  const now = new Date()
 
-  const snap = new Snap({
-    isProduction: credentials.isProduction,
-    serverKey: credentials.serverKey,
-    clientKey: credentials.clientKey,
+  await db.insert(midtransTransactionsTable).values({
+    id: attemptId,
+    orgId,
+    invoiceId,
+    orderId,
+    expectedAmount,
+    grossAmount: null,
+    transactionId: null,
+    transactionStatus: 'created',
+    errorMessage: null,
+    failedAt: null,
+    fraudStatus: null,
+    paymentType: null,
+    settlementTime: null,
+    refundedAmount: 0,
+    createdAt: now,
+    updatedAt: now,
   })
 
-  const orderId = `${invoice.invoiceNumber}-${Date.now()}`
-
-  const parameter = {
-    transaction_details: {
-      order_id: orderId,
-      gross_amount: Math.round(balance.remaining),
-    },
-    customer_details: customer
-      ? {
-          first_name: customer.name,
-          email: isValidEmail(customer.email) ? customer.email : undefined,
-          phone: isValidPhone(customer.phone)
-            ? customer.phone.replace(/[^0-9+]/g, '')
-            : undefined,
-        }
-      : undefined,
-    enabled_payments: ['qris', 'bca_va', 'bni_va', 'bri_va'],
-    credit_card: {
-      secure: true,
-    },
-  }
-
   try {
+    const credentials = await getMidtransCredentials(orgId)
+    const snap = new Snap({
+      isProduction: credentials.isProduction,
+      serverKey: credentials.serverKey,
+      clientKey: credentials.clientKey,
+    })
+    const parameter = {
+      transaction_details: {
+        order_id: orderId,
+        gross_amount: expectedAmount,
+      },
+      customer_details: customer
+        ? {
+            first_name: customer.name,
+            email: isValidEmail(customer.email) ? customer.email : undefined,
+            phone: isValidPhone(customer.phone)
+              ? customer.phone.replace(/[^0-9+]/g, '')
+              : undefined,
+          }
+        : undefined,
+      enabled_payments: ['qris', 'bca_va', 'bni_va', 'bri_va'],
+      credit_card: { secure: true },
+    }
     const res = await snap.createTransaction(
-      parameter as unknown as SnapTransactionParameters, // Cast required because library type definition is incomplete
+      parameter as unknown as SnapTransactionParameters,
     )
     await db
-      .update(invoicesTable)
-      .set({ midtransOrderId: orderId, updatedAt: new Date() })
+      .update(midtransTransactionsTable)
+      .set({ transactionStatus: 'pending', updatedAt: new Date() })
       .where(
-        and(eq(invoicesTable.id, invoiceId), eq(invoicesTable.orgId, orgId)),
+        and(
+          eq(midtransTransactionsTable.id, attemptId),
+          eq(midtransTransactionsTable.orgId, orgId),
+        ),
       )
     return {
       token: res.token,
@@ -1402,6 +1463,20 @@ export async function createMidtransTransaction(
     }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error)
+    await db
+      .update(midtransTransactionsTable)
+      .set({
+        transactionStatus: 'failed',
+        errorMessage,
+        failedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(midtransTransactionsTable.id, attemptId),
+          eq(midtransTransactionsTable.orgId, orgId),
+        ),
+      )
     throw new Error(`Midtrans transaction creation failed: ${errorMessage}`)
   }
 }
@@ -1466,108 +1541,199 @@ export type ReconcileResult =
  * Pull-based reconciliation: ask Midtrans Core API for the current transaction
  * status, and if Midtrans says it's settled/captured-accepted, run the same
  * confirm flow the webhook does. Idempotent — safe to call repeatedly.
- *
- * Used by:
- *  - the portal client when the post-pay poll times out (webhook never arrived)
- *  - the operator "Lookup transaction" button on the invoice detail page
  */
 export async function reconcilePayment(
   orgId: string,
   invoiceId: string,
 ): Promise<ReconcileResult> {
-  const [invoice] = await db
-    .select({
-      id: invoicesTable.id,
-      orgId: invoicesTable.orgId,
-      status: invoicesTable.status,
-      paymentProvider: invoicesTable.paymentProvider,
-      midtransOrderId: invoicesTable.midtransOrderId,
-      total: invoicesTable.total,
-    })
-    .from(invoicesTable)
-    .where(and(eq(invoicesTable.id, invoiceId), eq(invoicesTable.orgId, orgId)))
-    .limit(1)
+  return db.transaction(async (tx) => {
+    const [invoice] = await tx
+      .select({
+        id: invoicesTable.id,
+        status: invoicesTable.status,
+        paymentProvider: invoicesTable.paymentProvider,
+      })
+      .from(invoicesTable)
+      .where(
+        and(eq(invoicesTable.id, invoiceId), eq(invoicesTable.orgId, orgId)),
+      )
+      .for('update')
+      .limit(1)
 
-  if (!invoice) {
-    return { ok: false, error: 'Invoice not found' }
-  }
-
-  if (invoice.status === 'paid') {
-    return { ok: true, confirmed: true, reason: 'already_paid' }
-  }
-
-  if (invoice.paymentProvider !== 'midtrans') {
-    return { ok: true, confirmed: false, reason: 'no_midtrans_order_id' }
-  }
-
-  const orderId = invoice.midtransOrderId
-  if (!orderId) {
-    return { ok: true, confirmed: false, reason: 'no_midtrans_order_id' }
-  }
-
-  let status: MidtransTransactionStatus
-  try {
-    status = await getMidtransTransactionStatus({ orgId, orderId })
-  } catch (e: unknown) {
-    return {
-      ok: false,
-      error: e instanceof Error ? e.message : 'Midtrans lookup failed',
+    if (!invoice) return { ok: false, error: 'Invoice not found' }
+    if (invoice.status === 'paid') {
+      return { ok: true, confirmed: true, reason: 'already_paid' }
     }
-  }
+    if (invoice.paymentProvider !== 'midtrans') {
+      return { ok: true, confirmed: false, reason: 'no_midtrans_order_id' }
+    }
 
-  // Reject if amount doesn't match — never create a payment for the wrong amount.
-  const expectedAmount = String(Math.round(invoice.total))
-  const grossAmount = status.grossAmount.split('.')[0] ?? '0'
-  if (grossAmount !== expectedAmount) {
-    return { ok: true, confirmed: false, reason: 'mismatch' }
-  }
+    const attempts = await tx
+      .select()
+      .from(midtransTransactionsTable)
+      .where(
+        and(
+          eq(midtransTransactionsTable.invoiceId, invoiceId),
+          eq(midtransTransactionsTable.orgId, orgId),
+        ),
+      )
+      .orderBy(desc(midtransTransactionsTable.createdAt))
 
-  const isSuccess =
-    status.transactionStatus === 'settlement' ||
-    (status.transactionStatus === 'capture' && status.fraudStatus === 'accept')
+    if (attempts.length === 0) {
+      return { ok: true, confirmed: false, reason: 'no_midtrans_order_id' }
+    }
 
-  if (!isSuccess) {
-    return { ok: true, confirmed: false, reason: 'not_settled_yet' }
-  }
+    let sawMismatch = false
+    for (const attempt of attempts) {
+      let status: MidtransTransactionStatus
+      try {
+        status = await getMidtransTransactionStatus({
+          orgId,
+          orderId: attempt.orderId,
+        })
+      } catch (e: unknown) {
+        await tx
+          .update(midtransTransactionsTable)
+          .set({
+            transactionStatus: 'lookup_failed',
+            errorMessage:
+              e instanceof Error ? e.message : 'Midtrans lookup failed',
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(midtransTransactionsTable.id, attempt.id),
+              eq(midtransTransactionsTable.orgId, orgId),
+            ),
+          )
+        continue
+      }
 
-  // Idempotency: skip if a confirmed payment with this order_id reference exists.
-  const [existing] = await db
-    .select({ id: paymentsTable.id })
-    .from(paymentsTable)
-    .where(
-      and(
-        eq(paymentsTable.invoiceId, invoiceId),
-        eq(paymentsTable.reference, orderId),
-        eq(paymentsTable.status, 'confirmed'),
-      ),
-    )
-    .limit(1)
+      const grossAmount = Number(status.grossAmount)
+      const settlementTime = status.settlementTime
+        ? new Date(status.settlementTime)
+        : null
+      const isAmountMatch =
+        Number.isFinite(grossAmount) && grossAmount === attempt.expectedAmount
+      await tx
+        .update(midtransTransactionsTable)
+        .set({
+          grossAmount: Number.isFinite(grossAmount) ? grossAmount : null,
+          transactionId: status.transactionId ?? null,
+          transactionStatus: isAmountMatch
+            ? status.transactionStatus
+            : 'mismatch',
+          errorMessage: isAmountMatch
+            ? null
+            : `Expected ${attempt.expectedAmount}, received ${status.grossAmount}`,
+          fraudStatus: status.fraudStatus ?? null,
+          paymentType: status.paymentType ?? null,
+          settlementTime:
+            settlementTime && !Number.isNaN(settlementTime.getTime())
+              ? settlementTime
+              : null,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(midtransTransactionsTable.id, attempt.id),
+            eq(midtransTransactionsTable.orgId, orgId),
+          ),
+        )
 
-  if (existing) {
+      if (
+        !Number.isFinite(grossAmount) ||
+        grossAmount !== attempt.expectedAmount
+      ) {
+        sawMismatch = true
+        continue
+      }
+
+      const isSuccess =
+        status.transactionStatus === 'settlement' ||
+        (status.transactionStatus === 'capture' &&
+          status.fraudStatus === 'accept')
+      if (!isSuccess) continue
+
+      const [existingConfirmed] = await tx
+        .select({ id: paymentsTable.id })
+        .from(paymentsTable)
+        .where(
+          and(
+            eq(paymentsTable.orgId, orgId),
+            eq(paymentsTable.invoiceId, invoiceId),
+            eq(paymentsTable.reference, attempt.orderId),
+            eq(paymentsTable.status, 'confirmed'),
+          ),
+        )
+        .limit(1)
+
+      if (existingConfirmed) {
+        return {
+          ok: true,
+          confirmed: true,
+          reason: 'already_paid',
+          paymentId: existingConfirmed.id,
+        }
+      }
+
+      try {
+        const payment = await createPayment(
+          orgId,
+          {
+            invoiceId,
+            amount: grossAmount,
+            method: 'midtrans',
+            reference: attempt.orderId,
+            receivedAt: settlementTime ?? new Date(),
+          },
+          tx,
+        )
+        await confirmPayment(orgId, payment.id, 'midtrans-reconcile', tx)
+        return {
+          ok: true,
+          confirmed: true,
+          reason: 'confirmed',
+          paymentId: payment.id,
+        }
+      } catch (e: unknown) {
+        const [existingPayment] = await tx
+          .select({ id: paymentsTable.id })
+          .from(paymentsTable)
+          .where(
+            and(
+              eq(paymentsTable.orgId, orgId),
+              eq(paymentsTable.invoiceId, invoiceId),
+              eq(paymentsTable.reference, attempt.orderId),
+              eq(paymentsTable.status, 'confirmed'),
+            ),
+          )
+          .limit(1)
+        if (existingPayment) {
+          return {
+            ok: true,
+            confirmed: true,
+            reason: 'already_paid',
+            paymentId: existingPayment.id,
+          }
+        }
+        await tx
+          .update(midtransTransactionsTable)
+          .set({
+            transactionStatus: 'orphaned',
+            errorMessage:
+              e instanceof Error ? e.message : 'Payment confirmation failed',
+            updatedAt: new Date(),
+          })
+          .where(eq(midtransTransactionsTable.id, attempt.id))
+        return { ok: false, error: 'Midtrans payment confirmation failed' }
+      }
+    }
+
     return {
       ok: true,
-      confirmed: true,
-      reason: 'already_paid',
-      paymentId: existing.id,
+      confirmed: false,
+      reason: sawMismatch ? 'mismatch' : 'not_settled_yet',
     }
-  }
-
-  const payment = await createPayment(orgId, {
-    invoiceId,
-    amount: Number(status.grossAmount),
-    method: 'midtrans',
-    reference: orderId,
-    receivedAt: status.settlementTime
-      ? new Date(status.settlementTime)
-      : new Date(),
   })
-
-  await confirmPayment(orgId, payment.id, 'midtrans-reconcile')
-
-  return {
-    ok: true,
-    confirmed: true,
-    reason: 'confirmed',
-    paymentId: payment.id,
-  }
 }

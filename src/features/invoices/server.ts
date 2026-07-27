@@ -16,7 +16,7 @@ import type {
   ListInvoicesResult,
   PaymentMethod,
 } from './model'
-import { createMidtransTransaction } from './model'
+import { createMidtransTransaction, reconcilePayment } from './model'
 
 export const createInvoiceFn = createServerFn({ method: 'POST' })
   .inputValidator((input: CreateInvoiceInput) => input)
@@ -258,7 +258,7 @@ export const createSnapTokenFn = createServerFn({ method: 'POST' })
     },
   )
 
-type ReconcilePaymentResponse =
+export type ReconcilePaymentResponse =
   | {
       ok: true
       status: 'paid'
@@ -270,6 +270,49 @@ type ReconcilePaymentResponse =
       status: 'not_settled_yet' | 'no_midtrans_order_id' | 'mismatch'
     }
   | { ok: false; error: string }
+
+export async function reconcileInvoicePaymentForRole(
+  orgId: string,
+  role: 'owner' | 'admin' | 'member',
+  invoiceId: string,
+): Promise<ReconcilePaymentResponse> {
+  if (!canManageInvoices(role)) return { ok: false, error: 'Forbidden' }
+  try {
+    const result = await reconcilePayment(orgId, invoiceId)
+    if (!result.ok) return result
+    if (!result.confirmed) {
+      return {
+        ok: true,
+        status: result.reason as
+          | 'not_settled_yet'
+          | 'no_midtrans_order_id'
+          | 'mismatch',
+      }
+    }
+    return {
+      ok: true,
+      status: 'paid',
+      reason: result.reason === 'confirmed' ? 'confirmed' : 'already_paid',
+      paymentId: result.paymentId,
+    }
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : 'Unknown error',
+    }
+  }
+}
+
+export const reconcileInvoicePaymentFn = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ invoiceId: z.string().min(1) }))
+  .handler(async ({ data }): Promise<ReconcilePaymentResponse> => {
+    const { orgId, role } = await resolveOrgAndRole()
+    return reconcileInvoicePaymentForRole(
+      orgId,
+      role as 'owner' | 'admin' | 'member',
+      data.invoiceId,
+    )
+  })
 /**
  * Portal-side reconciliation: customer calls this when the post-pay poll
  * times out (webhook never arrived but they did pay). Resolves the org from

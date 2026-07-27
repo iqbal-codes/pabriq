@@ -453,6 +453,7 @@ export function ViewOrderPage() {
           <OrderInvoicesSection
             orderInvoices={orderInvoices}
             invoicePayments={invoicePayments ?? {}}
+            orgRole={ctx.org.role}
           />
         )}
         <OrderLineItemsCard

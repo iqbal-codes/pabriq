@@ -5,6 +5,7 @@ import {
   customers as customersTable,
   invoiceLineItems as invoiceLineItemsTable,
   invoices as invoicesTable,
+  midtransTransactions as midtransTransactionsTable,
   orderLineItems as orderLineItemsTable,
   orders as ordersTable,
   organization,
@@ -1473,6 +1474,55 @@ describe('createMidtransTransaction', () => {
     expect(callArgs.customer_details.email).toBe('midtrans@example.com')
   })
 
+  it('stores repeated Snap requests as distinct ledger attempts', async () => {
+    const result = await createInvoice(midtransOrgId, {
+      customerId: 'midtrans-cust',
+      customerName: 'Midtrans Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'midtrans',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    mockCreateTransaction.mockResolvedValue({
+      token: 'repeat-token',
+      redirect_url: 'https://repeat.example',
+    })
+
+    await createMidtransTransaction(result.invoice.id, midtransOrgId)
+    await createMidtransTransaction(result.invoice.id, midtransOrgId)
+
+    const attempts = await db
+      .select()
+      .from(midtransTransactionsTable)
+      .where(eq(midtransTransactionsTable.invoiceId, result.invoice.id))
+    expect(attempts).toHaveLength(2)
+    expect(attempts[0].orderId).not.toBe(attempts[1].orderId)
+  })
+
+  it('records Snap creation failures for operator review', async () => {
+    const result = await createInvoice(midtransOrgId, {
+      customerId: 'midtrans-cust',
+      customerName: 'Midtrans Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'midtrans',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    mockCreateTransaction.mockRejectedValue(new Error('gateway unavailable'))
+
+    await expect(
+      createMidtransTransaction(result.invoice.id, midtransOrgId),
+    ).rejects.toThrow(
+      'Midtrans transaction creation failed: gateway unavailable',
+    )
+
+    const [attempt] = await db
+      .select()
+      .from(midtransTransactionsTable)
+      .where(eq(midtransTransactionsTable.invoiceId, result.invoice.id))
+    expect(attempt.transactionStatus).toBe('failed')
+    expect(attempt.errorMessage).toBe('gateway unavailable')
+    expect(attempt.failedAt).toBeInstanceOf(Date)
+  })
+
   it('throws error if invoice is already fully paid', async () => {
     const result = await createInvoice(midtransOrgId, {
       customerId: 'midtrans-cust',
@@ -1576,12 +1626,17 @@ describe('createMidtransTransaction', () => {
       lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
     })
     const invoice = result.invoice
-
-    // Set midtransOrderId on the invoice
-    await db
-      .update(invoicesTable)
-      .set({ midtransOrderId: 'MID-ORDER-123' })
-      .where(eq(invoicesTable.id, invoice.id))
+    const attempt = {
+      id: 'midtrans-attempt-123',
+      orgId: midtransOrgId,
+      invoiceId: invoice.id,
+      orderId: 'MID-ORDER-123',
+      expectedAmount: 100000,
+      transactionStatus: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+    await db.insert(midtransTransactionsTable).values(attempt)
 
     // Mock CoreApi transaction.status response
     mockTransactionStatus.mockResolvedValue({

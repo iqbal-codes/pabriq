@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "idx_payments_midtrans_reference" ON "payments" USING btree ("org_id","invoice_id","reference") WHERE "payments"."method" = 'midtrans';

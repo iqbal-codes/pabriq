@@ -632,6 +632,18 @@ export type Messages = {
     pendingAmount: string;
     remaining: string;
     recordPayment: string;
+    paymentSource: string;
+    gatewayOrderId: string;
+    gatewayTransactionId: string;
+    manualReviewRequired: string;
+    reconcileFailed: string;
+    transactionHistory: string;
+    transactionError: string;
+    midtransOnlineGateway: string;
+    bankTransferManual: string;
+    transactionId: string;
+    paymentRecords: string;
+    referencePrefix: string;
     confirmSimple: string;
     rejectSimple: string;
     rejectReasonPlaceholder: string;
