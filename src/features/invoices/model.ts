@@ -763,6 +763,47 @@ export async function createPayment(
   orgId: string,
   input: CreatePaymentInput,
 ): Promise<Payment> {
+  // Verify invoice belongs to this org
+  const invoiceRows = await db
+    .select()
+    .from(invoicesTable)
+    .where(
+      and(
+        eq(invoicesTable.id, input.invoiceId),
+        eq(invoicesTable.orgId, orgId),
+      ),
+    )
+    .limit(1)
+  if (invoiceRows.length === 0) throw new Error('Invoice not found')
+
+  // Validate amount is finite and positive
+  if (!Number.isFinite(input.amount) || input.amount <= 0) {
+    throw new Error('Payment amount must be a positive number')
+  }
+
+  // Validate amount does not exceed remaining balance
+  const balance = await getInvoiceBalance(input.invoiceId, orgId)
+  if (input.amount > balance.remaining) {
+    throw new Error(
+      `Payment amount exceeds remaining balance of ${balance.remaining}`,
+    )
+  }
+
+  // Verify proof asset belongs to this org
+  if (input.proofAssetId) {
+    const [asset] = await db
+      .select()
+      .from(assetsTable)
+      .where(
+        and(
+          eq(assetsTable.id, input.proofAssetId),
+          eq(assetsTable.orgId, orgId),
+        ),
+      )
+      .limit(1)
+    if (!asset) throw new Error('Proof asset not found in this organization')
+  }
+
   const now = new Date()
   const id = generateId()
 

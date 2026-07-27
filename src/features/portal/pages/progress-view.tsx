@@ -148,6 +148,7 @@ export function ProgressView({
         <div id="portal-invoices">
           <InvoicePanel
             invoices={order.invoices}
+            orderId={order.id}
             token={token}
             showAboveFold={hasUnpaidInvoices}
           />

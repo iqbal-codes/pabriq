@@ -24,6 +24,7 @@ import { SubmitPaymentProofDialog } from './submit-payment-proof-dialog'
 
 type Props = {
   invoices: PortalInvoice[]
+  orderId: string
   token: string
   showAboveFold?: boolean
 }
@@ -81,10 +82,12 @@ function getInvoiceBadgeType(
 
 function InvoiceRow({
   invoice,
+  orderId,
   token,
   badgeType,
 }: {
   invoice: PortalInvoice
+  orderId: string
   token: string
   badgeType: 'dp' | 'settlement' | null
 }) {
@@ -135,6 +138,7 @@ function InvoiceRow({
             ) : (
               <SubmitPaymentProofDialog
                 invoiceId={invoice.id}
+                orderId={orderId}
                 token={token}
                 hasExistingProof={invoice.hasPaymentProof}
               />
@@ -156,7 +160,12 @@ function InvoiceRow({
   )
 }
 
-export function InvoicePanel({ invoices, token, showAboveFold }: Props) {
+export function InvoicePanel({
+  invoices,
+  orderId,
+  token,
+  showAboveFold,
+}: Props) {
   const t = useTranslations('portal')
   const locale = useLocale()
   const visibleInvoices = invoices
@@ -228,6 +237,7 @@ export function InvoicePanel({ invoices, token, showAboveFold }: Props) {
             <InvoiceRow
               key={inv.id}
               invoice={inv}
+              orderId={orderId}
               token={token}
               badgeType={badgeType}
             />

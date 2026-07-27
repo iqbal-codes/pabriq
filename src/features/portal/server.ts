@@ -1,4 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
+import { and, eq } from 'drizzle-orm'
+import { db } from '#/db/index'
+import { invoices, orders } from '#/db/schema'
 import type { Usage } from '#/features/assets/model'
 import type {
   ConfirmPortalOrderInput,
@@ -174,6 +177,7 @@ export const submitPaymentProofFn = createServerFn({ method: 'POST' })
     (input: {
       token: string
       invoiceId: string
+      orderId: string
       assetId: string
       originalFilename: string
       mimeType: string
@@ -188,6 +192,35 @@ export const submitPaymentProofFn = createServerFn({ method: 'POST' })
           getOrgIdFromToken(data.token),
           import('#/features/assets/model'),
         ])
+
+        // Verify the order belongs to this org
+        const [portalOrder] = await db
+          .select({ id: orders.id })
+          .from(orders)
+          .where(and(eq(orders.orgId, orgId), eq(orders.id, data.orderId)))
+          .limit(1)
+
+        if (!portalOrder) {
+          return { ok: false, error: 'Order not found' }
+        }
+
+        // Verify the invoice belongs to this order and org
+        const [invoice] = await db
+          .select({ orderId: invoices.orderId })
+          .from(invoices)
+          .where(
+            and(eq(invoices.id, data.invoiceId), eq(invoices.orgId, orgId)),
+          )
+          .limit(1)
+
+        if (!invoice) {
+          return { ok: false, error: 'Invoice not found' }
+        }
+
+        if (invoice.orderId !== data.orderId) {
+          return { ok: false, error: 'Invoice does not belong to this order' }
+        }
+
         await insertAsset({
           assetId: data.assetId,
           orgId,

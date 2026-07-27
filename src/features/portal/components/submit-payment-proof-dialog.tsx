@@ -30,12 +30,14 @@ function getAssetKindFromMimeType(mimeType: string): string {
 
 type Props = {
   invoiceId: string
+  orderId: string
   token: string
   hasExistingProof?: boolean
 }
 
 export function SubmitPaymentProofDialog({
   invoiceId,
+  orderId,
   token,
   hasExistingProof,
 }: Props) {
@@ -86,6 +88,7 @@ export function SubmitPaymentProofDialog({
           data: {
             token,
             invoiceId,
+            orderId,
             assetId,
             originalFilename: item.file.name,
             mimeType: contentType,
@@ -117,7 +120,7 @@ export function SubmitPaymentProofDialog({
         )
       },
     }),
-    [token, invoiceId],
+    [token, invoiceId, orderId],
   )
 
   function handleUploadComplete(upload: { assetId: string; file: File }) {

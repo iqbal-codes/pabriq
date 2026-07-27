@@ -1615,3 +1615,156 @@ describe('createMidtransTransaction', () => {
     expect(payments[0].status).toBe('confirmed')
   })
 })
+
+describe('createPayment — ownership and validation', () => {
+  it('rejects payment when invoice belongs to a different org', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'cust-xorg',
+      orgId: org1Id,
+      name: 'Cross Org Customer',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'cust-xorg',
+      customerName: 'Cross Org Customer',
+      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 100 }],
+    })
+
+    await expect(
+      createPayment(org2Id, {
+        invoiceId: invoice.id,
+        amount: 50,
+        method: 'bank_transfer',
+      }),
+    ).rejects.toThrow('Invoice not found')
+  })
+
+  it('rejects non-finite amount (NaN)', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'cust-nan',
+      orgId: org1Id,
+      name: 'NaN Customer',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'cust-nan',
+      customerName: 'NaN Customer',
+      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 100 }],
+    })
+
+    await expect(
+      createPayment(org1Id, {
+        invoiceId: invoice.id,
+        amount: Number.NaN,
+        method: 'bank_transfer',
+      }),
+    ).rejects.toThrow('Payment amount must be a positive number')
+  })
+
+  it('rejects non-positive amount (zero)', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'cust-zero',
+      orgId: org1Id,
+      name: 'Zero Customer',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'cust-zero',
+      customerName: 'Zero Customer',
+      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 100 }],
+    })
+
+    await expect(
+      createPayment(org1Id, {
+        invoiceId: invoice.id,
+        amount: 0,
+        method: 'bank_transfer',
+      }),
+    ).rejects.toThrow('Payment amount must be a positive number')
+  })
+
+  it('rejects negative amount', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'cust-neg',
+      orgId: org1Id,
+      name: 'Negative Customer',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'cust-neg',
+      customerName: 'Negative Customer',
+      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 100 }],
+    })
+
+    await expect(
+      createPayment(org1Id, {
+        invoiceId: invoice.id,
+        amount: -50,
+        method: 'bank_transfer',
+      }),
+    ).rejects.toThrow('Payment amount must be a positive number')
+  })
+
+  it('rejects amount exceeding remaining balance', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'cust-over',
+      orgId: org1Id,
+      name: 'Overpay Customer',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'cust-over',
+      customerName: 'Overpay Customer',
+      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 100 }],
+    })
+
+    await expect(
+      createPayment(org1Id, {
+        invoiceId: invoice.id,
+        amount: 200,
+        method: 'bank_transfer',
+      }),
+    ).rejects.toThrow('Payment amount exceeds remaining balance')
+  })
+
+  it('accepts valid amount within remaining balance', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'cust-valid',
+      orgId: org1Id,
+      name: 'Valid Customer',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'cust-valid',
+      customerName: 'Valid Customer',
+      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 100 }],
+    })
+
+    const payment = await createPayment(org1Id, {
+      invoiceId: invoice.id,
+      amount: 50,
+      method: 'bank_transfer',
+    })
+
+    expect(payment.amount).toBe(50)
+    expect(payment.status).toBe('pending')
+  })
+})
