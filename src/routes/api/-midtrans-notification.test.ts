@@ -305,14 +305,419 @@ describe('/api/midtrans-notification', () => {
     expect(payments).toHaveLength(0)
   })
 
-  it('returns generic error without leaking internal details', async () => {
+  it('rejects amount mismatch with status 400', async () => {
     expect(handler).toBeDefined()
     if (!handler) return
 
-    // Send malformed JSON to trigger the catch block
+    const result = await createInvoice(webhookOrgId, {
+      customerId: 'webhook-cust',
+      customerName: 'Webhook Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'midtrans',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoice = result.invoice
+    const orderId = `${invoice.invoiceNumber}-mismatch-test`
+
+    await db.insert(midtransTransactionsTable).values({
+      id: 'webhook-attempt-mismatch',
+      orgId: webhookOrgId,
+      invoiceId: invoice.id,
+      orderId,
+      expectedAmount: 100000,
+      transactionStatus: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const statusCode = '200'
+    const grossAmount = '50000.00' // Mismatched amount
+    const serverKey = 'mock_server_key'
+
+    const signatureKey = crypto
+      .createHash('sha512')
+      .update(orderId + statusCode + grossAmount + serverKey)
+      .digest('hex')
+
+    const body = {
+      order_id: orderId,
+      status_code: statusCode,
+      gross_amount: grossAmount,
+      signature_key: signatureKey,
+      transaction_status: 'settlement',
+    }
+
     const request = new Request('http://localhost/api/midtrans-notification', {
       method: 'POST',
-      body: 'not-json',
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    const response = await handler({ request, params: {} })
+    expect(response.status).toBe(400)
+    const text = await response.text()
+    expect(text).toBe('Transaction amount mismatch')
+
+    // Verify transaction status updated to mismatch in DB
+    const [txRecord] = await db
+      .select()
+      .from(midtransTransactionsTable)
+      .where(eq(midtransTransactionsTable.id, 'webhook-attempt-mismatch'))
+
+    expect(txRecord.transactionStatus).toBe('mismatch')
+    expect(txRecord.errorMessage).toContain(
+      'Expected 100000, received 50000.00',
+    )
+  })
+
+  it('handles concurrent duplicate notifications without creating duplicate payments', async () => {
+    expect(handler).toBeDefined()
+    if (!handler) return
+
+    const result = await createInvoice(webhookOrgId, {
+      customerId: 'webhook-cust',
+      customerName: 'Webhook Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'midtrans',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoice = result.invoice
+    const orderId = `${invoice.invoiceNumber}-concurrent-test`
+
+    await db.insert(midtransTransactionsTable).values({
+      id: 'webhook-attempt-concurrent',
+      orgId: webhookOrgId,
+      invoiceId: invoice.id,
+      orderId,
+      expectedAmount: 100000,
+      transactionStatus: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const statusCode = '200'
+    const grossAmount = '100000.00'
+    const serverKey = 'mock_server_key'
+
+    const signatureKey = crypto
+      .createHash('sha512')
+      .update(orderId + statusCode + grossAmount + serverKey)
+      .digest('hex')
+
+    const body = {
+      order_id: orderId,
+      status_code: statusCode,
+      gross_amount: grossAmount,
+      signature_key: signatureKey,
+      transaction_status: 'settlement',
+    }
+
+    const req1 = new Request('http://localhost/api/midtrans-notification', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    const req2 = new Request('http://localhost/api/midtrans-notification', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    // Execute concurrently
+    const [res1, res2] = await Promise.all([
+      handler({ request: req1, params: {} }),
+      handler({ request: req2, params: {} }),
+    ])
+
+    expect(res1.status).toBe(200)
+    expect(res2.status).toBe(200)
+
+    const payments = await db
+      .select()
+      .from(paymentsTable)
+      .where(eq(paymentsTable.invoiceId, invoice.id))
+
+    expect(payments).toHaveLength(1)
+    expect(payments[0].status).toBe('confirmed')
+  })
+
+  it('repairs/completes invoice state when retrying an event with existing pending or confirmed payment', async () => {
+    expect(handler).toBeDefined()
+    if (!handler) return
+
+    const result = await createInvoice(webhookOrgId, {
+      customerId: 'webhook-cust',
+      customerName: 'Webhook Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'midtrans',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoice = result.invoice
+    const orderId = `${invoice.invoiceNumber}-retry-repair-test`
+
+    await db.insert(midtransTransactionsTable).values({
+      id: 'webhook-attempt-repair',
+      orgId: webhookOrgId,
+      invoiceId: invoice.id,
+      orderId,
+      expectedAmount: 100000,
+      transactionStatus: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    // Manually insert a pending payment with matching reference (simulating partial processing failure before confirmation)
+    await db.insert(paymentsTable).values({
+      id: 'pending-payment-to-repair',
+      orgId: webhookOrgId,
+      invoiceId: invoice.id,
+      amount: 100000,
+      method: 'midtrans',
+      reference: orderId,
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const statusCode = '200'
+    const grossAmount = '100000.00'
+    const serverKey = 'mock_server_key'
+
+    const signatureKey = crypto
+      .createHash('sha512')
+      .update(orderId + statusCode + grossAmount + serverKey)
+      .digest('hex')
+
+    const body = {
+      order_id: orderId,
+      status_code: statusCode,
+      gross_amount: grossAmount,
+      signature_key: signatureKey,
+      transaction_status: 'settlement',
+    }
+
+    const request = new Request('http://localhost/api/midtrans-notification', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    const response = await handler({ request, params: {} })
+    expect(response.status).toBe(200)
+
+    const payments = await db
+      .select()
+      .from(paymentsTable)
+      .where(eq(paymentsTable.invoiceId, invoice.id))
+
+    expect(payments).toHaveLength(1)
+    expect(payments[0].id).toBe('pending-payment-to-repair')
+    expect(payments[0].status).toBe('confirmed')
+
+    const [updatedInvoice] = await db
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, invoice.id))
+
+    expect(updatedInvoice.status).toBe('paid')
+    expect(updatedInvoice.paidAt).toBeInstanceOf(Date)
+  })
+
+  it('updates amount of an existing pending payment if it differs from the gross_amount before confirming', async () => {
+    expect(handler).toBeDefined()
+    if (!handler) return
+
+    const result = await createInvoice(webhookOrgId, {
+      customerId: 'webhook-cust',
+      customerName: 'Webhook Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'midtrans',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoice = result.invoice
+    const orderId = `${invoice.invoiceNumber}-pending-mismatch-test`
+
+    await db.insert(midtransTransactionsTable).values({
+      id: 'webhook-attempt-pending-mismatch',
+      orgId: webhookOrgId,
+      invoiceId: invoice.id,
+      orderId,
+      expectedAmount: 100000,
+      transactionStatus: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    // Insert pending payment with DIFFERENT amount (50,000 vs 100,000)
+    await db.insert(paymentsTable).values({
+      id: 'pending-payment-wrong-amount',
+      orgId: webhookOrgId,
+      invoiceId: invoice.id,
+      amount: 50000,
+      method: 'midtrans',
+      reference: orderId,
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const statusCode = '200'
+    const grossAmount = '100000.00'
+    const serverKey = 'mock_server_key'
+
+    const signatureKey = crypto
+      .createHash('sha512')
+      .update(orderId + statusCode + grossAmount + serverKey)
+      .digest('hex')
+
+    const body = {
+      order_id: orderId,
+      status_code: statusCode,
+      gross_amount: grossAmount,
+      signature_key: signatureKey,
+      transaction_status: 'settlement',
+    }
+
+    const request = new Request('http://localhost/api/midtrans-notification', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    const response = await handler({ request, params: {} })
+    expect(response.status).toBe(200)
+
+    const payments = await db
+      .select()
+      .from(paymentsTable)
+      .where(eq(paymentsTable.invoiceId, invoice.id))
+
+    expect(payments).toHaveLength(1)
+    expect(payments[0].id).toBe('pending-payment-wrong-amount')
+    expect(payments[0].status).toBe('confirmed')
+    expect(payments[0].amount).toBe(100000)
+  })
+
+  it('repairs missing paidAt/paidBy metadata on retries even when invoice status is already paid', async () => {
+    expect(handler).toBeDefined()
+    if (!handler) return
+
+    const result = await createInvoice(webhookOrgId, {
+      customerId: 'webhook-cust',
+      customerName: 'Webhook Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'midtrans',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoice = result.invoice
+    const orderId = `${invoice.invoiceNumber}-paid-metadata-repair`
+
+    await db.insert(midtransTransactionsTable).values({
+      id: 'webhook-attempt-paid-metadata',
+      orgId: webhookOrgId,
+      invoiceId: invoice.id,
+      orderId,
+      expectedAmount: 100000,
+      transactionStatus: 'settlement',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    // Insert already confirmed payment
+    await db.insert(paymentsTable).values({
+      id: 'confirmed-payment-paid-repair',
+      orgId: webhookOrgId,
+      invoiceId: invoice.id,
+      amount: 100000,
+      method: 'midtrans',
+      reference: orderId,
+      status: 'confirmed',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    // Manually set invoice status to paid BUT missing paidBy and paidAt (simulating partial repair failure)
+    await db
+      .update(invoicesTable)
+      .set({ status: 'paid', paidBy: null, paidAt: null })
+      .where(eq(invoicesTable.id, invoice.id))
+
+    const statusCode = '200'
+    const grossAmount = '100000.00'
+    const serverKey = 'mock_server_key'
+
+    const signatureKey = crypto
+      .createHash('sha512')
+      .update(orderId + statusCode + grossAmount + serverKey)
+      .digest('hex')
+
+    const body = {
+      order_id: orderId,
+      status_code: statusCode,
+      gross_amount: grossAmount,
+      signature_key: signatureKey,
+      transaction_status: 'settlement',
+    }
+
+    const request = new Request('http://localhost/api/midtrans-notification', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    const response = await handler({ request, params: {} })
+    expect(response.status).toBe(200)
+
+    const [updatedInvoice] = await db
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, invoice.id))
+
+    expect(updatedInvoice.status).toBe('paid')
+    expect(updatedInvoice.paidBy).toBe('midtrans-webhook')
+    expect(updatedInvoice.paidAt).toBeInstanceOf(Date)
+  })
+  it('returns status 400 for valid JSON with invalid schema', async () => {
+    expect(handler).toBeDefined()
+    if (!handler) return
+
+    const body = {
+      order_id: '', // Empty string fails .min(1) schema validation
+      status_code: '200',
+    }
+
+    const request = new Request('http://localhost/api/midtrans-notification', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    const response = await handler({ request, params: {} })
+    expect(response.status).toBe(400)
+  })
+  it('returns generic error without leaking internal details when internal exception occurs', async () => {
+    expect(handler).toBeDefined()
+    if (!handler) return
+
+    // Mock db.select to throw an unexpected database error
+    const spy = vi.spyOn(db, 'select').mockImplementationOnce(() => {
+      throw new Error('Database connection failed unexpectedly')
+    })
+
+    const request = new Request('http://localhost/api/midtrans-notification', {
+      method: 'POST',
+      body: JSON.stringify({
+        order_id: 'INV-123',
+        status_code: '200',
+        gross_amount: '10000',
+        signature_key: 'sig',
+        transaction_status: 'settlement',
+      }),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -322,8 +727,8 @@ describe('/api/midtrans-notification', () => {
     expect(response.status).toBe(500)
     const text = await response.text()
     expect(text).toBe('Internal error')
-    // Ensure no internal error details are leaked
-    expect(text).not.toContain('JSON')
-    expect(text).not.toContain('parse')
+    expect(text).not.toContain('Database')
+    expect(text).not.toContain('failed')
+    spy.mockRestore()
   })
 })

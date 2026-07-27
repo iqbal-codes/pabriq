@@ -14,6 +14,7 @@ import {
   createPayment,
   getInvoiceBalance,
 } from '#/features/invoices/model'
+import { logger } from '#/lib/logger'
 
 const midtransWebhookSchema = z.object({
   order_id: z.string().min(1),
@@ -47,7 +48,18 @@ export const Route = createFileRoute('/api/midtrans-notification')({
     handlers: {
       POST: async ({ request }) => {
         try {
-          const body = midtransWebhookSchema.parse(await request.json())
+          let raw: unknown
+          try {
+            raw = await request.json()
+          } catch {
+            return new Response('Invalid request body', { status: 400 })
+          }
+
+          const parseResult = midtransWebhookSchema.safeParse(raw)
+          if (!parseResult.success) {
+            return new Response('Invalid request body', { status: 400 })
+          }
+          const body = parseResult.data
           const [attempt] = await db
             .select({
               id: midtransTransactionsTable.id,
@@ -67,8 +79,13 @@ export const Route = createFileRoute('/api/midtrans-notification')({
             .where(eq(midtransTransactionsTable.orderId, body.order_id))
             .limit(1)
 
-          if (!attempt)
+          if (!attempt) {
+            logger.warn(
+              { orderId: body.order_id, transactionId: body.transaction_id },
+              'Unknown Midtrans transaction received on webhook',
+            )
             return new Response('Transaction not found', { status: 404 })
+          }
 
           const serverKey = (attempt.serverKey ?? '').trim()
           if (!serverKey || !verifyMidtransSignature(body, serverKey)) {
@@ -82,6 +99,7 @@ export const Route = createFileRoute('/api/midtrans-notification')({
           const isAmountMatch =
             Number.isFinite(grossAmount) &&
             grossAmount === attempt.expectedAmount
+
           await db
             .update(midtransTransactionsTable)
             .set({
@@ -121,110 +139,154 @@ export const Route = createFileRoute('/api/midtrans-notification')({
             return new Response('OK', { status: 200 })
           }
 
-          try {
-            return await db.transaction(async (tx) => {
-              const [lockedInvoice] = await tx
-                .select({ id: invoicesTable.id })
-                .from(invoicesTable)
-                .where(
-                  and(
-                    eq(invoicesTable.id, attempt.invoiceId),
-                    eq(invoicesTable.orgId, attempt.orgId),
-                  ),
-                )
-                .for('update')
-                .limit(1)
+          return await db.transaction(async (tx) => {
+            const [lockedInvoice] = await tx
+              .select({
+                id: invoicesTable.id,
+                status: invoicesTable.status,
+                paidBy: invoicesTable.paidBy,
+                paidAt: invoicesTable.paidAt,
+              })
+              .from(invoicesTable)
+              .where(
+                and(
+                  eq(invoicesTable.id, attempt.invoiceId),
+                  eq(invoicesTable.orgId, attempt.orgId),
+                ),
+              )
+              .for('update')
+              .limit(1)
 
-              if (!lockedInvoice) {
-                return new Response('Transaction not found', { status: 404 })
-              }
+            if (!lockedInvoice) {
+              return new Response('Transaction not found', { status: 404 })
+            }
 
-              const [existingConfirmedPayment] = await tx
-                .select({ id: paymentsTable.id })
-                .from(paymentsTable)
-                .where(
-                  and(
-                    eq(paymentsTable.orgId, attempt.orgId),
-                    eq(paymentsTable.invoiceId, attempt.invoiceId),
-                    eq(paymentsTable.reference, body.order_id),
-                    eq(paymentsTable.status, 'confirmed'),
-                  ),
-                )
-                .limit(1)
+            const [existingConfirmedPayment] = await tx
+              .select({ id: paymentsTable.id })
+              .from(paymentsTable)
+              .where(
+                and(
+                  eq(paymentsTable.orgId, attempt.orgId),
+                  eq(paymentsTable.invoiceId, attempt.invoiceId),
+                  eq(paymentsTable.reference, body.order_id),
+                  eq(paymentsTable.method, 'midtrans'),
+                  eq(paymentsTable.status, 'confirmed'),
+                ),
+              )
+              .limit(1)
 
-              if (existingConfirmedPayment)
-                return new Response('OK', { status: 200 })
-
+            if (existingConfirmedPayment) {
               const balance = await getInvoiceBalance(
                 attempt.invoiceId,
                 attempt.orgId,
                 tx,
               )
-              if (grossAmount > balance.remaining) {
+              const targetStatus = balance.isFullyPaid
+                ? 'paid'
+                : balance.confirmedAmount > 0
+                  ? 'partially_paid'
+                  : lockedInvoice.status
+
+              const needsPaidRepair =
+                balance.isFullyPaid &&
+                (lockedInvoice.status !== 'paid' ||
+                  !lockedInvoice.paidBy ||
+                  !lockedInvoice.paidAt)
+              const needsStatusUpdate =
+                lockedInvoice.status !== targetStatus || needsPaidRepair
+
+              if (needsStatusUpdate) {
                 await tx
-                  .update(midtransTransactionsTable)
+                  .update(invoicesTable)
                   .set({
-                    transactionStatus: 'superseded',
-                    errorMessage: 'Invoice was settled by another attempt',
+                    status: targetStatus,
+                    paidBy: lockedInvoice.paidBy ?? 'midtrans-webhook',
+                    paidAt:
+                      lockedInvoice.paidAt ??
+                      (balance.isFullyPaid
+                        ? (settlementTime ?? new Date())
+                        : undefined),
                     updatedAt: new Date(),
                   })
-                  .where(eq(midtransTransactionsTable.id, attempt.id))
-                return new Response('OK', { status: 200 })
-              }
-
-              try {
-                const payment = await createPayment(
-                  attempt.orgId,
-                  {
-                    invoiceId: attempt.invoiceId,
-                    amount: grossAmount,
-                    method: 'midtrans',
-                    reference: body.order_id,
-                    receivedAt: settlementTime ?? new Date(),
-                  },
-                  tx,
-                )
-                await confirmPayment(
-                  attempt.orgId,
-                  payment.id,
-                  'midtrans-webhook',
-                  tx,
-                )
-              } catch (error: unknown) {
-                const [existingConfirmed] = await tx
-                  .select({ id: paymentsTable.id })
-                  .from(paymentsTable)
                   .where(
                     and(
-                      eq(paymentsTable.orgId, attempt.orgId),
-                      eq(paymentsTable.invoiceId, attempt.invoiceId),
-                      eq(paymentsTable.reference, body.order_id),
-                      eq(paymentsTable.status, 'confirmed'),
+                      eq(invoicesTable.id, attempt.invoiceId),
+                      eq(invoicesTable.orgId, attempt.orgId),
                     ),
                   )
-                  .limit(1)
-                if (existingConfirmed)
-                  return new Response('OK', { status: 200 })
+              }
+              return new Response('OK', { status: 200 })
+            }
+
+            const balance = await getInvoiceBalance(
+              attempt.invoiceId,
+              attempt.orgId,
+              tx,
+            )
+            if (grossAmount > balance.remaining) {
+              await tx
+                .update(midtransTransactionsTable)
+                .set({
+                  transactionStatus: 'superseded',
+                  errorMessage: 'Invoice was settled by another attempt',
+                  updatedAt: new Date(),
+                })
+                .where(eq(midtransTransactionsTable.id, attempt.id))
+              return new Response('OK', { status: 200 })
+            }
+
+            let paymentId: string
+            const [existingPendingPayment] = await tx
+              .select({ id: paymentsTable.id, amount: paymentsTable.amount })
+              .from(paymentsTable)
+              .where(
+                and(
+                  eq(paymentsTable.orgId, attempt.orgId),
+                  eq(paymentsTable.invoiceId, attempt.invoiceId),
+                  eq(paymentsTable.reference, body.order_id),
+                  eq(paymentsTable.method, 'midtrans'),
+                  eq(paymentsTable.status, 'pending'),
+                ),
+              )
+              .limit(1)
+
+            if (existingPendingPayment) {
+              if (existingPendingPayment.amount !== grossAmount) {
                 await tx
-                  .update(midtransTransactionsTable)
+                  .update(paymentsTable)
                   .set({
-                    transactionStatus: 'orphaned',
-                    errorMessage:
-                      error instanceof Error
-                        ? error.message
-                        : 'Payment confirmation failed',
+                    amount: grossAmount,
                     updatedAt: new Date(),
                   })
-                  .where(eq(midtransTransactionsTable.id, attempt.id))
-                return new Response('Internal error', { status: 500 })
+                  .where(eq(paymentsTable.id, existingPendingPayment.id))
               }
+              paymentId = existingPendingPayment.id
+            } else {
+              const payment = await createPayment(
+                attempt.orgId,
+                {
+                  invoiceId: attempt.invoiceId,
+                  amount: grossAmount,
+                  method: 'midtrans',
+                  reference: body.order_id,
+                  receivedAt: settlementTime ?? new Date(),
+                },
+                tx,
+              )
+              paymentId = payment.id
+            }
 
-              return new Response('OK', { status: 200 })
-            })
-          } catch {
-            return new Response('Internal error', { status: 500 })
-          }
-        } catch {
+            await confirmPayment(
+              attempt.orgId,
+              paymentId,
+              'midtrans-webhook',
+              tx,
+            )
+
+            return new Response('OK', { status: 200 })
+          })
+        } catch (error: unknown) {
+          logger.error({ err: error }, 'Midtrans webhook processing failed')
           return new Response('Internal error', { status: 500 })
         }
       },
