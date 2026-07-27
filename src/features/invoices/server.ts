@@ -1,8 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { z } from 'zod'
+import {
+  canManageInvoices,
+  canManagePaymentSettings,
+} from '#/features/permissions/model'
 import { getPortalOrder } from '#/features/portal/model'
-import { resolveOrgId } from '#/lib/auth-session-server'
+import { resolveOrgAndRole, resolveOrgId } from '#/lib/auth-session-server'
 import type { MutationResult } from '#/lib/server-results'
 import type {
   CreateInvoiceInput,
@@ -17,7 +21,10 @@ import { createMidtransTransaction } from './model'
 export const createInvoiceFn = createServerFn({ method: 'POST' })
   .inputValidator((input: CreateInvoiceInput) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
-    const orgId = await resolveOrgId()
+    const { orgId, role } = await resolveOrgAndRole()
+    if (!canManageInvoices(role as 'owner' | 'admin' | 'member')) {
+      return { ok: false, error: 'Insufficient permissions' }
+    }
     try {
       const { createInvoice } = await import('./model')
       await createInvoice(orgId, data)
@@ -53,11 +60,14 @@ export const listInvoicesFn = createServerFn({ method: 'GET' })
 export const markInvoicePaidFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
-    const [orgId, { auth }, { markInvoicePaid }] = await Promise.all([
-      resolveOrgId(),
+    const [{ orgId, role }, { auth }, { markInvoicePaid }] = await Promise.all([
+      resolveOrgAndRole(),
       import('#/lib/auth'),
       import('./model'),
     ])
+    if (!canManageInvoices(role as 'owner' | 'admin' | 'member')) {
+      return { ok: false, error: 'Insufficient permissions' }
+    }
     const headers = getRequestHeaders()
     const session = await auth.api.getSession({ headers })
     const userId = session?.user.id ?? 'unknown'
@@ -89,10 +99,13 @@ export const createPaymentMethodFn = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }): Promise<MutationResult> => {
     try {
-      const [orgId, { createPaymentMethod }] = await Promise.all([
-        resolveOrgId(),
+      const [{ orgId, role }, { createPaymentMethod }] = await Promise.all([
+        resolveOrgAndRole(),
         import('./model'),
       ])
+      if (!canManagePaymentSettings(role as 'owner' | 'admin' | 'member')) {
+        return { ok: false, error: 'Insufficient permissions' }
+      }
       await createPaymentMethod({ ...data, orgId })
       return { ok: true }
     } catch (e) {
@@ -114,7 +127,10 @@ export const updatePaymentMethodFn = createServerFn({ method: 'POST' })
     ) => input,
   )
   .handler(async ({ data }): Promise<MutationResult> => {
-    const orgId = await resolveOrgId()
+    const { orgId, role } = await resolveOrgAndRole()
+    if (!canManagePaymentSettings(role as 'owner' | 'admin' | 'member')) {
+      return { ok: false, error: 'Insufficient permissions' }
+    }
     try {
       const { updatePaymentMethod } = await import('./model')
       await updatePaymentMethod(data.id, orgId, data)
@@ -130,7 +146,10 @@ export const updatePaymentMethodFn = createServerFn({ method: 'POST' })
 export const deletePaymentMethodFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data }): Promise<MutationResult> => {
-    const orgId = await resolveOrgId()
+    const { orgId, role } = await resolveOrgAndRole()
+    if (!canManagePaymentSettings(role as 'owner' | 'admin' | 'member')) {
+      return { ok: false, error: 'Insufficient permissions' }
+    }
     try {
       const { deletePaymentMethod } = await import('./model')
       await deletePaymentMethod(data.id, orgId)
@@ -159,7 +178,10 @@ const createPaymentSchema = z.object({
 export const createPaymentFn = createServerFn({ method: 'POST' })
   .inputValidator((input: unknown) => createPaymentSchema.parse(input))
   .handler(async ({ data }): Promise<MutationResult> => {
-    const orgId = await resolveOrgId()
+    const { orgId, role } = await resolveOrgAndRole()
+    if (!canManageInvoices(role as 'owner' | 'admin' | 'member')) {
+      return { ok: false, error: 'Insufficient permissions' }
+    }
     try {
       const { createPayment } = await import('./model')
       await createPayment(orgId, {

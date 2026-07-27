@@ -400,6 +400,8 @@ const en: Messages = {
     lateFeePerDayDescription:
       "Deduct this amount from the final invoice for each calendar day after the order deadline. Set 0 to disable.",
     midtransWebhookCopied: "Copied",
+    configured: "Configured",
+    notConfigured: "Not configured",
     save: "Save",
     channels: "Channels",
   },

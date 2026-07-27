@@ -225,4 +225,26 @@ describe('/api/midtrans-notification', () => {
       .where(eq(paymentsTable.invoiceId, invoice.id))
     expect(paymentsAfter).toHaveLength(1)
   })
+
+  it('returns generic error without leaking internal details', async () => {
+    expect(handler).toBeDefined()
+    if (!handler) return
+
+    // Send malformed JSON to trigger the catch block
+    const request = new Request('http://localhost/api/midtrans-notification', {
+      method: 'POST',
+      body: 'not-json',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    const response = await handler({ request, params: {} })
+    expect(response.status).toBe(500)
+    const text = await response.text()
+    expect(text).toBe('Internal error')
+    // Ensure no internal error details are leaked
+    expect(text).not.toContain('JSON')
+    expect(text).not.toContain('parse')
+  })
 })

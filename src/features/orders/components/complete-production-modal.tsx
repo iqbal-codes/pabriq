@@ -59,7 +59,7 @@ export function CompleteProductionModal({ open, onOpenChange, order }: Props) {
       value: encodeBankPaymentSelection(pm.id),
       label: pm.name,
     })),
-    ...(orgSettings?.midtransServerKey && orgSettings?.midtransClientKey
+    ...(orgSettings?.hasMidtransCredentials
       ? [{ value: 'midtrans', label: it('midtrans') }]
       : []),
   ]

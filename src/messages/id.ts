@@ -400,6 +400,8 @@ const id: Messages = {
     lateFeePerDayDescription:
       "Potong nominal ini dari invoice pelunasan untuk setiap hari kalender setelah deadline pesanan. Isi 0 untuk menonaktifkan.",
     midtransWebhookCopied: "Disalin",
+    configured: "Terkonfigurasi",
+    notConfigured: "Belum dikonfigurasi",
     save: "Simpan",
     channels: "Saluran",
   },

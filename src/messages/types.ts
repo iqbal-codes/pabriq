@@ -127,6 +127,8 @@ export type Messages = {
     lateFeePerDay: string;
     lateFeePerDayDescription: string;
     midtransWebhookCopied: string;
+    configured: string;
+    notConfigured: string;
     save: string;
     channels: string;
   };

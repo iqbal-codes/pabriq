@@ -1,7 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 import { eq } from 'drizzle-orm'
-import { resolveOrgId } from '#/lib/auth-session-server'
+import { canManagePaymentSettings } from '#/features/permissions/model'
+import { resolveOrgAndRole, resolveOrgId } from '#/lib/auth-session-server'
 
 type OrgSettings = {
   name: string
@@ -11,9 +12,9 @@ type OrgSettings = {
   address: { areaId: string; areaName: string; streetAddress: string } | null
   logoAssetId: string | null
   lateFeePerDay: number
-  midtransServerKey: string | null
   midtransClientKey: string | null
   midtransIsProduction: boolean
+  hasMidtransCredentials: boolean
 }
 
 export const getOrgSettingsFn = createServerFn({ method: 'GET' }).handler(
@@ -68,9 +69,12 @@ export const getOrgSettingsFn = createServerFn({ method: 'GET' }).handler(
         : null,
       logoAssetId: profile?.logoAssetId ?? null,
       lateFeePerDay: profile?.lateFeePerDay ?? 0,
-      midtransServerKey: profile?.midtransServerKey ?? null,
       midtransClientKey: profile?.midtransClientKey ?? null,
       midtransIsProduction: profile?.midtransIsProduction ?? false,
+      hasMidtransCredentials: Boolean(
+        profile?.midtransServerKey?.trim() &&
+          profile?.midtransClientKey?.trim(),
+      ),
     }
   },
 )
@@ -127,11 +131,25 @@ export const updateOrgSettingsFn = createServerFn({ method: 'POST' })
   .inputValidator((input: UpdateOrgSettingsInput) => input)
   .handler(
     async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
-      const [orgId, { auth }] = await Promise.all([
-        resolveOrgId(),
+      const [{ orgId, role }, { auth }] = await Promise.all([
+        resolveOrgAndRole(),
         import('#/lib/auth'),
       ])
       const headers = getRequestHeaders()
+      // Role gate: payment settings changes require owner/admin
+      const hasPaymentSettingsChanges =
+        data.midtransServerKey !== undefined ||
+        data.midtransClientKey !== undefined ||
+        data.midtransIsProduction !== undefined
+      if (
+        hasPaymentSettingsChanges &&
+        !canManagePaymentSettings(role as 'owner' | 'admin' | 'member')
+      ) {
+        return {
+          ok: false,
+          error: 'Insufficient permissions to manage payment settings',
+        }
+      }
 
       try {
         if (data.name !== undefined) {

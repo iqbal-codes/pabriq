@@ -107,12 +107,8 @@ export const Route = createFileRoute('/api/midtrans-notification')({
           }
 
           return new Response('OK', { status: 200 })
-        } catch (error: unknown) {
-          const errorMessage =
-            error instanceof Error ? error.message : String(error)
-          return new Response(`Error processing webhook: ${errorMessage}`, {
-            status: 500,
-          })
+        } catch {
+          return new Response('Internal error', { status: 500 })
         }
       },
     },

@@ -8,6 +8,7 @@ import {
   canManageCustomers,
   canManageInvoices,
   canManageMembers,
+  canManagePaymentSettings,
   canManageProducts,
   canManageSettings,
   canManageStages,
@@ -98,5 +99,11 @@ describe('canAdjustConfirmedOrder', () => {
 describe('canUseAssistant', () => {
   it('allows owner and admin only', () => {
     expectPermissions(canUseAssistant, ['owner', 'admin'])
+  })
+})
+
+describe('canManagePaymentSettings', () => {
+  it('allows owner and admin only', () => {
+    expectPermissions(canManagePaymentSettings, ['owner', 'admin'])
   })
 })

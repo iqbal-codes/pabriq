@@ -5,6 +5,7 @@ import type { DataTableLabels } from '#/components/app/data-table'
 import { DataTable } from '#/components/app/data-table'
 import { FormGrid, FormRoot, useAppForm } from '#/components/app/form'
 import { PageHeader } from '#/components/app/page-shell/page-header'
+import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { Input } from '#/components/ui/input'
@@ -30,20 +31,18 @@ function MidtransForm() {
 
   const form = useAppForm({
     defaultValues: {
-      midtransServerKey: settings?.midtransServerKey ?? '',
       midtransClientKey: settings?.midtransClientKey ?? '',
       midtransIsProduction: settings?.midtransIsProduction ?? false,
     },
     onSubmit: async ({ value }) => {
       const result = await updateOrgSettings.mutateAsync({
-        midtransServerKey: value.midtransServerKey.trim() || null,
         midtransClientKey: value.midtransClientKey.trim() || null,
         midtransIsProduction: value.midtransIsProduction,
       })
       if (result.ok) {
         toast.success(t('saved'))
       } else {
-        toast.error(t('saveFailed'))
+        toast.error(result.error || t('saveFailed'))
       }
     },
   })
@@ -56,9 +55,16 @@ function MidtransForm() {
   return (
     <FormRoot form={form}>
       <FormGrid columns={1}>
-        <form.AppField name="midtransServerKey">
-          {(field) => <field.PasswordField label={t('midtransServerKey')} />}
-        </form.AppField>
+        <div className="flex items-center justify-between">
+          <Label>{t('midtransServerKey')}</Label>
+          <Badge
+            variant={settings?.hasMidtransCredentials ? 'default' : 'secondary'}
+          >
+            {settings?.hasMidtransCredentials
+              ? t('configured')
+              : t('notConfigured')}
+          </Badge>
+        </div>
 
         <form.AppField name="midtransClientKey">
           {(field) => <field.TextField label={t('midtransClientKey')} />}
