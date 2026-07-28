@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog'
 import { getAssetsMetadata } from '#/features/assets/server'
+import { RejectPaymentDialog } from '#/features/invoices/components/reject-payment-dialog'
 import { useInvoice } from '#/features/invoices/hooks'
 import type { InvoicePaymentProof, InvoiceRow } from '#/features/invoices/model'
 import { formatCurrency } from '#/lib/formatters'
@@ -47,6 +48,7 @@ export function ManualPaymentConfirmationDialog({
   )
   const { data: invoiceDetail } = useInvoice(invoice.id)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isRejecting, setIsRejecting] = useState(false)
 
   const paymentMethod = invoiceDetail?.paymentMethod
   const proofAssetIds = paymentProofs.map((proof) => proof.proofAssetId)
@@ -87,137 +89,172 @@ export function ManualPaymentConfirmationDialog({
 
   const isLoading = isProcessing || isConfirming
 
+  const pendingPayment = invoiceDetail?.payments.find(
+    (p) => p.status === 'pending',
+  )
+
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t('confirmManualPayment')}</DialogTitle>
-          <DialogDescription>{t('confirmManualPaymentDesc')}</DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('confirmManualPayment')}</DialogTitle>
+            <DialogDescription>
+              {t('confirmManualPaymentDesc')}
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          {/* Invoice summary */}
-          <div className="flex items-baseline justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
-              {t('invoiceNumber')}
-            </span>
-            <div className="text-right">
-              <span className="mr-2 text-sm font-medium">
-                {invoice.invoiceNumber}
+          <div className="space-y-4 py-2">
+            {/* Invoice summary */}
+            <div className="flex items-baseline justify-between">
+              <span className="text-xs font-medium text-muted-foreground">
+                {t('invoiceNumber')}
               </span>
-              <span className="text-sm font-semibold tabular-nums">
-                {formatCurrency(invoice.total, locale)}
-              </span>
+              <div className="text-right">
+                <span className="mr-2 text-sm font-medium">
+                  {invoice.invoiceNumber}
+                </span>
+                <span className="text-sm font-semibold tabular-nums">
+                  {formatCurrency(invoice.total, locale)}
+                </span>
+              </div>
             </div>
-          </div>
 
-          {/* Destination bank details */}
-          <div className="rounded-lg border bg-muted/50 p-3">
-            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <Landmark className="size-3" aria-hidden="true" />
-              {t('destinationBank')}
-            </p>
-            {paymentMethod ? (
-              <div className="space-y-1">
-                {paymentMethod.bankName && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {t('bankName')}
-                    </span>
-                    <span className="font-medium">
-                      {paymentMethod.bankName}
-                    </span>
-                  </div>
-                )}
-                {paymentMethod.accountNumber && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {t('accountNumber')}
-                    </span>
-                    <span className="font-medium tabular-nums">
-                      {paymentMethod.accountNumber}
-                    </span>
-                  </div>
-                )}
-                {paymentMethod.accountHolder && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {t('accountHolder')}
-                    </span>
-                    <span className="font-medium">
-                      {paymentMethod.accountHolder}
-                    </span>
-                  </div>
-                )}
+            {/* Destination bank details */}
+            <div className="rounded-lg border bg-muted/50 p-3">
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <Landmark className="size-3" aria-hidden="true" />
+                {t('destinationBank')}
+              </p>
+              {paymentMethod ? (
+                <div className="space-y-1">
+                  {paymentMethod.bankName && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {t('bankName')}
+                      </span>
+                      <span className="font-medium">
+                        {paymentMethod.bankName}
+                      </span>
+                    </div>
+                  )}
+                  {paymentMethod.accountNumber && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {t('accountNumber')}
+                      </span>
+                      <span className="font-medium tabular-nums">
+                        {paymentMethod.accountNumber}
+                      </span>
+                    </div>
+                  )}
+                  {paymentMethod.accountHolder && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {t('accountHolder')}
+                      </span>
+                      <span className="font-medium">
+                        {paymentMethod.accountHolder}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {t('noPaymentMethodConfigured')}
+                </p>
+              )}
+            </div>
+
+            {/* Latest proof submission */}
+            {latestProof && (
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {t('latestProofSubmitted')}
+                </span>
+                <time
+                  className="text-sm"
+                  dateTime={latestProof.createdAt.toISOString()}
+                >
+                  {dateFormatter.format(latestProof.createdAt)}
+                </time>
+              </div>
+            )}
+
+            {/* Payment proofs */}
+            {paymentProofs.length > 0 ? (
+              <div>
+                <p className="mb-2 text-xs font-medium text-muted-foreground">
+                  {t('paymentProofs')} ({paymentProofs.length})
+                </p>
+                <ExistingFileList
+                  assets={proofAssetIds
+                    .map((id) => proofsByAssetId.get(id))
+                    .filter(
+                      (asset): asset is NonNullable<typeof asset> =>
+                        asset !== undefined,
+                    )}
+                />
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                {t('noPaymentMethodConfigured')}
-              </p>
+              <div className="flex items-center gap-2 rounded-lg border border-dashed p-3">
+                <ImageOff
+                  className="size-4 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <p className="text-sm text-muted-foreground">
+                  {t('noPaymentProofs')}
+                </p>
+              </div>
             )}
           </div>
 
-          {/* Latest proof submission */}
-          {latestProof && (
-            <div className="flex items-baseline justify-between">
-              <span className="text-xs font-medium text-muted-foreground">
-                {t('latestProofSubmitted')}
-              </span>
-              <time
-                className="text-sm"
-                dateTime={latestProof.createdAt.toISOString()}
-              >
-                {dateFormatter.format(latestProof.createdAt)}
-              </time>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <div className="flex w-full items-center justify-between">
+              {pendingPayment ? (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={isLoading}
+                  onClick={() => setIsRejecting(true)}
+                >
+                  {t('rejectSimple')}
+                </Button>
+              ) : (
+                <div />
+              )}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isLoading}
+                  onClick={() => handleClose(false)}
+                >
+                  {ct('cancel')}
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  isLoading={isLoading}
+                  disabled={isLoading}
+                  onClick={handleConfirm}
+                >
+                  {t('confirmSimple')}
+                </Button>
+              </div>
             </div>
-          )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-          {/* Payment proofs */}
-          {paymentProofs.length > 0 ? (
-            <div>
-              <p className="mb-2 text-xs font-medium text-muted-foreground">
-                {t('paymentProofs')} ({paymentProofs.length})
-              </p>
-              <ExistingFileList
-                assets={proofAssetIds
-                  .map((id) => proofsByAssetId.get(id))
-                  .filter(
-                    (asset): asset is NonNullable<typeof asset> =>
-                      asset !== undefined,
-                  )}
-              />
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 rounded-lg border border-dashed p-3">
-              <ImageOff
-                className="size-4 text-muted-foreground"
-                aria-hidden="true"
-              />
-              <p className="text-sm text-muted-foreground">
-                {t('noPaymentProofs')}
-              </p>
-            </div>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            disabled={isLoading}
-            onClick={() => handleClose(false)}
-          >
-            {ct('cancel')}
-          </Button>
-          <Button
-            variant="default"
-            isLoading={isLoading}
-            disabled={isLoading}
-            onClick={handleConfirm}
-          >
-            {t('confirmSimple')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      {pendingPayment && (
+        <RejectPaymentDialog
+          open={isRejecting}
+          onOpenChange={setIsRejecting}
+          paymentId={pendingPayment.id}
+          onSuccess={() => onOpenChange(false)}
+        />
+      )}
+    </>
   )
 }

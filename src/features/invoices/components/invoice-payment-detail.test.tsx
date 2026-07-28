@@ -7,11 +7,20 @@ import { InvoicePaymentDetail } from './invoice-payment-detail'
 
 const mockUseInvoice = vi.fn()
 const mockMutateAsync = vi.fn()
+const mockConfirmPaymentMutate = vi.fn()
 
 vi.mock('#/features/invoices/hooks', () => ({
   useInvoice: (id: string) => mockUseInvoice(id),
   useReconcilePayment: () => ({
     mutateAsync: mockMutateAsync,
+    isPending: false,
+  }),
+  useConfirmPayment: () => ({
+    mutate: mockConfirmPaymentMutate,
+    isPending: false,
+  }),
+  useRejectPayment: () => ({
+    mutateAsync: vi.fn(),
     isPending: false,
   }),
 }))
@@ -36,7 +45,13 @@ const messages = {
     transactionId: 'Transaction ID: {id}',
     paymentRecords: 'Payment Records ({count})',
     referencePrefix: 'Ref: {reference}',
-    confirmSimple: 'Confirm Payment',
+    confirmSimple: 'Confirm',
+    rejectSimple: 'Reject',
+    paymentConfirmed: 'Payment confirmed',
+    confirmedByLabel: 'Confirmed by',
+    receivedAtLabel: 'Received at',
+    syncTimeLabel: 'Last sync',
+    rejectedReasonLabel: 'Rejection reason',
   },
 }
 
@@ -176,10 +191,45 @@ describe('InvoicePaymentDetail Component', () => {
       onManualConfirm: handleManualConfirm,
     })
 
-    const confirmBtn = screen.getByRole('button', { name: 'Confirm Payment' })
+    const confirmBtn = screen.getByRole('button', { name: 'Confirm' })
     expect(confirmBtn).toBeInTheDocument()
 
     await user.click(confirmBtn)
     expect(handleManualConfirm).toHaveBeenCalledTimes(1)
+  })
+
+  it('renders payment record timestamps, confirmedBy source, and rejection reason', () => {
+    mockUseInvoice.mockReturnValue({
+      data: {
+        payments: [
+          {
+            id: 'pay-1',
+            method: 'bank_transfer',
+            amount: 250000,
+            status: 'confirmed',
+            reference: 'REF-123',
+            receivedAt: new Date('2026-07-20T10:00:00Z'),
+            confirmedAt: new Date('2026-07-20T10:05:00Z'),
+            confirmedBy: 'operator-1',
+          },
+          {
+            id: 'pay-2',
+            method: 'bank_transfer',
+            amount: 100000,
+            status: 'rejected',
+            rejectedReason: 'Invalid proof document',
+          },
+        ],
+        midtransAttempts: [],
+      },
+      isLoading: false,
+    })
+
+    renderComponent({ invoice: mockManualInvoice, orgRole: 'owner' })
+
+    expect(screen.getByText(/operator-1/)).toBeInTheDocument()
+    expect(
+      screen.getByText('Rejection reason: Invalid proof document'),
+    ).toBeInTheDocument()
   })
 })

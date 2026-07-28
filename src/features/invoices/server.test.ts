@@ -1,4 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock('#/db/index', () => ({
+  db: {},
+}))
+
 import { reconcilePayment } from './model'
 import { reconcileInvoicePaymentForRole } from './server'
 

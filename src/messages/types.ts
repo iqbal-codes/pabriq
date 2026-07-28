@@ -647,6 +647,15 @@ export type Messages = {
     confirmSimple: string;
     rejectSimple: string;
     rejectReasonPlaceholder: string;
+    rejectPayment: string;
+    rejectPaymentDesc: string;
+    rejectionReason: string;
+    rejectionReasonRequired: string;
+    confirmRejection: string;
+    confirmedByLabel: string;
+    receivedAtLabel: string;
+    syncTimeLabel: string;
+    rejectedReasonLabel: string;
     viewProof: string;
     paymentProof: string;
     uploadProof: string;

@@ -1,3 +1,4 @@
+import type { UseMutationResult } from '@tanstack/react-query'
 import {
   useMutation,
   useQuery,
@@ -6,12 +7,14 @@ import {
 } from '@tanstack/react-query'
 import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 import { queryKeys } from '#/lib/query-keys'
+import type { MutationResult } from '#/lib/server-results'
 import type {
   CreatePaymentInput,
   ListInvoicesParams,
   PaymentMethod,
 } from './model'
 import {
+  confirmPaymentFn,
   createInvoiceFn,
   createPaymentFn,
   createPaymentMethodFn,
@@ -22,6 +25,7 @@ import {
   listPaymentMethodsFn,
   markInvoicePaidFn,
   reconcileInvoicePaymentFn,
+  rejectPaymentFn,
   updatePaymentMethodFn,
 } from './server'
 
@@ -112,6 +116,40 @@ export function useCreatePayment() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: CreatePaymentInput) => createPaymentFn({ data: input }),
+    onSuccess: () =>
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.invoices.all },
+        { queryKey: queryKeys.notifications.all },
+      ]),
+  })
+}
+
+export function useConfirmPayment(): UseMutationResult<
+  MutationResult,
+  Error,
+  string
+> {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (paymentId: string) =>
+      confirmPaymentFn({ data: { paymentId } }),
+    onSuccess: () =>
+      invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.invoices.all },
+        { queryKey: queryKeys.notifications.all },
+      ]),
+  })
+}
+
+export function useRejectPayment(): UseMutationResult<
+  MutationResult,
+  Error,
+  { paymentId: string; reason: string }
+> {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { paymentId: string; reason: string }) =>
+      rejectPaymentFn({ data: input }),
     onSuccess: () =>
       invalidateMutationQueries(queryClient, [
         { queryKey: queryKeys.invoices.all },

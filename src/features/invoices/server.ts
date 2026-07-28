@@ -175,6 +175,58 @@ const createPaymentSchema = z.object({
 
 // ── Payment Server Functions ───────────────────────────────────
 
+const confirmPaymentSchema = z.object({
+  paymentId: z.string().min(1),
+})
+
+const rejectPaymentSchema = z.object({
+  paymentId: z.string().min(1),
+  reason: z.string().trim().min(1, 'Reason is required'),
+})
+
+async function withInvoiceManagement<T>(
+  handler: (ctx: {
+    orgId: string
+    role: 'owner' | 'admin' | 'member'
+  }) => Promise<T>,
+): Promise<MutationResult> {
+  const { orgId, role } = await resolveOrgAndRole()
+  if (!canManageInvoices(role as 'owner' | 'admin' | 'member')) {
+    return { ok: false, error: 'Insufficient permissions' }
+  }
+  try {
+    await handler({ orgId, role: role as 'owner' | 'admin' | 'member' })
+    return { ok: true }
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : 'Unknown error',
+    }
+  }
+}
+
+export const confirmPaymentFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: unknown) => confirmPaymentSchema.parse(input))
+  .handler(async ({ data }): Promise<MutationResult> => {
+    return withInvoiceManagement(async ({ orgId }) => {
+      const { auth } = await import('#/lib/auth')
+      const headers = getRequestHeaders()
+      const session = await auth.api.getSession({ headers })
+      const userId = session?.user.id ?? 'operator'
+      const { confirmPayment } = await import('./model')
+      await confirmPayment(orgId, data.paymentId, userId)
+    })
+  })
+
+export const rejectPaymentFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: unknown) => rejectPaymentSchema.parse(input))
+  .handler(async ({ data }): Promise<MutationResult> => {
+    return withInvoiceManagement(async ({ orgId }) => {
+      const { rejectPayment } = await import('./model')
+      await rejectPayment(orgId, data.paymentId, data.reason)
+    })
+  })
+
 export const createPaymentFn = createServerFn({ method: 'POST' })
   .inputValidator((input: unknown) => createPaymentSchema.parse(input))
   .handler(async ({ data }): Promise<MutationResult> => {

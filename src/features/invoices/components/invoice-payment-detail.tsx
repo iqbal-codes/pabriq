@@ -1,9 +1,14 @@
 import { AlertCircle, CheckCircle2, CreditCard, RefreshCw } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLocale, useTranslations } from 'use-intl'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
-import { useInvoice, useReconcilePayment } from '#/features/invoices/hooks'
+import { RejectPaymentDialog } from '#/features/invoices/components/reject-payment-dialog'
+import {
+  useConfirmPayment,
+  useInvoice,
+  useReconcilePayment,
+} from '#/features/invoices/hooks'
 import type { InvoiceRow } from '#/features/invoices/model'
 import type { ReconcilePaymentResponse } from '#/features/invoices/server'
 import type { Role } from '#/features/permissions/model'
@@ -27,10 +32,23 @@ export function InvoicePaymentDetail({
   const locale = useLocale()
   const canReconcile = canManageInvoices(orgRole)
 
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }),
+    [locale],
+  )
+
   const { data: invoiceDetail } = useInvoice(invoice.id)
   const reconcileMutation = useReconcilePayment()
+  const confirmPaymentMutation = useConfirmPayment()
   const [reconcileResult, setReconcileResult] =
     useState<ReconcilePaymentResponse | null>(null)
+  const [rejectingPaymentId, setRejectingPaymentId] = useState<string | null>(
+    null,
+  )
 
   const handleReconcile = async () => {
     try {
@@ -141,6 +159,14 @@ export function InvoicePaymentDetail({
                       {t('transactionId', { id: att.transactionId })}
                     </p>
                   )}
+                  {(att.settlementTime || att.updatedAt) && (
+                    <p className="text-[10px] text-muted-foreground">
+                      {t('syncTimeLabel')}:{' '}
+                      {dateFormatter.format(
+                        new Date(att.settlementTime ?? att.updatedAt),
+                      )}
+                    </p>
+                  )}
                   {att.errorMessage && (
                     <p className="text-[11px] text-destructive">
                       {t('transactionError')}: {att.errorMessage}
@@ -181,42 +207,98 @@ export function InvoicePaymentDetail({
           <p className="font-medium text-muted-foreground">
             {t('paymentRecords', { count: payments.length })}
           </p>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {payments.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center justify-between rounded border border-border/80 bg-background p-2"
+                className="space-y-1 rounded border border-border/80 bg-background p-2"
               >
-                <div>
-                  <span className="font-medium capitalize text-foreground">
-                    {p.method}
-                  </span>
-                  {p.reference && (
-                    <span className="ml-2 font-mono text-[11px] text-muted-foreground">
-                      {t('referencePrefix', { reference: p.reference })}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="font-medium capitalize text-foreground">
+                      {p.method}
                     </span>
+                    {p.reference && (
+                      <span className="ml-2 font-mono text-[11px] text-muted-foreground">
+                        {t('referencePrefix', { reference: p.reference })}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold tabular-nums text-foreground">
+                      {formatCurrency(p.amount, locale)}
+                    </span>
+                    <Badge
+                      variant={
+                        p.status === 'confirmed'
+                          ? 'default'
+                          : p.status === 'pending'
+                            ? 'secondary'
+                            : p.status === 'refunded' ||
+                                p.status === 'partially_refunded'
+                              ? 'outline'
+                              : 'destructive'
+                      }
+                      className="capitalize text-[10px]"
+                    >
+                      {p.status}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Audit & Timestamps */}
+                <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] text-muted-foreground pt-0.5 border-t border-border/40">
+                  <div className="flex items-center gap-2">
+                    {p.receivedAt && (
+                      <span>
+                        {t('receivedAtLabel')}:{' '}
+                        {dateFormatter.format(new Date(p.receivedAt))}
+                      </span>
+                    )}
+                    {p.confirmedAt && (
+                      <span>
+                        {t('paymentConfirmed')}:{' '}
+                        {dateFormatter.format(new Date(p.confirmedAt))}
+                      </span>
+                    )}
+                    {p.confirmedBy && (
+                      <span className="font-mono">
+                        ({t('confirmedByLabel')}: {p.confirmedBy})
+                      </span>
+                    )}
+                  </div>
+
+                  {p.status === 'pending' && canReconcile && (
+                    <div className="flex items-center gap-1.5 pt-0.5">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-[10px] px-2 text-success hover:text-success hover:bg-success/10"
+                        isLoading={confirmPaymentMutation.isPending}
+                        disabled={confirmPaymentMutation.isPending}
+                        onClick={() => confirmPaymentMutation.mutate(p.id)}
+                      >
+                        {t('confirmSimple')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-[10px] px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => setRejectingPaymentId(p.id)}
+                      >
+                        {t('rejectSimple')}
+                      </Button>
+                    </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold tabular-nums text-foreground">
-                    {formatCurrency(p.amount, locale)}
-                  </span>
-                  <Badge
-                    variant={
-                      p.status === 'confirmed'
-                        ? 'default'
-                        : p.status === 'pending'
-                          ? 'secondary'
-                          : p.status === 'refunded' ||
-                              p.status === 'partially_refunded'
-                            ? 'outline'
-                            : 'destructive'
-                    }
-                    className="capitalize text-[10px]"
-                  >
-                    {p.status}
-                  </Badge>
-                </div>
+
+                {p.rejectedReason && (
+                  <p className="text-[11px] font-medium text-destructive pt-0.5">
+                    {t('rejectedReasonLabel')}: {p.rejectedReason}
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -302,6 +384,16 @@ export function InvoicePaymentDetail({
           </Button>
         )}
       </div>
+
+      {rejectingPaymentId && (
+        <RejectPaymentDialog
+          open={Boolean(rejectingPaymentId)}
+          onOpenChange={(open) => {
+            if (!open) setRejectingPaymentId(null)
+          }}
+          paymentId={rejectingPaymentId}
+        />
+      )}
     </div>
   )
 }
