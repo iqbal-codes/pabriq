@@ -56,7 +56,7 @@ export function useCreateInvoice() {
 }
 
 export function usePaymentMethods() {
-  return useSuspenseQuery({
+  return useQuery({
     queryKey: queryKeys.invoices.paymentMethods(),
     queryFn: () => listPaymentMethodsFn({ data: {} }),
   })
