@@ -191,7 +191,6 @@ export function AppSidebar({
           <ThemeToggle />
           <LanguageToggle />
         </div>
-        <NavUser user={user} />
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -206,6 +205,7 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        <NavUser user={user} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

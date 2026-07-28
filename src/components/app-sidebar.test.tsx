@@ -1,7 +1,9 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { IntlProvider } from 'use-intl'
 import { SidebarProvider } from '#/components/ui/sidebar'
+import { TooltipProvider } from '#/components/ui/tooltip'
 import { AppSidebar } from './app-sidebar'
 
 vi.mock('@tanstack/react-router', () => ({
@@ -13,6 +15,12 @@ vi.mock('@tanstack/react-router', () => ({
 }))
 
 const testMessages = {
+  app: {
+    language: 'Language',
+    theme: 'Theme',
+    english: 'English',
+    indonesian: 'Indonesian',
+  },
   admin: {
     logOut: 'Log out',
   },
@@ -41,10 +49,17 @@ const testMessages = {
 }
 
 function TestWrapper({ children }: { children: React.ReactNode }) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
   return (
-    <IntlProvider locale="en" messages={testMessages}>
-      <SidebarProvider>{children}</SidebarProvider>
-    </IntlProvider>
+    <QueryClientProvider client={queryClient}>
+      <IntlProvider locale="en" messages={testMessages}>
+        <SidebarProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+        </SidebarProvider>
+      </IntlProvider>
+    </QueryClientProvider>
   )
 }
 
