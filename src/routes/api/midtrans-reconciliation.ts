@@ -18,17 +18,34 @@ function hasValidJobSecret(request: Request): boolean {
 export async function handleMidtransReconciliation(
   request: Request,
 ): Promise<Response> {
+  const correlationId =
+    request.headers.get('x-correlation-id')?.trim() || crypto.randomUUID()
   if (!hasValidJobSecret(request)) {
     return new Response('Unauthorized', { status: 401 })
   }
 
   try {
     const summary = await reconcileMidtransTransactions()
-    logger.info(summary, 'Midtrans reconciliation job completed')
-    return Response.json(summary)
+    logger.info(
+      { correlationId, ...summary },
+      'Midtrans reconciliation job completed',
+    )
+    return Response.json(summary, {
+      headers: { 'x-correlation-id': correlationId },
+    })
   } catch (error: unknown) {
-    logger.error({ err: error }, 'Midtrans reconciliation job failed')
-    return new Response('Reconciliation failed', { status: 500 })
+    logger.error(
+      {
+        alert: 'midtrans_reconciliation_failed',
+        correlationId,
+        errorType: error instanceof Error ? error.name : 'unknown',
+      },
+      'ALERT: Midtrans reconciliation job failed',
+    )
+    return new Response('Reconciliation failed', {
+      status: 500,
+      headers: { 'x-correlation-id': correlationId },
+    })
   }
 }
 

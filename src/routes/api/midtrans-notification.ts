@@ -17,6 +17,22 @@ import {
 } from '#/features/invoices/model'
 import { logger } from '#/lib/logger'
 
+function getCorrelationId(request: Request): string {
+  return request.headers.get('x-correlation-id')?.trim() || crypto.randomUUID()
+}
+
+function responseWithCorrelation(
+  body: BodyInit,
+  init?: ResponseInit,
+  correlationId?: string,
+): Response {
+  const headers = new Headers(init?.headers)
+  if (correlationId) {
+    headers.set('x-correlation-id', correlationId)
+  }
+  return new Response(body, { ...init, headers })
+}
+
 const midtransWebhookSchema = z.object({
   order_id: z.string().min(1),
   status_code: z.string().min(1),
@@ -49,17 +65,26 @@ export const Route = createFileRoute('/api/midtrans-notification')({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const correlationId = getCorrelationId(request)
+        const res = (body: BodyInit, init?: ResponseInit) =>
+          responseWithCorrelation(body, init, correlationId)
+
         try {
           let raw: unknown
           try {
             raw = await request.json()
           } catch {
-            return new Response('Invalid request body', { status: 400 })
+            logger.warn(
+              { correlationId },
+              'Malformed Midtrans webhook request body',
+            )
+            return res('Invalid request body', { status: 400 })
           }
 
           const parseResult = midtransWebhookSchema.safeParse(raw)
           if (!parseResult.success) {
-            return new Response('Invalid request body', { status: 400 })
+            logger.warn({ correlationId }, 'Invalid Midtrans webhook payload')
+            return res('Invalid request body', { status: 400 })
           }
           const body = parseResult.data
           const [attempt] = await db
@@ -84,15 +109,23 @@ export const Route = createFileRoute('/api/midtrans-notification')({
 
           if (!attempt) {
             logger.warn(
-              { orderId: body.order_id, transactionId: body.transaction_id },
+              {
+                correlationId,
+                orderId: body.order_id,
+                transactionId: body.transaction_id,
+              },
               'Unknown Midtrans transaction received on webhook',
             )
-            return new Response('Transaction not found', { status: 404 })
+            return res('Transaction not found', { status: 404 })
           }
 
           const serverKey = (attempt.serverKey ?? '').trim()
           if (!serverKey || !verifyMidtransSignature(body, serverKey)) {
-            return new Response('Unauthorized signature', { status: 403 })
+            logger.warn(
+              { correlationId, orderId: body.order_id },
+              'Midtrans webhook signature verification failed',
+            )
+            return res('Unauthorized signature', { status: 403 })
           }
 
           const grossAmount = Number(body.gross_amount)
@@ -127,10 +160,10 @@ export const Route = createFileRoute('/api/midtrans-notification')({
               attempt.transactionStatus === 'refund' ||
               attempt.transactionStatus === 'chargeback'
             ) {
-              return new Response('OK', { status: 200 })
+              return res('OK', { status: 200 })
             }
             if (!isSettlement && !isRefund) {
-              return new Response('OK', { status: 200 })
+              return res('OK', { status: 200 })
             }
           }
 
@@ -161,7 +194,16 @@ export const Route = createFileRoute('/api/midtrans-notification')({
             )
 
           if (!isAmountMatch) {
-            return new Response('Transaction amount mismatch', { status: 400 })
+            logger.error(
+              {
+                correlationId,
+                attemptId: attempt.id,
+                invoiceId: attempt.invoiceId,
+                orderId: body.order_id,
+              },
+              'Midtrans webhook amount mismatch requires reconciliation',
+            )
+            return res('Transaction amount mismatch', { status: 400 })
           }
 
           return await db.transaction(async (tx) => {
@@ -183,7 +225,7 @@ export const Route = createFileRoute('/api/midtrans-notification')({
               .limit(1)
 
             if (!lockedInvoice) {
-              return new Response('Transaction not found', { status: 404 })
+              return res('Transaction not found', { status: 404 })
             }
 
             if (isRefund) {
@@ -195,14 +237,13 @@ export const Route = createFileRoute('/api/midtrans-notification')({
               if (body.refund_amount) {
                 const parsed = Number(body.refund_amount)
                 if (!Number.isFinite(parsed) || parsed <= 0) {
-                  return new Response('Invalid refund amount', { status: 400 })
+                  return res('Invalid refund amount', { status: 400 })
                 }
                 refundedAmount = parsed
               } else if (isPartialEvent) {
-                return new Response(
-                  'Missing refund_amount for partial refund',
-                  { status: 400 },
-                )
+                return res('Missing refund_amount for partial refund', {
+                  status: 400,
+                })
               } else {
                 refundedAmount = grossAmount
               }
@@ -283,9 +324,26 @@ export const Route = createFileRoute('/api/midtrans-notification')({
                     updatedAt: new Date(),
                   })
                   .where(eq(invoicesTable.id, attempt.invoiceId))
+
+                if (
+                  (lockedInvoice.status === 'paid' ||
+                    lockedInvoice.status === 'partially_paid') &&
+                  (newInvoiceStatus as string) === 'paid'
+                ) {
+                  logger.error(
+                    {
+                      alert: 'payment_refund_invoice_state_mismatch',
+                      correlationId,
+                      invoiceId: attempt.invoiceId,
+                      orderId: body.order_id,
+                      invoiceStatus: newInvoiceStatus,
+                    },
+                    'ALERT: refund event processed but invoice remains paid',
+                  )
+                }
               }
 
-              return new Response('OK', { status: 200 })
+              return res('OK', { status: 200 })
             }
 
             if (!isSettlement) {
@@ -295,7 +353,7 @@ export const Route = createFileRoute('/api/midtrans-notification')({
                 lockedInvoice.status === 'refunded' ||
                 lockedInvoice.status === 'partially_refunded'
               ) {
-                return new Response('OK', { status: 200 })
+                return res('OK', { status: 200 })
               }
 
               const nonSettlementPaymentStatus =
@@ -333,7 +391,7 @@ export const Route = createFileRoute('/api/midtrans-notification')({
                   .where(eq(paymentsTable.id, existingPendingPayment.id))
               }
 
-              return new Response('OK', { status: 200 })
+              return res('OK', { status: 200 })
             }
 
             if (
@@ -349,7 +407,7 @@ export const Route = createFileRoute('/api/midtrans-notification')({
                   updatedAt: new Date(),
                 })
                 .where(eq(midtransTransactionsTable.id, attempt.id))
-              return new Response('OK', { status: 200 })
+              return res('OK', { status: 200 })
             }
 
             if (lockedInvoice.status === 'void') {
@@ -361,7 +419,7 @@ export const Route = createFileRoute('/api/midtrans-notification')({
                   updatedAt: new Date(),
                 })
                 .where(eq(midtransTransactionsTable.id, attempt.id))
-              return new Response('OK', { status: 200 })
+              return res('OK', { status: 200 })
             }
 
             const [existingConfirmedPayment] = await tx
@@ -418,7 +476,7 @@ export const Route = createFileRoute('/api/midtrans-notification')({
                     ),
                   )
               }
-              return new Response('OK', { status: 200 })
+              return res('OK', { status: 200 })
             }
 
             const balance = await getInvoiceBalance(
@@ -435,7 +493,7 @@ export const Route = createFileRoute('/api/midtrans-notification')({
                   updatedAt: new Date(),
                 })
                 .where(eq(midtransTransactionsTable.id, attempt.id))
-              return new Response('OK', { status: 200 })
+              return res('OK', { status: 200 })
             }
 
             let paymentId: string
@@ -486,11 +544,42 @@ export const Route = createFileRoute('/api/midtrans-notification')({
               tx,
             )
 
-            return new Response('OK', { status: 200 })
+            const [confirmedInvoice] = await tx
+              .select({ status: invoicesTable.status })
+              .from(invoicesTable)
+              .where(
+                and(
+                  eq(invoicesTable.id, attempt.invoiceId),
+                  eq(invoicesTable.orgId, attempt.orgId),
+                ),
+              )
+              .limit(1)
+            if (confirmedInvoice?.status !== 'paid') {
+              logger.error(
+                {
+                  alert: 'confirmed_payment_invoice_not_paid',
+                  correlationId,
+                  invoiceId: attempt.invoiceId,
+                  orderId: body.order_id,
+                  invoiceStatus: confirmedInvoice?.status,
+                },
+                'ALERT: confirmed Midtrans payment did not mark invoice paid',
+              )
+            }
+
+            return res('OK', { status: 200 })
           })
         } catch (error: unknown) {
-          logger.error({ err: error }, 'Midtrans webhook processing failed')
-          return new Response('Internal error', { status: 500 })
+          logger.error(
+            {
+              correlationId,
+              errorType: error instanceof Error ? error.name : 'unknown',
+            },
+            'Midtrans webhook processing failed',
+          )
+          return res('Internal error', {
+            status: 500,
+          })
         }
       },
     },

@@ -99,6 +99,7 @@ describe('/api/midtrans-notification', () => {
 
     const response = await handler({ request, params: {} })
     expect(response.status).toBe(403)
+    expect(response.headers.get('x-correlation-id')).toBeTruthy()
     const text = await response.text()
     expect(text).toBe('Unauthorized signature')
   })
@@ -922,7 +923,10 @@ describe('/api/midtrans-notification', () => {
           signature_key: signatureKey2,
           transaction_status: 'chargeback',
         }),
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-correlation-id': 'test-refund-corr-id',
+        },
       }),
       params: {},
     })
