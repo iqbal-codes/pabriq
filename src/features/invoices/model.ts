@@ -1,4 +1,14 @@
-import { and, desc, eq, ilike, inArray, or, type SQL, sql } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm'
 import type { SnapTransactionParameters } from 'midtrans-client'
 import midtransClient from 'midtrans-client'
 import { db } from '#/db/index'
@@ -1410,7 +1420,7 @@ export async function createMidtransTransaction(
     )
     .limit(1)
 
-  const expectedAmount = Math.round(balance.remaining)
+  const expectedAmount = balance.remaining
   const orderId = `${invoice.invoiceNumber}-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
   const attemptId = generateId()
   const now = new Date()
@@ -1548,6 +1558,8 @@ export type ReconcileResult =
         | 'not_settled_yet'
         | 'no_midtrans_order_id'
         | 'mismatch'
+        | 'gateway_unavailable'
+        | 'manual_review_required'
         | 'refunded'
         | 'partially_refunded'
         | 'pending'
@@ -1557,7 +1569,32 @@ export type ReconcileResult =
         | 'expire'
       paymentId?: string
     }
-  | { ok: false; error: string }
+  | {
+      ok: false
+      error: string
+      reason?: 'gateway_unavailable' | 'manual_review_required'
+    }
+
+export function normalizeMidtransAmount(value: number | string): string {
+  const text = String(value).trim()
+  if (!/^\d+(?:\.\d+)?$/.test(text)) return 'invalid'
+  const [whole, fraction = ''] = text.split('.')
+  const normalizedWhole = whole.replace(/^0+(?=\d)/, '')
+  const normalizedFraction = fraction.replace(/0+$/, '')
+  return normalizedFraction
+    ? `${normalizedWhole}.${normalizedFraction}`
+    : normalizedWhole
+}
+
+export function midtransAmountsMatch(
+  left: number | string,
+  right: number | string,
+): boolean {
+  const normLeft = normalizeMidtransAmount(left)
+  const normRight = normalizeMidtransAmount(right)
+  if (normLeft === 'invalid' || normRight === 'invalid') return false
+  return normLeft === normRight
+}
 
 /**
  * Pull-based reconciliation: ask Midtrans Core API for the current transaction
@@ -1603,6 +1640,7 @@ export async function reconcilePayment(
     }
 
     let sawMismatch = false
+    let sawGatewayUnavailable = false
     for (const attempt of attempts) {
       let status: MidtransTransactionStatus
       try {
@@ -1611,6 +1649,7 @@ export async function reconcilePayment(
           orderId: attempt.orderId,
         })
       } catch (e: unknown) {
+        sawGatewayUnavailable = true
         await tx
           .update(midtransTransactionsTable)
           .set({
@@ -1633,7 +1672,8 @@ export async function reconcilePayment(
         ? new Date(status.settlementTime)
         : null
       const isAmountMatch =
-        Number.isFinite(grossAmount) && grossAmount === attempt.expectedAmount
+        Number.isFinite(grossAmount) &&
+        midtransAmountsMatch(status.grossAmount, attempt.expectedAmount)
       await tx
         .update(midtransTransactionsTable)
         .set({
@@ -1662,7 +1702,7 @@ export async function reconcilePayment(
 
       if (
         !Number.isFinite(grossAmount) ||
-        grossAmount !== attempt.expectedAmount
+        !midtransAmountsMatch(status.grossAmount, attempt.expectedAmount)
       ) {
         sawMismatch = true
         continue
@@ -1790,7 +1830,11 @@ export async function reconcilePayment(
             updatedAt: new Date(),
           })
           .where(eq(midtransTransactionsTable.id, attempt.id))
-        continue
+        return {
+          ok: false,
+          error: 'Settlement received after invoice state changed',
+          reason: 'manual_review_required',
+        }
       }
       const [existingConfirmed] = await tx
         .select({ id: paymentsTable.id })
@@ -1863,14 +1907,83 @@ export async function reconcilePayment(
             updatedAt: new Date(),
           })
           .where(eq(midtransTransactionsTable.id, attempt.id))
-        return { ok: false, error: 'Midtrans payment confirmation failed' }
+        return {
+          ok: false,
+          error: 'Midtrans payment confirmation failed',
+          reason: 'manual_review_required',
+        }
       }
     }
 
     return {
       ok: true,
       confirmed: false,
-      reason: sawMismatch ? 'mismatch' : 'not_settled_yet',
+      reason: sawMismatch
+        ? 'mismatch'
+        : sawGatewayUnavailable
+          ? 'gateway_unavailable'
+          : 'not_settled_yet',
     }
   })
+}
+
+/**
+ * System-level batch reconciliation for scheduled jobs or operational maintenance.
+ * Scopes to a single organization when orgId is provided; processes background recovery across organizations when omitted.
+ */
+export async function reconcileMidtransTransactions(orgId?: string): Promise<{
+  processed: number
+  confirmed: number
+  pending: number
+  mismatches: number
+  failed: number
+  reviewRequired: number
+}> {
+  const whereClause = orgId
+    ? and(
+        eq(midtransTransactionsTable.orgId, orgId),
+        sql`${midtransTransactionsTable.transactionStatus} in ('created', 'pending', 'lookup_failed', 'mismatch', 'orphaned', 'settlement', 'capture', 'refund', 'partial_refund', 'chargeback', 'partial_chargeback')`,
+      )
+    : sql`${midtransTransactionsTable.transactionStatus} in ('created', 'pending', 'lookup_failed', 'mismatch', 'orphaned', 'settlement', 'capture', 'refund', 'partial_refund', 'chargeback', 'partial_chargeback')`
+
+  const attempts = await db
+    .select({
+      orgId: midtransTransactionsTable.orgId,
+      invoiceId: midtransTransactionsTable.invoiceId,
+    })
+    .from(midtransTransactionsTable)
+    .where(whereClause)
+    .orderBy(asc(midtransTransactionsTable.updatedAt))
+    .limit(100)
+
+  const summary = {
+    processed: 0,
+    confirmed: 0,
+    pending: 0,
+    mismatches: 0,
+    failed: 0,
+    reviewRequired: 0,
+  }
+  const invoiceKeys = new Set<string>()
+  for (const attempt of attempts) {
+    const invoiceKey = `${attempt.orgId}:${attempt.invoiceId}`
+    if (invoiceKeys.has(invoiceKey)) continue
+    invoiceKeys.add(invoiceKey)
+    summary.processed += 1
+    const result = await reconcilePayment(attempt.orgId, attempt.invoiceId)
+    if (!result.ok) {
+      if (result.reason === 'manual_review_required') {
+        summary.reviewRequired += 1
+      } else {
+        summary.failed += 1
+      }
+    } else if (result.confirmed) {
+      summary.confirmed += 1
+    } else if (result.reason === 'mismatch') {
+      summary.mismatches += 1
+    } else {
+      summary.pending += 1
+    }
+  }
+  return summary
 }

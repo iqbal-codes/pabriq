@@ -27,6 +27,8 @@ import {
   listInvoices,
   listPaymentMethods,
   markInvoicePaid,
+  midtransAmountsMatch,
+  normalizeMidtransAmount,
   reconcilePayment,
   rejectPayment,
   updatePaymentMethod,
@@ -1668,6 +1670,80 @@ describe('createMidtransTransaction', () => {
     expect(payments).toHaveLength(1)
     expect(payments[0].method).toBe('midtrans')
     expect(payments[0].status).toBe('confirmed')
+  })
+
+  it('normalizes Midtrans amounts without truncating decimals', () => {
+    expect(normalizeMidtransAmount('100.5000')).toBe('100.5')
+    expect(normalizeMidtransAmount(100.5)).toBe('100.5')
+    expect(midtransAmountsMatch('00100.500', 100.5)).toBe(true)
+    expect(midtransAmountsMatch('100.51', 100.5)).toBe(false)
+    expect(midtransAmountsMatch('invalid', 'invalid')).toBe(false)
+    expect(midtransAmountsMatch('abc', '100')).toBe(false)
+  })
+
+  it('reconcilePayment handles gateway lookup failure gracefully', async () => {
+    const result = await createInvoice(midtransOrgId, {
+      customerId: 'midtrans-cust',
+      customerName: 'Midtrans Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'midtrans',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoice = result.invoice
+    await db.insert(midtransTransactionsTable).values({
+      id: 'midtrans-attempt-fail',
+      orgId: midtransOrgId,
+      invoiceId: invoice.id,
+      orderId: 'MID-ORDER-FAIL',
+      expectedAmount: 100000,
+      transactionStatus: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    mockTransactionStatus.mockRejectedValue(new Error('Gateway timeout'))
+
+    const reconcileRes = await reconcilePayment(midtransOrgId, invoice.id)
+    expect(reconcileRes.ok).toBe(true)
+    if (reconcileRes.ok) {
+      expect(reconcileRes.confirmed).toBe(false)
+      expect(reconcileRes.reason).toBe('gateway_unavailable')
+    }
+  })
+
+  it('reconcilePayment handles transaction amount mismatch', async () => {
+    const result = await createInvoice(midtransOrgId, {
+      customerId: 'midtrans-cust',
+      customerName: 'Midtrans Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'midtrans',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoice = result.invoice
+    await db.insert(midtransTransactionsTable).values({
+      id: 'midtrans-attempt-mismatch',
+      orgId: midtransOrgId,
+      invoiceId: invoice.id,
+      orderId: 'MID-ORDER-MISMATCH',
+      expectedAmount: 100000,
+      transactionStatus: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    mockTransactionStatus.mockResolvedValue({
+      transaction_status: 'settlement',
+      fraud_status: 'accept',
+      gross_amount: '50000.00',
+      order_id: 'MID-ORDER-MISMATCH',
+    })
+
+    const reconcileRes = await reconcilePayment(midtransOrgId, invoice.id)
+    expect(reconcileRes.ok).toBe(true)
+    if (reconcileRes.ok) {
+      expect(reconcileRes.confirmed).toBe(false)
+      expect(reconcileRes.reason).toBe('mismatch')
+    }
   })
 })
 

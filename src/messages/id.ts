@@ -704,6 +704,8 @@ const id: Messages = {
     reconcileNotSettled: "Midtrans melaporkan transaksi ini belum selesai",
     reconcileNoOrderId: "Tidak ada transaksi Midtrans terkait invoice ini",
     reconcileMismatch: "Nominal Midtrans tidak cocok dengan total invoice",
+    reconcileGatewayUnavailable: "Midtrans sedang tidak tersedia. Silakan coba lagi nanti.",
+    reconcileManualReview: "Pembayaran ini perlu ditinjau manual oleh operator.",
     viewPaymentProof: "Lihat bukti pembayaran",
     overdue: "Jatuh Tempo",
     noInvoices: "Belum ada Invoice",
@@ -1186,6 +1188,9 @@ const id: Messages = {
     paymentVerifying: "Memverifikasi pembayaran Anda...",
     paymentConfirmTimeout:
       "Pembayaran diterima tetapi konfirmasi membutuhkan waktu lebih lama dari biasanya. Silakan muat ulang sebentar lagi.",
+    paymentAmountMismatch: "Nominal pembayaran tidak dapat diverifikasi. Silakan hubungi dukungan.",
+    paymentGatewayUnavailable: "Gateway pembayaran sedang tidak tersedia. Silakan coba lagi nanti.",
+    paymentManualReview: "Pembayaran Anda perlu ditinjau manual. Kami akan segera memberi kabar.",
     shipmentTracking: "Pelacakan Pengiriman",
     trackShipment: "Lacak pengiriman",
     orderTimelineSectionTitle: "Riwayat Pesanan",

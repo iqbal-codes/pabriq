@@ -680,6 +680,8 @@ export type Messages = {
     reconcileNotSettled: string;
     reconcileNoOrderId: string;
     reconcileMismatch: string;
+    reconcileGatewayUnavailable: string;
+    reconcileManualReview: string;
     viewPaymentProof: string;
     overdue: string;
     noInvoices: string;
@@ -1129,6 +1131,9 @@ export type Messages = {
     processingPayment: string;
     paymentVerifying: string;
     paymentConfirmTimeout: string;
+    paymentAmountMismatch: string;
+    paymentGatewayUnavailable: string;
+    paymentManualReview: string;
     shipmentTracking: string;
     trackShipment: string;
     orderTimelineSectionTitle: string;

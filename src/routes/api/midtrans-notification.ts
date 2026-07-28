@@ -13,6 +13,7 @@ import {
   confirmPayment,
   createPayment,
   getInvoiceBalance,
+  midtransAmountsMatch,
 } from '#/features/invoices/model'
 import { logger } from '#/lib/logger'
 
@@ -100,7 +101,7 @@ export const Route = createFileRoute('/api/midtrans-notification')({
             : null
           const isAmountMatch =
             Number.isFinite(grossAmount) &&
-            grossAmount === attempt.expectedAmount
+            midtransAmountsMatch(body.gross_amount, attempt.expectedAmount)
 
           const isSettlement =
             body.transaction_status === 'settlement' ||

@@ -20,6 +20,7 @@ import { Route as OrgIndexRouteImport } from './routes/_org/index'
 import { Route as OrderTokenRouteImport } from './routes/order.$token'
 import { Route as InviteAcceptRouteImport } from './routes/invite/accept'
 import { Route as ApiReadyRouteImport } from './routes/api/ready'
+import { Route as ApiMidtransReconciliationRouteImport } from './routes/api/midtrans-reconciliation'
 import { Route as ApiMidtransNotificationRouteImport } from './routes/api/midtrans-notification'
 import { Route as ApiHealthzRouteImport } from './routes/api/healthz'
 import { Route as OrgSettingsRouteRouteImport } from './routes/_org/settings/route'
@@ -106,6 +107,12 @@ const ApiReadyRoute = ApiReadyRouteImport.update({
   path: '/api/ready',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMidtransReconciliationRoute =
+  ApiMidtransReconciliationRouteImport.update({
+    id: '/api/midtrans-reconciliation',
+    path: '/api/midtrans-reconciliation',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiMidtransNotificationRoute = ApiMidtransNotificationRouteImport.update({
   id: '/api/midtrans-notification',
   path: '/api/midtrans-notification',
@@ -278,6 +285,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof OrgSettingsRouteRouteWithChildren
   '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
+  '/api/midtrans-reconciliation': typeof ApiMidtransReconciliationRoute
   '/api/ready': typeof ApiReadyRoute
   '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
@@ -318,6 +326,7 @@ export interface FileRoutesByTo {
   '/sign-up': typeof SignUpRoute
   '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
+  '/api/midtrans-reconciliation': typeof ApiMidtransReconciliationRoute
   '/api/ready': typeof ApiReadyRoute
   '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
@@ -363,6 +372,7 @@ export interface FileRoutesById {
   '/_org/settings': typeof OrgSettingsRouteRouteWithChildren
   '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
+  '/api/midtrans-reconciliation': typeof ApiMidtransReconciliationRoute
   '/api/ready': typeof ApiReadyRoute
   '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
@@ -409,6 +419,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/api/healthz'
     | '/api/midtrans-notification'
+    | '/api/midtrans-reconciliation'
     | '/api/ready'
     | '/invite/accept'
     | '/order/$token'
@@ -449,6 +460,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/api/healthz'
     | '/api/midtrans-notification'
+    | '/api/midtrans-reconciliation'
     | '/api/ready'
     | '/invite/accept'
     | '/order/$token'
@@ -493,6 +505,7 @@ export interface FileRouteTypes {
     | '/_org/settings'
     | '/api/healthz'
     | '/api/midtrans-notification'
+    | '/api/midtrans-reconciliation'
     | '/api/ready'
     | '/invite/accept'
     | '/order/$token'
@@ -537,6 +550,7 @@ export interface RootRouteChildren {
   SignUpRoute: typeof SignUpRoute
   ApiHealthzRoute: typeof ApiHealthzRoute
   ApiMidtransNotificationRoute: typeof ApiMidtransNotificationRoute
+  ApiMidtransReconciliationRoute: typeof ApiMidtransReconciliationRoute
   ApiReadyRoute: typeof ApiReadyRoute
   InviteAcceptRoute: typeof InviteAcceptRoute
   OrderTokenRoute: typeof OrderTokenRoute
@@ -627,6 +641,13 @@ declare module '@tanstack/react-router' {
       path: '/api/ready'
       fullPath: '/api/ready'
       preLoaderRoute: typeof ApiReadyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/midtrans-reconciliation': {
+      id: '/api/midtrans-reconciliation'
+      path: '/api/midtrans-reconciliation'
+      fullPath: '/api/midtrans-reconciliation'
+      preLoaderRoute: typeof ApiMidtransReconciliationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/midtrans-notification': {
@@ -931,6 +952,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignUpRoute: SignUpRoute,
   ApiHealthzRoute: ApiHealthzRoute,
   ApiMidtransNotificationRoute: ApiMidtransNotificationRoute,
+  ApiMidtransReconciliationRoute: ApiMidtransReconciliationRoute,
   ApiReadyRoute: ApiReadyRoute,
   InviteAcceptRoute: InviteAcceptRoute,
   OrderTokenRoute: OrderTokenRoute,

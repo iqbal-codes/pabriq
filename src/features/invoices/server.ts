@@ -323,13 +323,19 @@ export type ReconcilePaymentResponse =
         | 'not_settled_yet'
         | 'no_midtrans_order_id'
         | 'mismatch'
+        | 'gateway_unavailable'
+        | 'manual_review_required'
         | 'pending'
         | 'deny'
         | 'failed'
         | 'cancel'
         | 'expire'
     }
-  | { ok: false; error: string }
+  | {
+      ok: false
+      error: string
+      reason?: 'gateway_unavailable' | 'manual_review_required'
+    }
 
 export async function reconcileInvoicePaymentForRole(
   orgId: string,
@@ -339,6 +345,9 @@ export async function reconcileInvoicePaymentForRole(
   if (!canManageInvoices(role)) return { ok: false, error: 'Forbidden' }
   try {
     const result = await reconcilePayment(orgId, invoiceId)
+    if (!result.ok && result.reason === 'manual_review_required') {
+      return { ok: true, status: 'manual_review_required' }
+    }
     if (!result.ok) return result
     if (!result.confirmed) {
       if (
@@ -362,7 +371,9 @@ export async function reconcileInvoicePaymentForRole(
           | 'deny'
           | 'failed'
           | 'cancel'
-          | 'expire',
+          | 'expire'
+          | 'gateway_unavailable'
+          | 'manual_review_required',
       }
     }
     return {
@@ -416,6 +427,9 @@ export const reconcilePortalPaymentFn = createServerFn({ method: 'POST' })
       const orgId = portalOrderResult.order.orgId
       const { reconcilePayment } = await import('./model')
       const result = await reconcilePayment(orgId, data.invoiceId)
+      if (!result.ok && result.reason === 'manual_review_required') {
+        return { ok: true, status: 'manual_review_required' }
+      }
       if (!result.ok) return { ok: false, error: result.error }
       if (result.confirmed) {
         return {
@@ -431,7 +445,9 @@ export const reconcilePortalPaymentFn = createServerFn({ method: 'POST' })
         status: result.reason as
           | 'not_settled_yet'
           | 'no_midtrans_order_id'
-          | 'mismatch',
+          | 'mismatch'
+          | 'gateway_unavailable'
+          | 'manual_review_required',
       }
     } catch (e) {
       return {

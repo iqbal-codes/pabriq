@@ -298,13 +298,32 @@ async function waitForInvoiceConfirmation(
 async function reconcilePayment(
   token: string,
   invoiceId: string,
-): Promise<'paid' | 'not_settled' | 'error'> {
+): Promise<
+  | 'paid'
+  | 'pending'
+  | 'failed'
+  | 'amount_mismatch'
+  | 'gateway_unavailable'
+  | 'manual_review_required'
+  | 'error'
+> {
   try {
     const res = await reconcilePortalPaymentFn({
       data: { invoiceId, token },
     })
-    if (res.ok && res.status === 'paid') return 'paid'
-    return 'not_settled'
+    if (!res.ok) return 'failed'
+    if (res.status === 'paid') return 'paid'
+    if (res.status === 'mismatch') return 'amount_mismatch'
+    if (res.status === 'gateway_unavailable') return 'gateway_unavailable'
+    if (res.status === 'manual_review_required') return 'manual_review_required'
+    if (
+      res.status === 'failed' ||
+      res.status === 'deny' ||
+      res.status === 'cancel'
+    ) {
+      return 'failed'
+    }
+    return 'pending'
   } catch {
     return 'error'
   }
@@ -413,10 +432,12 @@ function PayNowButton({
           terminalHandled = true
           const verifyingToast = toast.loading(t('paymentVerifying'))
           let confirmed = await waitForInvoiceConfirmation(token, invoiceId)
+          let reconcileResult: Awaited<ReturnType<typeof reconcilePayment>> =
+            'pending'
           toast.dismiss(verifyingToast)
           if (!confirmed) {
             // Webhook didn't arrive in time — pull from Midtrans Core API
-            const reconcileResult = await reconcilePayment(token, invoiceId)
+            reconcileResult = await reconcilePayment(token, invoiceId)
             if (reconcileResult === 'paid') {
               confirmed = true
             }
@@ -424,6 +445,14 @@ function PayNowButton({
           await router.invalidate()
           if (confirmed) {
             toast.success(t('paymentSuccess'))
+          } else if (reconcileResult === 'amount_mismatch') {
+            toast.error(t('paymentAmountMismatch'))
+          } else if (reconcileResult === 'gateway_unavailable') {
+            toast.error(t('paymentGatewayUnavailable'))
+          } else if (reconcileResult === 'manual_review_required') {
+            toast.warning(t('paymentManualReview'))
+          } else if (reconcileResult === 'failed') {
+            toast.error(t('paymentFailed'))
           } else {
             toast.warning(t('paymentConfirmTimeout'))
           }

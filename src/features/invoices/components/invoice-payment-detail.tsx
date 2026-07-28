@@ -338,6 +338,12 @@ export function InvoicePaymentDetail({
                 <p className="font-medium">{t('reconcileNotSettled')}</p>
               ) : reconcileResult.status === 'no_midtrans_order_id' ? (
                 <p className="font-medium">{t('reconcileNoOrderId')}</p>
+              ) : reconcileResult.status === 'gateway_unavailable' ? (
+                <p className="font-medium">
+                  {t('reconcileGatewayUnavailable')}
+                </p>
+              ) : reconcileResult.status === 'manual_review_required' ? (
+                <p className="font-medium">{t('reconcileManualReview')}</p>
               ) : (
                 <p className="font-medium">
                   {t('manualReviewRequired')}: {reconcileResult.status}
