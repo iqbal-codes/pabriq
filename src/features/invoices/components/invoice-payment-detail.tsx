@@ -130,6 +130,11 @@ export function InvoicePaymentDetail({
                         {att.paymentType}
                       </Badge>
                     )}
+                    {att.refundedAmount > 0 && (
+                      <Badge variant="destructive" className="text-[10px]">
+                        Refunded: {formatCurrency(att.refundedAmount, locale)}
+                      </Badge>
+                    )}
                   </div>
                   {att.transactionId && (
                     <p className="font-mono text-[11px] text-muted-foreground">
@@ -202,7 +207,10 @@ export function InvoicePaymentDetail({
                         ? 'default'
                         : p.status === 'pending'
                           ? 'secondary'
-                          : 'destructive'
+                          : p.status === 'refunded' ||
+                              p.status === 'partially_refunded'
+                            ? 'outline'
+                            : 'destructive'
                     }
                     className="capitalize text-[10px]"
                   >
@@ -249,7 +257,9 @@ export function InvoicePaymentDetail({
               ) : reconcileResult.status === 'no_midtrans_order_id' ? (
                 <p className="font-medium">{t('reconcileNoOrderId')}</p>
               ) : (
-                <p className="font-medium">{t('manualReviewRequired')}</p>
+                <p className="font-medium">
+                  {t('manualReviewRequired')}: {reconcileResult.status}
+                </p>
               )
             ) : (
               <p className="font-medium text-destructive">

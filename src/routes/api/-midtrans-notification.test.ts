@@ -49,15 +49,15 @@ describe('/api/midtrans-notification', () => {
   })
 
   // Cast the server options to retrieve the POST handler since TanStack Router's typings hide it at compile time.
-  const serverOptions = Route.options.server as {
-    handlers?: {
-      POST?: (args: {
+  const serverOptions = Route.options.server as unknown as {
+    handlers: {
+      POST: (args: {
         request: Request
         params: Record<string, string>
       }) => Promise<Response>
     }
   }
-  const handler = serverOptions?.handlers?.POST
+  const handler = serverOptions.handlers.POST
 
   it('rejects with 403 on invalid signature', async () => {
     expect(handler).toBeDefined()
@@ -730,5 +730,266 @@ describe('/api/midtrans-notification', () => {
     expect(text).not.toContain('Database')
     expect(text).not.toContain('failed')
     spy.mockRestore()
+  })
+  it('updates payment status on pending, deny, failure, cancel, and expire events without marking invoice paid', async () => {
+    expect(handler).toBeDefined()
+    if (!handler) return
+
+    const statuses = ['deny', 'cancel', 'expire', 'failure'] as const
+
+    for (const status of statuses) {
+      const result = await createInvoice(webhookOrgId, {
+        customerId: 'webhook-cust',
+        customerName: 'Webhook Customer',
+        dueDate: '2026-06-30',
+        paymentProvider: 'midtrans',
+        lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 50000 }],
+      })
+      const invoice = result.invoice
+      const orderId = `${invoice.invoiceNumber}-${status}-test`
+
+      await db.insert(midtransTransactionsTable).values({
+        id: `attempt-${status}`,
+        orgId: webhookOrgId,
+        invoiceId: invoice.id,
+        orderId,
+        expectedAmount: 50000,
+        transactionStatus: 'pending',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+
+      const signatureKey = crypto
+        .createHash('sha512')
+        .update(`${orderId}20050000mock_server_key`)
+        .digest('hex')
+
+      const body = {
+        order_id: orderId,
+        status_code: '200',
+        gross_amount: '50000',
+        signature_key: signatureKey,
+        transaction_status: status,
+      }
+
+      const request = new Request(
+        'http://localhost/api/midtrans-notification',
+        {
+          method: 'POST',
+          body: JSON.stringify(body),
+          headers: { 'Content-Type': 'application/json' },
+        },
+      )
+
+      const response = await handler({ request, params: {} })
+      expect(response.status).toBe(200)
+
+      const [dbInvoice] = await db
+        .select()
+        .from(invoicesTable)
+        .where(eq(invoicesTable.id, invoice.id))
+      expect(dbInvoice.status).toBe('unpaid')
+    }
+  }, 20000)
+
+  it('handles full and partial refunds, chargeback, and partial chargeback correctly', async () => {
+    expect(handler).toBeDefined()
+    if (!handler) return
+
+    // 1. Partial refund test
+    const res1 = await createInvoice(webhookOrgId, {
+      customerId: 'webhook-cust',
+      customerName: 'Webhook Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'midtrans',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoice1 = res1.invoice
+    const orderId1 = `${invoice1.invoiceNumber}-partial-refund-test`
+
+    await db.insert(midtransTransactionsTable).values({
+      id: 'attempt-partial-refund-test',
+      orgId: webhookOrgId,
+      invoiceId: invoice1.id,
+      orderId: orderId1,
+      expectedAmount: 100000,
+      transactionStatus: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const signatureKey1 = crypto
+      .createHash('sha512')
+      .update(`${orderId1}200100000mock_server_key`)
+      .digest('hex')
+
+    // Settle via capture accept
+    await handler({
+      request: new Request('http://localhost/api/midtrans-notification', {
+        method: 'POST',
+        body: JSON.stringify({
+          order_id: orderId1,
+          status_code: '200',
+          gross_amount: '100000',
+          fraud_status: 'accept',
+          signature_key: signatureKey1,
+          transaction_status: 'capture',
+        }),
+        headers: { 'Content-Type': 'application/json' },
+      }),
+      params: {},
+    })
+
+    // Send partial refund (30000 refunded out of 100000)
+    await handler({
+      request: new Request('http://localhost/api/midtrans-notification', {
+        method: 'POST',
+        body: JSON.stringify({
+          order_id: orderId1,
+          status_code: '200',
+          gross_amount: '100000',
+          refund_amount: '30000',
+          signature_key: signatureKey1,
+          transaction_status: 'partial_refund',
+        }),
+        headers: { 'Content-Type': 'application/json' },
+      }),
+      params: {},
+    })
+
+    const [partiallyRefundedInvoice] = await db
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, invoice1.id))
+    expect(partiallyRefundedInvoice.status).toBe('partially_refunded')
+
+    const [partialPayment] = await db
+      .select()
+      .from(paymentsTable)
+      .where(eq(paymentsTable.invoiceId, invoice1.id))
+    expect(partialPayment.status).toBe('partially_refunded')
+
+    // 2. Full chargeback test
+    const res2 = await createInvoice(webhookOrgId, {
+      customerId: 'webhook-cust',
+      customerName: 'Webhook Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'midtrans',
+      lineItems: [{ description: 'Item B', quantity: 1, unitPrice: 50000 }],
+    })
+    const invoice2 = res2.invoice
+    const orderId2 = `${invoice2.invoiceNumber}-chargeback-test`
+
+    await db.insert(midtransTransactionsTable).values({
+      id: 'attempt-chargeback-test',
+      orgId: webhookOrgId,
+      invoiceId: invoice2.id,
+      orderId: orderId2,
+      expectedAmount: 50000,
+      transactionStatus: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const signatureKey2 = crypto
+      .createHash('sha512')
+      .update(`${orderId2}20050000mock_server_key`)
+      .digest('hex')
+
+    await handler({
+      request: new Request('http://localhost/api/midtrans-notification', {
+        method: 'POST',
+        body: JSON.stringify({
+          order_id: orderId2,
+          status_code: '200',
+          gross_amount: '50000',
+          signature_key: signatureKey2,
+          transaction_status: 'settlement',
+        }),
+        headers: { 'Content-Type': 'application/json' },
+      }),
+      params: {},
+    })
+
+    await handler({
+      request: new Request('http://localhost/api/midtrans-notification', {
+        method: 'POST',
+        body: JSON.stringify({
+          order_id: orderId2,
+          status_code: '200',
+          gross_amount: '50000',
+          refund_amount: '50000',
+          signature_key: signatureKey2,
+          transaction_status: 'chargeback',
+        }),
+        headers: { 'Content-Type': 'application/json' },
+      }),
+      params: {},
+    })
+    const [inv2] = await db
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, invoice2.id))
+    expect(inv2.status).toBe('refunded')
+  }, 20000)
+
+  it('prevents late settlement from overwriting a void or refunded invoice without review flag', async () => {
+    const result = await createInvoice(webhookOrgId, {
+      customerId: 'webhook-cust',
+      customerName: 'Webhook Customer',
+      dueDate: '2026-06-30',
+      paymentProvider: 'midtrans',
+      lineItems: [{ description: 'Item A', quantity: 1, unitPrice: 100000 }],
+    })
+    const invoice = result.invoice
+    const orderId = `${invoice.invoiceNumber}-void-test`
+
+    await db.insert(midtransTransactionsTable).values({
+      id: 'attempt-void-test',
+      orgId: webhookOrgId,
+      invoiceId: invoice.id,
+      orderId,
+      expectedAmount: 100000,
+      transactionStatus: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    await db
+      .update(invoicesTable)
+      .set({ status: 'void' })
+      .where(eq(invoicesTable.id, invoice.id))
+
+    const signatureKey = crypto
+      .createHash('sha512')
+      .update(`${orderId}200100000mock_server_key`)
+      .digest('hex')
+
+    await handler({
+      request: new Request('http://localhost/api/midtrans-notification', {
+        method: 'POST',
+        body: JSON.stringify({
+          order_id: orderId,
+          status_code: '200',
+          gross_amount: '100000',
+          signature_key: signatureKey,
+          transaction_status: 'settlement',
+        }),
+        headers: { 'Content-Type': 'application/json' },
+      }),
+      params: {},
+    })
+
+    const [voidInvoice] = await db
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, invoice.id))
+    expect(voidInvoice.status).toBe('void')
+
+    const [attempt] = await db
+      .select()
+      .from(midtransTransactionsTable)
+      .where(eq(midtransTransactionsTable.id, 'attempt-void-test'))
+    expect(attempt.transactionStatus).toBe('review_required')
   })
 })

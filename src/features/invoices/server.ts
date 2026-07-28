@@ -261,13 +261,21 @@ export const createSnapTokenFn = createServerFn({ method: 'POST' })
 export type ReconcilePaymentResponse =
   | {
       ok: true
-      status: 'paid'
-      reason: 'confirmed' | 'already_paid'
+      status: 'paid' | 'refunded' | 'partially_refunded'
+      reason: 'confirmed' | 'already_paid' | 'refunded' | 'partially_refunded'
       paymentId?: string
     }
   | {
       ok: true
-      status: 'not_settled_yet' | 'no_midtrans_order_id' | 'mismatch'
+      status:
+        | 'not_settled_yet'
+        | 'no_midtrans_order_id'
+        | 'mismatch'
+        | 'pending'
+        | 'deny'
+        | 'failed'
+        | 'cancel'
+        | 'expire'
     }
   | { ok: false; error: string }
 
@@ -281,12 +289,28 @@ export async function reconcileInvoicePaymentForRole(
     const result = await reconcilePayment(orgId, invoiceId)
     if (!result.ok) return result
     if (!result.confirmed) {
+      if (
+        result.reason === 'refunded' ||
+        result.reason === 'partially_refunded'
+      ) {
+        return {
+          ok: true,
+          status: result.reason,
+          reason: result.reason,
+          paymentId: result.paymentId,
+        }
+      }
       return {
         ok: true,
         status: result.reason as
           | 'not_settled_yet'
           | 'no_midtrans_order_id'
-          | 'mismatch',
+          | 'mismatch'
+          | 'pending'
+          | 'deny'
+          | 'failed'
+          | 'cancel'
+          | 'expire',
       }
     }
     return {

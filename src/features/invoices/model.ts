@@ -32,7 +32,13 @@ export type Invoice = {
   orderId: string | null
   customerId: string
   customerName: string
-  status: 'unpaid' | 'partially_paid' | 'paid' | 'void'
+  status:
+    | 'unpaid'
+    | 'partially_paid'
+    | 'paid'
+    | 'void'
+    | 'refunded'
+    | 'partially_refunded'
   percentage: number | null
   subtotal: number
   total: number
@@ -125,7 +131,16 @@ export type Payment = {
   method: 'bank_transfer' | 'midtrans' | 'cash'
   reference: string | null
   proofAssetId: string | null
-  status: 'pending' | 'confirmed' | 'rejected' | 'refunded'
+  status:
+    | 'pending'
+    | 'confirmed'
+    | 'rejected'
+    | 'refunded'
+    | 'partially_refunded'
+    | 'failed'
+    | 'expired'
+    | 'deny'
+    | 'cancel'
   receivedAt: Date | null
   confirmedAt: Date | null
   confirmedBy: string | null
@@ -171,6 +186,7 @@ export type MidtransTransactionAttempt = {
   fraudStatus: string | null
   paymentType: string | null
   settlementTime: Date | null
+  refundedAmount: number
   createdAt: Date
   updatedAt: Date
 }
@@ -260,12 +276,9 @@ async function generateInvoiceNumber(orgId: string): Promise<string> {
 
   const nextNum =
     existingRows.length > 0 && existingRows[0].invoiceNumber
-      ? Number.parseInt(
-          existingRows[0].invoiceNumber.split('-')[2] ?? '0',
-          10,
-        ) + 1
+      ? Number.parseInt(existingRows[0].invoiceNumber.replace(prefix, ''), 10) +
+        1
       : 1
-
   return `${prefix}${String(nextNum).padStart(4, '0')}`
 }
 
@@ -1126,7 +1139,9 @@ export async function getInvoiceBalance(
     )
 
   const confirmedAmount = paymentRows
-    .filter((p) => p.status === 'confirmed')
+    .filter(
+      (p) => p.status === 'confirmed' || p.status === 'partially_refunded',
+    )
     .reduce((sum, p) => sum + p.amount, 0)
 
   const pendingAmount = paymentRows
@@ -1533,6 +1548,13 @@ export type ReconcileResult =
         | 'not_settled_yet'
         | 'no_midtrans_order_id'
         | 'mismatch'
+        | 'refunded'
+        | 'partially_refunded'
+        | 'pending'
+        | 'deny'
+        | 'failed'
+        | 'cancel'
+        | 'expire'
       paymentId?: string
     }
   | { ok: false; error: string }
@@ -1561,9 +1583,6 @@ export async function reconcilePayment(
       .limit(1)
 
     if (!invoice) return { ok: false, error: 'Invoice not found' }
-    if (invoice.status === 'paid') {
-      return { ok: true, confirmed: true, reason: 'already_paid' }
-    }
     if (invoice.paymentProvider !== 'midtrans') {
       return { ok: true, confirmed: false, reason: 'no_midtrans_order_id' }
     }
@@ -1649,12 +1668,130 @@ export async function reconcilePayment(
         continue
       }
 
+      const isRefund =
+        status.transactionStatus === 'refund' ||
+        status.transactionStatus === 'partial_refund' ||
+        status.transactionStatus === 'chargeback' ||
+        status.transactionStatus === 'partial_chargeback'
+
+      if (isRefund) {
+        const rawRefundAmount =
+          typeof status.raw.refund_amount === 'string'
+            ? Number(status.raw.refund_amount)
+            : typeof status.raw.refund_amount === 'number'
+              ? status.raw.refund_amount
+              : grossAmount
+        const refundedAmount = Number.isFinite(rawRefundAmount)
+          ? rawRefundAmount
+          : grossAmount
+
+        await tx
+          .update(midtransTransactionsTable)
+          .set({ refundedAmount, updatedAt: new Date() })
+          .where(eq(midtransTransactionsTable.id, attempt.id))
+
+        const [refundedOrConfirmedPayment] = await tx
+          .select()
+          .from(paymentsTable)
+          .where(
+            and(
+              eq(paymentsTable.orgId, orgId),
+              eq(paymentsTable.invoiceId, invoiceId),
+              eq(paymentsTable.reference, attempt.orderId),
+              eq(paymentsTable.method, 'midtrans'),
+            ),
+          )
+          .limit(1)
+
+        if (refundedOrConfirmedPayment) {
+          const isPartial = refundedAmount < refundedOrConfirmedPayment.amount
+          const newPaymentStatus = isPartial ? 'partially_refunded' : 'refunded'
+
+          await tx
+            .update(paymentsTable)
+            .set({ status: newPaymentStatus, updatedAt: new Date() })
+            .where(eq(paymentsTable.id, refundedOrConfirmedPayment.id))
+
+          const balance = await getInvoiceBalance(invoiceId, orgId, tx)
+          const newInvoiceStatus =
+            newPaymentStatus === 'partially_refunded'
+              ? 'partially_refunded'
+              : balance.confirmedAmount > 0
+                ? 'partially_paid'
+                : 'refunded'
+
+          await tx
+            .update(invoicesTable)
+            .set({ status: newInvoiceStatus, updatedAt: new Date() })
+            .where(eq(invoicesTable.id, invoiceId))
+
+          return {
+            ok: true,
+            confirmed: false,
+            reason: isPartial ? 'partially_refunded' : 'refunded',
+            paymentId: refundedOrConfirmedPayment.id,
+          }
+        }
+      }
+
       const isSuccess =
         status.transactionStatus === 'settlement' ||
         (status.transactionStatus === 'capture' &&
           status.fraudStatus === 'accept')
-      if (!isSuccess) continue
 
+      if (!isSuccess) {
+        const nonSettlementPaymentStatus =
+          status.transactionStatus === 'deny'
+            ? 'deny'
+            : status.transactionStatus === 'cancel'
+              ? 'cancel'
+              : status.transactionStatus === 'expire'
+                ? 'expired'
+                : status.transactionStatus === 'failure'
+                  ? 'failed'
+                  : 'pending'
+
+        const [existingPendingPayment] = await tx
+          .select({ id: paymentsTable.id })
+          .from(paymentsTable)
+          .where(
+            and(
+              eq(paymentsTable.orgId, orgId),
+              eq(paymentsTable.invoiceId, invoiceId),
+              eq(paymentsTable.reference, attempt.orderId),
+              eq(paymentsTable.method, 'midtrans'),
+            ),
+          )
+          .limit(1)
+
+        if (existingPendingPayment) {
+          await tx
+            .update(paymentsTable)
+            .set({
+              status: nonSettlementPaymentStatus,
+              rejectedReason: `Midtrans transaction ${status.transactionStatus}`,
+              updatedAt: new Date(),
+            })
+            .where(eq(paymentsTable.id, existingPendingPayment.id))
+        }
+        continue
+      }
+
+      if (
+        invoice.status === 'refunded' ||
+        invoice.status === 'partially_refunded' ||
+        invoice.status === 'void'
+      ) {
+        await tx
+          .update(midtransTransactionsTable)
+          .set({
+            transactionStatus: 'review_required',
+            errorMessage: `Settlement received when invoice was ${invoice.status}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(midtransTransactionsTable.id, attempt.id))
+        continue
+      }
       const [existingConfirmed] = await tx
         .select({ id: paymentsTable.id })
         .from(paymentsTable)
