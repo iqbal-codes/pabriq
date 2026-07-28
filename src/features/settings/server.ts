@@ -1,6 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import { eq } from 'drizzle-orm'
 import { canManagePaymentSettings } from '#/features/permissions/model'
 import { resolveOrgAndRole, resolveOrgId } from '#/lib/auth-session-server'
 
@@ -19,12 +18,17 @@ type OrgSettings = {
 
 export const getOrgSettingsFn = createServerFn({ method: 'GET' }).handler(
   async (): Promise<OrgSettings> => {
-    const [orgId, { db }, { organization, organizationProfiles, addresses }] =
-      await Promise.all([
-        resolveOrgId(),
-        import('#/db/index'),
-        import('#/db/schema'),
-      ])
+    const [
+      orgId,
+      { db },
+      { organization, organizationProfiles, addresses },
+      { eq },
+    ] = await Promise.all([
+      resolveOrgId(),
+      import('#/db/index'),
+      import('#/db/schema'),
+      import('drizzle-orm'),
+    ])
 
     const [org] = await db
       .select({
@@ -98,9 +102,10 @@ async function upsertOrgAddress(
 ): Promise<string | null> {
   if (!address.areaId && !address.streetAddress) return null
 
-  const [{ db }, { addresses }] = await Promise.all([
+  const [{ db }, { addresses }, { eq }] = await Promise.all([
     import('#/db/index'),
     import('#/db/schema'),
+    import('drizzle-orm'),
   ])
 
   if (existingAddressId) {
@@ -172,9 +177,10 @@ export const updateOrgSettingsFn = createServerFn({ method: 'POST' })
           data.midtransClientKey !== undefined ||
           data.midtransIsProduction !== undefined
         ) {
-          const [{ db }, { organizationProfiles }] = await Promise.all([
+          const [{ db }, { organizationProfiles }, { eq }] = await Promise.all([
             import('#/db/index'),
             import('#/db/schema'),
+            import('drizzle-orm'),
           ])
 
           const [existing] = await db

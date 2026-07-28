@@ -1,5 +1,4 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and } from 'drizzle-orm'
 import { resolveOrgId } from '#/lib/auth-session-server'
 import type { MutationResult } from '#/lib/server-results'
 import type {
@@ -94,14 +93,13 @@ export const listProductAddonsFn = createServerFn({ method: 'GET' })
     async ({
       data,
     }): Promise<Array<{ id: string; name: string; unitSurcharge: number }>> => {
-      const [{ db }, { productAddons }, { eq, asc }, orgId] = await Promise.all(
-        [
+      const [{ db }, { productAddons }, { eq, asc, and }, orgId] =
+        await Promise.all([
           import('#/db/index'),
           import('#/db/schema'),
           import('drizzle-orm'),
           resolveOrgId(),
-        ],
-      )
+        ])
       const rows = await db
         .select({
           id: productAddons.id,

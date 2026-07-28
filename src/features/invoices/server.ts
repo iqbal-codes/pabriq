@@ -5,7 +5,6 @@ import {
   canManageInvoices,
   canManagePaymentSettings,
 } from '#/features/permissions/model'
-import { getPortalOrder } from '#/features/portal/model'
 import { resolveOrgAndRole, resolveOrgId } from '#/lib/auth-session-server'
 import type { MutationResult } from '#/lib/server-results'
 import type {
@@ -16,7 +15,6 @@ import type {
   ListInvoicesResult,
   PaymentMethod,
 } from './model'
-import { createMidtransTransaction, reconcilePayment } from './model'
 
 export const createInvoiceFn = createServerFn({ method: 'POST' })
   .inputValidator((input: CreateInvoiceInput) => input)
@@ -284,6 +282,11 @@ export const createSnapTokenFn = createServerFn({ method: 'POST' })
       | { ok: false; error: string }
     > => {
       try {
+        const [{ getPortalOrder }, { createMidtransTransaction }] =
+          await Promise.all([
+            import('#/features/portal/model'),
+            import('./model'),
+          ])
         const portalOrderResult = await getPortalOrder(data.token)
         if (!portalOrderResult.ok) {
           return { ok: false, error: 'Invalid token' }
@@ -344,6 +347,7 @@ export async function reconcileInvoicePaymentForRole(
 ): Promise<ReconcilePaymentResponse> {
   if (!canManageInvoices(role)) return { ok: false, error: 'Forbidden' }
   try {
+    const { reconcilePayment } = await import('./model')
     const result = await reconcilePayment(orgId, invoiceId)
     if (!result.ok && result.reason === 'manual_review_required') {
       return { ok: true, status: 'manual_review_required' }
@@ -414,6 +418,10 @@ export const reconcilePortalPaymentFn = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }): Promise<ReconcilePaymentResponse> => {
     try {
+      const [{ getPortalOrder }, { reconcilePayment }] = await Promise.all([
+        import('#/features/portal/model'),
+        import('./model'),
+      ])
       const portalOrderResult = await getPortalOrder(data.token)
       if (!portalOrderResult.ok) {
         return { ok: false, error: 'Invalid token' }
@@ -425,7 +433,6 @@ export const reconcilePortalPaymentFn = createServerFn({ method: 'POST' })
         return { ok: false, error: 'Invoice not found in this order' }
       }
       const orgId = portalOrderResult.order.orgId
-      const { reconcilePayment } = await import('./model')
       const result = await reconcilePayment(orgId, data.invoiceId)
       if (!result.ok && result.reason === 'manual_review_required') {
         return { ok: true, status: 'manual_review_required' }

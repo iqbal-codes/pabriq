@@ -1,11 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import { eq } from 'drizzle-orm'
-import {
-  member,
-  organizationProfiles,
-  organization as organizationTable,
-} from '#/db/schema'
 
 export const listUserOrgs = createServerFn({ method: 'GET' }).handler(
   async () => {
@@ -14,7 +8,15 @@ export const listUserOrgs = createServerFn({ method: 'GET' }).handler(
     const session = await auth.api.getSession({ headers })
     if (!session) return []
 
-    const { db } = await import('#/db/index')
+    const [
+      { db },
+      { member, organizationProfiles, organization: organizationTable },
+      { eq },
+    ] = await Promise.all([
+      import('#/db/index'),
+      import('#/db/schema'),
+      import('drizzle-orm'),
+    ])
     const memberships = await db
       .select({
         id: organizationTable.id,
@@ -64,10 +66,13 @@ type CreateOrgResult =
 export const createOrganization = createServerFn({ method: 'POST' })
   .inputValidator((input: { name: string }) => input)
   .handler(async ({ data }): Promise<CreateOrgResult> => {
-    const [auth, { db }] = await Promise.all([
-      import('#/lib/auth').then((m) => m.auth),
-      import('#/db/index'),
-    ])
+    const [auth, { db }, { organization: organizationTable }, { eq }] =
+      await Promise.all([
+        import('#/lib/auth').then((m) => m.auth),
+        import('#/db/index'),
+        import('#/db/schema'),
+        import('drizzle-orm'),
+      ])
     const headers = getRequestHeaders()
 
     const trimmed = data.name.trim()
@@ -109,11 +114,11 @@ export const setOrganizationLogo = createServerFn({ method: 'POST' })
   .inputValidator((input: { orgId: string; logoAssetId: string }) => input)
   .handler(
     async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
-      const [{ db }, { organizationProfiles }] = await Promise.all([
+      const [{ db }, { organizationProfiles }, { eq }] = await Promise.all([
         import('#/db/index'),
         import('#/db/schema'),
+        import('drizzle-orm'),
       ])
-
       try {
         const existing = await db
           .select({ id: organizationProfiles.id })

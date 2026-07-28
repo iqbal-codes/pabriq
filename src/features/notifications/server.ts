@@ -2,7 +2,6 @@ import { createServerFn } from '@tanstack/react-start'
 import { canViewActionNotifications } from '#/features/permissions/model'
 import { resolveOrgContext } from '#/lib/auth-session'
 import type { ListActionNotificationsResult } from './model'
-import { listActionNotifications } from './model'
 
 const EMPTY_COUNTS = {
   payment_confirmation: 0,
@@ -33,6 +32,7 @@ export const listActionNotificationsFn = createServerFn({ method: 'GET' })
       return EMPTY_RESULT
     }
 
+    const { listActionNotifications } = await import('./model')
     return listActionNotifications({
       orgId: context.org.id,
       limit: data.limit,

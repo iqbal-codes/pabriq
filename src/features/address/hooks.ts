@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '#/lib/query-keys'
-import { searchAreasFn } from './model'
+import { searchAreasFn } from './server'
 
 export function useSearchAreas(query: string) {
   return useQuery({

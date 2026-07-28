@@ -1,9 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
-import { and, eq, inArray, sql } from 'drizzle-orm'
-import { assets, assetVariants } from '#/db/schema'
 import { resolveOrgId } from '#/lib/auth-session-server'
-import { generateSignedDownloadUrl } from '#/lib/r2'
 import type { AssetKind, OwnerType, Usage, VariantKey } from './model'
 import { IMAGE_MIME_TYPES, USAGE_LIMITS, VIDEO_MIME_TYPES } from './model'
 
@@ -91,10 +88,18 @@ export const finalizeUpload = createServerFn({ method: 'POST' })
         sizeBytes: number
       }[]
     }> => {
-      const [orgId, userId, { db }] = await Promise.all([
+      const [
+        orgId,
+        userId,
+        { db },
+        { assets, assetVariants },
+        { and, eq, sql },
+      ] = await Promise.all([
         resolveOrgId(),
         resolveUserId(),
         import('#/db/index'),
+        import('#/db/schema'),
+        import('drizzle-orm'),
       ])
 
       const limits = USAGE_LIMITS[data.usage]
@@ -277,13 +282,22 @@ export const getAssetSignedUrl = createServerFn({ method: 'GET' })
   )
   .handler(async ({ data }): Promise<{ url: string; expiresAt: number }> => {
     const token = data.token
-    const [orgId, { db }] = await Promise.all([
+    const [
+      orgId,
+      { db },
+      { assets, assetVariants },
+      { and, eq },
+      { generateSignedDownloadUrl },
+    ] = await Promise.all([
       token
         ? import('#/features/portal/server').then((m) =>
             m.getOrgIdFromToken(token),
           )
         : resolveOrgId(),
       import('#/db/index'),
+      import('#/db/schema'),
+      import('drizzle-orm'),
+      import('#/lib/r2'),
     ])
 
     const requestedVariant = await db
@@ -371,14 +385,18 @@ export const getAssetsMetadata = createServerFn({ method: 'GET' })
   .inputValidator((input: { assetIds: string[]; token?: string }) => input)
   .handler(async ({ data }): Promise<AssetMetadata[]> => {
     const token = data.token
-    const [orgId, { db }] = await Promise.all([
-      token
-        ? import('#/features/portal/server').then((m) =>
-            m.getOrgIdFromToken(token),
-          )
-        : resolveOrgId(),
-      import('#/db/index'),
-    ])
+    const [orgId, { db }, { assets }, { and, eq, inArray }] = await Promise.all(
+      [
+        token
+          ? import('#/features/portal/server').then((m) =>
+              m.getOrgIdFromToken(token),
+            )
+          : resolveOrgId(),
+        import('#/db/index'),
+        import('#/db/schema'),
+        import('drizzle-orm'),
+      ],
+    )
 
     const rows = await db
       .select({
@@ -404,9 +422,11 @@ export const deleteAsset = createServerFn({ method: 'POST' })
   .inputValidator((input: { assetId: string }) => input)
   .handler(
     async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
-      const [orgId, { db }] = await Promise.all([
+      const [orgId, { db }, { assets }, { and, eq }] = await Promise.all([
         resolveOrgId(),
         import('#/db/index'),
+        import('#/db/schema'),
+        import('drizzle-orm'),
       ])
 
       const updated = await db

@@ -1,19 +1,13 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { CHANNEL_ACCESS_STATUSES } from '#/db/schema'
-import {
-  approveChannelAccess,
-  type ChannelAccessRow,
-  ChannelError,
-  type ChannelErrorCode,
-  type ConnectedChannelView,
-  connectTelegramChannel,
-  disconnectTelegramChannel,
-  getConnectedChannel,
-  listChannelAccesses,
-  revokeChannelAccess,
+import type {
+  ChannelAccessRow,
+  ChannelErrorCode,
+  ConnectedChannelView,
 } from '#/features/channels/model'
 import { resolveOrgAndRole } from '#/lib/auth-session-server'
+
+const CHANNEL_ACCESS_STATUSES = ['pending', 'approved', 'revoked'] as const
 
 export type ChannelServerError = ChannelErrorCode | 'FORBIDDEN' | 'UNKNOWN'
 
@@ -28,7 +22,14 @@ async function resolveChannelManagerOrgId(): Promise<string> {
 }
 
 function toMutationError(error: unknown): ChannelServerError {
-  if (error instanceof ChannelError) return error.code
+  if (
+    error &&
+    typeof error === 'object' &&
+    'code' in error &&
+    typeof (error as { code: unknown }).code === 'string'
+  ) {
+    return (error as { code: ChannelServerError }).code
+  }
   if (error instanceof Error && error.message === 'FORBIDDEN')
     return 'FORBIDDEN'
   return 'UNKNOWN'
@@ -49,7 +50,10 @@ const listAccessesInput = z.object({
 
 export const getConnectedChannelFn = createServerFn({ method: 'GET' }).handler(
   async (): Promise<ConnectedChannelView | null> => {
-    const orgId = await resolveChannelManagerOrgId()
+    const [orgId, { getConnectedChannel }] = await Promise.all([
+      resolveChannelManagerOrgId(),
+      import('#/features/channels/model'),
+    ])
     return getConnectedChannel(orgId)
   },
 )
@@ -57,7 +61,10 @@ export const getConnectedChannelFn = createServerFn({ method: 'GET' }).handler(
 export const listChannelAccessesFn = createServerFn({ method: 'GET' })
   .inputValidator(listAccessesInput)
   .handler(async ({ data }): Promise<ChannelAccessRow[]> => {
-    const orgId = await resolveChannelManagerOrgId()
+    const [orgId, { listChannelAccesses }] = await Promise.all([
+      resolveChannelManagerOrgId(),
+      import('#/features/channels/model'),
+    ])
     return listChannelAccesses(orgId, data.status)
   })
 
@@ -66,7 +73,10 @@ export const connectTelegramChannelFn = createServerFn({ method: 'POST' })
   .handler(
     async ({ data }): Promise<ChannelMutationResult<ConnectedChannelView>> => {
       try {
-        const orgId = await resolveChannelManagerOrgId()
+        const [orgId, { connectTelegramChannel }] = await Promise.all([
+          resolveChannelManagerOrgId(),
+          import('#/features/channels/model'),
+        ])
         const channel = await connectTelegramChannel(orgId, data.botToken)
         return { ok: true, data: channel }
       } catch (error) {
@@ -82,7 +92,10 @@ export const disconnectTelegramChannelFn = createServerFn({ method: 'POST' })
       ChannelMutationResult<{ id: string; status: 'disconnected' }>
     > => {
       try {
-        const orgId = await resolveChannelManagerOrgId()
+        const [orgId, { disconnectTelegramChannel }] = await Promise.all([
+          resolveChannelManagerOrgId(),
+          import('#/features/channels/model'),
+        ])
         const result = await disconnectTelegramChannel(orgId)
         return { ok: true, data: result }
       } catch (error) {
@@ -98,7 +111,10 @@ export const approveChannelAccessFn = createServerFn({ method: 'POST' })
       data,
     }): Promise<ChannelMutationResult<{ id: string; status: 'approved' }>> => {
       try {
-        const orgId = await resolveChannelManagerOrgId()
+        const [orgId, { approveChannelAccess }] = await Promise.all([
+          resolveChannelManagerOrgId(),
+          import('#/features/channels/model'),
+        ])
         const result = await approveChannelAccess(orgId, data.id)
         return { ok: true, data: result }
       } catch (error) {
@@ -114,7 +130,10 @@ export const revokeChannelAccessFn = createServerFn({ method: 'POST' })
       data,
     }): Promise<ChannelMutationResult<{ id: string; status: 'revoked' }>> => {
       try {
-        const orgId = await resolveChannelManagerOrgId()
+        const [orgId, { revokeChannelAccess }] = await Promise.all([
+          resolveChannelManagerOrgId(),
+          import('#/features/channels/model'),
+        ])
         const result = await revokeChannelAccess(orgId, data.id)
         return { ok: true, data: result }
       } catch (error) {

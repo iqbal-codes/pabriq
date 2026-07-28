@@ -1,7 +1,4 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, eq } from 'drizzle-orm'
-import { db } from '#/db/index'
-import { invoices, orders } from '#/db/schema'
 import type { Usage } from '#/features/assets/model'
 import type {
   ConfirmPortalOrderInput,
@@ -188,9 +185,18 @@ export const submitPaymentProofFn = createServerFn({ method: 'POST' })
   .handler(
     async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
       try {
-        const [orgId, { insertAsset }] = await Promise.all([
+        const [
+          orgId,
+          { insertAsset },
+          { db },
+          { invoices, orders },
+          { and, eq },
+        ] = await Promise.all([
           getOrgIdFromToken(data.token),
           import('#/features/assets/model'),
+          import('#/db/index'),
+          import('#/db/schema'),
+          import('drizzle-orm'),
         ])
 
         // Verify the order belongs to this org

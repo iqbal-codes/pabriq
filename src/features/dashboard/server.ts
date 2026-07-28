@@ -1,12 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { resolveOrgId } from '#/lib/auth-session-server'
 import type { DashboardPeriod } from './hooks'
-import {
-  getDashboardMetrics,
-  getRecentOrders,
-  getRevenueSeries,
-  getTaskStageCounts,
-} from './model'
 
 export const getDashboardData = createServerFn({ method: 'GET' })
   .inputValidator((period: unknown): DashboardPeriod => {
@@ -17,7 +11,15 @@ export const getDashboardData = createServerFn({ method: 'GET' })
       : 'thisMonth'
   })
   .handler(async ({ data: period }) => {
-    const orgId = await resolveOrgId()
+    const [
+      orgId,
+      {
+        getDashboardMetrics,
+        getRecentOrders,
+        getRevenueSeries,
+        getTaskStageCounts,
+      },
+    ] = await Promise.all([resolveOrgId(), import('./model')])
 
     const [metrics, revenueSeries, taskStages, recentOrders] =
       await Promise.all([

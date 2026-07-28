@@ -1,4 +1,3 @@
-import { createServerFn } from '@tanstack/react-start'
 import { and, eq } from 'drizzle-orm'
 import { addresses, customers } from '#/db/schema'
 
@@ -178,12 +177,6 @@ export async function searchAreas(query: string): Promise<BiteshipArea[]> {
     area: a.administrative_division_level_3_name,
   }))
 }
-
-export const searchAreasFn = createServerFn({ method: 'GET' })
-  .inputValidator((input: { query: string }) => input)
-  .handler(async ({ data }) => {
-    return searchAreas(data.query)
-  })
 
 export async function getCustomerAddress(
   customerId: string,
