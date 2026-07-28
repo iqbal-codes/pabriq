@@ -1,5 +1,4 @@
-import { Link, useLocation } from '@tanstack/react-router'
-import { ArrowLeft, ChevronsUpDown, LogOut, Settings2 } from 'lucide-react'
+import { ChevronsUpDown, LogOut } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 
 import { AvatarPhoto } from '#/components/app/avatar-photo'
@@ -21,22 +20,15 @@ import { authClient } from '#/lib/auth-client'
 
 export function NavUser({
   user,
-  isSettingsSection,
 }: {
   user: {
     name: string
     email: string
     avatar: string
   }
-  isSettingsSection?: boolean
 }) {
   const t = useTranslations('admin')
-  const ct = useTranslations('common')
-  const st = useTranslations('sidebar')
   const { isMobile } = useSidebar()
-  const location = useLocation()
-  const inSettings =
-    isSettingsSection ?? location.pathname.startsWith('/settings')
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -78,21 +70,6 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {inSettings ? (
-              <DropdownMenuItem asChild>
-                <Link to="/">
-                  <ArrowLeft />
-                  {ct('back')}
-                </Link>
-              </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem asChild>
-                <Link to="/settings/general">
-                  <Settings2 />
-                  {st('settings')}
-                </Link>
-              </DropdownMenuItem>
-            )}
             <DropdownMenuItem
               onClick={async () => {
                 await authClient.signOut()

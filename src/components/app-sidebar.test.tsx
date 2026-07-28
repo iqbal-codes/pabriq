@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { IntlProvider } from 'use-intl'
-import { describe, expect, it, vi } from 'vitest'
 import { SidebarProvider } from '#/components/ui/sidebar'
 import { AppSidebar } from './app-sidebar'
 
@@ -49,7 +49,7 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe('AppSidebar', () => {
-  it('renders standard navigation items and excludes invoices', () => {
+  it('renders standard navigation items and excludes invoices', async () => {
     const appSidebarProps = {
       user: { name: 'John Doe', email: 'john@example.com', avatar: '' },
       org: { name: 'My Workshop', slug: 'my-workshop', logo: null },
@@ -68,7 +68,18 @@ describe('AppSidebar', () => {
     expect(screen.getByText('Customers')).toBeDefined()
     expect(screen.getByText('Products')).toBeDefined()
     expect(screen.getByText('Production')).toBeDefined()
-    expect(screen.getByText('Settings')).toBeDefined()
+
+    const settingsLink = screen.getByRole('link', { name: 'Settings' })
+    const userMenu = screen.getByRole('button', { name: /John Doe/ })
+    expect(settingsLink).toBeDefined()
+    expect(settingsLink.closest('[data-slot="sidebar-menu"]')).not.toBe(
+      userMenu.closest('[data-slot="sidebar-menu"]'),
+    )
+
+    const user = userEvent.setup()
+    await user.click(userMenu)
+    expect(screen.queryByRole('menuitem', { name: 'Settings' })).toBeNull()
+    expect(screen.getByRole('menuitem', { name: 'Log out' })).toBeDefined()
 
     // Invoices should not be present
     expect(screen.queryByText('Invoices')).toBeNull()

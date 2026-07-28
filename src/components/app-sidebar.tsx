@@ -2,6 +2,7 @@
 
 import { Link, useLocation } from '@tanstack/react-router'
 import {
+  ArrowLeft,
   Building2,
   CreditCard,
   FileText,
@@ -10,6 +11,7 @@ import {
   LayoutDashboard,
   MessageSquare,
   Package,
+  Settings2,
   ShoppingCart,
   UserRound,
   Users,
@@ -105,6 +107,7 @@ export function AppSidebar({
   role?: Role
 }) {
   const t = useTranslations('sidebar')
+  const ct = useTranslations('common')
   const st = useTranslations('settings')
   const pt = useTranslations('production')
   const navItems = getVisibleNavItems(role)
@@ -188,7 +191,21 @@ export function AppSidebar({
           <ThemeToggle />
           <LanguageToggle />
         </div>
-        <NavUser user={user} isSettingsSection={isSettingsSection} />
+        <NavUser user={user} />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={isSettingsSection}
+              tooltip={isSettingsSection ? ct('back') : t('settings')}
+            >
+              <Link to={isSettingsSection ? '/' : '/settings/general'}>
+                {isSettingsSection ? <ArrowLeft /> : <Settings2 />}
+                <span>{isSettingsSection ? ct('back') : t('settings')}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
