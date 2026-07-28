@@ -13,6 +13,12 @@ vi.mock('@tanstack/react-router', () => ({
 }))
 
 const testMessages = {
+  admin: {
+    logOut: 'Log out',
+  },
+  common: {
+    back: 'Back',
+  },
   sidebar: {
     dashboard: 'Dashboard',
     orders: 'Orders',
@@ -20,6 +26,17 @@ const testMessages = {
     products: 'Products',
     production: 'Production',
     settings: 'Settings',
+  },
+  settings: {
+    general: 'General',
+    profile: 'Profile',
+    members: 'Members',
+    channels: 'Channels',
+    paymentMethods: 'Payment Methods',
+    invoicing: 'Invoicing',
+  },
+  production: {
+    stageManagement: 'Production Stages',
   },
 }
 

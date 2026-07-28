@@ -2,12 +2,16 @@
 
 import { Link, useLocation } from '@tanstack/react-router'
 import {
+  Building2,
+  CreditCard,
+  FileText,
   GalleryVerticalEnd,
   KanbanSquare,
   LayoutDashboard,
+  MessageSquare,
   Package,
-  Settings2,
   ShoppingCart,
+  UserRound,
   Users,
 } from 'lucide-react'
 import { useTranslations } from 'use-intl'
@@ -27,35 +31,55 @@ import {
 import type { Role } from '#/features/permissions/model'
 import { canViewProduction } from '#/features/permissions/model'
 
-type NavItem = {
-  key:
-    | 'dashboard'
-    | 'orders'
-    | 'customers'
-    | 'products'
-    | 'production'
-    | 'settings'
+type MainNavItem = {
+  key: 'dashboard' | 'orders' | 'customers' | 'products' | 'production'
   href: string
   icon: React.ComponentType<{ className?: string }>
 }
 
-const allNavItems: NavItem[] = [
+type SettingsNavItem = {
+  key:
+    | 'general'
+    | 'profile'
+    | 'members'
+    | 'channels'
+    | 'stages'
+    | 'paymentMethods'
+    | 'invoicing'
+  href: string
+  icon: React.ComponentType<{ className?: string }>
+}
+
+const allNavItems: MainNavItem[] = [
   { key: 'dashboard', href: '/', icon: LayoutDashboard },
   { key: 'orders', href: '/orders', icon: ShoppingCart },
   { key: 'customers', href: '/customers', icon: Users },
   { key: 'products', href: '/products', icon: Package },
   { key: 'production', href: '/production', icon: KanbanSquare },
-  { key: 'settings', href: '/settings/general', icon: Settings2 },
 ]
 
-function getVisibleNavItems(role: Role): NavItem[] {
+const settingsNavItems: SettingsNavItem[] = [
+  { key: 'general', href: '/settings/general', icon: Building2 },
+  { key: 'profile', href: '/settings/profile', icon: UserRound },
+  { key: 'members', href: '/settings/members', icon: Users },
+  { key: 'channels', href: '/settings/channels', icon: MessageSquare },
+  {
+    key: 'stages',
+    href: '/settings/production-stages',
+    icon: KanbanSquare,
+  },
+  {
+    key: 'paymentMethods',
+    href: '/settings/payment-methods',
+    icon: CreditCard,
+  },
+  { key: 'invoicing', href: '/settings/invoicing', icon: FileText },
+]
+
+function getVisibleNavItems(role: Role): MainNavItem[] {
   return allNavItems.filter((item) => {
     if (item.key === 'production') return canViewProduction(role)
-    if (
-      ['customers', 'products', 'settings', 'dashboard', 'orders'].includes(
-        item.key,
-      )
-    ) {
+    if (['customers', 'products', 'dashboard', 'orders'].includes(item.key)) {
       return role === 'owner' || role === 'admin'
     }
     return true
@@ -81,8 +105,11 @@ export function AppSidebar({
   role?: Role
 }) {
   const t = useTranslations('sidebar')
+  const st = useTranslations('settings')
+  const pt = useTranslations('production')
   const navItems = getVisibleNavItems(role)
   const { pathname } = useLocation()
+  const isSettingsSection = pathname.startsWith('/settings')
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -113,33 +140,42 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu className="px-2">
-          {navItems.map((item) => {
-            const isActive =
-              item.href === '/'
+          {(isSettingsSection ? settingsNavItems : navItems).map((item) => {
+            const isActive = isSettingsSection
+              ? pathname === item.href
+              : item.href === '/'
                 ? pathname === '/'
-                : item.key === 'settings'
-                  ? pathname === '/settings' ||
-                    pathname.startsWith('/settings/')
-                  : (() => {
-                      const itemSegments = item.href.split('/').filter(Boolean)
-                      const pathSegments = pathname.split('/').filter(Boolean)
-                      return (
-                        itemSegments.length === pathSegments.length &&
-                        itemSegments.every(
-                          (segment, index) => pathSegments[index] === segment,
-                        )
+                : (() => {
+                    const itemSegments = item.href.split('/').filter(Boolean)
+                    const pathSegments = pathname.split('/').filter(Boolean)
+                    return (
+                      itemSegments.length === pathSegments.length &&
+                      itemSegments.every(
+                        (segment, index) => pathSegments[index] === segment,
                       )
-                    })()
+                    )
+                  })()
+            const label = isSettingsSection
+              ? item.key === 'stages'
+                ? pt('stageManagement')
+                : item.key === 'general'
+                  ? st('general')
+                  : item.key === 'profile'
+                    ? st('profile')
+                    : item.key === 'members'
+                      ? st('members')
+                      : item.key === 'channels'
+                        ? st('channels')
+                        : item.key === 'paymentMethods'
+                          ? st('paymentMethods')
+                          : st('invoicing')
+              : t(item.key as MainNavItem['key'])
             return (
               <SidebarMenuItem key={item.key}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive}
-                  tooltip={t(item.key)}
-                >
+                <SidebarMenuButton asChild isActive={isActive} tooltip={label}>
                   <Link to={item.href}>
-                    {item.icon && <item.icon />}
-                    <span>{t(item.key)}</span>
+                    <item.icon />
+                    <span>{label}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -148,16 +184,11 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <div className="flex items-center justify-between px-3 py-1 md:hidden border-b border-sidebar-border mb-1">
-          <span className="text-xs text-sidebar-foreground/75 font-medium">
-            {t('settings')}
-          </span>
-          <div className="flex items-center gap-1">
-            <ThemeToggle />
-            <LanguageToggle />
-          </div>
+        <div className="flex items-center justify-end gap-1 border-b border-sidebar-border px-3 py-1 md:hidden">
+          <ThemeToggle />
+          <LanguageToggle />
         </div>
-        <NavUser user={user} />
+        <NavUser user={user} isSettingsSection={isSettingsSection} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
