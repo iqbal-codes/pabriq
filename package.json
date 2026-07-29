@@ -20,6 +20,7 @@
     "start": "srvx serve --prod --import ./dist/server/instrument.server.mjs --entry ./dist/server/server.js -s ../client",
     "start:prod": "node scripts/start-production.mjs",
     "bootstrap:owner": "bun run scripts/bootstrap-owner.ts",
+    "prepare": "lefthook install",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -113,6 +114,7 @@
     "dotenv": "^16.5.0",
     "drizzle-kit": "^0.31.10",
     "happy-dom": "^18.0.1",
+    "lefthook": "^2.1.10",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vitest": "^3.2.1"
