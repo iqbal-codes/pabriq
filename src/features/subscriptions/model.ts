@@ -8,6 +8,8 @@ import {
   subscriptions,
 } from '#/db/schema'
 
+import { seedDefaultPlans } from '#/features/subscriptions/seed'
+
 export type SubscriptionWithPlan = {
   id: string
   orgId: string
@@ -125,6 +127,9 @@ export async function startTrial(
   if (existing.length > 0) {
     throw new Error('Organization already has a subscription')
   }
+
+  // Ensure default plans exist before looking up the requested plan
+  await seedDefaultPlans()
 
   const planRows = await db
     .select({ id: plans.id })
@@ -281,6 +286,12 @@ export async function getEntitlementWarnings(
 export async function canDowngrade(
   orgId: string,
   targetPlanSlug: string,
+  currentCounts?: {
+    maxOrders?: number
+    maxProducts?: number
+    maxCustomers?: number
+    maxMembers?: number
+  },
 ): Promise<{ ok: boolean; reason?: string }> {
   const sub = await getSubscription(orgId)
   if (!sub) throw new Error('No subscription found')
@@ -298,21 +309,30 @@ export async function canDowngrade(
   const target = targetPlanRows[0].entitlements
 
   const limitResources = [
-    'maxOrders',
-    'maxProducts',
-    'maxCustomers',
-    'maxMembers',
-  ] as const
+    { key: 'maxOrders' as const, label: 'orders' },
+    { key: 'maxProducts' as const, label: 'products' },
+    { key: 'maxCustomers' as const, label: 'customers' },
+    { key: 'maxMembers' as const, label: 'members' },
+  ]
 
-  for (const resource of limitResources) {
-    const targetLimit = target[resource]
-    if (targetLimit === null) continue
+  for (const { key, label } of limitResources) {
+    const targetLimit = target[key]
+    if (targetLimit === null) continue // no limit in target, always ok
 
-    const currentLimit = sub.plan.entitlements[resource]
+    const currentLimit = sub.plan.entitlements[key]
     if (currentLimit === null) {
       return {
         ok: false,
-        reason: `Cannot downgrade: plan currently has unlimited ${resource.replace('max', '').toLowerCase()}`,
+        reason: `Cannot downgrade: plan currently has unlimited ${label}`,
+      }
+    }
+
+    // Check actual resource usage if provided
+    const actualCount = currentCounts?.[key]
+    if (actualCount !== undefined && actualCount > targetLimit) {
+      return {
+        ok: false,
+        reason: `Cannot downgrade: current ${label} count (${actualCount}) exceeds the target plan limit of ${targetLimit}`,
       }
     }
   }

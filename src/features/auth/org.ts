@@ -94,6 +94,7 @@ export const createOrganization = createServerFn({ method: 'POST' })
           .limit(1)
 
         if (orgs[0]) {
+          // Dynamic import keeps server-only module out of client bundles
           const { startTrial } = await import('#/features/subscriptions/model')
           await startTrial(orgs[0].id, 'starter').catch(() => {
             // Best-effort: trial creation failure should not block org creation

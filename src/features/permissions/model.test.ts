@@ -111,8 +111,8 @@ describe('canManagePaymentSettings', () => {
 })
 
 describe('canViewOrders', () => {
-  it('allows owner, admin, and member', () => {
-    expectPermissions(canViewOrders, ['owner', 'admin', 'member'])
+  it('allows owner, admin, member, and operator', () => {
+    expectPermissions(canViewOrders, ['owner', 'admin', 'member', 'operator'])
   })
 })
 

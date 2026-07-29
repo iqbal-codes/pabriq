@@ -4,14 +4,14 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import type { BillingCadence } from '#/db/schema'
-import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
-import { queryKeys } from '#/lib/query-keys'
 import {
   cancelSubscriptionFn,
   changePlanFn,
   getSubscriptionFn,
   reinstateSubscriptionFn,
-} from './server'
+} from '#/features/subscriptions/server'
+import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
+import { queryKeys } from '#/lib/query-keys'
 
 export function useSubscription() {
   return useSuspenseQuery({

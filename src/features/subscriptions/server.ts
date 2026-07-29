@@ -2,9 +2,22 @@ import { createServerFn } from '@tanstack/react-start'
 import type { BillingCadence } from '#/db/schema'
 import type { Role } from '#/features/permissions/model'
 import { canManageSettings } from '#/features/permissions/model'
+import type { SubscriptionWithPlan } from '#/features/subscriptions/model'
+import {
+  canDowngrade,
+  changePlan,
+  getSubscription,
+  transitionSubscription,
+} from '#/features/subscriptions/model'
 import { resolveOrgAndRole, resolveOrgId } from '#/lib/auth-session-server'
-import type { SubscriptionWithPlan } from './model'
-import { changePlan, getSubscription, transitionSubscription } from './model'
+
+async function requireSettingsAdmin(): Promise<{ orgId: string }> {
+  const { orgId, role } = await resolveOrgAndRole()
+  if (!canManageSettings(role as Role)) {
+    throw new Error('Not authorized')
+  }
+  return { orgId }
+}
 
 export const getSubscriptionFn = createServerFn({ method: 'GET' }).handler(
   async (): Promise<SubscriptionWithPlan | null> => {
@@ -20,9 +33,14 @@ export const changePlanFn = createServerFn({ method: 'POST' })
   .handler(
     async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
       try {
-        const { orgId, role } = await resolveOrgAndRole()
-        if (!canManageSettings(role as Role)) {
-          return { ok: false, error: 'Not authorized' }
+        const { orgId } = await requireSettingsAdmin()
+
+        const downgradeCheck = await canDowngrade(orgId, data.planSlug)
+        if (!downgradeCheck.ok) {
+          return {
+            ok: false,
+            error: downgradeCheck.reason ?? 'Downgrade not allowed',
+          }
         }
 
         await changePlan(orgId, data.planSlug, data.cadence)
@@ -39,11 +57,7 @@ export const changePlanFn = createServerFn({ method: 'POST' })
 export const cancelSubscriptionFn = createServerFn({ method: 'POST' }).handler(
   async (): Promise<{ ok: true } | { ok: false; error: string }> => {
     try {
-      const { orgId, role } = await resolveOrgAndRole()
-      if (!canManageSettings(role as Role)) {
-        return { ok: false, error: 'Not authorized' }
-      }
-
+      const { orgId } = await requireSettingsAdmin()
       await transitionSubscription(orgId, 'canceled')
       return { ok: true }
     } catch (err: unknown) {
@@ -59,11 +73,7 @@ export const reinstateSubscriptionFn = createServerFn({
   method: 'POST',
 }).handler(async (): Promise<{ ok: true } | { ok: false; error: string }> => {
   try {
-    const { orgId, role } = await resolveOrgAndRole()
-    if (!canManageSettings(role as Role)) {
-      return { ok: false, error: 'Not authorized' }
-    }
-
+    const { orgId } = await requireSettingsAdmin()
     await transitionSubscription(orgId, 'active')
     return { ok: true }
   } catch (err: unknown) {
