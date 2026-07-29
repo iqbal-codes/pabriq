@@ -79,6 +79,28 @@ export const markInvoicePaidFn = createServerFn({ method: 'POST' })
       }
     }
   })
+export const markInvoiceOverdueFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().min(1) }).parse(input),
+  )
+  .handler(async ({ data }): Promise<MutationResult> => {
+    const [{ orgId, role }, { markInvoiceOverdue }] = await Promise.all([
+      resolveOrgAndRole(),
+      import('./model'),
+    ])
+    if (!canManageInvoices(role as 'owner' | 'admin' | 'member')) {
+      return { ok: false, error: 'Insufficient permissions' }
+    }
+    try {
+      await markInvoiceOverdue(data.id, orgId)
+      return { ok: true }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
+  })
 
 export const listPaymentMethodsFn = createServerFn({ method: 'GET' })
   .inputValidator((input: Record<string, never>) => input)
