@@ -13,11 +13,13 @@ import {
   canManageSettings,
   canManageStages,
   canUseAssistant,
+  canViewOrders,
   canViewProduction,
+  isOperator,
   type Role,
 } from './model'
 
-const roles: Role[] = ['owner', 'admin', 'member']
+const roles: Role[] = ['owner', 'admin', 'member', 'operator']
 
 function expectPermissions(fn: (role: Role) => boolean, allowed: Role[]) {
   for (const role of roles) {
@@ -105,5 +107,20 @@ describe('canUseAssistant', () => {
 describe('canManagePaymentSettings', () => {
   it('allows owner and admin only', () => {
     expectPermissions(canManagePaymentSettings, ['owner', 'admin'])
+  })
+})
+
+describe('canViewOrders', () => {
+  it('allows owner, admin, and member', () => {
+    expectPermissions(canViewOrders, ['owner', 'admin', 'member'])
+  })
+})
+
+describe('isOperator', () => {
+  it('returns true only for operator', () => {
+    expect(isOperator('operator')).toBe(true)
+    expect(isOperator('owner')).toBe(false)
+    expect(isOperator('admin')).toBe(false)
+    expect(isOperator('member')).toBe(false)
   })
 })

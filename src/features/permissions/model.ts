@@ -1,4 +1,8 @@
-export type Role = 'owner' | 'admin' | 'member'
+export type Role = 'owner' | 'admin' | 'member' | 'operator'
+
+export function isOperator(role: Role): boolean {
+  return role === 'operator'
+}
 
 export function canManageMembers(role: Role): boolean {
   return role === 'owner' || role === 'admin'
@@ -33,6 +37,15 @@ export function canManageCustomers(role: Role): boolean {
 }
 
 export function canViewProduction(role: Role): boolean {
+  return (
+    role === 'owner' ||
+    role === 'admin' ||
+    role === 'member' ||
+    role === 'operator'
+  )
+}
+
+export function canViewOrders(role: Role): boolean {
   return role === 'owner' || role === 'admin' || role === 'member'
 }
 

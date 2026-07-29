@@ -19,7 +19,7 @@ async function resolveManageMembersOrgId(): Promise<string> {
 
 const inviteMemberSchema = z.object({
   email: z.email(),
-  role: z.enum(['admin', 'member']),
+  role: z.enum(['admin', 'member', 'operator']),
 })
 
 type MemberUser = {
