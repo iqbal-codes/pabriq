@@ -164,7 +164,7 @@ describe('materialization', () => {
 
   beforeEach(async () => {
     const published = await listPublishedTemplates()
-    templateId = published[0]!.id
+    templateId = published[0]?.id
   })
 
   it('materializes a template into org configuration', async () => {
@@ -174,19 +174,19 @@ describe('materialization', () => {
 
     const config = await getOrganizationConfiguration(orgId)
     expect(config).not.toBeNull()
-    expect(config!.sourceTemplateId).toBe(templateId)
-    expect(config!.sourceTemplateVersion).toBeGreaterThanOrEqual(1)
-    expect(config!.lineage).toHaveLength(1)
-    expect(config!.lineage[0]!.templateId).toBe(templateId)
+    expect(config?.sourceTemplateId).toBe(templateId)
+    expect(config?.sourceTemplateVersion).toBeGreaterThanOrEqual(1)
+    expect(config?.lineage).toHaveLength(1)
+    expect(config?.lineage[0]?.templateId).toBe(templateId)
   })
 
   it('records template lineage', async () => {
     await materializeTemplate(orgId, templateId)
 
     const config = await getOrganizationConfiguration(orgId)
-    expect(config!.lineage).toHaveLength(1)
-    expect(config!.lineage[0]!.templateVersion).toBeGreaterThanOrEqual(1)
-    expect(config!.lineage[0]!.importedAt).toBeTruthy()
+    expect(config?.lineage).toHaveLength(1)
+    expect(config?.lineage[0]?.templateVersion).toBeGreaterThanOrEqual(1)
+    expect(config?.lineage[0]?.importedAt).toBeTruthy()
   })
 
   it('prevents materializing a non-published template', async () => {
@@ -250,7 +250,7 @@ describe('configuration customization & provenance', () => {
 
   beforeEach(async () => {
     const published = await listPublishedTemplates()
-    templateId = published[0]!.id
+    templateId = published[0]?.id
     const result = await materializeTemplate(orgId, templateId)
     configId = result.configId
   })
@@ -259,7 +259,7 @@ describe('configuration customization & provenance', () => {
     const elements = await listConfigurationElements(orgId, {
       elementType: 'product',
     })
-    const element = elements[0]!
+    const element = elements[0]
 
     const updated = await updateConfigurationElement(
       orgId,
@@ -277,7 +277,7 @@ describe('configuration customization & provenance', () => {
     const elements = await listConfigurationElements(orgId, {
       elementType: 'product',
     })
-    const element = elements[0]!
+    const element = elements[0]
 
     const updated = await updateConfigurationElement(
       orgId,
@@ -293,7 +293,7 @@ describe('configuration customization & provenance', () => {
     const elements = await listConfigurationElements(orgId, {
       elementType: 'product',
     })
-    const element = elements[0]!
+    const element = elements[0]
 
     await updateConfigurationElement(orgId, 'product', element.elementKey, {
       first: true,
@@ -334,7 +334,7 @@ describe('configuration customization & provenance', () => {
     const elements = await listConfigurationElements(orgId, {
       elementType: 'product',
     })
-    const element = elements[0]!
+    const element = elements[0]
 
     await updateConfigurationElement(orgId, 'product', element.elementKey, {
       customized: true,
@@ -355,7 +355,7 @@ describe('configuration customization & provenance', () => {
     const elements = await listConfigurationElements(orgId, {
       elementType: 'product',
     })
-    const element = elements[0]!
+    const element = elements[0]
 
     const fetched = await getConfigurationElement(
       orgId,
@@ -364,8 +364,8 @@ describe('configuration customization & provenance', () => {
     )
 
     expect(fetched).not.toBeNull()
-    expect(fetched!.elementKey).toBe(element.elementKey)
-    expect(fetched!.provenance).toBe('inherited')
+    expect(fetched?.elementKey).toBe(element.elementKey)
+    expect(fetched?.provenance).toBe('inherited')
   })
 
   it('throws on update of non-existent element', async () => {
@@ -385,8 +385,9 @@ describe('capability import', () => {
     const published = await listPublishedTemplates()
     const rubber = published.find((t) => t.slug === 'rubber-accessories')
     const apparel = published.find((t) => t.slug === 'apparel-decoration')
-    rubberTemplateId = rubber!.id
-    apparelTemplateId = apparel!.id
+    if (!rubber || !apparel) throw new Error('Templates not found')
+    rubberTemplateId = rubber.id
+    apparelTemplateId = apparel.id
 
     await materializeTemplate(orgId, rubberTemplateId)
   })
@@ -408,9 +409,9 @@ describe('capability import', () => {
 
     const config = await getOrganizationConfiguration(orgId)
     // Should have original lineage entry + capability import entry
-    expect(config!.lineage.length).toBeGreaterThanOrEqual(2)
+    expect(config?.lineage.length).toBeGreaterThanOrEqual(2)
     expect(
-      config!.lineage.some((l) => l.templateId === apparelTemplateId),
+      config?.lineage.some((l) => l.templateId === apparelTemplateId),
     ).toBe(true)
   })
 
@@ -587,8 +588,9 @@ describe('upgrade proposals', () => {
     ).toBe(true)
     const conflict = conflicts.find(
       (c: Record<string, unknown>) => c.elementKey === 'product_a',
-    )!
-    expect(conflict.provenance).toBe('customized')
+    )
+    expect(conflict).toBeDefined()
+    expect(conflict?.provenance).toBe('customized')
   })
 
   it('accepts and applies an upgrade', async () => {
@@ -600,9 +602,9 @@ describe('upgrade proposals', () => {
 
     // Config should now reference v2
     const config = await getOrganizationConfiguration(orgId)
-    expect(config!.sourceTemplateId).toBe(templateV2Id)
-    expect(config!.sourceTemplateVersion).toBe(2)
-    expect(config!.lineage.length).toBeGreaterThanOrEqual(2)
+    expect(config?.sourceTemplateId).toBe(templateV2Id)
+    expect(config?.sourceTemplateVersion).toBe(2)
+    expect(config?.lineage.length).toBeGreaterThanOrEqual(2)
   })
 
   it('applies additions during upgrade', async () => {
@@ -621,7 +623,7 @@ describe('upgrade proposals', () => {
     // product_a should be updated
     const updated = await getConfigurationElement(orgId, 'product', 'product_a')
     expect(updated).not.toBeNull()
-    const data = updated!.data as Record<string, unknown>
+    const data = updated?.data as Record<string, unknown>
     expect(data.name).toBe('Product A Updated')
     expect(data.basePrice).toBe(1500)
   })
@@ -638,10 +640,10 @@ describe('upgrade proposals', () => {
 
     // product_a should still have custom values
     const el = await getConfigurationElement(orgId, 'product', 'product_a')
-    const data = el!.data as Record<string, unknown>
+    const data = el?.data as Record<string, unknown>
     expect(data.name).toBe('My Custom Product')
     expect(data.basePrice).toBe(999)
-    expect(el!.provenance).toBe('customized')
+    expect(el?.provenance).toBe('customized')
   })
 
   it('rejects an upgrade proposal without changing config', async () => {
@@ -653,7 +655,7 @@ describe('upgrade proposals', () => {
 
     // Config should still reference v1
     const config = await getOrganizationConfiguration(orgId)
-    expect(config!.sourceTemplateId).toBe(templateV1Id)
+    expect(config?.sourceTemplateId).toBe(templateV1Id)
   })
 
   it('prevents accepting an already-rejected proposal', async () => {
@@ -699,8 +701,8 @@ describe('upgrade proposals', () => {
     await rejectUpgradeProposal(proposal.id)
 
     const config = await getOrganizationConfiguration(orgId)
-    expect(config!.sourceTemplateId).toBe(templateV1Id)
-    expect(config!.sourceTemplateVersion).toBe(1)
+    expect(config?.sourceTemplateId).toBe(templateV1Id)
+    expect(config?.sourceTemplateVersion).toBe(1)
 
     // product_c should not exist
     const added = await getConfigurationElement(orgId, 'product', 'product_c')
