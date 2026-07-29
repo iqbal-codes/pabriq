@@ -23,6 +23,8 @@ import {
   organizationProfiles as organizationProfilesTable,
   paymentMethods as paymentMethodsTable,
   payments as paymentsTable,
+  specificationSnapshots,
+  specifications,
 } from '#/db/schema'
 import { formatProductDesignLabel } from '#/features/orders/line-item-display'
 import { buildOrderBy, type SortColumnMap, type SortState } from '#/lib/sorting'
@@ -47,8 +49,10 @@ export type Invoice = {
     | 'partially_paid'
     | 'paid'
     | 'void'
+    | 'overdue'
     | 'refunded'
     | 'partially_refunded'
+  currency: string
   percentage: number | null
   subtotal: number
   total: number
@@ -90,8 +94,8 @@ export type PaymentMethod = {
 
 export type CreateInvoiceInput = {
   orderId?: string
-  customerId: string
-  customerName: string
+  customerId?: string
+  customerName?: string
   lineItems: Array<{
     description: string
     quantity: number
@@ -110,19 +114,20 @@ export type CreateInvoiceInput = {
   lateFee?: number
   lateFeeDays?: number
   lateFeePerDay?: number
+  currency?: string
 }
 
 export type CreateInvoiceResult = {
   invoice: Invoice
   lineItems: InvoiceLineItem[]
 }
-
 export type InvoiceRow = {
   id: string
   invoiceNumber: string
   customerName: string
   status: string
   total: number
+  currency: string
   percentage: number | null
   dueDate: string
   paymentProvider: 'bank_transfer' | 'midtrans'
@@ -313,19 +318,94 @@ export async function createInvoice(
     if (orderRows.length === 0) throw new Error('Order not found')
 
     const order = orderRows[0]
+
+    // Require order to be committed (approved or beyond)
+    const COMMITTED_STATUSES: Record<string, true> = {
+      approved: true,
+      in_progress: true,
+      in_delivery: true,
+      completed: true,
+    }
+    if (!COMMITTED_STATUSES[order.status]) {
+      throw new Error(
+        'Order must be committed before generating an invoice. Current status: ' +
+          order.status,
+      )
+    }
+
+    // Auto-resolve customer identity from order
+    const customerId = input.customerId ?? order.customerId
+    if (!customerId) throw new Error('Customer ID is required')
+
+    let customerName = input.customerName
+    if (!customerName) {
+      const customerRows = await db
+        .select({ name: customersTable.name })
+        .from(customersTable)
+        .where(
+          and(
+            eq(customersTable.id, customerId),
+            eq(customersTable.orgId, orgId),
+          ),
+        )
+        .limit(1)
+      customerName = customerRows[0]?.name
+      if (!customerName) throw new Error('Customer not found')
+    }
+
     const percentage = input.percentage ?? 100
 
+    // Read committed specification snapshots for recorded commercial result
+    const snapshotRows = await db
+      .select({
+        priceSnapshot: specificationSnapshots.priceSnapshot,
+        quantity: specificationSnapshots.quantity,
+        productSnapshot: specificationSnapshots.productSnapshot,
+      })
+      .from(specificationSnapshots)
+      .innerJoin(
+        specifications,
+        eq(specificationSnapshots.specificationId, specifications.id),
+      )
+      .where(
+        and(
+          eq(specifications.orderId, input.orderId),
+          eq(specifications.orgId, orgId),
+        ),
+      )
+
+    // Calculate committed total from snapshots
+    let committedTotal = 0
+    let currency = input.currency ?? 'IDR'
+    for (const snap of snapshotRows) {
+      const price = snap.priceSnapshot as {
+        unitPrice: number
+        totalPrice: number
+        currency?: string
+      } | null
+      if (price) {
+        committedTotal += price.totalPrice
+        if (price.currency && !input.currency) {
+          currency = price.currency
+        }
+      }
+    }
+
+    // Read order line items for descriptions
     const orderItemRows = await db
       .select()
       .from(orderLineItemsTable)
       .where(eq(orderLineItemsTable.orderId, input.orderId))
+
+    // Build invoice line items from order line items.
+    // Use committed snapshot total for the overall invoice amount,
+    // while keeping order line item prices for per-item breakdown.
     for (const oi of orderItemRows) {
-      const productName = oi.productName
       items.push({
         id: generateId(),
         invoiceId,
         lineType: 'product',
-        description: formatProductDesignLabel(productName, oi.designName),
+        description: formatProductDesignLabel(oi.productName, oi.designName),
         quantity: oi.quantity,
         unitPrice: oi.unitPrice,
         total: oi.total,
@@ -334,10 +414,14 @@ export async function createInvoice(
     }
 
     const subtotal = items.reduce((sum, i) => sum + i.total, 0)
+    // Use committed snapshot total when available, falling back to order total
+    const effectiveCommittedTotal =
+      snapshotRows.length > 0 ? committedTotal : order.total
+
     const productTotal =
       input.customProductTotal !== undefined
         ? input.customProductTotal
-        : order.total * (percentage / 100)
+        : effectiveCommittedTotal * (percentage / 100)
     const shippingFee = input.shippingFee ?? 0
     const lateFee = Math.max(0, input.lateFee ?? 0)
     const invoiceTotal = productTotal + shippingFee - lateFee
@@ -375,9 +459,10 @@ export async function createInvoice(
       orgId,
       invoiceNumber,
       orderId: input.orderId,
-      customerId: input.customerId,
-      customerName: input.customerName,
+      customerId,
+      customerName,
       status: 'unpaid',
+      currency,
       percentage,
       subtotal,
       total: Math.max(0, Math.round(invoiceTotal * 100) / 100),
@@ -387,6 +472,7 @@ export async function createInvoice(
         new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
           .toISOString()
           .split('T')[0],
+      issuedDate: input.issuedDate ?? new Date().toISOString().split('T')[0],
       paymentProvider: input.paymentProvider ?? 'bank_transfer',
       paymentMethodId:
         input.paymentProvider === 'midtrans'
@@ -406,6 +492,12 @@ export async function createInvoice(
         )
     }
   } else {
+    // Standalone invoice (no order)
+    const customerId = input.customerId
+    const customerName = input.customerName
+    if (!customerId) throw new Error('Customer ID is required')
+    if (!customerName) throw new Error('Customer name is required')
+
     for (const li of input.lineItems) {
       items.push({
         id: generateId(),
@@ -426,9 +518,10 @@ export async function createInvoice(
       orgId,
       invoiceNumber,
       orderId: null,
-      customerId: input.customerId,
-      customerName: input.customerName,
+      customerId,
+      customerName,
       status: 'unpaid',
+      currency: input.currency ?? 'IDR',
       percentage: null,
       subtotal,
       total: subtotal,
@@ -611,13 +704,14 @@ export async function listInvoices(
         customerName: invoicesTable.customerName,
         status: invoicesTable.status,
         total: invoicesTable.total,
+        currency: invoicesTable.currency,
         percentage: invoicesTable.percentage,
         dueDate: invoicesTable.dueDate,
         paymentProvider: invoicesTable.paymentProvider,
         paymentMethodId: invoicesTable.paymentMethodId,
         midtransOrderId: invoicesTable.midtransOrderId,
         createdAt: invoicesTable.createdAt,
-        overdue: sql<boolean>`(${invoicesTable.status} IN ('unpaid') AND ${invoicesTable.dueDate} < ${today}::date)`,
+        overdue: sql<boolean>`(${invoicesTable.status} IN ('unpaid', 'overdue') AND ${invoicesTable.dueDate} < ${today}::date)`,
         shippingFee: sql<number>`coalesce(${shippingFeeByInvoice.shippingFee}, 0)`,
       })
       .from(invoicesTable)
@@ -661,9 +755,12 @@ export async function markInvoicePaid(
   if (invoiceRows.length === 0) throw new Error('Invoice not found')
   if (
     invoiceRows[0].status !== 'unpaid' &&
-    invoiceRows[0].status !== 'partially_paid'
+    invoiceRows[0].status !== 'partially_paid' &&
+    invoiceRows[0].status !== 'overdue'
   )
-    throw new Error('Only unpaid or partially paid invoices can be marked paid')
+    throw new Error(
+      'Only unpaid, overdue, or partially paid invoices can be marked paid',
+    )
 
   const invoice = invoiceRows[0]
   const now = new Date()
@@ -728,13 +825,44 @@ export async function voidInvoice(id: string, orgId: string): Promise<Invoice> {
     .limit(1)
 
   if (invoiceRows.length === 0) throw new Error('Invoice not found')
-  if (invoiceRows[0].status !== 'unpaid')
-    throw new Error('Only unpaid invoices can be voided')
-
+  if (invoiceRows[0].status !== 'unpaid' && invoiceRows[0].status !== 'overdue')
+    throw new Error('Only unpaid or overdue invoices can be voided')
   const now = new Date()
   await db
     .update(invoicesTable)
     .set({ status: 'void', updatedAt: now })
+    .where(eq(invoicesTable.id, id))
+
+  const [updated] = await db
+    .select()
+    .from(invoicesTable)
+    .where(eq(invoicesTable.id, id))
+    .limit(1)
+
+  return updated as Invoice
+}
+
+export async function markInvoiceOverdue(
+  id: string,
+  orgId: string,
+): Promise<Invoice> {
+  const invoiceRows = await db
+    .select()
+    .from(invoicesTable)
+    .where(and(eq(invoicesTable.id, id), eq(invoicesTable.orgId, orgId)))
+    .limit(1)
+  if (invoiceRows.length === 0) throw new Error('Invoice not found')
+  if (invoiceRows[0].status !== 'unpaid')
+    throw new Error('Only unpaid invoices can be marked overdue')
+
+  const dueDate = invoiceRows[0].dueDate
+  if (dueDate && new Date(dueDate) > new Date())
+    throw new Error('Cannot mark invoice as overdue before the due date')
+
+  const now = new Date()
+  await db
+    .update(invoicesTable)
+    .set({ status: 'overdue', updatedAt: now })
     .where(eq(invoicesTable.id, id))
 
   const [updated] = await db

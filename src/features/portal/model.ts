@@ -67,8 +67,10 @@ export type PortalInvoice = {
   id: string
   invoiceNumber: string
   total: number
+  currency: string
   percentage: number | null
   dueDate: string
+  issuedDate: string
   status: string
   paidAt: string | null
   paymentMethodName: string | null
@@ -355,8 +357,10 @@ export async function getPortalOrder(
       id: invoicesTable.id,
       invoiceNumber: invoicesTable.invoiceNumber,
       total: invoicesTable.total,
+      currency: invoicesTable.currency,
       percentage: invoicesTable.percentage,
       dueDate: invoicesTable.dueDate,
+      issuedDate: invoicesTable.issuedDate,
       status: invoicesTable.status,
       paidAt: invoicesTable.paidAt,
       paymentMethodName: paymentMethodsTable.name,
@@ -422,12 +426,26 @@ export async function getPortalOrder(
     shippingLineItems.map((row) => [row.invoiceId, row.total]),
   )
 
-  const invoices: PortalInvoice[] = invoiceRows.map((inv) => ({
+  // Show only eligible invoices to customers (exclude void and refunded)
+  const ELIGIBLE_INVOICE_STATUSES: Record<string, true> = {
+    unpaid: true,
+    partially_paid: true,
+    paid: true,
+    overdue: true,
+  }
+
+  const eligibleInvoiceRows = invoiceRows.filter(
+    (inv) => ELIGIBLE_INVOICE_STATUSES[inv.status],
+  )
+
+  const invoices: PortalInvoice[] = eligibleInvoiceRows.map((inv) => ({
     id: inv.id,
     invoiceNumber: inv.invoiceNumber,
     total: inv.total,
+    currency: inv.currency,
     percentage: inv.percentage,
     dueDate: inv.dueDate,
+    issuedDate: inv.issuedDate,
     status: inv.status,
     paidAt: inv.paidAt ? inv.paidAt.toISOString() : null,
     paymentMethodName: inv.paymentMethodName,

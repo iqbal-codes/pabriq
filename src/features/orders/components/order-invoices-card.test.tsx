@@ -52,6 +52,7 @@ const invoice: InvoiceRow = {
   customerName: 'Acme Corp',
   status: 'unpaid',
   total: 100000,
+  currency: 'IDR',
   percentage: 50,
   dueDate: '2026-06-30',
   paymentMethodId: null,
