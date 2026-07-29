@@ -4,6 +4,7 @@ import { Link, useLocation } from '@tanstack/react-router'
 import {
   ArrowLeft,
   Building2,
+  Cpu,
   CreditCard,
   FileText,
   GalleryVerticalEnd,
@@ -46,6 +47,7 @@ type SettingsNavItem = {
     | 'members'
     | 'channels'
     | 'stages'
+    | 'shopFloorDevices'
     | 'paymentMethods'
     | 'invoicing'
   href: string
@@ -69,6 +71,11 @@ const settingsNavItems: SettingsNavItem[] = [
     key: 'stages',
     href: '/settings/production-stages',
     icon: KanbanSquare,
+  },
+  {
+    key: 'shopFloorDevices',
+    href: '/settings/shop-floor-devices',
+    icon: Cpu,
   },
   {
     key: 'paymentMethods',

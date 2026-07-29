@@ -31,6 +31,7 @@ export async function spawnQueuedPreProductionTasksForOrder(
       status: ordersTable.status,
       orderNumber: ordersTable.orderNumber,
       customerId: ordersTable.customerId,
+      total: ordersTable.total,
     })
     .from(ordersTable)
     .where(and(eq(ordersTable.id, orderId), eq(ordersTable.orgId, orgId)))
@@ -47,9 +48,13 @@ export async function spawnQueuedPreProductionTasksForOrder(
     .select({
       id: lineItemsTable.id,
       productId: lineItemsTable.productId,
+      productName: lineItemsTable.productName,
       designName: lineItemsTable.designName,
       notes: lineItemsTable.notes,
       quantity: lineItemsTable.quantity,
+      unitPrice: lineItemsTable.unitPrice,
+      total: lineItemsTable.total,
+      assetId: lineItemsTable.assetId,
       deadline: lineItemsTable.deadline,
     })
     .from(lineItemsTable)
@@ -61,9 +66,15 @@ export async function spawnQueuedPreProductionTasksForOrder(
   }
 
   let customerName: string | null = null
+  let customerEmail: string | null = null
+  let customerPhone: string | null = null
   if (order.customerId) {
     const customerRows = await client
-      .select({ name: customersTable.name })
+      .select({
+        name: customersTable.name,
+        email: customersTable.email,
+        phone: customersTable.phone,
+      })
       .from(customersTable)
       .where(
         and(
@@ -73,7 +84,11 @@ export async function spawnQueuedPreProductionTasksForOrder(
       )
       .limit(1)
 
-    customerName = customerRows[0]?.name ?? null
+    if (customerRows.length > 0) {
+      customerName = customerRows[0].name
+      customerEmail = customerRows[0].email ?? null
+      customerPhone = customerRows[0].phone ?? null
+    }
   }
 
   const uniqueProductIds = [
@@ -149,15 +164,25 @@ export async function spawnQueuedPreProductionTasksForOrder(
       lineItemId: item.id,
       priority: productPriorityMap.get(item.productId) ?? false,
       context: {
-        productName: productNameMap.get(item.productId) ?? '',
+        productName:
+          item.productName || (productNameMap.get(item.productId) ?? ''),
         designName: getVisibleDesignName(
           item.designName,
-          productNameMap.get(item.productId) ?? '',
+          item.productName || (productNameMap.get(item.productId) ?? ''),
         ),
         customerName: customerName ?? '',
+        customerId: order.customerId ?? null,
+        customerEmail: customerEmail ?? null,
+        customerPhone: customerPhone ?? null,
         requirements: item.notes ?? null,
+        specification: item.notes ?? null,
+        files: item.assetId ? [{ id: item.assetId }] : null,
         orderNumber: order.orderNumber ?? '',
+        orderTotal: order.total ?? 0,
+        currency: 'IDR',
         quantity: item.quantity ?? 1,
+        unitPrice: item.unitPrice ?? 0,
+        total: item.total ?? 0,
         deadline: item.deadline.toISOString(),
       },
       createdAt: now,

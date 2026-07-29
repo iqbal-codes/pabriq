@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
+import type { Role } from '#/features/permissions/model'
 import type { OrderTaskEvent } from '#/features/portal/model'
 import { resolveOrgAndRole, resolveOrgId } from '#/lib/auth-session-server'
 import type { MutationResult } from '#/lib/server-results'
@@ -264,6 +265,116 @@ export const rejectTaskAdvanceFn = createServerFn({ method: 'POST' })
       }
     }
   })
+export const returnTaskForReworkFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (input: { taskId: string; reviewNotes?: string; targetStageId?: string }) =>
+      input,
+  )
+  .handler(async ({ data }): Promise<MutationResult> => {
+    const [{ orgId, role }, { auth }, { returnTaskForRework }] =
+      await Promise.all([
+        resolveOrgAndRole(),
+        import('#/lib/auth'),
+        import('./model'),
+      ])
+    const headers = getRequestHeaders()
+    const session = await auth.api.getSession({ headers })
+    return returnTaskForRework(
+      data.taskId,
+      orgId,
+      session?.user.id ?? 'unknown',
+      role,
+      data.reviewNotes,
+      data.targetStageId,
+    )
+  })
+
+export const registerDeviceFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (input: { name: string; code?: string; allowedStageIds?: string[] }) =>
+      input,
+  )
+  .handler(async ({ data }) => {
+    const [
+      { orgId, role },
+      { auth },
+      { registerDevice },
+      { canManageDevices },
+    ] = await Promise.all([
+      resolveOrgAndRole(),
+      import('#/lib/auth'),
+      import('./devices'),
+      import('#/features/permissions/model'),
+    ])
+    if (!canManageDevices(role as Role)) {
+      throw new Error('Not authorized')
+    }
+    const headers = getRequestHeaders()
+    const session = await auth.api.getSession({ headers })
+    return registerDevice({
+      orgId,
+      name: data.name,
+      code: data.code,
+      allowedStageIds: data.allowedStageIds,
+      actorId: session?.user.id ?? 'unknown',
+    })
+  })
+
+export const rotateDeviceTokenFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ data }) => {
+    const [
+      { orgId, role },
+      { auth },
+      { rotateDeviceToken },
+      { canManageDevices },
+    ] = await Promise.all([
+      resolveOrgAndRole(),
+      import('#/lib/auth'),
+      import('./devices'),
+      import('#/features/permissions/model'),
+    ])
+    if (!canManageDevices(role as Role)) {
+      throw new Error('Not authorized')
+    }
+    const headers = getRequestHeaders()
+    const session = await auth.api.getSession({ headers })
+    return rotateDeviceToken({
+      id: data.id,
+      orgId,
+      actorId: session?.user.id ?? 'unknown',
+    })
+  })
+
+export const revokeDeviceFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ data }) => {
+    const [{ orgId, role }, { auth }, { revokeDevice }, { canManageDevices }] =
+      await Promise.all([
+        resolveOrgAndRole(),
+        import('#/lib/auth'),
+        import('./devices'),
+        import('#/features/permissions/model'),
+      ])
+    if (!canManageDevices(role as Role)) {
+      throw new Error('Not authorized')
+    }
+    const headers = getRequestHeaders()
+    const session = await auth.api.getSession({ headers })
+    return revokeDevice({
+      id: data.id,
+      orgId,
+      actorId: session?.user.id ?? 'unknown',
+    })
+  })
+
+export const listDevicesFn = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const orgId = await resolveOrgId()
+    const { listDevices } = await import('./devices')
+    return listDevices(orgId)
+  },
+)
 
 export const saveTaskCommentFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { taskId: string; text: string }) => input)

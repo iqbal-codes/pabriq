@@ -11,7 +11,7 @@ import { canApproveProductionTask } from '#/features/permissions/model'
 import { READY_FOR_PRODUCTION_STATUS } from '#/features/production/constants'
 import { buildOrderBy, type SortColumnMap, type SortState } from '#/lib/sorting'
 
-export type { Requirement } from '#/db/schema'
+export type { Requirement, ShopFloorDevice } from '#/db/schema'
 
 export type Stage = {
   id: string
@@ -229,7 +229,18 @@ async function logActivity(input: {
   toStageId?: string | null
   data?: Record<string, unknown>
   actorId: string
+  deviceContext?: DeviceAuditContext
 }): Promise<void> {
+  const dataPayload = {
+    ...(input.data ?? {}),
+    ...(input.deviceContext?.deviceId
+      ? {
+          deviceId: input.deviceContext.deviceId,
+          deviceName: input.deviceContext.deviceName ?? null,
+        }
+      : {}),
+  }
+
   await db.insert(activityTable).values({
     id: crypto.randomUUID(),
     orgId: input.orgId,
@@ -237,7 +248,7 @@ async function logActivity(input: {
     type: input.type,
     fromStageId: input.fromStageId ?? null,
     toStageId: input.toStageId ?? null,
-    data: (input.data ?? {}) as Record<string, unknown>,
+    data: dataPayload,
     actorId: input.actorId,
     createdAt: new Date(),
   })
@@ -248,20 +259,52 @@ type AdvanceTaskResult =
   | { ok: true; pendingApproval: true }
   | { ok: false; error: string }
 
-type RequirementResponse = Record<
+export type DeviceAuditContext = {
+  deviceId: string
+  deviceName?: string
+  allowedStageIds?: string[]
+}
+
+export type RequirementResponse = Record<
   string,
-  { value?: string; assetIds?: string[] }
+  {
+    value?: string
+    pass?: boolean
+    numericValue?: number
+    unit?: string
+    notes?: string
+    assetIds?: string[]
+  }
 >
+
 function validateStageRequirements(
   requirements: Requirement[],
   requirementResponses?: RequirementResponse,
 ): string | null {
   const requiredReqs = requirements.filter((r) => r.required)
-  const missing = requiredReqs.filter(
-    (r) =>
-      !requirementResponses?.[r.id]?.value &&
-      !requirementResponses?.[r.id]?.assetIds?.length,
-  )
+  const missing = requiredReqs.filter((r) => {
+    const resp = requirementResponses?.[r.id]
+    if (!resp) return true
+    if (r.type === 'text') return !resp.value?.trim()
+    if (r.type === 'number') {
+      return (
+        resp.numericValue === undefined &&
+        (resp.value === undefined || resp.value.trim() === '')
+      )
+    }
+    if (r.type === 'measurement') {
+      return (
+        resp.numericValue === undefined &&
+        (resp.value === undefined || resp.value.trim() === '')
+      )
+    }
+    if (r.type === 'pass_fail') return resp.pass === undefined
+    if (r.type === 'non_conformance') {
+      return !resp.value?.trim() && !resp.notes?.trim()
+    }
+    if (r.type === 'upload' || r.type === 'photo') return !resp.assetIds?.length
+    return !resp.value?.trim() && !resp.assetIds?.length
+  })
   if (missing.length > 0) {
     const names = missing.map((r) => r.label).join(', ')
     return `Required requirements not fulfilled: ${names}`
@@ -278,6 +321,7 @@ async function transitionToStage(params: {
   completedRequirementIds: string[]
   requirementResponses?: RequirementResponse
   status: 'in_progress' | 'pending_approval'
+  deviceContext?: DeviceAuditContext
 }): Promise<void> {
   await db
     .update(tasksTable)
@@ -299,6 +343,7 @@ async function transitionToStage(params: {
       responses: params.requirementResponses ?? null,
     },
     actorId: params.actorId,
+    deviceContext: params.deviceContext,
   })
 }
 
@@ -308,6 +353,7 @@ async function completeTaskTransition(params: {
   actorId: string
   fromStageId: string | null
   completedRequirementIds: string[]
+  deviceContext?: DeviceAuditContext
 }): Promise<void> {
   await db
     .update(tasksTable)
@@ -326,6 +372,7 @@ async function completeTaskTransition(params: {
     toStageId: null,
     data: { completedRequirements: params.completedRequirementIds },
     actorId: params.actorId,
+    deviceContext: params.deviceContext,
   })
 }
 
@@ -336,6 +383,7 @@ async function markTaskReadyForProduction(params: {
   fromStageId: string | null
   completedRequirementIds: string[]
   requirementResponses?: RequirementResponse
+  deviceContext?: DeviceAuditContext
 }): Promise<void> {
   await db
     .update(tasksTable)
@@ -359,6 +407,7 @@ async function markTaskReadyForProduction(params: {
       responses: params.requirementResponses ?? null,
     },
     actorId: params.actorId,
+    deviceContext: params.deviceContext,
   })
 }
 
@@ -367,6 +416,7 @@ export async function advanceTask(
   orgId: string,
   actorId: string,
   requirementResponses?: RequirementResponse,
+  deviceContext?: DeviceAuditContext,
 ): Promise<AdvanceTaskResult> {
   const taskRows = await db
     .select()
@@ -383,6 +433,14 @@ export async function advanceTask(
     task.status === READY_FOR_PRODUCTION_STATUS
   ) {
     return { ok: false, error: 'Task cannot be advanced from current status' }
+  }
+
+  if (
+    deviceContext?.allowedStageIds?.length &&
+    task.stageId &&
+    !deviceContext.allowedStageIds.includes(task.stageId)
+  ) {
+    return { ok: false, error: 'Device not authorized for this stage' }
   }
 
   const isQueued = task.status === 'queued'
@@ -442,7 +500,6 @@ export async function advanceTask(
       return { ok: false, error: reqError }
     }
   }
-
   const completedReqIds = Object.keys(
     ((task.context as Record<string, unknown>)
       ?.requirementResponses as RequirementResponse) ?? {},
@@ -450,8 +507,6 @@ export async function advanceTask(
   const nextStageIdx = currentStageIdx + 1
   const isAtLastStage = nextStageIdx >= allStages.length
 
-  // When advancing from queue (isQueued), always enter the first stage first
-  // Approval/requirement is checked when trying to ADVANCE from that stage
   if (isQueued) {
     const nextStage = allStages[nextStageIdx] as Stage
     await transitionToStage({
@@ -462,24 +517,20 @@ export async function advanceTask(
       toStageId: nextStage.id,
       completedRequirementIds: [],
       status: 'in_progress',
+      deviceContext,
     })
     return { ok: true, pendingApproval: false }
   }
 
-  // For non-queued tasks, validate requirements (already done above) and check approval
   const currentStage = allStages[currentStageIdx] as Stage
 
-  // Check if current stage requires approval when leaving it
   if (currentStage.needApproval) {
-    // Compute destination for the activity log
     let toStageId: string | null = null
     if (!isAtLastStage) {
       toStageId = (allStages[nextStageIdx] as Stage).id
     } else if (task.board === 'pre_production') {
-      // Last pre-production stage → ready_for_production (no stage)
       toStageId = null
     }
-    // else: final stage on production board → toStageId stays null (completion)
 
     const now = new Date()
     await db
@@ -499,12 +550,12 @@ export async function advanceTask(
       toStageId,
       data: { fromStage: task.stageId, toStage: toStageId },
       actorId,
+      deviceContext,
     })
 
     return { ok: true, pendingApproval: true }
   }
 
-  // No approval needed — at last pre-production stage, mark ready for production
   if (isAtLastStage && task.board === 'pre_production') {
     await markTaskReadyForProduction({
       taskId,
@@ -513,6 +564,7 @@ export async function advanceTask(
       fromStageId: task.stageId,
       completedRequirementIds: completedReqIds,
       requirementResponses,
+      deviceContext,
     })
     return { ok: true, pendingApproval: false }
   }
@@ -523,6 +575,7 @@ export async function advanceTask(
       actorId,
       fromStageId: task.stageId,
       completedRequirementIds: completedReqIds,
+      deviceContext,
     })
     return { ok: true, pendingApproval: false }
   }
@@ -537,6 +590,7 @@ export async function advanceTask(
     requirementResponses,
     completedRequirementIds: [],
     status: 'in_progress',
+    deviceContext,
   })
 
   return { ok: true, pendingApproval: false }
@@ -642,6 +696,7 @@ export async function rejectTaskAdvance(
   actorId: string,
   actorRole: string,
   reviewNotes?: string,
+  deviceContext?: DeviceAuditContext,
 ): Promise<void> {
   if (!canApproveProductionTask(actorRole as 'owner' | 'admin' | 'member')) {
     throw new Error('Not authorized')
@@ -659,6 +714,14 @@ export async function rejectTaskAdvance(
     throw new Error('Task is not pending approval')
   }
 
+  if (
+    deviceContext?.allowedStageIds?.length &&
+    task.stageId &&
+    !deviceContext.allowedStageIds.includes(task.stageId)
+  ) {
+    throw new Error('Device not authorized for this stage')
+  }
+
   const now = new Date()
   await db
     .update(tasksTable)
@@ -672,7 +735,66 @@ export async function rejectTaskAdvance(
     fromStageId: task.stageId,
     data: { reviewNotes: reviewNotes ?? null },
     actorId,
+    deviceContext,
   })
+}
+
+export async function returnTaskForRework(
+  taskId: string,
+  orgId: string,
+  actorId: string,
+  actorRole: string,
+  reviewNotes?: string,
+  targetStageId?: string,
+  deviceContext?: DeviceAuditContext,
+): Promise<AdvanceTaskResult> {
+  if (!canApproveProductionTask(actorRole as 'owner' | 'admin' | 'member')) {
+    return { ok: false, error: 'Not authorized to approve or return work' }
+  }
+
+  const taskRows = await db
+    .select()
+    .from(tasksTable)
+    .where(and(eq(tasksTable.id, taskId), eq(tasksTable.orgId, orgId)))
+    .limit(1)
+
+  if (taskRows.length === 0) throw new Error('Task not found')
+  const task = taskRows[0] as ProductionTask
+
+  const effectiveTargetStageId = targetStageId ?? task.stageId
+
+  if (deviceContext?.allowedStageIds?.length && effectiveTargetStageId) {
+    if (!deviceContext.allowedStageIds.includes(effectiveTargetStageId)) {
+      return { ok: false, error: 'Device not authorized for this stage' }
+    }
+  }
+
+  const now = new Date()
+  await db
+    .update(tasksTable)
+    .set({
+      status: 'in_progress',
+      stageId: effectiveTargetStageId,
+      updatedAt: now,
+    })
+    .where(eq(tasksTable.id, taskId))
+
+  await logActivity({
+    orgId,
+    taskId,
+    type: 'reworked',
+    fromStageId: task.stageId,
+    toStageId: effectiveTargetStageId,
+    data: {
+      reviewNotes: reviewNotes ?? null,
+      orderId: task.orderId,
+      lineItemId: task.lineItemId,
+    },
+    actorId,
+    deviceContext,
+  })
+
+  return { ok: true, pendingApproval: false }
 }
 
 export async function saveTaskComment(
