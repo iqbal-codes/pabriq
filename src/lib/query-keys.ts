@@ -147,4 +147,29 @@ export const queryKeys = {
     current: () => [...queryKeys.subscriptions.all, 'current'] as const,
     warnings: () => [...queryKeys.subscriptions.all, 'warnings'] as const,
   },
+  businessTemplates: {
+    all: ['business-templates'] as const,
+    published: () => [...queryKeys.businessTemplates.all, 'published'] as const,
+    detail: (id: string) =>
+      [...queryKeys.businessTemplates.all, 'detail', id] as const,
+  },
+  configuration: {
+    all: ['configuration'] as const,
+    current: () => [...queryKeys.configuration.all, 'current'] as const,
+    elements: (elementType?: string) =>
+      [...queryKeys.configuration.all, 'elements', { elementType }] as const,
+    detail: (elementType: string, elementKey: string) =>
+      [
+        ...queryKeys.configuration.all,
+        'detail',
+        elementType,
+        elementKey,
+      ] as const,
+  },
+  upgrades: {
+    all: ['upgrades'] as const,
+    list: (orgId: string) =>
+      [...queryKeys.upgrades.all, 'list', orgId] as const,
+    detail: (id: string) => [...queryKeys.upgrades.all, 'detail', id] as const,
+  },
 }

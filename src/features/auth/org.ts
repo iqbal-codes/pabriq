@@ -64,7 +64,7 @@ type CreateOrgResult =
   | { ok: false; error: string }
 
 export const createOrganization = createServerFn({ method: 'POST' })
-  .inputValidator((input: { name: string }) => input)
+  .inputValidator((input: { name: string; templateId?: string }) => input)
   .handler(async ({ data }): Promise<CreateOrgResult> => {
     const [auth, { db }, { organization: organizationTable }, { eq }] =
       await Promise.all([
@@ -94,6 +94,16 @@ export const createOrganization = createServerFn({ method: 'POST' })
           .limit(1)
 
         if (orgs[0]) {
+          // Materialize template if provided
+          if (data.templateId) {
+            const { materializeTemplate } = await import(
+              '#/features/business-templates/model'
+            )
+            await materializeTemplate(orgs[0].id, data.templateId).catch(() => {
+              // Best-effort: template materialization failure should not block org creation
+            })
+          }
+
           // Dynamic import keeps server-only module out of client bundles
           const { startTrial } = await import('#/features/subscriptions/model')
           await startTrial(orgs[0].id, 'starter').catch(() => {

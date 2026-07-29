@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { ImageIcon, X } from 'lucide-react'
+import { Check, ImageIcon, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useTranslations } from 'use-intl'
@@ -19,6 +19,7 @@ import {
   listUserOrgs,
   setOrganizationLogo,
 } from '#/features/auth/org'
+import { usePublishedTemplates } from '#/features/business-templates/hooks'
 import { getCurrentSession } from '#/lib/auth-session'
 import { cn } from '#/lib/utils'
 
@@ -60,6 +61,10 @@ function OnboardingPage() {
 
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
+    null,
+  )
+  const { data: templates } = usePublishedTemplates()
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -82,10 +87,8 @@ function OnboardingPage() {
     defaultValues: { name: '' },
     onSubmit: async ({ value }) => {
       setSubmitError(null)
-
-      // Step 1: Create organization first
       const result = await createOrganization({
-        data: { name: value.name },
+        data: { name: value.name, templateId: selectedTemplateId ?? undefined },
       })
 
       if (!result.ok) {
@@ -174,6 +177,42 @@ function OnboardingPage() {
           <CardDescription>{t('createDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Template Selection */}
+          {templates && templates.length > 0 && (
+            <div className="mb-6">
+              <p className="text-sm font-medium mb-3">Pilih Template Bisnis</p>
+              <div className="space-y-2">
+                {templates.map((tmpl) => (
+                  <button
+                    key={tmpl.id}
+                    type="button"
+                    className={cn(
+                      'w-full text-left p-3 rounded-lg border transition-colors',
+                      selectedTemplateId === tmpl.id
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                        : 'border-border hover:border-muted-foreground/50',
+                    )}
+                    onClick={() => setSelectedTemplateId(tmpl.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">{tmpl.name}</p>
+                        {tmpl.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {tmpl.description}
+                          </p>
+                        )}
+                      </div>
+                      {selectedTemplateId === tmpl.id && (
+                        <Check className="size-4 text-primary shrink-0" />
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <form
             onSubmit={(e) => {
               // react-doctor: intentional — TanStack Form handleSubmit needs preventDefault
