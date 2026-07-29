@@ -40,6 +40,7 @@ import { Route as OrgSettingsMembersRouteImport } from './routes/_org/settings/m
 import { Route as OrgSettingsInvoicingRouteImport } from './routes/_org/settings/invoicing'
 import { Route as OrgSettingsGeneralRouteImport } from './routes/_org/settings/general'
 import { Route as OrgSettingsChannelsRouteImport } from './routes/_org/settings/channels'
+import { Route as OrgSettingsBusinessTemplatesRouteImport } from './routes/_org/settings/business-templates'
 import { Route as OrgProductsNewRouteImport } from './routes/_org/products/new'
 import { Route as OrgOrdersNewRouteImport } from './routes/_org/orders/new'
 import { Route as OrgCustomersNewRouteImport } from './routes/_org/customers/new'
@@ -210,6 +211,12 @@ const OrgSettingsChannelsRoute = OrgSettingsChannelsRouteImport.update({
   path: '/channels',
   getParentRoute: () => OrgSettingsRouteRoute,
 } as any)
+const OrgSettingsBusinessTemplatesRoute =
+  OrgSettingsBusinessTemplatesRouteImport.update({
+    id: '/business-templates',
+    path: '/business-templates',
+    getParentRoute: () => OrgSettingsRouteRoute,
+  } as any)
 const OrgProductsNewRoute = OrgProductsNewRouteImport.update({
   id: '/products/new',
   path: '/products/new',
@@ -293,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/customers/new': typeof OrgCustomersNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
   '/products/new': typeof OrgProductsNewRoute
+  '/settings/business-templates': typeof OrgSettingsBusinessTemplatesRoute
   '/settings/channels': typeof OrgSettingsChannelsRoute
   '/settings/general': typeof OrgSettingsGeneralRoute
   '/settings/invoicing': typeof OrgSettingsInvoicingRoute
@@ -335,6 +343,7 @@ export interface FileRoutesByTo {
   '/customers/new': typeof OrgCustomersNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
   '/products/new': typeof OrgProductsNewRoute
+  '/settings/business-templates': typeof OrgSettingsBusinessTemplatesRoute
   '/settings/channels': typeof OrgSettingsChannelsRoute
   '/settings/general': typeof OrgSettingsGeneralRoute
   '/settings/invoicing': typeof OrgSettingsInvoicingRoute
@@ -381,6 +390,7 @@ export interface FileRoutesById {
   '/_org/customers/new': typeof OrgCustomersNewRoute
   '/_org/orders/new': typeof OrgOrdersNewRoute
   '/_org/products/new': typeof OrgProductsNewRoute
+  '/_org/settings/business-templates': typeof OrgSettingsBusinessTemplatesRoute
   '/_org/settings/channels': typeof OrgSettingsChannelsRoute
   '/_org/settings/general': typeof OrgSettingsGeneralRoute
   '/_org/settings/invoicing': typeof OrgSettingsInvoicingRoute
@@ -427,6 +437,7 @@ export interface FileRouteTypes {
     | '/customers/new'
     | '/orders/new'
     | '/products/new'
+    | '/settings/business-templates'
     | '/settings/channels'
     | '/settings/general'
     | '/settings/invoicing'
@@ -469,6 +480,7 @@ export interface FileRouteTypes {
     | '/customers/new'
     | '/orders/new'
     | '/products/new'
+    | '/settings/business-templates'
     | '/settings/channels'
     | '/settings/general'
     | '/settings/invoicing'
@@ -514,6 +526,7 @@ export interface FileRouteTypes {
     | '/_org/customers/new'
     | '/_org/orders/new'
     | '/_org/products/new'
+    | '/_org/settings/business-templates'
     | '/_org/settings/channels'
     | '/_org/settings/general'
     | '/_org/settings/invoicing'
@@ -783,6 +796,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgSettingsChannelsRouteImport
       parentRoute: typeof OrgSettingsRouteRoute
     }
+    '/_org/settings/business-templates': {
+      id: '/_org/settings/business-templates'
+      path: '/business-templates'
+      fullPath: '/settings/business-templates'
+      preLoaderRoute: typeof OrgSettingsBusinessTemplatesRouteImport
+      parentRoute: typeof OrgSettingsRouteRoute
+    }
     '/_org/products/new': {
       id: '/_org/products/new'
       path: '/products/new'
@@ -871,6 +891,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface OrgSettingsRouteRouteChildren {
+  OrgSettingsBusinessTemplatesRoute: typeof OrgSettingsBusinessTemplatesRoute
   OrgSettingsChannelsRoute: typeof OrgSettingsChannelsRoute
   OrgSettingsGeneralRoute: typeof OrgSettingsGeneralRoute
   OrgSettingsInvoicingRoute: typeof OrgSettingsInvoicingRoute
@@ -882,6 +903,7 @@ interface OrgSettingsRouteRouteChildren {
 }
 
 const OrgSettingsRouteRouteChildren: OrgSettingsRouteRouteChildren = {
+  OrgSettingsBusinessTemplatesRoute: OrgSettingsBusinessTemplatesRoute,
   OrgSettingsChannelsRoute: OrgSettingsChannelsRoute,
   OrgSettingsGeneralRoute: OrgSettingsGeneralRoute,
   OrgSettingsInvoicingRoute: OrgSettingsInvoicingRoute,
