@@ -26,7 +26,7 @@ The following matrix provides a side-by-side comparison across all five target v
 | **3. Materials & BOM Structure** | Raw rubber polymer compound, vulcanizing agents, metal inserts, release film. | Multi-level tree: Solid wood stock, plywood sheets, fasteners, adhesives, packaging. | Style BOM: Shell fabric, lining, thread, zippers, buttons, labels, care tags. | Substrate roll/sheet, ink sets, UV laminate, mounting hardware, eyelets. | Raw sheet metal stock, hardware studs/standoffs, welding wire, powder coat compound. |
 | **4. Operations & Routings** | Compounding $\rightarrow$ Extrusion/Molding $\rightarrow$ Curing/Vulcanization $\rightarrow$ Trimming $\rightarrow$ QA. | Rough Mill $\rightarrow$ CNC Machining $\rightarrow$ Edge Banding $\rightarrow$ Assembly $\rightarrow$ Finishing. | Pattern Grading $\rightarrow$ Automated Cutting $\rightarrow$ Sewing Assembly $\rightarrow$ Pressing/Ironing. | Prepress/RIP $\rightarrow$ Digital Printing $\rightarrow$ Cutting/Plotting $\rightarrow$ Lamination $\rightarrow$ Grommeting. | Laser/Punch Cutting $\rightarrow$ Deburring $\rightarrow$ Press Brake Bending $\rightarrow$ Welding $\rightarrow$ Coating. |
 | **5. Work Orders & Job Dispatch** | Batch press run work orders, cavity assignment, heat cure logs, mold setup tags. | Cut-list job dispatch, part tracking barcode tags, assembly work orders. | Cut-bundle traveler tickets, sewing line balance, operator piece-rate tracking. | JDF (Job Definition Format) tickets, press queue, gang sheet job grouping. | CAD/CAM nested sheet job travelers, CNC program IDs, bend sequence sheets. |
-| **6. Quality & Compliance** | ASTM D2000 durometer testing, tensile strength, compression set, PPAP. | AWI/AWS structural integrity, surface finish grade, formaldehyde emission (CARB/TSCA). | ISO 3759 dimensional stability, seam strength, colorfastness (AATCC), needle logs. | ISO 12647 color calibration ($\Delta E$), resolution (DPI), bleed verification. | ISO 2768 tolerances, AWS D1.1 weld checks, CMM dimension inspection, MTR/Mill certs. |
+| **6. Quality & Compliance** | ASTM D2240 durometer testing, tensile strength, compression set, PPAP. | AWI/AWS structural integrity, surface finish grade, formaldehyde emission (CARB/TSCA). | ISO 3759 dimensional stability, seam strength, colorfastness (AATCC), needle logs. | ISO 12647 color calibration ($\Delta E$), resolution (DPI), bleed verification. | ISO 2768 tolerances, AWS D1.1 weld checks, CMM dimension inspection, MTR/Mill certs. |
 | **7. Lead Times & Scheduling** | Press setup time, mold temperature heating time, vulcanization cycle time. | Kiln drying, finish cure time, assembly clamping duration, CNC router queues. | Marker making time, fabric relaxation period (24h), sewing line setup. | RIP processing time, print pass throughput, ink drying/cure time, laminate bonding. | Laser sheet loading, punch tool setup, press-brake setup per bend, coating bake time. |
 | **8. Customer Approvals** | 3D CAD drawing proof, rubber sample compound swatch, first-article (FAI) approval. | 3D rendering sign-off, wood finish swatch approval, shop drawing sign-off. | Tech pack measurement proof, pre-production sample (PPS), lab dip color swatch. | Prepress PDF proof, digital soft proof, printed press match hard sample proof. | 3D STEP/DXF flat layout approval, hole/bend location sign-off, prototype sample. |
 | **9. Procurement & Inventory** | Polymer raw batching stock, custom pigment drums, specific mold die tooling. | Sheet goods (plywood/MDF), dimensional lumber, special order hardware/pulls. | Fabric rolls by dye lot, size-specific zipper rolls, brand care labels. | Media rolls (vinyl, canvas, paper), ink cartridges/tanks, mounting rigid boards. | Metal sheets/coils by alloy & heat number, PEM fasteners, welding gas bottles. |
@@ -107,9 +107,9 @@ graph TD
 
 ### Dimension 4: Operations & Routings
 
-#### Universal Invariants
-- **Sequential Work Center Execution**: Operations follow a predefined order of work centers or machinery stations.
-- **Setup Time vs Run Time Distinction**: Total operation cost/duration equals $\text{Fixed Machine Setup Time} + (\text{Unit Run Time} \times \text{Quantity})$.
+#### Common operational concerns
+- **Ordered work-center routing**: Many MTO businesses use a predefined order of work centers or production stages, but this is not a universal invariant. Parallel, split, and converging routes remain vertical variations or bounded capabilities until proven common across multiple verticals.
+- **Setup Time vs Run Time Distinction**: Total operation cost/duration commonly equals $\text{Fixed Machine Setup Time} + (\text{Unit Run Time} \times \text{Quantity})$.
 
 ```
 Total Operation Time = Setup Time + (Run Time per Unit × Order Quantity)
@@ -126,9 +126,10 @@ Total Operation Time = Setup Time + (Run Time per Unit × Order Quantity)
 
 ### Dimension 5: Work Orders & Job Dispatch
 
-#### Universal Invariants
-- **Job Traveler / Route Card**: A physical or digital instruction sheet traveling with the job across shop floor stages containing specification parameters, order identifiers, and target quantities.
-- **Task Status Lifecycle**: `Queued` $\rightarrow$ `In Progress` $\rightarrow$ `Pending Review / Gate` $\rightarrow$ `Completed` / `Archived`.
+#### Common operational pattern
+- **Job Traveler / Route Card**: A physical or digital instruction sheet traveling with the job across shop-floor stages containing specification parameters, order identifiers, and target quantities.
+- **Order-line traceability**: Every Production Work record remains traceable to its source Order Line, while a future grouped run may fulfill multiple Order Lines and must model that association explicitly for shared setup, material, cost, and status.
+- **Task Status Lifecycle**: `Queued` → `In Progress` → `Pending Review / Gate` → `Completed` / `Archived`.
 
 #### Vertical Variations
 - **Rubber Accessories**: Batch heat tickets tracking mold ID, cavity count, press number, cure temperature ($^\circ\text{C}$), and cure duration (minutes).
@@ -248,10 +249,10 @@ To transform Pabriq into a multi-vertical platform, we map its existing implemen
 - **Order Line Items (`order_line_items` table, lines 258–284)**:
   - Holds `designName`, `quantity`, `unitPrice`, `total`, `productionDays`, `deadline`, `isRepeatOrder`, `assetId`.
   - **Limitation**: `designName` is a rubber-accessory client assumption. Multi-vertical products require structured attribute JSON snapshots.
-- **Production Stages & Tasks (`production_stages` & `production_tasks`, lines 428–486)**:
+- **Production Stages & Tasks** (`productionStages` and `productionTasks` definitions):
   - `production_stages` supports configurable boards (`pre_production` | `production`), stage index, and custom requirement schemas (`text` | `number` | `upload`).
   - `production_tasks` holds flexible JSON `context` (`productName`, `designName`, `customerName`, `requirements`, `orderNumber`, `quantity`, `deadline`, `requirementResponses`).
-  - **Strength**: High architectural flexibility! The stage-based Kanban rail and task context are already vertical-agnostic invariants.
+  - **Strength and boundary**: The stage-based Kanban rail and task context are already useful vertical-agnostic invariants, while grouped multi-line Production Work is not represented by the current single `lineItemId` field.
 
 #### 2. Pricing Engine (`src/features/pricing/engine.ts`)
 - **Engine Logic (lines 35–114)**:
@@ -259,9 +260,9 @@ To transform Pabriq into a multi-vertical platform, we map its existing implemen
   - **Limitation**: Lacks support for volumetric, linear, area-based ($\text{m}^2/\text{ft}^2$), weight-based, or CAD feature-based pricing formulas.
 
 #### 3. Task Spawner (`src/features/production/task-spawn-helpers.ts`)
-- Spawns production tasks for each order line item when an order reaches an approved status (lines 18–186).
-- Maps line item `designName`, `quantity`, and `deadline` into task context.
-- **Strength**: Already models line-item level task granularity, which is universal across all MTO verticals.
+- Spawns production tasks for each order line item when an Order reaches an approved status (lines 18–186).
+- Maps line-item `designName`, `quantity`, and `deadline` into task context.
+- **Current strength and boundary**: The existing implementation provides line-item traceability, which is useful for the launch cohort. Generalized grouped runs need a Production Work-to-Order Lines association rather than assuming one task belongs to exactly one line.
 
 ---
 
@@ -282,19 +283,18 @@ graph LR
     C -. Production Operations .-> D
 ```
 
-### Abstraction 1: Dynamic Attribute & Schema Engine
-Replace client-specific fields like `designName` with a tenant-configurable Product Schema (`attribute_definitions`).
+Replace client-specific fields like `designName` with a template-owned Product Specification Schema materialized into Organization configuration.
 - **Supported Attribute Types**:
   - `number` (Dimensions $W, H, D$, Thickness, Gauge)
   - `select` (Material Species, Colorway, Compound, Substrate)
   - `matrix` (Apparel Size $\times$ Color grid)
   - `file` (CAD STEP/DXF, Prepress Vector PDF, Tech Pack)
-
+- **Historical capture**: At quote or Order commitment, copy validated configured values, resolved labels and units, attachments, schema/template version, and commercial inputs/results into an immutable Specification Snapshot on the Order Line. Later edits or removal of catalog definitions must not change that snapshot.
 ### Abstraction 2: Extensible Pricing Strategy Engine
 Refactor `src/features/pricing/engine.ts` into a strategy pattern supporting multiple pricing models:
 1. `quantity_breakpoint`: Existing quantity-based interpolation.
 2. `area_dimensional`: $(\text{Width} \times \text{Height}) \times \text{Base Unit Rate} + \text{Finishing Surcharges}$.
-3. `formula_parametric`: Customer-defined pricing expressions (e.g. $\text{Volume} \times \text{Density} \times \text{Compound Price}/kg$).
+3. `formula_parametric`: A versioned, deterministic bounded extension for specialized formulas (e.g. $\text{Volume} \times \text{Density} \times \text{Compound Price}/kg$); tenant-authored executable expressions remain out of scope.
 4. `cad_feature_based`: $(\text{Cut Distance} \times \text{Laser Rate}) + (\text{Pierces} \times \text{Pierce Rate}) + \text{Material Sheet Cost}$.
 
 ### Abstraction 3: Multi-Level BOM & Cut-List Engine
@@ -311,8 +311,8 @@ Leverage Pabriq's existing `production_stages` and `production_tasks` tables:
 
 ## 5. Primary Source Bibliography & Standards Index
 
-### Industry Standards & Specifications
 1. **Elastomers & Rubber**:
+   - **ASTM D2240**: *Standard Test Method for Rubber Property—Durometer Hardness*. ASTM International. URL: `https://www.astm.org/d2240-15r21.html`
    - **ASTM D2000**: *Standard Classification System for Rubber Products in Automotive Applications*. ASTM International. URL: `https://www.astm.org/d2000-18.html`
    - **ISO 9001 / IATF 16949**: *Quality Management System Requirements for Automotive and Industrial Rubber Production*. International Organization for Standardization. URL: `https://www.iso.org/standard/63082.html`
 2. **Furniture & Architectural Woodwork**:
