@@ -52,6 +52,7 @@ function makeInvoice(
     customerName: 'Cust',
     status,
     total,
+    currency: 'IDR',
     percentage,
     dueDate: '2026-12-31',
     paymentMethodId: null,

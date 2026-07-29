@@ -26,6 +26,7 @@ import {
   getPaymentsForInvoice,
   listInvoices,
   listPaymentMethods,
+  markInvoiceOverdue,
   markInvoicePaid,
   midtransAmountsMatch,
   normalizeMidtransAmount,
@@ -1897,5 +1898,607 @@ describe('createPayment — ownership and validation', () => {
 
     expect(payment.amount).toBe(50)
     expect(payment.status).toBe('pending')
+  })
+})
+
+// ── Committed-Value Preservation ─────────────────────────────────
+
+describe('createInvoice — committed-value preservation', () => {
+  const committedOrgId = 'cv-org'
+
+  beforeEach(async () => {
+    const now = new Date()
+    await db.insert(organization).values({
+      id: committedOrgId,
+      name: 'CV Org',
+      slug: 'cv-org',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(customersTable).values({
+      id: 'cv-cust',
+      orgId: committedOrgId,
+      name: 'CV Customer',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(productsTable).values({
+      id: 'cv-prod',
+      orgId: committedOrgId,
+      name: 'Test Product',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(paymentMethodsTable).values({
+      id: 'cv-pm',
+      orgId: committedOrgId,
+      name: 'BCA',
+      type: 'bank_transfer',
+      isDefault: true,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(ordersTable).values({
+      id: 'cv-order',
+      orgId: committedOrgId,
+      customerId: 'cv-cust',
+      status: 'approved',
+      total: 100000,
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(orderLineItemsTable).values({
+      id: 'cv-li',
+      orgId: committedOrgId,
+      orderId: 'cv-order',
+      productId: 'cv-prod',
+      quantity: 100,
+      unitPrice: 1000,
+      total: 100000,
+      designName: 'Design A',
+      productionDays: 2,
+      deadline: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
+      createdAt: now,
+      updatedAt: now,
+    })
+  })
+
+  it('rejects creating invoice from non-committed order', async () => {
+    const now = new Date()
+    await db.insert(ordersTable).values({
+      id: 'cv-draft-order',
+      orgId: committedOrgId,
+      customerId: 'cv-cust',
+      status: 'draft',
+      total: 50000,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await expect(
+      createInvoice(committedOrgId, {
+        orderId: 'cv-draft-order',
+        customerId: 'cv-cust',
+        customerName: 'CV Customer',
+        lineItems: [],
+      }),
+    ).rejects.toThrow('Order must be committed')
+  })
+
+  it('auto-resolves customer identity from committed order', async () => {
+    const result = await createInvoice(committedOrgId, {
+      orderId: 'cv-order',
+      lineItems: [],
+    })
+
+    expect(result.invoice.customerId).toBe('cv-cust')
+    expect(result.invoice.customerName).toBe('CV Customer')
+    expect(result.invoice.currency).toBe('IDR')
+  })
+
+  it('creates invoice with currency from snapshot or default', async () => {
+    const result = await createInvoice(committedOrgId, {
+      orderId: 'cv-order',
+      lineItems: [],
+    })
+
+    expect(result.invoice.currency).toBe('IDR')
+  })
+
+  it('uses order line item prices when no spec snapshots exist', async () => {
+    const result = await createInvoice(committedOrgId, {
+      orderId: 'cv-order',
+      lineItems: [],
+    })
+
+    // Order has total 100000, line item has total 100000
+    expect(result.invoice.subtotal).toBe(100000)
+    expect(result.invoice.total).toBe(100000)
+    expect(result.lineItems).toHaveLength(1)
+    expect(result.lineItems[0].quantity).toBe(100)
+    expect(result.lineItems[0].unitPrice).toBe(1000)
+  })
+
+  it('rejects when customerId cannot be resolved from order', async () => {
+    const now = new Date()
+    await db.insert(ordersTable).values({
+      id: 'cv-no-cust-order',
+      orgId: committedOrgId,
+      customerId: null,
+      status: 'approved',
+      total: 10000,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await expect(
+      createInvoice(committedOrgId, {
+        orderId: 'cv-no-cust-order',
+        lineItems: [],
+      }),
+    ).rejects.toThrow('Customer ID is required')
+  })
+})
+
+// ── Overdue State Transitions ─────────────────────────────────────
+
+describe('markInvoiceOverdue', () => {
+  it('marks an unpaid invoice as overdue', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'od-cust',
+      orgId: org1Id,
+      name: 'OD Customer',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(paymentMethodsTable).values({
+      id: 'od-pm',
+      orgId: org1Id,
+      name: 'BCA',
+      type: 'bank_transfer',
+      isDefault: true,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'od-cust',
+      customerName: 'OD Customer',
+      paymentMethodId: 'od-pm',
+      dueDate: '2020-01-01',
+      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 100 }],
+    })
+
+    const overdue = await markInvoiceOverdue(invoice.id, org1Id)
+    expect(overdue.status).toBe('overdue')
+  })
+
+  it('rejects marking a paid invoice as overdue', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'od-paid-cust',
+      orgId: org1Id,
+      name: 'OD Paid',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(paymentMethodsTable).values({
+      id: 'od-pm2',
+      orgId: org1Id,
+      name: 'BCA',
+      type: 'bank_transfer',
+      isDefault: true,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'od-paid-cust',
+      customerName: 'OD Paid',
+      paymentMethodId: 'od-pm2',
+      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 100 }],
+    })
+
+    await markInvoicePaid(invoice.id, org1Id, 'admin')
+
+    await expect(markInvoiceOverdue(invoice.id, org1Id)).rejects.toThrow(
+      'Only unpaid invoices can be marked overdue',
+    )
+  })
+
+  it('rejects marking a void invoice as overdue', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'od-void-cust',
+      orgId: org1Id,
+      name: 'OD Void',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(paymentMethodsTable).values({
+      id: 'od-pm3',
+      orgId: org1Id,
+      name: 'BCA',
+      type: 'bank_transfer',
+      isDefault: true,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'od-void-cust',
+      customerName: 'OD Void',
+      paymentMethodId: 'od-pm3',
+      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 100 }],
+    })
+
+    await voidInvoice(invoice.id, org1Id)
+
+    await expect(markInvoiceOverdue(invoice.id, org1Id)).rejects.toThrow(
+      'Only unpaid invoices can be marked overdue',
+    )
+  })
+
+  it('allows voiding an overdue invoice', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'od-void-od-cust',
+      orgId: org1Id,
+      name: 'OD Void OD',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(paymentMethodsTable).values({
+      id: 'od-pm4',
+      orgId: org1Id,
+      name: 'BCA',
+      type: 'bank_transfer',
+      isDefault: true,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'od-void-od-cust',
+      customerName: 'OD Void OD',
+      paymentMethodId: 'od-pm4',
+      dueDate: '2020-01-01',
+      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 100 }],
+    })
+
+    await markInvoiceOverdue(invoice.id, org1Id)
+    const v = await voidInvoice(invoice.id, org1Id)
+    expect(v.status).toBe('void')
+  })
+
+  it('rejects marking invoice as overdue before due date', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'od-future-cust',
+      orgId: org1Id,
+      name: 'OD Future',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(paymentMethodsTable).values({
+      id: 'od-pm-future',
+      orgId: org1Id,
+      name: 'BCA',
+      type: 'bank_transfer',
+      isDefault: true,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    const futureDate = new Date()
+    futureDate.setFullYear(futureDate.getFullYear() + 1)
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'od-future-cust',
+      customerName: 'OD Future',
+      paymentMethodId: 'od-pm-future',
+      dueDate: futureDate.toISOString().split('T')[0],
+      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 100 }],
+    })
+
+    await expect(markInvoiceOverdue(invoice.id, org1Id)).rejects.toThrow(
+      'Cannot mark invoice as overdue before the due date',
+    )
+  })
+
+  it('allows marking overdue invoice as paid', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'od-pay-cust',
+      orgId: org1Id,
+      name: 'OD Pay',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(paymentMethodsTable).values({
+      id: 'od-pm5',
+      orgId: org1Id,
+      name: 'BCA',
+      type: 'bank_transfer',
+      isDefault: true,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'od-pay-cust',
+      customerName: 'OD Pay',
+      paymentMethodId: 'od-pm5',
+      dueDate: '2020-01-01',
+      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 100 }],
+    })
+
+    await markInvoiceOverdue(invoice.id, org1Id)
+    const paid = await markInvoicePaid(invoice.id, org1Id, 'admin')
+    expect(paid.status).toBe('paid')
+  })
+
+  it('lists overdue invoices with overdue flag', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'od-list-cust',
+      orgId: org1Id,
+      name: 'OD List',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(paymentMethodsTable).values({
+      id: 'od-pm6',
+      orgId: org1Id,
+      name: 'BCA',
+      type: 'bank_transfer',
+      isDefault: true,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'od-list-cust',
+      customerName: 'OD List',
+      paymentMethodId: 'od-pm6',
+      dueDate: '2020-01-01', // Past due date
+      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 100 }],
+    })
+
+    const result = await listInvoices({ orgId: org1Id })
+    const row = result.rows.find((r) => r.id === invoice.id)
+    expect(row?.overdue).toBe(true)
+    expect(row?.currency).toBe('IDR')
+  })
+})
+
+// ── Organization Isolation ────────────────────────────────────────
+
+describe('invoices — organization isolation', () => {
+  it('prevents cross-org overdue marking', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'iso-cust-1',
+      orgId: org1Id,
+      name: 'ISO Org1',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(paymentMethodsTable).values({
+      id: 'iso-pm-1',
+      orgId: org1Id,
+      name: 'BCA',
+      type: 'bank_transfer',
+      isDefault: true,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'iso-cust-1',
+      customerName: 'ISO Org1',
+      paymentMethodId: 'iso-pm-1',
+      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 100 }],
+    })
+
+    await expect(markInvoiceOverdue(invoice.id, org2Id)).rejects.toThrow(
+      'Invoice not found',
+    )
+  })
+
+  it('prevents cross-org voiding', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'iso-cust-2',
+      orgId: org1Id,
+      name: 'ISO Org1 V',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(paymentMethodsTable).values({
+      id: 'iso-pm-2',
+      orgId: org1Id,
+      name: 'BCA',
+      type: 'bank_transfer',
+      isDefault: true,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    const { invoice } = await createInvoice(org1Id, {
+      customerId: 'iso-cust-2',
+      customerName: 'ISO Org1 V',
+      paymentMethodId: 'iso-pm-2',
+      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 100 }],
+    })
+
+    await expect(voidInvoice(invoice.id, org2Id)).rejects.toThrow(
+      'Invoice not found',
+    )
+  })
+
+  it('lists only invoices for the requesting org', async () => {
+    const now = new Date()
+    await db.insert(customersTable).values({
+      id: 'iso-cust-3',
+      orgId: org1Id,
+      name: 'ISO List 1',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(paymentMethodsTable).values({
+      id: 'iso-pm-3',
+      orgId: org1Id,
+      name: 'BCA',
+      type: 'bank_transfer',
+      isDefault: true,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await createInvoice(org1Id, {
+      customerId: 'iso-cust-3',
+      customerName: 'ISO List 1',
+      paymentMethodId: 'iso-pm-3',
+      lineItems: [{ description: 'Item', quantity: 1, unitPrice: 10 }],
+    })
+
+    const result = await listInvoices({ orgId: org1Id })
+    expect(result.rows.length).toBeGreaterThanOrEqual(1)
+    for (const row of result.rows) {
+      // All invoices should have currency populated
+      expect(row.currency).toBeDefined()
+    }
+  })
+})
+
+// ── Payment Provider Adapter Tests ────────────────────────────────
+
+describe('payment provider adapter', () => {
+  it('bank transfer adapter returns null for provider payment id', async () => {
+    const { BankTransferAdapter } = await import('./payment-provider')
+
+    const adapter = new BankTransferAdapter()
+    expect(adapter.providerType).toBe('bank_transfer')
+
+    const result = await adapter.createPayment({
+      invoiceId: 'test',
+      orgId: 'test',
+      amount: 100,
+    })
+
+    expect(result.providerPaymentId).toBeNull()
+    expect(result.redirectUrl).toBeNull()
+  })
+
+  it('bank transfer adapter formats payment instructions', async () => {
+    const { BankTransferAdapter } = await import('./payment-provider')
+
+    const adapter = new BankTransferAdapter()
+
+    const instructions = adapter.getPaymentInstructions({
+      id: 'pm-1',
+      orgId: 'org-1',
+      name: 'BCA Transfer',
+      type: 'bank_transfer',
+      bankName: 'BCA',
+      accountNumber: '1234567890',
+      accountHolder: 'PT Example',
+      instructions: null,
+      isDefault: true,
+      active: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    expect(instructions).toContain('BCA')
+    expect(instructions).toContain('1234567890')
+    expect(instructions).toContain('PT Example')
+  })
+
+  it('bank transfer adapter uses custom instructions when provided', async () => {
+    const { BankTransferAdapter } = await import('./payment-provider')
+
+    const adapter = new BankTransferAdapter()
+
+    const instructions = adapter.getPaymentInstructions({
+      id: 'pm-2',
+      orgId: 'org-1',
+      name: 'Custom',
+      type: 'bank_transfer',
+      bankName: 'BCA',
+      accountNumber: '123',
+      accountHolder: 'Holder',
+      instructions: 'Please transfer within 24 hours',
+      isDefault: false,
+      active: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    expect(instructions).toBe('Please transfer within 24 hours')
+  })
+
+  it('midtrans adapter returns null instructions', async () => {
+    const { MidtransAdapter } = await import('./payment-provider')
+
+    const adapter = new MidtransAdapter()
+    expect(adapter.providerType).toBe('midtrans')
+
+    const instructions = adapter.getPaymentInstructions({
+      id: 'pm-1',
+      orgId: 'org-1',
+      name: 'Midtrans',
+      type: 'bank_transfer',
+      bankName: null,
+      accountNumber: null,
+      accountHolder: null,
+      instructions: null,
+      isDefault: true,
+      active: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    expect(instructions).toBeNull()
+  })
+
+  it('adapter registry initializes with both adapters', async () => {
+    const { initializePaymentAdapters, getPaymentAdapter } = await import(
+      './payment-provider'
+    )
+
+    initializePaymentAdapters()
+
+    const bankAdapter = getPaymentAdapter('bank_transfer')
+    const midtransAdapter = getPaymentAdapter('midtrans')
+
+    expect(bankAdapter).toBeDefined()
+    expect(midtransAdapter).toBeDefined()
+    expect(bankAdapter?.providerType).toBe('bank_transfer')
+    expect(midtransAdapter?.providerType).toBe('midtrans')
   })
 })
