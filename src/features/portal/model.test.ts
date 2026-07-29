@@ -16,6 +16,7 @@ import {
   productionTasks,
   products,
   taskActivity,
+  specifications,
 } from '#/db/schema'
 import {
   confirmPortalOrder,
@@ -25,6 +26,7 @@ import {
   getPortalOrder,
   removePortalAsset,
   savePortalAddress,
+  submitPortalSpecification,
   updatePortalLineItem,
 } from './model'
 
@@ -37,6 +39,8 @@ const asset1Id = '00000000-0000-0000-0000-000000000010'
 const guestOrderId = '00000000-0000-0000-0000-000000000011'
 const matchedCustomerId = '00000000-0000-0000-0000-000000000012'
 const createdCustomerId = '00000000-0000-0000-0000-000000000013'
+const spec1Id = '00000000-0000-0000-0000-000000000020'
+
 
 beforeEach(async () => {
   await db.execute(sql`TRUNCATE organization, biteship_areas CASCADE`)
@@ -118,6 +122,20 @@ beforeEach(async () => {
       updatedAt: now,
     },
   ])
+
+  await db.insert(specifications).values({
+    id: spec1Id,
+    orgId: org1Id,
+    productId: product1Id,
+    orderId: order1Id,
+    submittedBy: customer1Id,
+    submittedByRole: 'customer',
+    status: 'draft',
+    fieldValues: {},
+    quantity: 1,
+    createdAt: now,
+    updatedAt: now,
+  })
 
   await db.insert(assets).values({
     id: asset1Id,
@@ -1245,5 +1263,89 @@ describe('getOrderTimeline', () => {
       'shipment_confirmed',
       'order_completed',
     ])
+  })
+})
+
+describe('submitPortalSpecification', () => {
+  it('returns invalidToken for bad token', async () => {
+    const result = await submitPortalSpecification(
+      'invalid-token',
+      spec1Id,
+      { size: 'L' },
+    )
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error).toBe('invalidToken')
+  })
+
+  it('returns specNotFound for spec from different order', async () => {
+    // Create another order without a spec
+    const now = new Date()
+    const otherOrderId = '00000000-0000-0000-0000-000000000030'
+    await db.insert(orders).values({
+      id: otherOrderId,
+      orgId: org1Id,
+      customerId: customer1Id,
+      status: 'draft',
+      total: 0,
+      createdAt: now,
+      updatedAt: now,
+    })
+    const token = await generateOrderToken(otherOrderId)
+
+    const result = await submitPortalSpecification(
+      token,
+      spec1Id,
+      { size: 'L' },
+    )
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error).toBe('specNotFound')
+  })
+
+  it('submits spec values and updates status', async () => {
+    const token = await generateOrderToken(order1Id)
+    const result = await submitPortalSpecification(
+      token,
+      spec1Id,
+      { color: 'Red' },
+    )
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.spec.status).toBe('submitted')
+      expect(result.spec.fieldValues).toEqual({ color: 'Red' })
+    }
+  })
+})
+
+describe('confirmPortalOrder with specifications', () => {
+  it('rejects confirmation when specs are not submitted', async () => {
+    const token = await generateOrderToken(order1Id)
+    await getPortalOrder(token)
+    // spec1 is still 'draft' — not submitted
+    const result = await confirmPortalOrder({ orderId: order1Id })
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error).toBe('specificationsNotSubmitted')
+  })
+
+  it('allows confirmation when specs are submitted', async () => {
+    const token = await generateOrderToken(order1Id)
+    await getPortalOrder(token)
+    // Submit the spec first
+    await submitPortalSpecification(token, spec1Id, { color: 'Red' })
+    const result = await confirmPortalOrder({ orderId: order1Id })
+    expect(result.ok).toBe(true)
+  })
+})
+
+describe('getPortalOrder with specifications', () => {
+  it('includes specifications in order data', async () => {
+    const token = await generateOrderToken(order1Id)
+    const result = await getPortalOrder(token)
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.order.specifications).toBeDefined()
+      expect(result.order.specifications.length).toBe(1)
+      expect(result.order.specifications[0].id).toBe(spec1Id)
+      expect(result.order.specifications[0].status).toBe('draft')
+    }
   })
 })
