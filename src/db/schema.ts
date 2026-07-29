@@ -471,6 +471,411 @@ export const productAddons = pgTable('product_addons', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
 
+// ─── Product Fields (Configurable typed fields) ──────────────────────────────
+
+export const PRODUCT_FIELD_TYPES = [
+  'select',
+  'multi_select',
+  'number_with_unit',
+  'boolean',
+  'size_color_matrix',
+  'artwork',
+  'supporting_file',
+] as const
+export type ProductFieldType = (typeof PRODUCT_FIELD_TYPES)[number]
+
+export type ProductFieldOption = {
+  value: string
+  label: string
+  /** Surcharge applied when this option is selected (additive to base). */
+  surcharge?: number
+  /** Material surcharge per unit. */
+  materialSurcharge?: number
+}
+
+export type SizeColorMatrix = {
+  sizes: string[]
+  colors: Array<{ name: string; hex?: string }>
+}
+
+export const productFields = pgTable(
+  'product_fields',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    productId: text('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    fieldType: text('field_type').$type<ProductFieldType>().notNull(),
+    fieldKey: text('field_key').notNull(),
+    label: text('label').notNull(),
+    unit: text('unit'),
+    required: boolean('required').notNull().default(false),
+    options: json('options').$type<ProductFieldOption[]>().default([]),
+    validationRules: json('validation_rules')
+      .$type<Record<string, unknown>>()
+      .default({}),
+    matrix: json('matrix').$type<SizeColorMatrix | null>(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('idx_product_fields_product_key').on(
+      table.productId,
+      table.fieldKey,
+    ),
+    index('idx_product_fields_org_product').on(table.orgId, table.productId),
+  ],
+)
+
+// ─── Product Constraints (Declarative validation rules) ──────────────────────
+
+export const CONSTRAINT_TYPES = [
+  'required_combo',
+  'incompatible_values',
+  'numeric_range',
+  'dimensional_relationship',
+  'matrix_rule',
+] as const
+export type ConstraintType = (typeof CONSTRAINT_TYPES)[number]
+
+export const productConstraints = pgTable(
+  'product_constraints',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    productId: text('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    constraintType: text('constraint_type').$type<ConstraintType>().notNull(),
+    name: text('name').notNull(),
+    rule: json('rule').$type<Record<string, unknown>>().notNull().default({}),
+    errorMessage: text('error_message').notNull(),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_product_constraints_org_product').on(
+      table.orgId,
+      table.productId,
+    ),
+  ],
+)
+
+// ─── Specifications (Customer/staff submissions) ─────────────────────────────
+
+export const SPECIFICATION_STATUSES = [
+  'draft',
+  'submitted',
+  'validated',
+  'pricing_review',
+  'priced',
+  'committed',
+  'rejected',
+] as const
+export type SpecificationStatus = (typeof SPECIFICATION_STATUSES)[number]
+
+export const specifications = pgTable(
+  'specifications',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    productId: text('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'restrict' }),
+    orderId: text('order_id').references(() => orders.id, {
+      onDelete: 'set null',
+    }),
+    submittedBy: text('submitted_by').notNull(),
+    submittedByRole: text('submitted_by_role').notNull().default('customer'),
+    status: text('status')
+      .$type<SpecificationStatus>()
+      .notNull()
+      .default('draft'),
+    fieldValues: json('field_values')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    /** Resolved labels and units for display after validation. */
+    resolvedDisplay: json('resolved_display')
+      .$type<
+        Record<string, { label: string; unit?: string; displayValue: string }>
+      >()
+      .default({}),
+    quantity: integer('quantity').notNull().default(1),
+    validationErrors: json('validation_errors')
+      .$type<Array<{ fieldKey?: string; message: string; code: string }>>()
+      .default([]),
+    pricingStatus: text('pricing_status').default('pending'),
+    pricingReviewReason: text('pricing_review_reason'),
+    rejectionReason: text('rejection_reason'),
+    committedAt: timestamp('committed_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_specifications_org_product').on(table.orgId, table.productId),
+    index('idx_specifications_org_status').on(table.orgId, table.status),
+    index('idx_specifications_order').on(table.orderId),
+  ],
+)
+
+// ─── Specification Snapshots (Immutable committed state) ─────────────────────
+
+export const specificationSnapshots = pgTable('specification_snapshots', {
+  id: text('id').primaryKey(),
+  orgId: text('org_id')
+    .notNull()
+    .references(() => organization.id, { onDelete: 'cascade' }),
+  specificationId: text('specification_id')
+    .notNull()
+    .references(() => specifications.id, { onDelete: 'restrict' }),
+  /** Frozen product config at commit time. */
+  productSnapshot: json('product_snapshot')
+    .$type<Record<string, unknown>>()
+    .notNull(),
+  /** Frozen field values at commit time. */
+  fieldValuesSnapshot: json('field_values_snapshot')
+    .$type<Record<string, unknown>>()
+    .notNull(),
+  /** Frozen pricing at commit time. */
+  priceSnapshot: json('price_snapshot')
+    .$type<Record<string, unknown>>()
+    .notNull(),
+  quantity: integer('quantity').notNull(),
+  committedBy: text('committed_by').notNull(),
+  committedAt: timestamp('committed_at').notNull().defaultNow(),
+})
+
+// ─── Pricing Basis (Approved pricing foundation per product) ──────────────────
+
+export const PRICING_BASIS_TYPES = ['flat', 'interpolated', 'tiered'] as const
+export type PricingBasisType = (typeof PRICING_BASIS_TYPES)[number]
+
+export const ROUNDING_MODES = [
+  'half_up',
+  'half_down',
+  'ceil',
+  'floor',
+  'bankers',
+] as const
+export type RoundingMode = (typeof ROUNDING_MODES)[number]
+
+export const pricingBasis = pgTable(
+  'pricing_basis',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    productId: text('product_id')
+      .notNull()
+      .unique()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    basisType: text('basis_type')
+      .$type<PricingBasisType>()
+      .notNull()
+      .default('flat'),
+    currency: text('currency').notNull().default('IDR'),
+    /** Number of decimal places for the currency. */
+    precision: integer('precision').notNull().default(0),
+    roundingMode: text('rounding_mode')
+      .$type<RoundingMode>()
+      .notNull()
+      .default('half_up'),
+    /** Minimum price after all effects applied. */
+    minimumPrice: real('minimum_price'),
+    approved: boolean('approved').notNull().default(false),
+    approvedAt: timestamp('approved_at'),
+    approvedBy: text('approved_by'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_pricing_basis_org_product').on(table.orgId, table.productId),
+  ],
+)
+
+// ─── Pricing Rules (Quantity breaks and effects) ─────────────────────────────
+
+export const PRICING_EFFECT_TYPES = [
+  'quantity_break',
+  'option_surcharge',
+  'material_effect',
+  'decoration_method',
+  'placement_surcharge',
+  'setup_charge',
+  'additive',
+  'percentage',
+  'surcharge',
+  'conditional',
+] as const
+export type PricingEffectType = (typeof PRICING_EFFECT_TYPES)[number]
+
+export const pricingRules = pgTable(
+  'pricing_rules',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    productId: text('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    effectType: text('effect_type').$type<PricingEffectType>().notNull(),
+    name: text('name').notNull(),
+    /** For quantity_break: min quantity for this tier. */
+    minQuantity: integer('min_quantity'),
+    /** For quantity_break: max quantity for this tier. */
+    maxQuantity: integer('max_quantity'),
+    /** Flat amount (can be negative for discounts). */
+    amount: real('amount'),
+    /** Percentage effect (e.g. 0.05 for 5%). */
+    percentage: real('percentage'),
+    /** Which field key this rule applies to (for option/material/decoration effects). */
+    fieldKey: text('field_key'),
+    /** Which option value triggers this rule. */
+    optionValue: text('option_value'),
+    /** Conditional rule expression (JSON-evaluated). */
+    condition: json('condition').$type<Record<string, unknown>>(),
+    /** Whether this is a one-time setup charge. */
+    isSetup: boolean('is_setup').notNull().default(false),
+    /** Priority for ordering rule evaluation. */
+    priority: integer('priority').notNull().default(0),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_pricing_rules_org_product').on(table.orgId, table.productId),
+    index('idx_pricing_rules_product_type').on(
+      table.productId,
+      table.effectType,
+    ),
+  ],
+)
+
+// ─── Pricing Extensions (Versioned, deterministic add-ons) ───────────────────
+
+export const PRICING_EXTENSION_STATUSES = [
+  'active',
+  'failed',
+  'unavailable',
+] as const
+export type PricingExtensionStatus = (typeof PRICING_EXTENSION_STATUSES)[number]
+
+export const pricingExtensions = pgTable(
+  'pricing_extensions',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    productId: text('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    version: integer('version').notNull().default(1),
+    status: text('status')
+      .$type<PricingExtensionStatus>()
+      .notNull()
+      .default('active'),
+    /** Extension logic is deterministic and cannot mutate specification. */
+    config: json('config')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    /** What this extension calculates. */
+    effectType: text('effect_type').notNull(),
+    priority: integer('priority').notNull().default(0),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_pricing_extensions_org_product').on(
+      table.orgId,
+      table.productId,
+    ),
+  ],
+)
+
+// ─── Price Overrides (Audited manual adjustments) ────────────────────────────
+
+export const priceOverrides = pgTable('price_overrides', {
+  id: text('id').primaryKey(),
+  orgId: text('org_id')
+    .notNull()
+    .references(() => organization.id, { onDelete: 'cascade' }),
+  specificationId: text('specification_id')
+    .notNull()
+    .references(() => specifications.id, { onDelete: 'restrict' }),
+  originalPrice: real('original_price').notNull(),
+  overridePrice: real('override_price').notNull(),
+  /** Immutable reason — cannot be changed after creation. */
+  reason: text('reason').notNull(),
+  overrideBy: text('override_by').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+// ─── Specification Prices (Committed price breakdown) ────────────────────────
+
+export const specificationPrices = pgTable('specification_prices', {
+  id: text('id').primaryKey(),
+  orgId: text('org_id')
+    .notNull()
+    .references(() => organization.id, { onDelete: 'cascade' }),
+  specificationId: text('specification_id')
+    .notNull()
+    .references(() => specifications.id, { onDelete: 'restrict' }),
+  currency: text('currency').notNull().default('IDR'),
+  unitPrice: real('unit_price').notNull(),
+  totalPrice: real('total_price').notNull(),
+  quantity: integer('quantity').notNull(),
+  /** Human-readable breakdown of all price components. */
+  breakdown: json('breakdown')
+    .$type<
+      Array<{
+        label: string
+        type: string
+        amount: number
+        unitAmount?: number
+      }>
+    >()
+    .notNull()
+    .default([]),
+  /** Whether this price was manually overridden. */
+  isOverridden: boolean('is_overridden').notNull().default(false),
+  overrideId: text('override_id').references(() => priceOverrides.id, {
+    onDelete: 'set null',
+  }),
+  /** Status of required extensions at pricing time. */
+  extensionStatuses: json('extension_statuses')
+    .$type<
+      Array<{
+        extensionId: string
+        name: string
+        status: string
+        error?: string
+      }>
+    >()
+    .notNull()
+    .default([]),
+  committedAt: timestamp('committed_at'),
+  committedBy: text('committed_by'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
 export const organizationProfiles = pgTable('organization_profiles', {
   id: text('id').primaryKey(),
   orgId: text('org_id')

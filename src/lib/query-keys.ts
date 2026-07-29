@@ -172,4 +172,59 @@ export const queryKeys = {
       [...queryKeys.upgrades.all, 'list', orgId] as const,
     detail: (id: string) => [...queryKeys.upgrades.all, 'detail', id] as const,
   },
+  productConfiguration: {
+    all: ['product-configuration'] as const,
+    fields: (productId: string) =>
+      [...queryKeys.productConfiguration.all, 'fields', productId] as const,
+    constraints: (productId: string) =>
+      [
+        ...queryKeys.productConfiguration.all,
+        'constraints',
+        productId,
+      ] as const,
+    specifications: {
+      all: () =>
+        [...queryKeys.productConfiguration.all, 'specifications'] as const,
+      list: (filters: { productId?: string; status?: string }) =>
+        [
+          ...queryKeys.productConfiguration.specifications.all(),
+          filters,
+        ] as const,
+      detail: (id: string) =>
+        [...queryKeys.productConfiguration.specifications.all(), id] as const,
+    },
+    pricing: {
+      all: () => [...queryKeys.productConfiguration.all, 'pricing'] as const,
+      basis: (productId: string) =>
+        [
+          ...queryKeys.productConfiguration.pricing.all(),
+          'basis',
+          productId,
+        ] as const,
+      calculation: (
+        productId: string,
+        quantity: number,
+        fieldValues: Record<string, unknown>,
+      ) =>
+        [
+          ...queryKeys.productConfiguration.pricing.all(),
+          'calculate',
+          productId,
+          quantity,
+          fieldValues,
+        ] as const,
+      specificationPrice: (specificationId: string) =>
+        [
+          ...queryKeys.productConfiguration.pricing.all(),
+          'spec-price',
+          specificationId,
+        ] as const,
+      overrides: (specificationId: string) =>
+        [
+          ...queryKeys.productConfiguration.pricing.all(),
+          'overrides',
+          specificationId,
+        ] as const,
+    },
+  },
 }

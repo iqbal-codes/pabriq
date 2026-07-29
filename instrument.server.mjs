@@ -16,7 +16,10 @@ if (!sentryDsn) {
     beforeSend(event) {
       if (event.request?.headers) {
         for (const key of Object.keys(event.request.headers)) {
-          if (key.toLowerCase() === 'authorization' || key.toLowerCase() === 'cookie') {
+          if (
+            key.toLowerCase() === 'authorization' ||
+            key.toLowerCase() === 'cookie'
+          ) {
             delete event.request.headers[key]
           }
         }
