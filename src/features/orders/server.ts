@@ -31,18 +31,16 @@ const listOrdersParamsSchema = z.object({
 })
 
 const lineItemInputSchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
   productId: z.string().trim().min(1).max(100),
   quantity: z.number().int().min(1).max(1000000),
+  unitPrice: z.number().min(0).optional(),
+  designName: z.string().trim().max(500).optional(),
   notes: z.string().trim().max(2000).optional(),
-  addons: z
-    .array(
-      z.object({
-        addonId: z.string().trim().min(1).max(100),
-        selectedOptionId: z.string().trim().min(1).max(100),
-      }),
-    )
-    .max(50)
-    .optional(),
+  addonIds: z.array(z.string().trim().min(1).max(100)).max(50).optional(),
+  isRepeatOrder: z.boolean().optional(),
+  deadline: z.string().optional(),
+  manualDeadline: z.boolean().optional(),
 })
 
 const createDraftOrderInputSchema = z.object({
@@ -109,7 +107,7 @@ export const createDraftOrderFn = createServerFn({ method: 'POST' })
       notes: data.notes,
       lineItems: data.lineItems.map((li) => ({
         ...li,
-        addons: li.addons,
+        deadline: li.deadline ? new Date(li.deadline) : undefined,
       })),
       deadline: data.deadline ? new Date(data.deadline) : undefined,
       manualDeadline: data.manualDeadline,
@@ -128,7 +126,7 @@ export const updateDraftOrderFn = createServerFn({ method: 'POST' })
       notes: data.notes,
       lineItems: data.lineItems.map((li) => ({
         ...li,
-        addons: li.addons,
+        deadline: li.deadline ? new Date(li.deadline) : undefined,
       })),
       deadline: data.deadline ? new Date(data.deadline) : undefined,
       manualDeadline: data.manualDeadline,
@@ -285,6 +283,9 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
 
     if (orderRows.length === 0) throw new Error('Order not found')
     const order = orderRows[0]
+    if (order.status !== 'in_progress' && order.status !== 'approved') {
+      return { ok: false, error: 'Order is not in progress' }
+    }
 
     if (order.status === 'approved') {
       const { advanceOrderStatus } = await import('./model')

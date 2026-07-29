@@ -33,7 +33,12 @@ const shippingAddressSchema = z
 
 const customerInputSchema = z.object({
   name: z.string().trim().min(1).max(200),
-  email: z.string().trim().email().max(255).nullable().optional(),
+  email: z
+    .string()
+    .trim()
+    .transform((val) => (val === '' ? null : val))
+    .pipe(z.string().email().max(255).nullable())
+    .optional(),
   phone: z.string().trim().max(50).nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
   active: z.boolean().optional(),
