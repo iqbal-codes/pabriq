@@ -2,7 +2,7 @@ import type { auth } from '#/lib/auth'
 
 export const DEFAULT_OPERATOR_PASSWORD = 'operator123' as const
 
-export type InviteMemberRole = 'admin' | 'member'
+export type InviteMemberRole = 'admin' | 'member' | 'operator'
 
 export type InviteMemberInput = {
   email: string
@@ -59,7 +59,7 @@ export async function createOperatorMemberAccount({
     const createdMember = await auth.api.addMember({
       body: {
         userId: createdUser.id,
-        role: 'member',
+        role: 'operator',
         organizationId,
       },
     })

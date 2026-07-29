@@ -142,4 +142,9 @@ export const queryKeys = {
     chat: (scope: { orgId: string; userId: string }) =>
       [...queryKeys.assistant.all, 'chat', scope] as const,
   },
+  subscriptions: {
+    all: ['subscriptions'] as const,
+    current: () => [...queryKeys.subscriptions.all, 'current'] as const,
+    warnings: () => [...queryKeys.subscriptions.all, 'warnings'] as const,
+  },
 }

@@ -63,3 +63,25 @@ export async function resolveOrgAndRole(): Promise<OrgAndRole> {
   if (memberships.length === 0) throw new Error('No organization')
   return { orgId: memberships[0].orgId, role: memberships[0].role }
 }
+
+export type OrgAndSubscriptionStatus = {
+  orgId: string
+  subscriptionStatus: string | null
+}
+
+export async function resolveOrgIdWithSubscription(): Promise<OrgAndSubscriptionStatus> {
+  const orgId = await resolveOrgId()
+
+  try {
+    // Dynamic import keeps server-only code out of client bundles
+    const { getSubscription } = await import('#/features/subscriptions/model')
+    const sub = await getSubscription(orgId)
+    return {
+      orgId,
+      subscriptionStatus: sub?.status ?? null,
+    }
+  } catch {
+    // If subscription model isn't available (e.g., during setup), return null status
+    return { orgId, subscriptionStatus: null }
+  }
+}

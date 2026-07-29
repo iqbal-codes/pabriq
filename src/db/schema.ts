@@ -121,6 +121,84 @@ export const invitation = pgTable('invitation', {
   createdAt: timestamp('created_at').notNull(),
 })
 
+// Plan entitlements
+export type PlanEntitlements = {
+  maxOrders: number | null
+  maxProducts: number | null
+  maxCustomers: number | null
+  maxMembers: number | null
+  maxStorageBytes: number | null
+  features: string[]
+  warningThresholds: {
+    orders?: number
+    products?: number
+    customers?: number
+    members?: number
+    storage?: number
+  }
+}
+
+export const plans = pgTable(
+  'plans',
+  {
+    id: text('id').primaryKey(),
+    slug: text('slug').notNull().unique(),
+    name: text('name').notNull(),
+    version: integer('version').notNull().default(1),
+    description: text('description'),
+    entitlements: json('entitlements').$type<PlanEntitlements>().notNull(),
+    monthlyPriceCents: integer('monthly_price_cents').notNull().default(0),
+    annualPriceCents: integer('annual_price_cents').notNull().default(0),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('idx_plans_slug_version').on(table.slug, table.version),
+  ],
+)
+
+export const SUBSCRIPTION_STATUSES = [
+  'trialing',
+  'active',
+  'past_due',
+  'grace_period',
+  'suspended',
+  'canceled',
+] as const
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number]
+
+export const BILLING_CADENCES = ['monthly', 'annual'] as const
+export type BillingCadence = (typeof BILLING_CADENCES)[number]
+
+export const subscriptions = pgTable('subscriptions', {
+  id: text('id').primaryKey(),
+  orgId: text('org_id')
+    .notNull()
+    .unique()
+    .references(() => organization.id, { onDelete: 'cascade' }),
+  planId: text('plan_id')
+    .notNull()
+    .references(() => plans.id, { onDelete: 'restrict' }),
+  status: text('status')
+    .$type<SubscriptionStatus>()
+    .notNull()
+    .default('trialing'),
+  billingCadence: text('billing_cadence')
+    .$type<BillingCadence>()
+    .notNull()
+    .default('monthly'),
+  trialStartsAt: timestamp('trial_starts_at'),
+  trialEndsAt: timestamp('trial_ends_at'),
+  currentPeriodStartsAt: timestamp('current_period_starts_at'),
+  currentPeriodEndsAt: timestamp('current_period_ends_at'),
+  canceledAt: timestamp('canceled_at'),
+  suspendedAt: timestamp('suspended_at'),
+  gracePeriodEndsAt: timestamp('grace_period_ends_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
 export const customers = pgTable('customers', {
   id: text('id').primaryKey(),
   orgId: text('org_id')

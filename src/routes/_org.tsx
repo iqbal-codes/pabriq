@@ -37,7 +37,10 @@ export const Route = createFileRoute('/_org')({
       throw redirect({ to: '/onboarding' })
     }
 
-    if (result.role === 'member' && location.pathname === '/') {
+    if (
+      (result.role === 'member' || result.role === 'operator') &&
+      location.pathname === '/'
+    ) {
       throw redirect({ to: '/operator' })
     }
 
@@ -70,7 +73,7 @@ function OrgLayout() {
     role: Role
   }
 
-  if (ctx.role === 'member') {
+  if (ctx.role === 'member' || ctx.role === 'operator') {
     return <ForbiddenPage actionHref="/operator" actionKey="backToProduction" />
   }
 
