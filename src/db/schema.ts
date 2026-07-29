@@ -199,6 +199,197 @@ export const subscriptions = pgTable('subscriptions', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
 
+export const BUSINESS_TEMPLATE_STATUSES = [
+  'draft',
+  'published',
+  'retired',
+] as const
+export type BusinessTemplateStatus = (typeof BUSINESS_TEMPLATE_STATUSES)[number]
+
+export const businessTemplates = pgTable(
+  'business_templates',
+  {
+    id: text('id').primaryKey(),
+    slug: text('slug').notNull(),
+    name: text('name').notNull(),
+    description: text('description'),
+    version: integer('version').notNull().default(1),
+    status: text('status')
+      .$type<BusinessTemplateStatus>()
+      .notNull()
+      .default('draft'),
+    category: text('category'),
+    capabilities: json('capabilities')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    configSnapshot: json('config_snapshot')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    publishedAt: timestamp('published_at'),
+    retiredAt: timestamp('retired_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('idx_business_templates_slug_version').on(
+      table.slug,
+      table.version,
+    ),
+  ],
+)
+
+export const ORGANIZATION_CONFIGURATION_STATUSES = [
+  'active',
+  'upgrading',
+  'migrating',
+] as const
+export type OrganizationConfigurationStatus =
+  (typeof ORGANIZATION_CONFIGURATION_STATUSES)[number]
+
+export const organizationConfigurations = pgTable(
+  'organization_configurations',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .unique()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    sourceTemplateId: text('source_template_id')
+      .notNull()
+      .references(() => businessTemplates.id, { onDelete: 'restrict' }),
+    sourceTemplateVersion: integer('source_template_version').notNull(),
+    status: text('status')
+      .$type<OrganizationConfigurationStatus>()
+      .notNull()
+      .default('active'),
+    lineage: json('lineage')
+      .$type<
+        Array<{
+          templateId: string
+          templateVersion: number
+          importedAt: string
+        }>
+      >()
+      .notNull()
+      .default([]),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+)
+
+export const CONFIGURATION_ELEMENT_TYPES = [
+  'product',
+  'workflow_stage',
+  'requirement',
+  'document',
+  'material',
+  'regional_setting',
+  'fulfillment_default',
+  'pricing_rule',
+] as const
+export type ConfigurationElementType =
+  (typeof CONFIGURATION_ELEMENT_TYPES)[number]
+
+export const CONFIGURATION_PROVENANCES = [
+  'inherited',
+  'customized',
+  'organization_added',
+] as const
+export type ConfigurationProvenance = (typeof CONFIGURATION_PROVENANCES)[number]
+
+export const configurationElements = pgTable(
+  'configuration_elements',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    configId: text('config_id')
+      .notNull()
+      .references(() => organizationConfigurations.id, {
+        onDelete: 'cascade',
+      }),
+    elementType: text('element_type')
+      .$type<ConfigurationElementType>()
+      .notNull(),
+    elementKey: text('element_key').notNull(),
+    provenance: text('provenance')
+      .$type<ConfigurationProvenance>()
+      .notNull()
+      .default('inherited'),
+    sourceTemplateId: text('source_template_id').references(
+      () => businessTemplates.id,
+      { onDelete: 'set null' },
+    ),
+    sourceTemplateVersion: integer('source_template_version'),
+    data: json('data').$type<Record<string, unknown>>().notNull().default({}),
+    originalData: json('original_data').$type<Record<string, unknown>>(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('idx_config_elements_org_type_key').on(
+      table.orgId,
+      table.elementType,
+      table.elementKey,
+    ),
+  ],
+)
+
+export const UPGRADE_PROPOSAL_STATUSES = [
+  'pending_review',
+  'accepted',
+  'rejected',
+  'applied',
+  'failed',
+] as const
+export type UpgradeProposalStatus = (typeof UPGRADE_PROPOSAL_STATUSES)[number]
+
+export const templateUpgradeProposals = pgTable('template_upgrade_proposals', {
+  id: text('id').primaryKey(),
+  orgId: text('org_id')
+    .notNull()
+    .references(() => organization.id, { onDelete: 'cascade' }),
+  sourceTemplateId: text('source_template_id')
+    .notNull()
+    .references(() => businessTemplates.id, { onDelete: 'restrict' }),
+  sourceTemplateVersion: integer('source_template_version').notNull(),
+  targetTemplateId: text('target_template_id')
+    .notNull()
+    .references(() => businessTemplates.id, { onDelete: 'restrict' }),
+  targetTemplateVersion: integer('target_template_version').notNull(),
+  status: text('status')
+    .$type<UpgradeProposalStatus>()
+    .notNull()
+    .default('pending_review'),
+  preview: json('preview')
+    .$type<Record<string, unknown>>()
+    .notNull()
+    .default({}),
+  conflicts: json('conflicts')
+    .$type<Array<Record<string, unknown>>>()
+    .notNull()
+    .default([]),
+  additions: json('additions')
+    .$type<Array<Record<string, unknown>>>()
+    .notNull()
+    .default([]),
+  removals: json('removals')
+    .$type<Array<Record<string, unknown>>>()
+    .notNull()
+    .default([]),
+  semanticChanges: json('semantic_changes')
+    .$type<Array<Record<string, unknown>>>()
+    .notNull()
+    .default([]),
+  rejectedAt: timestamp('rejected_at'),
+  appliedAt: timestamp('applied_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
 export const customers = pgTable('customers', {
   id: text('id').primaryKey(),
   orgId: text('org_id')
