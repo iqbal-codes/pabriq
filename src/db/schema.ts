@@ -1096,8 +1096,18 @@ export const invoiceLineItems = pgTable('invoice_line_items', {
 export type Requirement = {
   id: string
   label: string
-  type: 'text' | 'number' | 'upload'
+  type:
+    | 'text'
+    | 'number'
+    | 'measurement'
+    | 'pass_fail'
+    | 'non_conformance'
+    | 'upload'
+    | 'photo'
   required: boolean
+  unit?: string
+  targetValue?: number
+  tolerance?: number
 }
 
 export const payments = pgTable(
@@ -1174,13 +1184,29 @@ export const productionTasks = pgTable('production_tasks', {
       productName: string
       designName?: string | null
       customerName: string
+      customerId?: string | null
+      customerEmail?: string | null
+      customerPhone?: string | null
       requirements: string | null
+      specification?: string | null
+      files?: Array<{ id: string; url?: string; filename?: string }> | null
       orderNumber?: string
+      orderTotal?: number
+      currency?: string
       quantity?: number
+      unitPrice?: number
+      total?: number
       deadline?: string
       requirementResponses?: Record<
         string,
-        { assetIds?: string[]; value?: string }
+        {
+          assetIds?: string[]
+          value?: string
+          pass?: boolean
+          numericValue?: number
+          unit?: string
+          notes?: string
+        }
       >
     }>()
     .default({
@@ -1213,6 +1239,33 @@ export const taskActivity = pgTable('task_activity', {
   actorId: text('actor_id').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
+
+export const shopFloorDevices = pgTable(
+  'shop_floor_devices',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    code: text('code').notNull(),
+    secretHash: text('secret_hash').notNull(),
+    status: text('status').notNull().default('active'),
+    allowedStageIds: json('allowed_stage_ids').$type<string[]>().default([]),
+    lastActiveAt: timestamp('last_active_at'),
+    registeredBy: text('registered_by').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    revokedAt: timestamp('revoked_at'),
+  },
+  (table) => [
+    index('idx_shop_floor_devices_org_id').on(table.orgId),
+    uniqueIndex('idx_shop_floor_devices_code').on(table.orgId, table.code),
+  ],
+)
+
+export type ShopFloorDevice = typeof shopFloorDevices.$inferSelect
+export type NewShopFloorDevice = typeof shopFloorDevices.$inferInsert
 
 export const activityEvents = pgTable('activity_events', {
   id: text('id').primaryKey(),

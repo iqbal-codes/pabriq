@@ -15,11 +15,16 @@ import {
   getTaskDetailFn,
   listArchivedTasksFn,
   listBoardTasksFn,
+  listDevicesFn,
   listStagesFn,
   listTaskActivitiesFn,
   listTasksByOrderIdFn,
+  registerDeviceFn,
   rejectTaskAdvanceFn,
   reorderStagesFn,
+  returnTaskForReworkFn,
+  revokeDeviceFn,
+  rotateDeviceTokenFn,
   saveRequirementResponsesFn,
   saveTaskCommentFn,
   toggleStageFn,
@@ -335,13 +340,80 @@ export function useTaskMutations() {
     },
   })
 
+  const returnForRework = useMutation<
+    MutationResult,
+    Error,
+    { taskId: string; reviewNotes?: string; targetStageId?: string }
+  >({
+    mutationFn: (input) => returnTaskForReworkFn({ data: input }),
+    onError: handleMutationError,
+    onSuccess: (result, vars) => {
+      if ('error' in result) {
+        toast.error(result.error)
+        return
+      }
+      toast.success(t('rejected'))
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.production.task(vars.taskId) },
+        { queryKey: queryKeys.production.activities(vars.taskId) },
+        { queryKey: [queryKeys.production.all[0], 'board'] },
+        { queryKey: queryKeys.notifications.all },
+      ])
+    },
+  })
+
   return {
     advanceTask,
     saveRequirementResponse,
     approveAdvance,
     rejectAdvance,
+    returnForRework,
     saveComment,
   }
+}
+
+export function useShopFloorDevices() {
+  return useQuery({
+    queryKey: ['shop-floor-devices'],
+    queryFn: () => listDevicesFn(),
+  })
+}
+
+export function useShopFloorDeviceMutations() {
+  const queryClient = useQueryClient()
+
+  const registerDevice = useMutation({
+    mutationFn: (input: {
+      name: string
+      code?: string
+      allowedStageIds?: string[]
+    }) => registerDeviceFn({ data: input }),
+    onSuccess: () => {
+      toast.success('Device registered successfully')
+      void queryClient.invalidateQueries({ queryKey: ['shop-floor-devices'] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const rotateToken = useMutation({
+    mutationFn: (input: { id: string }) => rotateDeviceTokenFn({ data: input }),
+    onSuccess: () => {
+      toast.success('Device credential rotated')
+      void queryClient.invalidateQueries({ queryKey: ['shop-floor-devices'] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const revokeDevice = useMutation({
+    mutationFn: (input: { id: string }) => revokeDeviceFn({ data: input }),
+    onSuccess: () => {
+      toast.success('Device revoked')
+      void queryClient.invalidateQueries({ queryKey: ['shop-floor-devices'] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  return { registerDevice, rotateToken, revokeDevice }
 }
 
 export function useOrderTasksTimeline(orderId: string) {

@@ -25,7 +25,12 @@ export function canManageInvoices(role: Role): boolean {
 }
 
 export function canAdvanceProductionTask(role: Role): boolean {
-  return role === 'owner' || role === 'admin' || role === 'member'
+  return (
+    role === 'owner' ||
+    role === 'admin' ||
+    role === 'member' ||
+    role === 'operator'
+  )
 }
 
 export function canApproveProductionTask(role: Role): boolean {
@@ -58,6 +63,9 @@ export function canManageStages(role: Role): boolean {
   return role === 'owner' || role === 'admin'
 }
 
+export function canManageDevices(role: Role): boolean {
+  return role === 'owner' || role === 'admin'
+}
 export function canViewActionNotifications(role: Role): boolean {
   return role === 'owner' || role === 'admin'
 }

@@ -33,6 +33,7 @@ import { Route as ApiWebhooksTelegramRouteImport } from './routes/api/webhooks/t
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAssistantStreamRouteImport } from './routes/api/assistant/stream'
 import { Route as ApiAssistantChatRouteImport } from './routes/api/assistant/chat'
+import { Route as OrgSettingsShopFloorDevicesRouteImport } from './routes/_org/settings/shop-floor-devices'
 import { Route as OrgSettingsProfileRouteImport } from './routes/_org/settings/profile'
 import { Route as OrgSettingsProductionStagesRouteImport } from './routes/_org/settings/production-stages'
 import { Route as OrgSettingsPaymentMethodsRouteImport } from './routes/_org/settings/payment-methods'
@@ -174,6 +175,12 @@ const ApiAssistantChatRoute = ApiAssistantChatRouteImport.update({
   path: '/api/assistant/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrgSettingsShopFloorDevicesRoute =
+  OrgSettingsShopFloorDevicesRouteImport.update({
+    id: '/shop-floor-devices',
+    path: '/shop-floor-devices',
+    getParentRoute: () => OrgSettingsRouteRoute,
+  } as any)
 const OrgSettingsProfileRoute = OrgSettingsProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -308,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/settings/payment-methods': typeof OrgSettingsPaymentMethodsRoute
   '/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/settings/profile': typeof OrgSettingsProfileRoute
+  '/settings/shop-floor-devices': typeof OrgSettingsShopFloorDevicesRoute
   '/api/assistant/chat': typeof ApiAssistantChatRoute
   '/api/assistant/stream': typeof ApiAssistantStreamRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -351,6 +359,7 @@ export interface FileRoutesByTo {
   '/settings/payment-methods': typeof OrgSettingsPaymentMethodsRoute
   '/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/settings/profile': typeof OrgSettingsProfileRoute
+  '/settings/shop-floor-devices': typeof OrgSettingsShopFloorDevicesRoute
   '/api/assistant/chat': typeof ApiAssistantChatRoute
   '/api/assistant/stream': typeof ApiAssistantStreamRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -398,6 +407,7 @@ export interface FileRoutesById {
   '/_org/settings/payment-methods': typeof OrgSettingsPaymentMethodsRoute
   '/_org/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/_org/settings/profile': typeof OrgSettingsProfileRoute
+  '/_org/settings/shop-floor-devices': typeof OrgSettingsShopFloorDevicesRoute
   '/api/assistant/chat': typeof ApiAssistantChatRoute
   '/api/assistant/stream': typeof ApiAssistantStreamRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -445,6 +455,7 @@ export interface FileRouteTypes {
     | '/settings/payment-methods'
     | '/settings/production-stages'
     | '/settings/profile'
+    | '/settings/shop-floor-devices'
     | '/api/assistant/chat'
     | '/api/assistant/stream'
     | '/api/auth/$'
@@ -488,6 +499,7 @@ export interface FileRouteTypes {
     | '/settings/payment-methods'
     | '/settings/production-stages'
     | '/settings/profile'
+    | '/settings/shop-floor-devices'
     | '/api/assistant/chat'
     | '/api/assistant/stream'
     | '/api/auth/$'
@@ -534,6 +546,7 @@ export interface FileRouteTypes {
     | '/_org/settings/payment-methods'
     | '/_org/settings/production-stages'
     | '/_org/settings/profile'
+    | '/_org/settings/shop-floor-devices'
     | '/api/assistant/chat'
     | '/api/assistant/stream'
     | '/api/auth/$'
@@ -747,6 +760,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAssistantChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_org/settings/shop-floor-devices': {
+      id: '/_org/settings/shop-floor-devices'
+      path: '/shop-floor-devices'
+      fullPath: '/settings/shop-floor-devices'
+      preLoaderRoute: typeof OrgSettingsShopFloorDevicesRouteImport
+      parentRoute: typeof OrgSettingsRouteRoute
+    }
     '/_org/settings/profile': {
       id: '/_org/settings/profile'
       path: '/profile'
@@ -899,6 +919,7 @@ interface OrgSettingsRouteRouteChildren {
   OrgSettingsPaymentMethodsRoute: typeof OrgSettingsPaymentMethodsRoute
   OrgSettingsProductionStagesRoute: typeof OrgSettingsProductionStagesRoute
   OrgSettingsProfileRoute: typeof OrgSettingsProfileRoute
+  OrgSettingsShopFloorDevicesRoute: typeof OrgSettingsShopFloorDevicesRoute
   OrgSettingsIndexRoute: typeof OrgSettingsIndexRoute
 }
 
@@ -911,6 +932,7 @@ const OrgSettingsRouteRouteChildren: OrgSettingsRouteRouteChildren = {
   OrgSettingsPaymentMethodsRoute: OrgSettingsPaymentMethodsRoute,
   OrgSettingsProductionStagesRoute: OrgSettingsProductionStagesRoute,
   OrgSettingsProfileRoute: OrgSettingsProfileRoute,
+  OrgSettingsShopFloorDevicesRoute: OrgSettingsShopFloorDevicesRoute,
   OrgSettingsIndexRoute: OrgSettingsIndexRoute,
 }
 

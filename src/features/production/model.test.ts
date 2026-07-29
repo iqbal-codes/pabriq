@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '#/db/index'
 import {
@@ -13,6 +13,12 @@ import {
 import { approveOrder, rejectOrder } from '#/features/orders/model'
 import { READY_FOR_PRODUCTION_STATUS } from '#/features/production/constants'
 import {
+  registerDevice,
+  revokeDevice,
+  rotateDeviceToken,
+  verifyDeviceCredential,
+} from './devices'
+import {
   advanceTask,
   approveTaskAdvance,
   createStage,
@@ -24,6 +30,7 @@ import {
   listTaskActivities,
   rejectTaskAdvance,
   reorderStages,
+  returnTaskForRework,
   saveTaskComment,
   toggleStage,
   updateStage,
@@ -1273,5 +1280,472 @@ describe('listArchivedTasks sorting', () => {
       'arch-sort-mid',
       'arch-sort-old',
     ])
+  })
+})
+describe('Issue #18 Production Workflow, Quality Evidence, and Shop-Floor Access', () => {
+  it('spawns idempotent production tasks with full committed context', async () => {
+    const customerId = '00000000-0000-0000-0000-000000000010'
+    const productId = '00000000-0000-0000-0000-000000000020'
+    const orderId = '00000000-0000-0000-0000-000000000030'
+    const lineItemId = '00000000-0000-0000-0000-000000000040'
+    const now = new Date()
+
+    await db.insert(customersTable).values({
+      id: customerId,
+      orgId: org1Id,
+      name: 'Acme Corp',
+      email: 'acme@example.com',
+      phone: '12345678',
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await db.insert(productsTable).values({
+      id: productId,
+      orgId: org1Id,
+      name: 'Custom Banners',
+      priority: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await db.insert(ordersTable).values({
+      id: orderId,
+      orgId: org1Id,
+      orderNumber: 'ORD-9000',
+      customerId,
+      status: 'approved',
+      total: 150000,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await db.insert(lineItemsTable).values({
+      id: lineItemId,
+      orgId: org1Id,
+      orderId,
+      productId,
+      productName: 'Custom Banners',
+      quantity: 50,
+      unitPrice: 3000,
+      total: 150000,
+      designName: 'Banner_V1.pdf',
+      notes: 'Matte lamination required',
+      productionDays: 3,
+      deadline: new Date('2026-08-15'),
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    // First spawn call
+    await spawnTasksForApprovedOrder(orderId, org1Id)
+
+    const tasksAfterFirst = await db
+      .select()
+      .from(tasksTable)
+      .where(and(eq(tasksTable.orderId, orderId), eq(tasksTable.orgId, org1Id)))
+
+    expect(tasksAfterFirst).toHaveLength(1)
+    const task = tasksAfterFirst[0]
+    expect(task.priority).toBe(true)
+
+    const ctx = task.context as Record<string, unknown>
+    expect(ctx.productName).toBe('Custom Banners')
+    expect(ctx.customerName).toBe('Acme Corp')
+    expect(ctx.customerId).toBe(customerId)
+    expect(ctx.customerEmail).toBe('acme@example.com')
+    expect(ctx.specification).toBe('Matte lamination required')
+    expect(ctx.quantity).toBe(50)
+    expect(ctx.unitPrice).toBe(3000)
+    expect(ctx.total).toBe(150000)
+    expect(ctx.orderNumber).toBe('ORD-9000')
+    expect(ctx.currency).toBe('IDR')
+
+    // Second call - idempotent, must not create duplicate tasks
+    await spawnTasksForApprovedOrder(orderId, org1Id)
+
+    const tasksAfterSecond = await db
+      .select()
+      .from(tasksTable)
+      .where(and(eq(tasksTable.orderId, orderId), eq(tasksTable.orgId, org1Id)))
+
+    expect(tasksAfterSecond).toHaveLength(1)
+  })
+
+  it('validates generic requirements: measurement, pass/fail, non-conformance, and photo evidence', async () => {
+    await createStage({
+      orgId: org1Id,
+      name: 'Quality Gate',
+      board: 'pre_production',
+      needApproval: false,
+      requirements: [
+        {
+          id: 'req-measurement',
+          label: 'Thickness',
+          type: 'measurement',
+          required: true,
+          unit: 'mm',
+        },
+        {
+          id: 'req-passfail',
+          label: 'Visual Inspection',
+          type: 'pass_fail',
+          required: true,
+        },
+        {
+          id: 'req-nonconformance',
+          label: 'Defect Log',
+          type: 'non_conformance',
+          required: false,
+        },
+        {
+          id: 'req-photo',
+          label: 'Final Photo',
+          type: 'photo',
+          required: true,
+        },
+      ],
+    })
+
+    const orderId = '00000000-0000-0000-0000-000000000031'
+    const lineItemId = '00000000-0000-0000-0000-000000000041'
+    const productId = '00000000-0000-0000-0000-000000000021'
+    const now = new Date()
+
+    await db.insert(productsTable).values({
+      id: productId,
+      orgId: org1Id,
+      name: 'Box',
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await db.insert(ordersTable).values({
+      id: orderId,
+      orgId: org1Id,
+      status: 'approved',
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await db.insert(lineItemsTable).values({
+      id: lineItemId,
+      orgId: org1Id,
+      orderId,
+      productId,
+      unitPrice: 100,
+      total: 100,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await spawnTasksForApprovedOrder(orderId, org1Id)
+    const [task] = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.orderId, orderId))
+
+    // First advance from queued to the stage
+    await advanceTask(task.id, org1Id, 'op1')
+
+    // Attempting to advance without fulfilling required evidence should fail
+    const invalidResult = await advanceTask(task.id, org1Id, 'op1', {})
+    expect(invalidResult.ok).toBe(false)
+    if (!invalidResult.ok) {
+      expect(invalidResult.error).toContain(
+        'Required requirements not fulfilled',
+      )
+    }
+
+    // Fulfilling required evidence
+    const validResponses = {
+      'req-measurement': { value: '2.5', numericValue: 2.5, unit: 'mm' },
+      'req-passfail': { pass: true, value: 'pass' },
+      'req-photo': { assetIds: ['asset-123'] },
+      'req-nonconformance': { notes: 'No major defects observed' },
+    }
+
+    const validResult = await advanceTask(
+      task.id,
+      org1Id,
+      'op1',
+      validResponses,
+    )
+    expect(validResult.ok).toBe(true)
+
+    // Verify evidence recorded in task activity
+    const activities = await listTaskActivities(task.id)
+    expect(activities).not.toHaveLength(0)
+    const transitionActivity = activities.find(
+      (a) => a.type === 'stage_transition',
+    )
+    expect(transitionActivity).toBeDefined()
+    const data = transitionActivity?.data as Record<string, unknown>
+    expect(data.responses).toEqual(validResponses)
+  })
+
+  it('supports controlled revision and rework loops preserving activity history', async () => {
+    const stage1 = await createStage({
+      orgId: org1Id,
+      name: 'Stage 1',
+      board: 'pre_production',
+    })
+    await createStage({
+      orgId: org1Id,
+      name: 'Stage 2',
+      board: 'pre_production',
+      needApproval: true,
+    })
+
+    const orderId = '00000000-0000-0000-0000-000000000032'
+    const lineItemId = '00000000-0000-0000-0000-000000000042'
+    const productId = '00000000-0000-0000-0000-000000000022'
+    const now = new Date()
+
+    await db.insert(productsTable).values({
+      id: productId,
+      orgId: org1Id,
+      name: 'Widget',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(ordersTable).values({
+      id: orderId,
+      orgId: org1Id,
+      status: 'approved',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(lineItemsTable).values({
+      id: lineItemId,
+      orgId: org1Id,
+      orderId,
+      productId,
+      unitPrice: 50,
+      total: 50,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await spawnTasksForApprovedOrder(orderId, org1Id)
+    const [task] = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.orderId, orderId))
+
+    // Advance queue -> stage1 -> stage2
+    await advanceTask(task.id, org1Id, 'op1')
+    await advanceTask(task.id, org1Id, 'op1') // enters pending_approval for stage2
+
+    // Return task for rework to stage1 with notes
+    const reworkResult = await returnTaskForRework(
+      task.id,
+      org1Id,
+      'admin1',
+      'admin',
+      'Color tone mismatched, re-do stage 1 printing',
+      stage1.id,
+    )
+    expect(reworkResult.ok).toBe(true)
+
+    const updatedTask = (
+      await db.select().from(tasksTable).where(eq(tasksTable.id, task.id))
+    )[0]
+    expect(updatedTask.status).toBe('in_progress')
+    expect(updatedTask.stageId).toBe(stage1.id)
+
+    // Complete activity history must be preserved
+    const activities = await listTaskActivities(task.id)
+    const reworkActivity = activities.find((a) => a.type === 'reworked')
+    expect(reworkActivity).toBeDefined()
+    expect((reworkActivity?.data as Record<string, unknown>).reviewNotes).toBe(
+      'Color tone mismatched, re-do stage 1 printing',
+    )
+  })
+
+  it('manages shop-floor device credentials, allowed stage scope, revocation, and action auditing', async () => {
+    const stage1 = await createStage({
+      orgId: org1Id,
+      name: 'Printing',
+      board: 'pre_production',
+    })
+    await createStage({
+      orgId: org1Id,
+      name: 'Packaging',
+      board: 'pre_production',
+    })
+
+    // Register device constrained to stage1
+    const { device, plainTextToken } = await registerDevice({
+      orgId: org1Id,
+      name: 'Printing Terminal #1',
+      code: 'DEV-PRN-01',
+      allowedStageIds: [stage1.id],
+      actorId: 'admin1',
+    })
+
+    expect(device.code).toBe('DEV-PRN-01')
+    expect(device.status).toBe('active')
+    expect(plainTextToken).toMatch(/^dev_tok_/)
+
+    // Verify credential authentication
+    const verified = await verifyDeviceCredential(org1Id, plainTextToken)
+    expect(verified).not.toBeNull()
+    expect(verified?.id).toBe(device.id)
+
+    // Rotate credential
+    const rotated = await rotateDeviceToken({
+      id: device.id,
+      orgId: org1Id,
+      actorId: 'admin1',
+    })
+    expect(rotated.plainTextToken).not.toBe(plainTextToken)
+
+    // Old token should no longer verify
+    const oldVerified = await verifyDeviceCredential(org1Id, plainTextToken)
+    expect(oldVerified).toBeNull()
+
+    // New token verifies
+    const newVerified = await verifyDeviceCredential(
+      org1Id,
+      rotated.plainTextToken,
+    )
+    expect(newVerified).not.toBeNull()
+
+    // Create task for auditing check
+    const orderId = '00000000-0000-0000-0000-000000000033'
+    const lineItemId = '00000000-0000-0000-0000-000000000043'
+    const productId = '00000000-0000-0000-0000-000000000023'
+    const now = new Date()
+
+    await db.insert(productsTable).values({
+      id: productId,
+      orgId: org1Id,
+      name: 'Card',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(ordersTable).values({
+      id: orderId,
+      orgId: org1Id,
+      status: 'approved',
+      createdAt: now,
+      updatedAt: now,
+    })
+    await db.insert(lineItemsTable).values({
+      id: lineItemId,
+      orgId: org1Id,
+      orderId,
+      productId,
+      unitPrice: 10,
+      total: 10,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await spawnTasksForApprovedOrder(orderId, org1Id)
+    const [task] = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.orderId, orderId))
+
+    // Device allowed on stage1, so advancing into stage1 passes
+    const devCtx = {
+      deviceId: device.id,
+      deviceName: device.name,
+      allowedStageIds: [stage1.id],
+    }
+
+    const advRes1 = await advanceTask(task.id, org1Id, 'op1', {}, devCtx)
+    expect(advRes1.ok).toBe(true)
+
+    // Check audited activity record includes device identity
+    const activities = await listTaskActivities(task.id)
+    const lastActivity = activities[0]
+    expect((lastActivity.data as Record<string, unknown>).deviceId).toBe(
+      device.id,
+    )
+
+    // Revoke device
+    const revoked = await revokeDevice({
+      id: device.id,
+      orgId: org1Id,
+      actorId: 'admin1',
+    })
+    expect(revoked.status).toBe('revoked')
+
+    // Revoked device fails verification
+    const revokedVerified = await verifyDeviceCredential(
+      org1Id,
+      rotated.plainTextToken,
+    )
+    expect(revokedVerified).toBeNull()
+  })
+
+  it('ensures later product or workflow changes do not rewrite existing task context', async () => {
+    const customerId = '00000000-0000-0000-0000-000000000014'
+    const productId = '00000000-0000-0000-0000-000000000024'
+    const orderId = '00000000-0000-0000-0000-000000000034'
+    const lineItemId = '00000000-0000-0000-0000-000000000044'
+    const now = new Date()
+
+    await db.insert(customersTable).values({
+      id: customerId,
+      orgId: org1Id,
+      name: 'Original Client',
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await db.insert(productsTable).values({
+      id: productId,
+      orgId: org1Id,
+      name: 'Original Product Name',
+      basePrice: 5000,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await db.insert(ordersTable).values({
+      id: orderId,
+      orgId: org1Id,
+      orderNumber: 'ORD-HIST-1',
+      customerId,
+      status: 'approved',
+      total: 5000,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await db.insert(lineItemsTable).values({
+      id: lineItemId,
+      orgId: org1Id,
+      orderId,
+      productId,
+      productName: 'Original Product Name',
+      quantity: 1,
+      unitPrice: 5000,
+      total: 5000,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await spawnTasksForApprovedOrder(orderId, org1Id)
+
+    // Later product name and price change
+    await db
+      .update(productsTable)
+      .set({ name: 'Renamed Product Deluxe', basePrice: 99999 })
+      .where(eq(productsTable.id, productId))
+
+    // Fetch existing production task
+    const [task] = await db
+      .select()
+      .from(tasksTable)
+      .where(eq(tasksTable.orderId, orderId))
+
+    const ctx = task.context as Record<string, unknown>
+    expect(ctx.productName).toBe('Original Product Name')
+    expect(ctx.unitPrice).toBe(5000)
   })
 })

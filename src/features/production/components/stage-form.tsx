@@ -183,14 +183,38 @@ export function StageForm({ stage, open, onOpenChange }: Props) {
                                     label: t('requirementTypeNumber'),
                                   },
                                   {
+                                    value: 'measurement',
+                                    label: 'Measurement',
+                                  },
+                                  {
+                                    value: 'pass_fail',
+                                    label: 'Pass / Fail Gate',
+                                  },
+                                  {
+                                    value: 'non_conformance',
+                                    label: 'Non-Conformance Record',
+                                  },
+                                  {
                                     value: 'upload',
                                     label: t('requirementTypeUpload'),
+                                  },
+                                  {
+                                    value: 'photo',
+                                    label: 'Photo Evidence',
                                   },
                                 ]}
                               />
                             )}
                           </form.AppField>
                         </FormGrid>
+
+                        {req.type === 'measurement' && (
+                          <form.AppField name={`requirements[${i}].unit`}>
+                            {(subField) => (
+                              <subField.TextField label="Unit (e.g. mm, cm, kg)" />
+                            )}
+                          </form.AppField>
+                        )}
 
                         <form.AppField name={`requirements[${i}].required`}>
                           {(subField) => (
