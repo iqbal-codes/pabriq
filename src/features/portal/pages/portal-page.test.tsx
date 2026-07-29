@@ -67,6 +67,7 @@ function makeOrder(overrides: Partial<PortalOrder> = {}): PortalOrder {
     customerIsWni: null,
     customerPhotoAssetId: null,
     lineItems: [],
+    specifications: [],
     invoices: [],
     createdAt: new Date(),
     courier: null,
