@@ -7,11 +7,7 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "sh -c \"NODE_OPTIONS='--import ./instrument.server.mjs' vite dev --port 3001\"",
-    "dev:infisical": "bun run load-env -- bun run dev",
-    "dev:agent": "bash scripts/infisical-run.sh bun run dev",
-    "db:studio:infisical": "bun run load-env -- bun run db:studio",
-    "db:studio:agent": "bash scripts/infisical-run.sh bun run db:studio",
+    "dev": "bun --env-file=.env.local -- sh -c \"NODE_OPTIONS='--import ./instrument.server.mjs' vite dev --port 3001\"",
     "build": "vite build && cp instrument.server.mjs dist/server && bun build src/db/migrate.ts --outfile=dist/migrate.js --target=node",
     "preview": "vite preview",
     "test": "NODE_ENV=test VITEST_FROM_SCRIPT=true bun --env-file=.env.test x vitest run --passWithNoTests",
@@ -19,7 +15,6 @@
     "test:e2e:headed": "NODE_ENV=test bun --env-file=.env.test x playwright test --headed",
     "test:e2e:debug": "NODE_ENV=test bun --env-file=.env.test x playwright test --debug=cli",
     "check": "biome check src/",
-    "load-env": "infisical run --env=dev --projectId=40d6476c-55e5-4e1b-8079-b251009c6772",
     "typecheck": "tsc --noEmit",
     "format": "biome format --write .",
     "start": "srvx serve --prod --import ./dist/server/instrument.server.mjs --entry ./dist/server/server.js -s ../client",
