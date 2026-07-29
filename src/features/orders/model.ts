@@ -31,6 +31,8 @@ import {
   productionStages as productionStagesTable,
   productionTasks as productionTasksTable,
   products as productsTable,
+  specificationSnapshots,
+  specifications,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
 import { getCustomerAddress } from '#/features/address/model'
@@ -38,6 +40,7 @@ import type { AssetMetadata } from '#/features/assets/server'
 import { rewriteFinalInvoiceFromOrder } from '#/features/invoices/model'
 import { normalizeDesignName } from '#/features/orders/line-item-display'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
+import { commitSpecification } from '#/features/product-configuration/model'
 import { spawnQueuedPreProductionTasksForOrder } from '#/features/production/task-spawn-helpers'
 import { type DbClient, listBreakpoints } from '#/features/products/model'
 import { addWorkingDays } from '#/lib/date-utils'
@@ -997,6 +1000,38 @@ export async function createDraftOrder(
     await db.insert(lineItemAddonsTable).values(addonInserts)
   }
 
+  // Auto-create specifications for each unique product in the order
+  const uniqueProductIds = [...new Set(items.map((li) => li.productId))]
+  for (const productId of uniqueProductIds) {
+    const [existingSpec] = await db
+      .select({ id: specifications.id })
+      .from(specifications)
+      .where(
+        and(
+          eq(specifications.orgId, orgId),
+          eq(specifications.orderId, orderId),
+          eq(specifications.productId, productId),
+        ),
+      )
+      .limit(1)
+
+    if (!existingSpec) {
+      await db.insert(specifications).values({
+        id: generateId(),
+        orgId,
+        productId,
+        orderId,
+        submittedBy: customerId ?? orgId,
+        submittedByRole: customerId ? 'customer' : 'operator',
+        status: 'draft',
+        fieldValues: {},
+        quantity: items.find((li) => li.productId === productId)?.quantity ?? 1,
+        createdAt: now,
+        updatedAt: now,
+      })
+    }
+  }
+
   return {
     order: {
       id: orderId,
@@ -1632,10 +1667,41 @@ export async function approveOrder(
       .limit(1)
 
     if (orderRows.length === 0) throw new Error('Order not found')
+    // Idempotent: already-approved orders succeed as no-op
+    if (orderRows[0].status === 'approved') return
     if (orderRows[0].status !== 'pending')
       throw new Error('Only pending orders can be approved')
 
     const now = new Date()
+
+    // Commit all specifications for this order (idempotent)
+    const specRows = await tx
+      .select({ id: specifications.id, status: specifications.status })
+      .from(specifications)
+      .where(
+        and(eq(specifications.orgId, orgId), eq(specifications.orderId, id)),
+      )
+
+    for (const spec of specRows) {
+      // Skip specs already committed — idempotent
+      if (spec.status === 'committed') continue
+
+      // Skip specs not yet priced — must be priced before commit
+      if (spec.status !== 'priced' && spec.status !== 'pricing_review') continue
+
+      // Check if snapshot already exists (idempotency)
+      const [existingSnapshot] = await tx
+        .select({ id: specificationSnapshots.id })
+        .from(specificationSnapshots)
+        .where(eq(specificationSnapshots.specificationId, spec.id))
+        .limit(1)
+
+      if (existingSnapshot) continue
+
+      // Commit the specification
+      await commitSpecification(spec.id, orgId, approvedBy)
+    }
+
     await tx
       .update(ordersTable)
       .set({
@@ -1680,6 +1746,56 @@ export async function rejectOrder(
       updatedAt: now,
     })
     .where(eq(ordersTable.id, id))
+}
+
+export type CancelOrderInput = {
+  cancelledBy: string
+  reason: string
+}
+
+/**
+ * Cancel an order. Allowed from draft or pending status.
+ * Rejected and cancelled orders cannot be cancelled again.
+ */
+export async function cancelOrder(
+  id: string,
+  orgId: string,
+  input: CancelOrderInput,
+): Promise<void> {
+  const orderRows = await db
+    .select({ status: ordersTable.status })
+    .from(ordersTable)
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.orgId, orgId)))
+    .limit(1)
+
+  if (orderRows.length === 0) throw new Error('Order not found')
+  const status = orderRows[0].status
+  if (status !== 'draft' && status !== 'pending') {
+    throw new Error(`Cannot cancel order with status "${status}"`)
+  }
+
+  const now = new Date()
+  await db
+    .update(ordersTable)
+    .set({
+      status: 'cancelled',
+      rejectedAt: now,
+      rejectedBy: input.cancelledBy,
+      rejectReason: input.reason,
+      updatedAt: now,
+    })
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.orgId, orgId)))
+
+  await db.insert(activityEventsTable).values({
+    id: crypto.randomUUID(),
+    orgId,
+    actorId: input.cancelledBy,
+    targetType: 'order',
+    targetId: id,
+    action: 'order_cancelled',
+    details: { reason: input.reason },
+    createdAt: now,
+  })
 }
 
 export async function advanceOrderStatus(

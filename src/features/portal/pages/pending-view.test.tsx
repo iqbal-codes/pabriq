@@ -60,6 +60,7 @@ const order = {
       deadline: new Date('2026-01-05'),
     },
   ],
+  specifications: [],
   invoices: [],
   createdAt: new Date('2026-01-01'),
   courier: null,

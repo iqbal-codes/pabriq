@@ -200,6 +200,7 @@ function makeOrder(overrides: Partial<PortalOrder> = {}): PortalOrder {
     customerPhone: null,
     customerIsWni: null,
     customerPhotoAssetId: null,
+    specifications: [],
     lineItems: [
       {
         id: 'li-1',

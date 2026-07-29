@@ -1,7 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
+import { z } from 'zod'
 import type { Usage } from '#/features/assets/model'
 import type {
   ConfirmPortalOrderInput,
+  JsonValue,
   UpdatePortalLineItemInput,
 } from './model'
 
@@ -263,4 +265,21 @@ export const getOrderTimelineFn = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const { getOrderTimeline } = await import('./model')
     return getOrderTimeline(data.token)
+  })
+
+const submitPortalSpecInputSchema = z.object({
+  token: z.string().trim().min(1),
+  specificationId: z.string().trim().min(1),
+  fieldValues: z.record(z.string(), z.unknown()),
+})
+
+export const submitPortalSpecificationFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: unknown) => submitPortalSpecInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { submitPortalSpecification } = await import('./model')
+    return submitPortalSpecification(
+      data.token,
+      data.specificationId,
+      data.fieldValues as Record<string, JsonValue>,
+    )
   })

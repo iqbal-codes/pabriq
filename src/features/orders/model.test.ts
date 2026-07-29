@@ -12,12 +12,18 @@ import {
   organization,
   organizationProfiles as orgProfilesTable,
   paymentMethods as paymentMethodsTable,
+  pricingBasis,
   products as productsTable,
+  specificationPrices,
+  specificationSnapshots,
+  specifications,
   productionStages as stagesTable,
   productionTasks as tasksTable,
 } from '#/db/schema'
 import {
   adjustOrderQuantity,
+  approveOrder,
+  cancelOrder,
   createDraftOrder,
   createDraftOrderFromAction,
   getOrder,
@@ -1548,5 +1554,271 @@ describe('adjustOrderQuantity', () => {
       requirements: null,
       quantity: 30,
     })
+  })
+})
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+async function createOrderWithSpec(
+  orgId: string,
+  orderId: string,
+  productId: string,
+  specId: string,
+  status: string = 'draft',
+  specStatus: string = 'draft',
+  pricingStatus: string | null = null,
+) {
+  const now = new Date()
+  await db.insert(productsTable).values({
+    id: productId,
+    orgId,
+    name: 'Spec Test Product',
+    active: true,
+    basePrice: 10000,
+    productionDays: 1,
+    minQuantity: 1,
+    createdAt: now,
+    updatedAt: now,
+  })
+  await db.insert(ordersTable).values({
+    id: orderId,
+    orgId,
+    status,
+    total: 10000,
+    createdAt: now,
+    updatedAt: now,
+  })
+  await db.insert(specifications).values({
+    id: specId,
+    orgId,
+    productId,
+    orderId,
+    submittedBy: 'test-user',
+    submittedByRole: 'customer',
+    status: specStatus as
+      | 'draft'
+      | 'submitted'
+      | 'priced'
+      | 'pricing_review'
+      | 'committed',
+    fieldValues: { color: 'Red' },
+    quantity: 1,
+    pricingStatus: pricingStatus ?? null,
+    createdAt: now,
+    updatedAt: now,
+  })
+  // Create pricing basis and price to allow commitment
+  await db.insert(pricingBasis).values({
+    id: `pb-${specId}`,
+    orgId,
+    productId,
+    basisType: 'flat' as const,
+    currency: 'IDR',
+    precision: 0,
+    roundingMode: 'half_up' as const,
+    approved: true,
+    approvedAt: now,
+    approvedBy: 'test-user',
+    createdAt: now,
+    updatedAt: now,
+  })
+  await db.insert(specificationPrices).values({
+    id: `sp-${specId}`,
+    orgId,
+    specificationId: specId,
+    currency: 'IDR',
+    unitPrice: 10000,
+    totalPrice: 10000,
+    quantity: 1,
+    breakdown: [{ label: 'Base', type: 'base', amount: 10000 }],
+    isOverridden: false,
+    extensionStatuses: [],
+    createdAt: now,
+    updatedAt: now,
+  })
+}
+
+// ─── Cancel Order ────────────────────────────────────────────────────────────
+
+describe('cancelOrder', () => {
+  it('cancels a draft order', async () => {
+    const orderId = 'cancel-draft-1'
+    await createOrderWithSpec(
+      org1Id,
+      orderId,
+      'cancel-prod-1',
+      'cancel-spec-1',
+      'draft',
+    )
+
+    await cancelOrder(orderId, org1Id, {
+      cancelledBy: 'user-1',
+      reason: 'No longer needed',
+    })
+
+    const [row] = await db
+      .select({ status: ordersTable.status })
+      .from(ordersTable)
+      .where(eq(ordersTable.id, orderId))
+      .limit(1)
+    expect(row?.status).toBe('cancelled')
+  })
+
+  it('cancels a pending order', async () => {
+    const orderId = 'cancel-pending-1'
+    await createOrderWithSpec(
+      org1Id,
+      orderId,
+      'cancel-prod-2',
+      'cancel-spec-2',
+      'pending',
+      'submitted',
+      'calculated',
+    )
+
+    await cancelOrder(orderId, org1Id, {
+      cancelledBy: 'user-1',
+      reason: 'Changed mind',
+    })
+
+    const [row] = await db
+      .select({ status: ordersTable.status })
+      .from(ordersTable)
+      .where(eq(ordersTable.id, orderId))
+      .limit(1)
+    expect(row?.status).toBe('cancelled')
+  })
+
+  it('rejects cancelling an approved order', async () => {
+    const orderId = 'cancel-approved-1'
+    await createOrderWithSpec(
+      org1Id,
+      orderId,
+      'cancel-prod-3',
+      'cancel-spec-3',
+      'approved',
+      'committed',
+    )
+
+    await expect(
+      cancelOrder(orderId, org1Id, {
+        cancelledBy: 'user-1',
+        reason: 'Try cancel',
+      }),
+    ).rejects.toThrow('Cannot cancel')
+  })
+
+  it('rejects cancelling a non-existent order', async () => {
+    await expect(
+      cancelOrder('nonexistent', org1Id, {
+        cancelledBy: 'user-1',
+        reason: 'Try',
+      }),
+    ).rejects.toThrow('Order not found')
+  })
+
+  it('records an activity event on cancel', async () => {
+    const orderId = 'cancel-activity-1'
+    await createOrderWithSpec(
+      org1Id,
+      orderId,
+      'cancel-prod-4',
+      'cancel-spec-4',
+      'draft',
+    )
+
+    await cancelOrder(orderId, org1Id, {
+      cancelledBy: 'user-1',
+      reason: 'Testing activity',
+    })
+
+    const events = await db
+      .select()
+      .from(activityEventsTable)
+      .where(eq(activityEventsTable.targetId, orderId))
+    expect(events.some((e) => e.action === 'order_cancelled')).toBe(true)
+  })
+})
+
+// ─── Approve Order with Specs ────────────────────────────────────────────────
+
+describe('approveOrder with specifications', () => {
+  it('approves order and creates spec snapshots', async () => {
+    const orderId = 'approve-1'
+    const specId = 'approve-spec-1'
+    await createOrderWithSpec(
+      org1Id,
+      orderId,
+      'approve-prod-1',
+      specId,
+      'pending',
+      'priced',
+      'calculated',
+    )
+
+    await approveOrder(orderId, org1Id, 'admin-1')
+
+    // Order should be approved
+    const [order] = await db
+      .select({ status: ordersTable.status })
+      .from(ordersTable)
+      .where(eq(ordersTable.id, orderId))
+      .limit(1)
+    expect(order?.status).toBe('approved')
+
+    // Spec should be committed
+    const [spec] = await db
+      .select({ status: specifications.status })
+      .from(specifications)
+      .where(eq(specifications.id, specId))
+      .limit(1)
+    expect(spec?.status).toBe('committed')
+
+    // Snapshot should exist
+    const snapshots = await db
+      .select()
+      .from(specificationSnapshots)
+      .where(eq(specificationSnapshots.specificationId, specId))
+    expect(snapshots.length).toBe(1)
+  })
+
+  it('is idempotent — does not create duplicate snapshots', async () => {
+    const orderId = 'approve-idem-1'
+    const specId = 'approve-spec-idem-1'
+    await createOrderWithSpec(
+      org1Id,
+      orderId,
+      'approve-prod-idem-1',
+      specId,
+      'pending',
+      'priced',
+      'calculated',
+    )
+
+    await approveOrder(orderId, org1Id, 'admin-1')
+
+    // Second approval should succeed (already approved + committed)
+    await approveOrder(orderId, org1Id, 'admin-1')
+
+    // Should still have exactly one snapshot
+    const snapshots = await db
+      .select()
+      .from(specificationSnapshots)
+      .where(eq(specificationSnapshots.specificationId, specId))
+    expect(snapshots.length).toBe(1)
+  })
+
+  it('rejects approving a non-pending order', async () => {
+    const orderId = 'approve-draft-1'
+    await createOrderWithSpec(
+      org1Id,
+      orderId,
+      'approve-prod-draft-1',
+      'approve-spec-draft-1',
+      'draft',
+    )
+
+    await expect(approveOrder(orderId, org1Id, 'admin-1')).rejects.toThrow(
+      'Only pending orders can be approved',
+    )
   })
 })

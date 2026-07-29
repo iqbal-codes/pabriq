@@ -3,6 +3,7 @@ import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 import { queryKeys } from '#/lib/query-keys'
 import type {
   ConfirmPortalOrderInput,
+  JsonValue,
   UpdatePortalLineItemInput,
 } from './model'
 import {
@@ -11,6 +12,7 @@ import {
   getOrderTimelineFn,
   getPortalOrderFn,
   savePortalAddressFn,
+  submitPortalSpecificationFn,
   updatePortalLineItemFn,
 } from './server'
 
@@ -72,6 +74,22 @@ export function useSavePortalAddress() {
       areaName: string
       streetAddress: string
     }) => savePortalAddressFn({ data: input }),
+    onSuccess: () => {
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.portal.all },
+      ])
+    },
+  })
+}
+
+export function useSubmitPortalSpecification() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: {
+      token: string
+      specificationId: string
+      fieldValues: Record<string, JsonValue>
+    }) => submitPortalSpecificationFn({ data: input }),
     onSuccess: () => {
       return invalidateMutationQueries(queryClient, [
         { queryKey: queryKeys.portal.all },
