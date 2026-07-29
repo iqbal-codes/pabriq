@@ -15,8 +15,8 @@ import {
   productionStages,
   productionTasks,
   products,
-  taskActivity,
   specifications,
+  taskActivity,
 } from '#/db/schema'
 import {
   confirmPortalOrder,
@@ -40,7 +40,6 @@ const guestOrderId = '00000000-0000-0000-0000-000000000011'
 const matchedCustomerId = '00000000-0000-0000-0000-000000000012'
 const createdCustomerId = '00000000-0000-0000-0000-000000000013'
 const spec1Id = '00000000-0000-0000-0000-000000000020'
-
 
 beforeEach(async () => {
   await db.execute(sql`TRUNCATE organization, biteship_areas CASCADE`)
@@ -1268,11 +1267,9 @@ describe('getOrderTimeline', () => {
 
 describe('submitPortalSpecification', () => {
   it('returns invalidToken for bad token', async () => {
-    const result = await submitPortalSpecification(
-      'invalid-token',
-      spec1Id,
-      { size: 'L' },
-    )
+    const result = await submitPortalSpecification('invalid-token', spec1Id, {
+      size: 'L',
+    })
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.error).toBe('invalidToken')
   })
@@ -1292,22 +1289,18 @@ describe('submitPortalSpecification', () => {
     })
     const token = await generateOrderToken(otherOrderId)
 
-    const result = await submitPortalSpecification(
-      token,
-      spec1Id,
-      { size: 'L' },
-    )
+    const result = await submitPortalSpecification(token, spec1Id, {
+      size: 'L',
+    })
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.error).toBe('specNotFound')
   })
 
   it('submits spec values and updates status', async () => {
     const token = await generateOrderToken(order1Id)
-    const result = await submitPortalSpecification(
-      token,
-      spec1Id,
-      { color: 'Red' },
-    )
+    const result = await submitPortalSpecification(token, spec1Id, {
+      color: 'Red',
+    })
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.spec.status).toBe('submitted')

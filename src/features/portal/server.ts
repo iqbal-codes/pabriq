@@ -7,7 +7,6 @@ import type {
   UpdatePortalLineItemInput,
 } from './model'
 
-
 export async function getOrgIdFromToken(token: string): Promise<string> {
   const { getPortalOrder } = await import('./model')
   const result = await getPortalOrder(token)

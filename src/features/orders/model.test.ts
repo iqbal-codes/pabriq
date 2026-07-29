@@ -12,13 +12,13 @@ import {
   organization,
   organizationProfiles as orgProfilesTable,
   paymentMethods as paymentMethodsTable,
+  pricingBasis,
   products as productsTable,
+  specificationPrices,
+  specificationSnapshots,
+  specifications,
   productionStages as stagesTable,
   productionTasks as tasksTable,
-  specifications,
-  specificationSnapshots,
-  specificationPrices,
-  pricingBasis,
 } from '#/db/schema'
 import {
   adjustOrderQuantity,
@@ -1594,7 +1594,12 @@ async function createOrderWithSpec(
     orderId,
     submittedBy: 'test-user',
     submittedByRole: 'customer',
-    status: specStatus as 'draft' | 'submitted' | 'priced' | 'pricing_review' | 'committed',
+    status: specStatus as
+      | 'draft'
+      | 'submitted'
+      | 'priced'
+      | 'pricing_review'
+      | 'committed',
     fieldValues: { color: 'Red' },
     quantity: 1,
     pricingStatus: pricingStatus ?? null,
@@ -1637,7 +1642,13 @@ async function createOrderWithSpec(
 describe('cancelOrder', () => {
   it('cancels a draft order', async () => {
     const orderId = 'cancel-draft-1'
-    await createOrderWithSpec(org1Id, orderId, 'cancel-prod-1', 'cancel-spec-1', 'draft')
+    await createOrderWithSpec(
+      org1Id,
+      orderId,
+      'cancel-prod-1',
+      'cancel-spec-1',
+      'draft',
+    )
 
     await cancelOrder(orderId, org1Id, {
       cancelledBy: 'user-1',
@@ -1654,7 +1665,15 @@ describe('cancelOrder', () => {
 
   it('cancels a pending order', async () => {
     const orderId = 'cancel-pending-1'
-    await createOrderWithSpec(org1Id, orderId, 'cancel-prod-2', 'cancel-spec-2', 'pending', 'submitted', 'calculated')
+    await createOrderWithSpec(
+      org1Id,
+      orderId,
+      'cancel-prod-2',
+      'cancel-spec-2',
+      'pending',
+      'submitted',
+      'calculated',
+    )
 
     await cancelOrder(orderId, org1Id, {
       cancelledBy: 'user-1',
@@ -1671,7 +1690,14 @@ describe('cancelOrder', () => {
 
   it('rejects cancelling an approved order', async () => {
     const orderId = 'cancel-approved-1'
-    await createOrderWithSpec(org1Id, orderId, 'cancel-prod-3', 'cancel-spec-3', 'approved', 'committed')
+    await createOrderWithSpec(
+      org1Id,
+      orderId,
+      'cancel-prod-3',
+      'cancel-spec-3',
+      'approved',
+      'committed',
+    )
 
     await expect(
       cancelOrder(orderId, org1Id, {
@@ -1692,7 +1718,13 @@ describe('cancelOrder', () => {
 
   it('records an activity event on cancel', async () => {
     const orderId = 'cancel-activity-1'
-    await createOrderWithSpec(org1Id, orderId, 'cancel-prod-4', 'cancel-spec-4', 'draft')
+    await createOrderWithSpec(
+      org1Id,
+      orderId,
+      'cancel-prod-4',
+      'cancel-spec-4',
+      'draft',
+    )
 
     await cancelOrder(orderId, org1Id, {
       cancelledBy: 'user-1',
@@ -1713,7 +1745,15 @@ describe('approveOrder with specifications', () => {
   it('approves order and creates spec snapshots', async () => {
     const orderId = 'approve-1'
     const specId = 'approve-spec-1'
-    await createOrderWithSpec(org1Id, orderId, 'approve-prod-1', specId, 'pending', 'priced', 'calculated')
+    await createOrderWithSpec(
+      org1Id,
+      orderId,
+      'approve-prod-1',
+      specId,
+      'pending',
+      'priced',
+      'calculated',
+    )
 
     await approveOrder(orderId, org1Id, 'admin-1')
 
@@ -1744,7 +1784,15 @@ describe('approveOrder with specifications', () => {
   it('is idempotent — does not create duplicate snapshots', async () => {
     const orderId = 'approve-idem-1'
     const specId = 'approve-spec-idem-1'
-    await createOrderWithSpec(org1Id, orderId, 'approve-prod-idem-1', specId, 'pending', 'priced', 'calculated')
+    await createOrderWithSpec(
+      org1Id,
+      orderId,
+      'approve-prod-idem-1',
+      specId,
+      'pending',
+      'priced',
+      'calculated',
+    )
 
     await approveOrder(orderId, org1Id, 'admin-1')
 
@@ -1761,10 +1809,16 @@ describe('approveOrder with specifications', () => {
 
   it('rejects approving a non-pending order', async () => {
     const orderId = 'approve-draft-1'
-    await createOrderWithSpec(org1Id, orderId, 'approve-prod-draft-1', 'approve-spec-draft-1', 'draft')
+    await createOrderWithSpec(
+      org1Id,
+      orderId,
+      'approve-prod-draft-1',
+      'approve-spec-draft-1',
+      'draft',
+    )
 
-    await expect(
-      approveOrder(orderId, org1Id, 'admin-1'),
-    ).rejects.toThrow('Only pending orders can be approved')
+    await expect(approveOrder(orderId, org1Id, 'admin-1')).rejects.toThrow(
+      'Only pending orders can be approved',
+    )
   })
 })

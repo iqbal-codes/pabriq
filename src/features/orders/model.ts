@@ -31,8 +31,8 @@ import {
   productionStages as productionStagesTable,
   productionTasks as productionTasksTable,
   products as productsTable,
-  specifications,
   specificationSnapshots,
+  specifications,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
 import { getCustomerAddress } from '#/features/address/model'
@@ -40,9 +40,7 @@ import type { AssetMetadata } from '#/features/assets/server'
 import { rewriteFinalInvoiceFromOrder } from '#/features/invoices/model'
 import { normalizeDesignName } from '#/features/orders/line-item-display'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
-import {
-  commitSpecification,
-} from '#/features/product-configuration/model'
+import { commitSpecification } from '#/features/product-configuration/model'
 import { spawnQueuedPreProductionTasksForOrder } from '#/features/production/task-spawn-helpers'
 import { type DbClient, listBreakpoints } from '#/features/products/model'
 import { addWorkingDays } from '#/lib/date-utils'
@@ -1681,10 +1679,7 @@ export async function approveOrder(
       .select({ id: specifications.id, status: specifications.status })
       .from(specifications)
       .where(
-        and(
-          eq(specifications.orgId, orgId),
-          eq(specifications.orderId, id),
-        ),
+        and(eq(specifications.orgId, orgId), eq(specifications.orderId, id)),
       )
 
     for (const spec of specRows) {

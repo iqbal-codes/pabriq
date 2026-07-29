@@ -19,14 +19,14 @@ import {
   taskActivity,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
+import { normalizeDesignName } from '#/features/orders/line-item-display'
 import {
   calculatePrice,
   listProductFields,
+  type ProductField,
   savePricingResult,
   submitSpecification,
-  type ProductField,
 } from '#/features/product-configuration/model'
-import { normalizeDesignName } from '#/features/orders/line-item-display'
 import { addWorkingDays } from '#/lib/date-utils'
 
 /** Serializable JSON value for TanStack Start server function compatibility. */
@@ -159,7 +159,9 @@ export type PortalSpecificationField = {
 }
 
 /** Map product fields to portal-specification field representations. */
-function mapFieldsToPortalFields(fields: ProductField[]): PortalSpecificationField[] {
+function mapFieldsToPortalFields(
+  fields: ProductField[],
+): PortalSpecificationField[] {
   return fields.map((f) => ({
     fieldKey: f.fieldKey,
     label: f.label,
@@ -504,7 +506,9 @@ export async function getPortalOrder(
     specRows.map(async (spec): Promise<PortalSpecification> => {
       const fields = await listProductFields(spec.orgId, spec.productId)
       // Find associated line item (match by productId in the order's line items)
-      const matchingItem = itemRows.find((li) => li.productId === spec.productId)
+      const matchingItem = itemRows.find(
+        (li) => li.productId === spec.productId,
+      )
 
       const portalFields = mapFieldsToPortalFields(fields)
 
@@ -516,10 +520,12 @@ export async function getPortalOrder(
         quantity: spec.quantity,
         fieldValues: (spec.fieldValues ?? {}) as Record<string, JsonValue>,
         resolvedDisplay:
-          (spec.resolvedDisplay as PortalSpecification['resolvedDisplay']) ?? {},
+          (spec.resolvedDisplay as PortalSpecification['resolvedDisplay']) ??
+          {},
         fields: portalFields,
         validationErrors:
-          (spec.validationErrors as PortalSpecification['validationErrors']) ?? [],
+          (spec.validationErrors as PortalSpecification['validationErrors']) ??
+          [],
         pricingStatus: spec.pricingStatus,
         pricingReviewReason: spec.pricingReviewReason,
         rejectionReason: spec.rejectionReason,
@@ -638,7 +644,11 @@ export async function confirmPortalOrder(
         )
 
       const unsubmitted = specRows.filter(
-        (s) => s.status !== 'submitted' && s.status !== 'priced' && s.status !== 'pricing_review' && s.status !== 'committed',
+        (s) =>
+          s.status !== 'submitted' &&
+          s.status !== 'priced' &&
+          s.status !== 'pricing_review' &&
+          s.status !== 'committed',
       )
       if (unsubmitted.length > 0) {
         throw new Error('specificationsNotSubmitted')
@@ -800,7 +810,11 @@ export async function submitPortalSpecification(
 ): Promise<SubmitPortalSpecResult> {
   // Validate token
   const orderRows = await db
-    .select({ id: orders.id, orgId: orders.orgId, validUntil: orders.validUntil })
+    .select({
+      id: orders.id,
+      orgId: orders.orgId,
+      validUntil: orders.validUntil,
+    })
     .from(orders)
     .where(eq(orders.orderToken, token))
     .limit(1)
@@ -875,10 +889,12 @@ export async function submitPortalSpecification(
       quantity: pricedSpec.quantity,
       fieldValues: (pricedSpec.fieldValues ?? {}) as Record<string, JsonValue>,
       resolvedDisplay:
-        (pricedSpec.resolvedDisplay as PortalSpecification['resolvedDisplay']) ?? {},
+        (pricedSpec.resolvedDisplay as PortalSpecification['resolvedDisplay']) ??
+        {},
       fields: portalFields,
       validationErrors:
-        (pricedSpec.validationErrors as PortalSpecification['validationErrors']) ?? [],
+        (pricedSpec.validationErrors as PortalSpecification['validationErrors']) ??
+        [],
       pricingStatus: pricedSpec.pricingStatus,
       pricingReviewReason: pricedSpec.pricingReviewReason,
       rejectionReason: pricedSpec.rejectionReason,
