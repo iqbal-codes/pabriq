@@ -15,11 +15,28 @@ import {
   payments as paymentsTable,
   productionStages,
   productionTasks,
+  specifications,
   taskActivity,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
+import {
+  calculatePrice,
+  listProductFields,
+  savePricingResult,
+  submitSpecification,
+  type ProductField,
+} from '#/features/product-configuration/model'
 import { normalizeDesignName } from '#/features/orders/line-item-display'
 import { addWorkingDays } from '#/lib/date-utils'
+
+/** Serializable JSON value for TanStack Start server function compatibility. */
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue }
 
 export type PortalAsset = {
   id: string
@@ -91,6 +108,68 @@ export type PortalOrder = {
   approvedAt: Date | null
   shippedAt: Date | null
   deliveredAt: Date | null
+  /** Specifications for this order's products. */
+  specifications: PortalSpecification[]
+}
+
+/** A specification as viewed from the portal side, with field definitions. */
+export type PortalSpecification = {
+  id: string
+  productId: string
+  productName: string
+  status: string
+  quantity: number
+  fieldValues: Record<string, JsonValue>
+  resolvedDisplay: Record<
+    string,
+    { label: string; unit?: string; displayValue: string }
+  >
+  fields: PortalSpecificationField[]
+  validationErrors: Array<{
+    fieldKey?: string
+    message: string
+    code: string
+  }>
+  pricingStatus: string | null
+  pricingReviewReason: string | null
+  rejectionReason: string | null
+  lineItemId: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+/** A single product field as seen from the portal, with current value. */
+export type PortalSpecificationField = {
+  fieldKey: string
+  label: string
+  fieldType: string
+  unit: string | null
+  required: boolean
+  options: Array<{
+    value: string
+    label: string
+    surcharge?: number
+    materialSurcharge?: number
+  }>
+  matrix: {
+    sizes: string[]
+    colors: Array<{ name: string; hex?: string }>
+  } | null
+  sortOrder: number
+}
+
+/** Map product fields to portal-specification field representations. */
+function mapFieldsToPortalFields(fields: ProductField[]): PortalSpecificationField[] {
+  return fields.map((f) => ({
+    fieldKey: f.fieldKey,
+    label: f.label,
+    fieldType: f.fieldType,
+    unit: f.unit,
+    required: f.required,
+    options: f.options as PortalSpecificationField['options'],
+    matrix: f.matrix,
+    sortOrder: f.sortOrder,
+  }))
 }
 
 export type ConfirmPortalOrderInput = {
@@ -139,6 +218,11 @@ export async function getPortalOrder(
   }
 
   const order = orderRows[0]
+
+  // Check token expiry
+  if (order.validUntil && new Date() > order.validUntil) {
+    return { ok: false, error: 'tokenExpired' }
+  }
   const customer = order.customerId
     ? (
         await db
@@ -404,6 +488,48 @@ export async function getPortalOrder(
   const preProductionFirstStageName =
     firstPreProductionStageRows[0]?.name ?? null
 
+  // Load specifications for this order with field definitions
+  const specRows = await db
+    .select()
+    .from(specifications)
+    .where(
+      and(
+        eq(specifications.orgId, order.orgId),
+        eq(specifications.orderId, order.id),
+      ),
+    )
+    .orderBy(specifications.createdAt)
+
+  const portalSpecs: PortalSpecification[] = await Promise.all(
+    specRows.map(async (spec): Promise<PortalSpecification> => {
+      const fields = await listProductFields(spec.orgId, spec.productId)
+      // Find associated line item (match by productId in the order's line items)
+      const matchingItem = itemRows.find((li) => li.productId === spec.productId)
+
+      const portalFields = mapFieldsToPortalFields(fields)
+
+      return {
+        id: spec.id,
+        productId: spec.productId,
+        productName: matchingItem?.productName ?? '',
+        status: spec.status,
+        quantity: spec.quantity,
+        fieldValues: (spec.fieldValues ?? {}) as Record<string, JsonValue>,
+        resolvedDisplay:
+          (spec.resolvedDisplay as PortalSpecification['resolvedDisplay']) ?? {},
+        fields: portalFields,
+        validationErrors:
+          (spec.validationErrors as PortalSpecification['validationErrors']) ?? [],
+        pricingStatus: spec.pricingStatus,
+        pricingReviewReason: spec.pricingReviewReason,
+        rejectionReason: spec.rejectionReason,
+        lineItemId: matchingItem?.id ?? null,
+        createdAt: spec.createdAt,
+        updatedAt: spec.updatedAt,
+      }
+    }),
+  )
+
   return {
     ok: true,
     order: {
@@ -422,6 +548,7 @@ export async function getPortalOrder(
       customerIsWni: customer?.isWni ?? null,
       customerPhotoAssetId: customer?.photoAssetId ?? null,
       lineItems: items,
+      specifications: portalSpecs,
       invoices,
       createdAt: order.createdAt,
       rejectReason: order.rejectReason ?? null,
@@ -497,6 +624,24 @@ export async function confirmPortalOrder(
       const order = orderRows[0]
       if (order.status !== 'draft') {
         throw new Error('notDraft')
+      }
+
+      // Validate that all specifications for this order are submitted or priced
+      const specRows = await tx
+        .select({ id: specifications.id, status: specifications.status })
+        .from(specifications)
+        .where(
+          and(
+            eq(specifications.orgId, order.orgId),
+            eq(specifications.orderId, order.id),
+          ),
+        )
+
+      const unsubmitted = specRows.filter(
+        (s) => s.status !== 'submitted' && s.status !== 'priced' && s.status !== 'pricing_review' && s.status !== 'committed',
+      )
+      if (unsubmitted.length > 0) {
+        throw new Error('specificationsNotSubmitted')
       }
 
       let customerId = order.customerId
@@ -633,6 +778,115 @@ export async function updatePortalLineItem(
     .where(eq(orderLineItems.id, itemId))
 
   return { ok: true }
+}
+
+/** Result type for portal specification submission. */
+export type SubmitPortalSpecResult =
+  | {
+      ok: true
+      spec: PortalSpecification
+    }
+  | { ok: false; error: string }
+
+/**
+ * Submit specification field values from the portal side.
+ * Validates the portal token is scoped to the same order as the spec,
+ * then delegates to the product-configuration submitSpecification.
+ */
+export async function submitPortalSpecification(
+  token: string,
+  specificationId: string,
+  fieldValues: Record<string, JsonValue>,
+): Promise<SubmitPortalSpecResult> {
+  // Validate token
+  const orderRows = await db
+    .select({ id: orders.id, orgId: orders.orgId, validUntil: orders.validUntil })
+    .from(orders)
+    .where(eq(orders.orderToken, token))
+    .limit(1)
+
+  if (orderRows.length === 0) {
+    return { ok: false, error: 'invalidToken' }
+  }
+
+  const order = orderRows[0]
+
+  // Check token expiry
+  if (order.validUntil && new Date() > order.validUntil) {
+    return { ok: false, error: 'tokenExpired' }
+  }
+
+  // Verify the spec belongs to this order
+  const [specRow] = await db
+    .select({ id: specifications.id, orderId: specifications.orderId })
+    .from(specifications)
+    .where(eq(specifications.id, specificationId))
+    .limit(1)
+
+  if (!specRow || specRow.orderId !== order.id) {
+    return { ok: false, error: 'specNotFound' }
+  }
+
+  // Delegate to product-configuration
+  const updatedSpec = await submitSpecification(
+    specificationId,
+    order.orgId,
+    fieldValues,
+  )
+
+  // Auto-calculate pricing if spec is now submitted
+  let pricedSpec = updatedSpec
+  if (updatedSpec.status === 'submitted') {
+    try {
+      const pricingResult = await calculatePrice(
+        order.orgId,
+        updatedSpec.productId,
+        updatedSpec.quantity,
+        updatedSpec.fieldValues as Record<string, unknown>,
+      )
+      const price = await savePricingResult(
+        updatedSpec.id,
+        order.orgId,
+        pricingResult,
+      )
+      pricedSpec = {
+        ...updatedSpec,
+        status: pricingResult.inReview ? 'pricing_review' : 'priced',
+        pricingStatus: pricingResult.inReview ? 'review' : 'calculated',
+        pricingReviewReason: pricingResult.reviewReason ?? null,
+      }
+      void price
+    } catch {
+      // Pricing not configured or failed — spec stays submitted for admin review
+    }
+  }
+
+  // Reload with portal fields for the response
+  const fields = await listProductFields(order.orgId, updatedSpec.productId)
+  const portalFields = mapFieldsToPortalFields(fields)
+
+  return {
+    ok: true,
+    spec: {
+      id: pricedSpec.id,
+      productId: pricedSpec.productId,
+      productName: '',
+      status: pricedSpec.status,
+      quantity: pricedSpec.quantity,
+      fieldValues: (pricedSpec.fieldValues ?? {}) as Record<string, JsonValue>,
+      resolvedDisplay:
+        (pricedSpec.resolvedDisplay as PortalSpecification['resolvedDisplay']) ?? {},
+      fields: portalFields,
+      validationErrors:
+        (pricedSpec.validationErrors as PortalSpecification['validationErrors']) ?? [],
+      pricingStatus: pricedSpec.pricingStatus,
+      pricingReviewReason: pricedSpec.pricingReviewReason,
+      rejectionReason: pricedSpec.rejectionReason,
+      lineItemId: null,
+      createdAt: pricedSpec.createdAt,
+      updatedAt: pricedSpec.updatedAt,
+    },
+  }
 }
 
 export type SavePortalAddressResult =
