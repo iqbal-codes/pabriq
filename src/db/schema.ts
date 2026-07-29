@@ -1027,6 +1027,7 @@ export const invoices = pgTable(
     percentage: real('percentage'),
     subtotal: real('subtotal').notNull(),
     total: real('total').notNull(),
+    currency: text('currency').notNull().default('IDR'),
     dueDate: date('due_date').notNull(),
     paymentProvider: text('payment_provider')
       .notNull()
