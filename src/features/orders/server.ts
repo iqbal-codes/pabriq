@@ -473,3 +473,33 @@ export const getOrderAdminTimelineFn = createServerFn({ method: 'GET' })
     ])
     return getOrderTimelineByOrderId(data.orderId, orgId)
   })
+
+const cancelOrderInputSchema = z.object({
+  orderId: z.string().trim().min(1).max(100),
+  reason: z.string().trim().min(1).max(2000),
+})
+
+export const cancelOrderFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: unknown) => cancelOrderInputSchema.parse(input))
+  .handler(async ({ data }): Promise<MutationResult> => {
+    const [orgId, { auth }, { cancelOrder }] = await Promise.all([
+      resolveOrgId(),
+      import('#/lib/auth'),
+      import('./model'),
+    ])
+    const headers = getRequestHeaders()
+    const session = await auth.api.getSession({ headers })
+    const userId = session?.user.id ?? 'unknown'
+    try {
+      await cancelOrder(data.orderId, orgId, {
+        cancelledBy: userId,
+        reason: data.reason,
+      })
+      return { ok: true }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
+  })
