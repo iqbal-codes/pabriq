@@ -300,6 +300,21 @@ export const getAssetSignedUrl = createServerFn({ method: 'GET' })
       import('#/lib/r2'),
     ])
 
+    // Verify asset belongs to the org before retrieving variants (BOLA prevention)
+    const [assetOwnership] = await db
+      .select({ id: assets.id, originalFilename: assets.originalFilename })
+      .from(assets)
+      .where(
+        and(
+          eq(assets.id, data.assetId),
+          eq(assets.orgId, orgId),
+          eq(assets.status, 'active'),
+        ),
+      )
+      .limit(1)
+
+    if (!assetOwnership) throw new Error('Asset not found')
+
     const requestedVariant = await db
       .select()
       .from(assetVariants)
@@ -339,33 +354,10 @@ export const getAssetSignedUrl = createServerFn({ method: 'GET' })
     const key = variant.storageKey
     const ttl = data.variantKey === 'original' ? 5 * 60 : 15 * 60
 
-    // Verify asset belongs to the org (both inline and attachment modes)
-    const [assetOwnership] = await db
-      .select({ id: assets.id })
-      .from(assets)
-      .where(
-        and(
-          eq(assets.id, data.assetId),
-          eq(assets.orgId, orgId),
-          eq(assets.status, 'active'),
-        ),
-      )
-      .limit(1)
-
-    if (!assetOwnership) throw new Error('Asset not found')
-
     if (data.disposition === 'attachment') {
-      const [asset] = await db
-        .select({ originalFilename: assets.originalFilename })
-        .from(assets)
-        .where(eq(assets.id, data.assetId))
-        .limit(1)
-
-      if (!asset) throw new Error('Asset not found')
-
       return generateSignedDownloadUrl(key, ttl, {
         contentDisposition: buildAttachmentContentDisposition(
-          asset.originalFilename,
+          assetOwnership.originalFilename,
         ),
       })
     }

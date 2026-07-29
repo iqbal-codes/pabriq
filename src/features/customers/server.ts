@@ -1,8 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
+import { z } from 'zod'
 import { resolveOrgId } from '#/lib/auth-session-server'
 import type {
   Customer,
-  CustomerInput,
   ListCustomersParams,
   ListCustomersResult,
 } from './model'
@@ -14,14 +14,51 @@ import {
   updateCustomer,
 } from './model'
 
+const sortStateSchema = z
+  .object({
+    field: z.string().trim().max(50),
+    direction: z.enum(['asc', 'desc']),
+  })
+  .nullable()
+  .optional()
+
+const shippingAddressSchema = z
+  .object({
+    areaId: z.string().trim().max(100),
+    areaName: z.string().trim().max(200),
+    streetAddress: z.string().trim().max(500),
+  })
+  .nullable()
+  .optional()
+
+const customerInputSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  email: z.string().trim().email().max(255).nullable().optional(),
+  phone: z.string().trim().max(50).nullable().optional(),
+  notes: z.string().trim().max(2000).nullable().optional(),
+  active: z.boolean().optional(),
+  isWni: z.boolean().optional(),
+  photoAssetId: z.string().trim().max(100).nullable().optional(),
+  address: shippingAddressSchema,
+})
+
+const listCustomersParamsSchema = z.object({
+  orgId: z.string().trim().min(1).max(100),
+  search: z.string().trim().max(100).optional(),
+  status: z.string().trim().max(50).optional(),
+  sort: sortStateSchema,
+  page: z.number().int().min(1).max(10000).optional(),
+  perPage: z.number().int().min(1).max(100).optional(),
+})
 export const listCustomersFn = createServerFn({ method: 'GET' })
-  .inputValidator((data: ListCustomersParams) => data)
+  .inputValidator((data: unknown) => listCustomersParamsSchema.parse(data))
   .handler(async ({ data }): Promise<ListCustomersResult> => {
-    return listCustomers(data)
+    const orgId = await resolveOrgId()
+    return listCustomers({ ...(data as unknown as ListCustomersParams), orgId })
   })
 
 export const createCustomerFn = createServerFn({ method: 'POST' })
-  .inputValidator((input: CustomerInput) => input)
+  .inputValidator((input: unknown) => customerInputSchema.parse(input))
   .handler(
     async ({
       data,
@@ -40,7 +77,11 @@ export const createCustomerFn = createServerFn({ method: 'POST' })
   )
 
 export const updateCustomerFn = createServerFn({ method: 'POST' })
-  .inputValidator((input: CustomerInput & { id: string }) => input)
+  .inputValidator((input: unknown) =>
+    customerInputSchema
+      .extend({ id: z.string().trim().min(1).max(100) })
+      .parse(input),
+  )
   .handler(
     async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
       const orgId = await resolveOrgId()
@@ -57,14 +98,18 @@ export const updateCustomerFn = createServerFn({ method: 'POST' })
   )
 
 export const getCustomerFn = createServerFn({ method: 'GET' })
-  .inputValidator((data: { id: string }) => data)
+  .inputValidator((data: unknown) =>
+    z.object({ id: z.string().trim().min(1).max(100) }).parse(data),
+  )
   .handler(async ({ data }): Promise<Customer | null> => {
     const orgId = await resolveOrgId()
     return getCustomer(data.id, orgId)
   })
 
 export const deleteCustomerFn = createServerFn({ method: 'POST' })
-  .inputValidator((input: { id: string }) => input)
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().trim().min(1).max(100) }).parse(input),
+  )
   .handler(
     async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
       const orgId = await resolveOrgId()

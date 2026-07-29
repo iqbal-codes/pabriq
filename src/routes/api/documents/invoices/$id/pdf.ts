@@ -4,6 +4,7 @@ import {
   generateInvoicePdf,
   resolveOrgForDocument,
 } from '#/features/documents/server.tsx'
+import { SECURITY_RESPONSE_HEADERS } from '#/lib/security-headers'
 
 export const Route = createFileRoute('/api/documents/invoices/$id/pdf')({
   server: {
@@ -40,6 +41,7 @@ export const Route = createFileRoute('/api/documents/invoices/$id/pdf')({
           headers: {
             'Content-Type': 'application/pdf',
             'Content-Disposition': 'inline',
+            ...SECURITY_RESPONSE_HEADERS,
           },
         })
       },

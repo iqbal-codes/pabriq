@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
+import { z } from 'zod'
 import {
   canAdjustConfirmedOrder,
   type Role,
@@ -7,43 +8,92 @@ import {
 import { resolveOrgId } from '#/lib/auth-session-server'
 import type { MutationResult } from '#/lib/server-results'
 import type {
-  CreateDraftOrderInput,
   CreateDraftOrderResult,
   GetOrderResult,
   ListOrdersParams,
   ListOrdersResult,
   OrderCreationReadiness,
-  UpdateDraftOrderInput,
 } from './model'
 
+const listOrdersParamsSchema = z.object({
+  orgId: z.string().trim().min(1).max(100),
+  search: z.string().trim().max(100).optional(),
+  status: z.string().trim().max(50).optional(),
+  sort: z
+    .object({
+      field: z.string().trim().max(50),
+      direction: z.enum(['asc', 'desc']),
+    })
+    .nullable()
+    .optional(),
+  page: z.number().int().min(1).max(10000).optional(),
+  perPage: z.number().int().min(1).max(100).optional(),
+})
+
+const lineItemInputSchema = z.object({
+  productId: z.string().trim().min(1).max(100),
+  quantity: z.number().int().min(1).max(1000000),
+  notes: z.string().trim().max(2000).optional(),
+  addons: z
+    .array(
+      z.object({
+        addonId: z.string().trim().min(1).max(100),
+        selectedOptionId: z.string().trim().min(1).max(100),
+      }),
+    )
+    .max(50)
+    .optional(),
+})
+
+const createDraftOrderInputSchema = z.object({
+  orgId: z.string().trim().min(1).max(100),
+  customerId: z.string().trim().max(100).nullable().optional(),
+  notes: z.string().trim().max(2000).optional(),
+  lineItems: z.array(lineItemInputSchema).min(1).max(100),
+  deadline: z.string().optional(),
+  manualDeadline: z.boolean().optional(),
+})
+const updateDraftOrderInputSchema = createDraftOrderInputSchema.extend({
+  id: z.string().trim().min(1).max(100),
+})
 export const listOrdersFn = createServerFn({ method: 'GET' })
-  .inputValidator((data: ListOrdersParams) => data)
+  .inputValidator((data: unknown) => listOrdersParamsSchema.parse(data))
   .handler(async ({ data }): Promise<ListOrdersResult> => {
-    const { listOrders } = await import('./model')
-    return listOrders(data)
-  })
-
-export const getOrderFn = createServerFn({ method: 'GET' })
-  .inputValidator((input: { id: string; orgId: string }) => input)
-  .handler(async ({ data }): Promise<GetOrderResult | null> => {
-    const { getOrder } = await import('./model')
-    return getOrder(data.id, data.orgId)
-  })
-
-export const getOrderCreationReadinessFn = createServerFn({ method: 'GET' })
-  .inputValidator((data: Record<string, never>) => data)
-  .handler(async (): Promise<OrderCreationReadiness> => {
-    const [orgId, { getOrderCreationReadiness }] = await Promise.all([
+    const [orgId, { listOrders }] = await Promise.all([
       resolveOrgId(),
       import('./model'),
     ])
-    return getOrderCreationReadiness(orgId)
+    return listOrders({ ...(data as unknown as ListOrdersParams), orgId })
   })
 
-export const createDraftOrderFn = createServerFn({ method: 'POST' })
-  .inputValidator(
-    (input: Omit<CreateDraftOrderInput, 'orgId'> & { orgId: string }) => input,
+export const getOrderFn = createServerFn({ method: 'GET' })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        id: z.string().trim().min(1).max(100),
+      })
+      .parse(input),
   )
+  .handler(async ({ data }): Promise<GetOrderResult | null> => {
+    const [orgId, { getOrder }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
+    return getOrder(data.id, orgId)
+  })
+
+export const getOrderCreationReadinessFn = createServerFn({
+  method: 'GET',
+}).handler(async (): Promise<OrderCreationReadiness> => {
+  const [orgId, { getOrderCreationReadiness }] = await Promise.all([
+    resolveOrgId(),
+    import('./model'),
+  ])
+  return getOrderCreationReadiness(orgId)
+})
+
+export const createDraftOrderFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: unknown) => createDraftOrderInputSchema.parse(input))
   .handler(async ({ data }): Promise<CreateDraftOrderResult> => {
     const [orgId, orderModel] = await Promise.all([
       resolveOrgId(),
@@ -55,42 +105,46 @@ export const createDraftOrderFn = createServerFn({ method: 'POST' })
     }
 
     return orderModel.createDraftOrder(orgId, {
-      customerId: data.customerId,
+      customerId: data.customerId ?? null,
       notes: data.notes,
-      lineItems: data.lineItems,
-      deadline: data.deadline,
+      lineItems: data.lineItems.map((li) => ({
+        ...li,
+        addons: li.addons,
+      })),
+      deadline: data.deadline ? new Date(data.deadline) : undefined,
       manualDeadline: data.manualDeadline,
     })
   })
 
 export const updateDraftOrderFn = createServerFn({ method: 'POST' })
-  .inputValidator(
-    (
-      input: { id: string; orgId: string } & Omit<
-        UpdateDraftOrderInput,
-        'orgId'
-      >,
-    ) => input,
-  )
+  .inputValidator((input: unknown) => updateDraftOrderInputSchema.parse(input))
   .handler(async ({ data }) => {
     const [orgId, { updateDraftOrder }] = await Promise.all([
       resolveOrgId(),
       import('./model'),
     ])
     return updateDraftOrder(data.id, orgId, {
-      customerId: data.customerId,
+      customerId: data.customerId ?? null,
       notes: data.notes,
-      lineItems: data.lineItems,
-      deadline: data.deadline,
+      lineItems: data.lineItems.map((li) => ({
+        ...li,
+        addons: li.addons,
+      })),
+      deadline: data.deadline ? new Date(data.deadline) : undefined,
       manualDeadline: data.manualDeadline,
     })
   })
 
 export const getAssetsForLineItemFn = createServerFn({ method: 'GET' })
-  .inputValidator((input: { lineItemId: string; orgId: string }) => input)
+  .inputValidator((input: unknown) =>
+    z.object({ lineItemId: z.string().trim().min(1).max(100) }).parse(input),
+  )
   .handler(async ({ data }) => {
-    const { getAssetsForLineItem } = await import('./model')
-    return getAssetsForLineItem(data.lineItemId, data.orgId)
+    const [orgId, { getAssetsForLineItem }] = await Promise.all([
+      resolveOrgId(),
+      import('./model'),
+    ])
+    return getAssetsForLineItem(data.lineItemId, orgId)
   })
 
 export const approveOrderFn = createServerFn({ method: 'POST' })
@@ -232,11 +286,6 @@ export const completeProductionFn = createServerFn({ method: 'POST' })
     if (orderRows.length === 0) throw new Error('Order not found')
     const order = orderRows[0]
 
-    if (order.status !== 'in_progress' && order.status !== 'approved') {
-      return { ok: false, error: 'Order is not in progress' }
-    }
-
-    // Auto-advance from approved → in_progress if all tasks are already done
     if (order.status === 'approved') {
       const { advanceOrderStatus } = await import('./model')
       await advanceOrderStatus(data.id, orgId, 'system')
@@ -413,10 +462,13 @@ export const adjustOrderQuantityFn = createServerFn({ method: 'POST' })
   })
 
 export const getOrderAdminTimelineFn = createServerFn({ method: 'GET' })
-  .inputValidator((input: { orderId: string; orgId: string }) => input)
+  .inputValidator((input: unknown) =>
+    z.object({ orderId: z.string().trim().min(1).max(100) }).parse(input),
+  )
   .handler(async ({ data }) => {
-    const { getOrderTimelineByOrderId } = await import(
-      '#/features/portal/model'
-    )
-    return getOrderTimelineByOrderId(data.orderId, data.orgId)
+    const [orgId, { getOrderTimelineByOrderId }] = await Promise.all([
+      resolveOrgId(),
+      import('#/features/portal/model'),
+    ])
+    return getOrderTimelineByOrderId(data.orderId, orgId)
   })

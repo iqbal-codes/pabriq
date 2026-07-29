@@ -307,7 +307,7 @@ export function ViewOrderPage() {
   const ctx = useRouteContext({ from: '/_org/orders/$id/' }) as {
     org: { id: string; role: Role }
   }
-  const { data } = useOrder({ id, orgId: ctx.org.id })
+  const { data } = useOrder({ id })
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
   const [paymentConfirmationOpen, setPaymentConfirmationOpen] = useState(false)
   const [completeProductionModalOpen, setCompleteProductionModalOpen] =

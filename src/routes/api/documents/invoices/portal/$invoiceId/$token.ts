@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm'
 import { db } from '#/db/index'
 import { invoices as invoicesTable, orders as ordersTable } from '#/db/schema'
 import { generateInvoicePdf } from '#/features/documents/server.tsx'
+import { SECURITY_RESPONSE_HEADERS } from '#/lib/security-headers'
 
 export const Route = createFileRoute(
   '/api/documents/invoices/portal/$invoiceId/$token',
@@ -45,6 +46,7 @@ export const Route = createFileRoute(
           headers: {
             'Content-Type': 'application/pdf',
             'Content-Disposition': 'inline',
+            ...SECURITY_RESPONSE_HEADERS,
           },
         })
       },

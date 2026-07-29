@@ -1685,7 +1685,7 @@ export async function rejectOrder(
 export async function advanceOrderStatus(
   id: string,
   orgId: string,
-  _actorId: string,
+  actorId = 'system',
 ): Promise<void> {
   const orderRows = await db
     .select()
@@ -1705,7 +1705,7 @@ export async function advanceOrderStatus(
     await db.insert(activityEventsTable).values({
       id: crypto.randomUUID(),
       orgId,
-      actorId: _actorId,
+      actorId,
       targetType: 'order',
       targetId: id,
       action: 'production_started',
@@ -1805,7 +1805,7 @@ export type LateFeeCalculation = {
 export async function computeLateFee(
   orderId: string,
   orgId: string,
-  completionDate = new Date(),
+  completionDate: Date = new Date(),
 ): Promise<LateFeeCalculation> {
   const orderRows = await db
     .select({ id: ordersTable.id, deadline: ordersTable.deadline })

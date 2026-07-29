@@ -302,7 +302,7 @@ export function OrderFormSheet({
   const orderId = isEdit ? mode.id : ''
 
   const readinessQuery = useOrderCreationReadiness()
-  const orderQuery = useOrder({ id: orderId, orgId })
+  const orderQuery = useOrder({ id: orderId })
   const customersQuery = useCustomersList({ orgId })
   const productsQuery = useProductsList({ orgId })
 

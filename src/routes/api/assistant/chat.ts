@@ -46,6 +46,23 @@ export const Route = createFileRoute('/api/assistant/chat')({
           return new Response('Unauthorized', { status: 401 })
         }
 
+        const { checkRateLimit } = await import('#/lib/rate-limit')
+        const rateLimitResult = checkRateLimit({
+          key: 'assistant-chat',
+          identifier: `${authContext.orgId}:${authContext.userId}`,
+          limit: 30,
+          windowMs: 60000,
+        })
+        if (!rateLimitResult.success) {
+          return new Response('Too Many Requests', {
+            status: 429,
+            headers: {
+              'Retry-After': Math.ceil(
+                rateLimitResult.resetMs / 1000,
+              ).toString(),
+            },
+          })
+        }
         const params = await request.json()
         const threadId = `assistant:${authContext.orgId}:${authContext.userId}`
         const resourceId = `org:${authContext.orgId}:user:${authContext.userId}`

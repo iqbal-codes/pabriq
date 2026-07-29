@@ -4,6 +4,7 @@ import {
   generateQuotationPdf,
   resolveOrgForDocument,
 } from '#/features/documents/server.tsx'
+import { SECURITY_RESPONSE_HEADERS } from '#/lib/security-headers'
 
 export const Route = createFileRoute('/api/documents/orders/$id/quotation')({
   server: {
@@ -40,6 +41,7 @@ export const Route = createFileRoute('/api/documents/orders/$id/quotation')({
           headers: {
             'Content-Type': 'application/pdf',
             'Content-Disposition': 'inline',
+            ...SECURITY_RESPONSE_HEADERS,
           },
         })
       },

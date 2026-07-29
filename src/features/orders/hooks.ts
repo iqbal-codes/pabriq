@@ -30,7 +30,7 @@ export function useOrdersList(filters: ListOrdersParams) {
   })
 }
 
-export function useOrder(params: { id: string; orgId: string }) {
+export function useOrder(params: { id: string }) {
   return useSuspenseQuery({
     queryKey: queryKeys.orders.detail(params.id),
     queryFn: () => getOrderFn({ data: params }),
@@ -39,7 +39,7 @@ export function useOrder(params: { id: string; orgId: string }) {
 export function useOrderCreationReadiness() {
   return useQuery<OrderCreationReadiness>({
     queryKey: queryKeys.orders.creationReadiness(),
-    queryFn: () => getOrderCreationReadinessFn({ data: {} }),
+    queryFn: () => getOrderCreationReadinessFn(),
   })
 }
 
