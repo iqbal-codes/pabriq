@@ -227,4 +227,13 @@ export const queryKeys = {
         ] as const,
     },
   },
+  materials: {
+    all: ['materials'] as const,
+    list: () => [...queryKeys.materials.all, 'list'] as const,
+  },
+  fulfillment: {
+    all: ['fulfillment'] as const,
+    detail: (orderId: string) =>
+      [...queryKeys.fulfillment.all, 'detail', orderId] as const,
+  },
 }

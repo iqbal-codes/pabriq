@@ -975,6 +975,54 @@ export const orderLineItemAddons = pgTable('order_line_item_addons', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
+export const FULFILLMENT_TYPES = ['shipping', 'pickup'] as const
+export type FulfillmentType = (typeof FULFILLMENT_TYPES)[number]
+
+export const FULFILLMENT_STATUSES = [
+  'unfulfilled',
+  'processing',
+  'ready_for_pickup',
+  'shipped',
+  'out_for_delivery',
+  'delivered',
+  'picked_up',
+  'completed',
+  'cancelled',
+] as const
+export type FulfillmentStatus = (typeof FULFILLMENT_STATUSES)[number]
+
+export const fulfillments = pgTable('fulfillments', {
+  id: text('id').primaryKey(),
+  orgId: text('org_id')
+    .notNull()
+    .references(() => organization.id, { onDelete: 'cascade' }),
+  orderId: text('order_id')
+    .notNull()
+    .references(() => orders.id, { onDelete: 'cascade' }),
+  type: text('type').$type<FulfillmentType>().notNull().default('shipping'),
+  status: text('status')
+    .$type<FulfillmentStatus>()
+    .notNull()
+    .default('unfulfilled'),
+  shippingAddress: json('shipping_address'),
+  courier: text('courier'),
+  service: text('service'),
+  trackingNumber: text('tracking_number'),
+  packageDetails: json('package_details').$type<{
+    weightGrams?: number
+    dimensionsCm?: { length: number; width: number; height: number }
+    packageCount?: number
+    contents?: string
+  }>(),
+  snapshot: json('snapshot').$type<Record<string, unknown>>(),
+  shippedAt: timestamp('shipped_at'),
+  deliveredAt: timestamp('delivered_at'),
+  pickedUpAt: timestamp('picked_up_at'),
+  pickupNotes: text('pickup_notes'),
+  recipientName: text('recipient_name'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
 
 export const customerTokens = pgTable('customer_tokens', {
   id: text('id').primaryKey(),
@@ -1104,10 +1152,14 @@ export type Requirement = {
     | 'non_conformance'
     | 'upload'
     | 'photo'
+    | 'material'
   required: boolean
   unit?: string
   targetValue?: number
   tolerance?: number
+  materialKey?: string
+  estimatedQuantity?: number
+  wasteAllowance?: number
 }
 
 export const payments = pgTable(
@@ -1197,6 +1249,14 @@ export const productionTasks = pgTable('production_tasks', {
       unitPrice?: number
       total?: number
       deadline?: string
+      materials?: Array<{
+        key: string
+        name: string
+        unit: string
+        estimatedQuantity?: number | null
+        wasteAllowance?: number | null
+        supplier?: string | null
+      }> | null
       requirementResponses?: Record<
         string,
         {
