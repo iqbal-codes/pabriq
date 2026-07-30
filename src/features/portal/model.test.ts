@@ -265,6 +265,7 @@ describe('confirmPortalOrder', () => {
   it('transitions draft order to pending', async () => {
     const token = await generateOrderToken(order1Id)
     await getPortalOrder(token)
+    await submitPortalSpecification(token, spec1Id, { color: 'Red' })
     const result = await confirmPortalOrder({ orderId: order1Id })
     expect(result.ok).toBe(true)
 
