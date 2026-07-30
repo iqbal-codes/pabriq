@@ -158,7 +158,7 @@ export function AppSidebar({
             <SidebarMenuItem>
               <Link to="/admin">
                 <SidebarMenuButton size="lg" className="hover:bg-transparent!">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <div className="flex aspect-square size-8 items-center justify-center bg-sidebar-primary text-sidebar-primary-foreground">
                     <ShieldCheck className="size-4" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">

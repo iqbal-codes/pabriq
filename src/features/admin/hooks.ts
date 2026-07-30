@@ -88,11 +88,20 @@ export function usePlans() {
   })
 }
 
+export interface CreatePlanInput {
+  slug: string
+  name: string
+  version: number
+  description?: string
+  entitlements: Record<string, unknown>
+  monthlyPriceCents: number
+  annualPriceCents: number
+}
+
 export function useCreatePlan() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: Record<string, unknown>) =>
-      createPlanFn({ data: input as never }),
+    mutationFn: (input: CreatePlanInput) => createPlanFn({ data: input }),
     onSuccess: () => {
       return invalidateMutationQueries(queryClient, [
         { queryKey: queryKeys.admin.plans() },
@@ -101,11 +110,21 @@ export function useCreatePlan() {
   })
 }
 
+export interface CreatePlanVersionInput {
+  planId: string
+  slug: string
+  name: string
+  description?: string
+  entitlements: Record<string, unknown>
+  monthlyPriceCents: number
+  annualPriceCents: number
+}
+
 export function useCreatePlanVersion() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: Record<string, unknown>) =>
-      createPlanVersionFn({ data: input as never }),
+    mutationFn: (input: CreatePlanVersionInput) =>
+      createPlanVersionFn({ data: input }),
     onSuccess: () => {
       return invalidateMutationQueries(queryClient, [
         { queryKey: queryKeys.admin.plans() },

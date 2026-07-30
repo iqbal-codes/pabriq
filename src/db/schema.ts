@@ -145,6 +145,7 @@ export const plans = pgTable(
     slug: text('slug').notNull().unique(),
     name: text('name').notNull(),
     version: integer('version').notNull().default(1),
+    parentPlanId: text('parent_plan_id'),
     description: text('description'),
     entitlements: json('entitlements').$type<PlanEntitlements>().notNull(),
     monthlyPriceCents: integer('monthly_price_cents').notNull().default(0),
@@ -188,6 +189,16 @@ export const subscriptions = pgTable('subscriptions', {
     .$type<BillingCadence>()
     .notNull()
     .default('monthly'),
+  planSnapshot: json('plan_snapshot')
+    .$type<{
+      planName: string
+      planSlug: string
+      planVersion: number
+      entitlements: PlanEntitlements
+      monthlyPriceCents: number
+      annualPriceCents: number
+    } | null>()
+    .default(null),
   trialStartsAt: timestamp('trial_starts_at'),
   trialEndsAt: timestamp('trial_ends_at'),
   currentPeriodStartsAt: timestamp('current_period_starts_at'),

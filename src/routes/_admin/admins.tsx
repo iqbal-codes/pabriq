@@ -1,22 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { toast } from 'sonner'
-import { useTranslations } from 'use-intl'
+import { useLocale, useTranslations } from 'use-intl'
 import { PageContent } from '#/components/app/page-shell/page-content'
 import { PageHeader } from '#/components/app/page-shell/page-header'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent } from '#/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '#/components/ui/dialog'
-import { Input } from '#/components/ui/input'
+import { Dialog, DialogTrigger } from '#/components/ui/dialog'
 import { Skeleton } from '#/components/ui/skeleton'
 import {
   Table,
@@ -26,12 +16,10 @@ import {
   TableHeader,
   TableRow,
 } from '#/components/ui/table'
-import {
-  useGrantPlatformAdmin,
-  usePlatformAdmins,
-  useRevokePlatformAdmin,
-} from '#/features/admin/hooks'
+import { usePlatformAdmins } from '#/features/admin/hooks'
 import { formatLongDate } from '#/lib/formatters'
+import { GrantAdminDialog } from './-grant-admin-dialog'
+import { RevokeAdminButton } from './-revoke-admin-button'
 
 export const Route = createFileRoute('/_admin/admins')({
   component: PlatformAdminsPage,
@@ -39,6 +27,7 @@ export const Route = createFileRoute('/_admin/admins')({
 
 function PlatformAdminsPage() {
   const t = useTranslations('admin')
+  const locale = useLocale()
   const { data: admins, isLoading } = usePlatformAdmins()
   const [showGrantDialog, setShowGrantDialog] = useState(false)
 
@@ -84,7 +73,7 @@ function PlatformAdminsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {formatLongDate(admin.grantedAt, 'en')}
+                      {formatLongDate(admin.grantedAt, locale)}
                     </TableCell>
                     <TableCell>
                       {admin.isActive && (
@@ -103,91 +92,5 @@ function PlatformAdminsPage() {
         </CardContent>
       </Card>
     </PageContent>
-  )
-}
-
-function RevokeAdminButton({ userId }: { userId: string }) {
-  const t = useTranslations('admin')
-  const revokeMutation = useRevokePlatformAdmin()
-  const [open, setOpen] = useState(false)
-
-  const handleRevoke = async () => {
-    const result = await revokeMutation.mutateAsync({ userId })
-    if (result.ok) {
-      toast.success(t('adminRevoked'))
-      setOpen(false)
-    } else {
-      toast.error(result.error)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="destructive" size="sm">
-          {t('revoke')}
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t('revokeAdmin')}</DialogTitle>
-          <DialogDescription>{t('revokeAdminDesc')}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            {t('cancel')}
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={handleRevoke}
-            disabled={revokeMutation.isPending}
-          >
-            {t('confirm')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function GrantAdminDialog({ onClose }: { onClose: () => void }) {
-  const t = useTranslations('admin')
-  const grantMutation = useGrantPlatformAdmin()
-  const [email, setEmail] = useState('')
-
-  const handleGrant = async () => {
-    const result = await grantMutation.mutateAsync({ email })
-    if (result.ok) {
-      toast.success(t('adminGranted'))
-      onClose()
-    } else {
-      toast.error(result.error)
-    }
-  }
-
-  return (
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>{t('grantAdmin')}</DialogTitle>
-        <DialogDescription>{t('grantAdminDesc')}</DialogDescription>
-      </DialogHeader>
-      <Input
-        type="email"
-        placeholder={t('emailPlaceholder')}
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <DialogFooter>
-        <Button variant="outline" onClick={onClose}>
-          {t('cancel')}
-        </Button>
-        <Button
-          onClick={handleGrant}
-          disabled={!email.trim() || grantMutation.isPending}
-        >
-          {t('grant')}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
   )
 }

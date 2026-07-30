@@ -22,32 +22,9 @@ import {
   TableHeader,
   TableRow,
 } from '#/components/ui/table'
+import { AUDIT_ACTION_TYPES } from '#/db/schema'
 import { useAuditEvents } from '#/features/admin/hooks'
 import { formatLongDate } from '#/lib/formatters'
-
-const ACTION_TYPES = [
-  'organization.created',
-  'organization.updated',
-  'organization.suspended',
-  'organization.restored',
-  'plan.created',
-  'plan.updated',
-  'plan.versioned',
-  'subscription.changed',
-  'subscription.canceled',
-  'subscription.suspended',
-  'subscription.restored',
-  'trial.started',
-  'trial.extended',
-  'exception.granted',
-  'exception.revoked',
-  'retention.applied',
-  'export.created',
-  'migration.reviewed',
-  'migration.accepted',
-  'member.role_changed',
-  'admin.action',
-] as const
 
 export const Route = createFileRoute('/_admin/audit')({
   component: AuditLogPage,
@@ -84,7 +61,7 @@ function AuditLogPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">{t('allActions')}</SelectItem>
-                {ACTION_TYPES.map((action) => (
+                {AUDIT_ACTION_TYPES.map((action) => (
                   <SelectItem key={action} value={action}>
                     {action}
                   </SelectItem>

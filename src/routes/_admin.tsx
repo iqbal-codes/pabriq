@@ -13,8 +13,16 @@ export const Route = createFileRoute('/_admin')({
     location,
   }: {
     location: { href: string }
-    // biome-ignore lint/suspicious/noExplicitAny: TanStack Router type inference limitation
-  }): Promise<any> => {
+  }): Promise<{
+    session: {
+      user: {
+        id: string
+        name: string | null
+        email: string
+        image: string | null
+      }
+    }
+  }> => {
     const { isPlatformAdmin } = await import('#/features/permissions/model')
     const session = await getCurrentSession()
 

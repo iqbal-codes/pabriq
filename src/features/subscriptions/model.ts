@@ -132,7 +132,15 @@ export async function startTrial(
   await seedDefaultPlans()
 
   const planRows = await db
-    .select({ id: plans.id })
+    .select({
+      id: plans.id,
+      name: plans.name,
+      slug: plans.slug,
+      version: plans.version,
+      entitlements: plans.entitlements,
+      monthlyPriceCents: plans.monthlyPriceCents,
+      annualPriceCents: plans.annualPriceCents,
+    })
     .from(plans)
     .where(eq(plans.slug, planSlug))
     .limit(1)
@@ -141,13 +149,22 @@ export async function startTrial(
     throw new Error(`Plan not found: ${planSlug}`)
   }
 
+  const plan = planRows[0]
   const now = new Date()
   const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000)
 
   await db.insert(subscriptions).values({
     id: crypto.randomUUID(),
     orgId,
-    planId: planRows[0].id,
+    planId: plan.id,
+    planSnapshot: {
+      planName: plan.name,
+      planSlug: plan.slug,
+      planVersion: plan.version,
+      entitlements: plan.entitlements as PlanEntitlements,
+      monthlyPriceCents: plan.monthlyPriceCents,
+      annualPriceCents: plan.annualPriceCents,
+    },
     status: 'trialing',
     billingCadence: 'monthly',
     trialStartsAt: now,

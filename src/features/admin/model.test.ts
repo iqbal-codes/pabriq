@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createOrganizationExport,
   getAdminDashboardMetrics,
+  getProductionBottlenecks,
   grantPlatformAdmin,
   listAuditEvents,
   listMigrations,
@@ -110,6 +111,11 @@ describe('admin model', () => {
       expect(result).toHaveProperty('qualityHoldsCount')
       expect(result).toHaveProperty('recentSignups')
       expect(typeof result.totalOrganizations).toBe('number')
+    })
+
+    it('getProductionBottlenecks returns correct shape', async () => {
+      const result = await getProductionBottlenecks('nonexistent-org')
+      expect(Array.isArray(result)).toBe(true)
     })
 
     // Database-dependent tests below require migration 0039

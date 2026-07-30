@@ -27,6 +27,7 @@ import {
   TableRow,
 } from '#/components/ui/table'
 import { Textarea } from '#/components/ui/textarea'
+import { orgStatusBadgeVariant } from '#/features/admin/badge-variants'
 import {
   useCreateOrganizationExport,
   useOrganizations,
@@ -41,66 +42,7 @@ export const Route = createFileRoute('/_admin/organizations')({
 function OrganizationsPage() {
   const t = useTranslations('admin')
   const [search, setSearch] = useState('')
-  const [suspendOrgId, setSuspendOrgId] = useState<string | null>(null)
-  const [restoreOrgId, setRestoreOrgId] = useState<string | null>(null)
-  const [reason, setReason] = useState('')
-  const [exportOrgId, setExportOrgId] = useState<string | null>(null)
-
   const { data: orgs, isLoading } = useOrganizations(search || undefined)
-  const suspendMutation = useSuspendOrganization()
-  const restoreMutation = useRestoreOrganization()
-  const exportMutation = useCreateOrganizationExport()
-
-  const handleSuspend = async () => {
-    if (!suspendOrgId || !reason.trim()) return
-    const result = await suspendMutation.mutateAsync({
-      orgId: suspendOrgId,
-      reason: reason.trim(),
-    })
-    if (result.ok) {
-      toast.success(t('orgSuspended'))
-    } else {
-      toast.error(result.error)
-    }
-    setSuspendOrgId(null)
-    setReason('')
-  }
-
-  const handleRestore = async () => {
-    if (!restoreOrgId || !reason.trim()) return
-    const result = await restoreMutation.mutateAsync({
-      orgId: restoreOrgId,
-      reason: reason.trim(),
-    })
-    if (result.ok) {
-      toast.success(t('orgRestored'))
-    } else {
-      toast.error(result.error)
-    }
-    setRestoreOrgId(null)
-    setReason('')
-  }
-
-  const handleExport = async () => {
-    if (!exportOrgId) return
-    const result = await exportMutation.mutateAsync({ orgId: exportOrgId })
-    if (result.ok) {
-      toast.success(t('exportInitiated'))
-    } else {
-      toast.error(result.error)
-    }
-    setExportOrgId(null)
-  }
-
-  const subBadgeVariant = (status: string | null) => {
-    if (!status) return 'secondary' as const
-    if (status === 'active' || status === 'trialing') return 'success' as const
-    if (status === 'suspended' || status === 'canceled')
-      return 'destructive' as const
-    if (status === 'past_due' || status === 'grace_period')
-      return 'warning' as const
-    return 'secondary' as const
-  }
 
   return (
     <PageContent>
@@ -147,7 +89,9 @@ function OrganizationsPage() {
                     </TableCell>
                     <TableCell>{org.memberCount}</TableCell>
                     <TableCell>
-                      <Badge variant={subBadgeVariant(org.subscriptionStatus)}>
+                      <Badge
+                        variant={orgStatusBadgeVariant(org.subscriptionStatus)}
+                      >
                         {org.subscriptionStatus ?? '-'}
                       </Badge>
                     </TableCell>
@@ -157,127 +101,11 @@ function OrganizationsPage() {
                     <TableCell>
                       <div className="flex gap-2">
                         {org.subscriptionStatus !== 'suspended' ? (
-                          <Dialog
-                            open={suspendOrgId === org.id}
-                            onOpenChange={(open) => {
-                              setSuspendOrgId(open ? org.id : null)
-                              if (!open) setReason('')
-                            }}
-                          >
-                            <DialogTrigger asChild>
-                              <Button variant="destructive" size="sm">
-                                {t('suspend')}
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>{t('suspendOrg')}</DialogTitle>
-                                <DialogDescription>
-                                  {t('suspendOrgDesc', { name: org.name })}
-                                </DialogDescription>
-                              </DialogHeader>
-                              <Textarea
-                                value={reason}
-                                onChange={(e) => setReason(e.target.value)}
-                                placeholder={t('reasonPlaceholder')}
-                              />
-                              <DialogFooter>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setSuspendOrgId(null)}
-                                >
-                                  {t('cancel')}
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  onClick={handleSuspend}
-                                  disabled={
-                                    !reason.trim() || suspendMutation.isPending
-                                  }
-                                >
-                                  {t('confirm')}
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
+                          <SuspendOrgDialog org={org} />
                         ) : (
-                          <Dialog
-                            open={restoreOrgId === org.id}
-                            onOpenChange={(open) => {
-                              setRestoreOrgId(open ? org.id : null)
-                              if (!open) setReason('')
-                            }}
-                          >
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm">
-                                {t('restore')}
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>{t('restoreOrg')}</DialogTitle>
-                                <DialogDescription>
-                                  {t('restoreOrgDesc', { name: org.name })}
-                                </DialogDescription>
-                              </DialogHeader>
-                              <Textarea
-                                value={reason}
-                                onChange={(e) => setReason(e.target.value)}
-                                placeholder={t('reasonPlaceholder')}
-                              />
-                              <DialogFooter>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setRestoreOrgId(null)}
-                                >
-                                  {t('cancel')}
-                                </Button>
-                                <Button
-                                  onClick={handleRestore}
-                                  disabled={
-                                    !reason.trim() || restoreMutation.isPending
-                                  }
-                                >
-                                  {t('confirm')}
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
+                          <RestoreOrgDialog org={org} />
                         )}
-                        <Dialog
-                          open={exportOrgId === org.id}
-                          onOpenChange={(open) => {
-                            setExportOrgId(open ? org.id : null)
-                          }}
-                        >
-                          <DialogTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              {t('export')}
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>{t('exportOrg')}</DialogTitle>
-                              <DialogDescription>
-                                {t('exportOrgDesc', { name: org.name })}
-                              </DialogDescription>
-                            </DialogHeader>
-                            <DialogFooter>
-                              <Button
-                                variant="outline"
-                                onClick={() => setExportOrgId(null)}
-                              >
-                                {t('cancel')}
-                              </Button>
-                              <Button
-                                onClick={handleExport}
-                                disabled={exportMutation.isPending}
-                              >
-                                {t('confirm')}
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+                        <ExportOrgDialog org={org} />
                       </div>
                     </TableCell>
                   </TableRow>
@@ -292,5 +120,184 @@ function OrganizationsPage() {
         </CardContent>
       </Card>
     </PageContent>
+  )
+}
+
+function SuspendOrgDialog({ org }: { org: { id: string; name: string } }) {
+  const t = useTranslations('admin')
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState('')
+  const suspendMutation = useSuspendOrganization()
+
+  const handleSuspend = async () => {
+    if (!reason.trim()) return
+    const result = await suspendMutation.mutateAsync({
+      orgId: org.id,
+      reason: reason.trim(),
+    })
+    if (result.ok) {
+      toast.success(t('orgSuspended'))
+      setOpen(false)
+      setReason('')
+    } else {
+      toast.error(result.error)
+    }
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen)
+        if (!nextOpen) setReason('')
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button variant="destructive" size="sm">
+          {t('suspend')}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('suspendOrg')}</DialogTitle>
+          <DialogDescription>
+            {t('suspendOrgDesc', { name: org.name })}
+          </DialogDescription>
+        </DialogHeader>
+        <Textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder={t('reasonPlaceholder')}
+        />
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setOpen(false)
+              setReason('')
+            }}
+          >
+            {t('cancel')}
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleSuspend}
+            disabled={!reason.trim() || suspendMutation.isPending}
+          >
+            {t('confirm')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function RestoreOrgDialog({ org }: { org: { id: string; name: string } }) {
+  const t = useTranslations('admin')
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState('')
+  const restoreMutation = useRestoreOrganization()
+
+  const handleRestore = async () => {
+    if (!reason.trim()) return
+    const result = await restoreMutation.mutateAsync({
+      orgId: org.id,
+      reason: reason.trim(),
+    })
+    if (result.ok) {
+      toast.success(t('orgRestored'))
+      setOpen(false)
+      setReason('')
+    } else {
+      toast.error(result.error)
+    }
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen)
+        if (!nextOpen) setReason('')
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          {t('restore')}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('restoreOrg')}</DialogTitle>
+          <DialogDescription>
+            {t('restoreOrgDesc', { name: org.name })}
+          </DialogDescription>
+        </DialogHeader>
+        <Textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder={t('reasonPlaceholder')}
+        />
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setOpen(false)
+              setReason('')
+            }}
+          >
+            {t('cancel')}
+          </Button>
+          <Button
+            onClick={handleRestore}
+            disabled={!reason.trim() || restoreMutation.isPending}
+          >
+            {t('confirm')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function ExportOrgDialog({ org }: { org: { id: string; name: string } }) {
+  const t = useTranslations('admin')
+  const [open, setOpen] = useState(false)
+  const exportMutation = useCreateOrganizationExport()
+
+  const handleExport = async () => {
+    const result = await exportMutation.mutateAsync({ orgId: org.id })
+    if (result.ok) {
+      toast.success(t('exportInitiated'))
+      setOpen(false)
+    } else {
+      toast.error(result.error)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm">
+          {t('export')}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('exportOrg')}</DialogTitle>
+          <DialogDescription>
+            {t('exportOrgDesc', { name: org.name })}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            {t('cancel')}
+          </Button>
+          <Button onClick={handleExport} disabled={exportMutation.isPending}>
+            {t('confirm')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

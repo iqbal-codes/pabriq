@@ -382,7 +382,28 @@ export const getProductionBottlenecksFn = createServerFn({ method: 'GET' })
       })
       .parse(input),
   )
-  .handler(async ({ data }) => {
-    await requirePlatformAdminOrRole(['owner', 'admin'])
-    return getProductionBottlenecks(data.orgId, data.limit)
-  })
+  .handler(
+    async ({
+      data,
+    }): Promise<
+      AdminResult<
+        Array<{
+          taskId: string
+          taskNumber: string | null
+          stageName: string | null
+          productName: string
+          status: string
+          board: string
+          createdAt: string
+        }>
+      >
+    > => {
+      try {
+        await requirePlatformAdminOrRole(['owner', 'admin'])
+        const result = await getProductionBottlenecks(data.orgId, data.limit)
+        return { ok: true, data: result }
+      } catch (err: unknown) {
+        return wrapError(err)
+      }
+    },
+  )

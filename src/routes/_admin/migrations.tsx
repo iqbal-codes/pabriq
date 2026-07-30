@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '#/components/ui/table'
+import { migrationStatusBadgeVariant } from '#/features/admin/badge-variants'
 import { useAdminMigrations } from '#/features/admin/hooks'
 import { formatLongDate } from '#/lib/formatters'
 
@@ -24,19 +25,6 @@ function MigrationsPage() {
   const t = useTranslations('admin')
   const locale = useLocale()
   const { data: migrations, isLoading } = useAdminMigrations()
-
-  const statusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'accepted':
-        return 'success' as const
-      case 'failed':
-        return 'destructive' as const
-      case 'pending_review':
-        return 'warning' as const
-      default:
-        return 'secondary' as const
-    }
-  }
 
   return (
     <PageContent>
@@ -73,7 +61,7 @@ function MigrationsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusBadgeVariant(mig.status)}>
+                      <Badge variant={migrationStatusBadgeVariant(mig.status)}>
                         {mig.status}
                       </Badge>
                     </TableCell>

@@ -114,6 +114,8 @@ export type Messages = {
     noAuditEvents: string;
     noMigrations: string;
     noAdmins: string;
+    needsAttention: string;
+    none: string;
   };
   app: {
     title: string;

@@ -116,6 +116,8 @@ const en: Messages = {
     noAuditEvents: "No audit events found",
     noMigrations: "No migrations found",
     noAdmins: "No platform admins found",
+    needsAttention: "Needs attention",
+    none: "None",
   },
   app: {
     title: "AKZ Production",

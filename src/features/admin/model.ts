@@ -18,6 +18,7 @@ import {
   organization,
   plans,
   platformAdminUsers,
+  productionStages,
   productionTasks,
   subscriptions,
   user,
@@ -143,75 +144,83 @@ export async function recordAuditEvent(
 export async function listOrganizations(
   search?: string,
 ): Promise<AdminOrgSummary[]> {
-  const baseQuery = db
+  const memberCounts = db
+    .select({
+      orgId: member.organizationId,
+      memberCount: count(),
+    })
+    .from(member)
+    .groupBy(member.organizationId)
+    .as('member_counts')
+
+  const orderCounts = db
+    .select({
+      orgId: orders.orgId,
+      orderCount: count(),
+    })
+    .from(orders)
+    .groupBy(orders.orgId)
+    .as('order_counts')
+
+  const invoiceUnpaidCounts = db
+    .select({
+      orgId: invoices.orgId,
+      invoiceUnpaidCount: count(),
+    })
+    .from(invoices)
+    .where(
+      or(
+        eq(invoices.status, 'unpaid'),
+        eq(invoices.status, 'overdue'),
+        eq(invoices.status, 'past_due'),
+      ),
+    )
+    .groupBy(invoices.orgId)
+    .as('invoice_unpaid_counts')
+
+  const rows = await db
     .select({
       id: organization.id,
       name: organization.name,
       slug: organization.slug,
       createdAt: organization.createdAt,
+      memberCount: memberCounts.memberCount,
+      subscriptionStatus: subscriptions.status,
+      planName: plans.name,
+      orderCount: orderCounts.orderCount,
+      invoiceUnpaidCount: invoiceUnpaidCounts.invoiceUnpaidCount,
     })
     .from(organization)
+    .leftJoin(memberCounts, eq(memberCounts.orgId, organization.id))
+    .leftJoin(subscriptions, eq(subscriptions.orgId, organization.id))
+    .leftJoin(plans, eq(subscriptions.planId, plans.id))
+    .leftJoin(orderCounts, eq(orderCounts.orgId, organization.id))
+    .leftJoin(
+      invoiceUnpaidCounts,
+      eq(invoiceUnpaidCounts.orgId, organization.id),
+    )
+    .where(
+      search
+        ? or(
+            ilike(organization.name, `%${search}%`),
+            ilike(organization.slug, `%${search}%`),
+          )
+        : undefined,
+    )
     .orderBy(desc(organization.createdAt))
     .limit(100)
 
-  const orgs = search
-    ? await baseQuery.where(
-        or(
-          ilike(organization.name, `%${search}%`),
-          ilike(organization.slug, `%${search}%`),
-        ),
-      )
-    : await baseQuery
-
-  // Enrich with counts in parallel
-  const enriched = await Promise.all(
-    orgs.map(async (org) => {
-      const [memberCount] = await db
-        .select({ count: count() })
-        .from(member)
-        .where(eq(member.organizationId, org.id))
-
-      const [sub] = await db
-        .select({
-          status: subscriptions.status,
-          planName: plans.name,
-        })
-        .from(subscriptions)
-        .leftJoin(plans, eq(subscriptions.planId, plans.id))
-        .where(eq(subscriptions.orgId, org.id))
-        .limit(1)
-
-      const [orderCount] = await db
-        .select({ count: count() })
-        .from(orders)
-        .where(eq(orders.orgId, org.id))
-
-      const [invoiceUnpaid] = await db
-        .select({ count: count() })
-        .from(invoices)
-        .where(
-          and(
-            eq(invoices.orgId, org.id),
-            or(
-              eq(invoices.status, 'unpaid'),
-              eq(invoices.status, 'overdue'),
-              eq(invoices.status, 'past_due'),
-            ),
-          ),
-        )
-
-      return {
-        ...org,
-        memberCount: memberCount?.count ?? 0,
-        subscriptionStatus: sub?.status ?? null,
-        planName: sub?.planName ?? null,
-        orderCount: orderCount?.count ?? 0,
-        invoiceUnpaidCount: invoiceUnpaid?.count ?? 0,
-      }
-    }),
-  )
-
-  return enriched
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    memberCount: Number(row.memberCount ?? 0),
+    subscriptionStatus: row.subscriptionStatus ?? null,
+    planName: row.planName ?? null,
+    orderCount: Number(row.orderCount ?? 0),
+    invoiceUnpaidCount: Number(row.invoiceUnpaidCount ?? 0),
+    createdAt: row.createdAt,
+  }))
 }
 
 // ─── Plans ───────────────────────────────────────────────────────────────────
@@ -295,6 +304,7 @@ export async function createPlanVersion(input: {
       slug: input.slug,
       name: input.name,
       version: currentPlan.version + 1,
+      parentPlanId: input.planId,
       description: input.description ?? null,
       entitlements: input.entitlements,
       monthlyPriceCents: input.monthlyPriceCents,
@@ -437,6 +447,7 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
     unpaidInvoicesResult,
     bottleneckTasks,
     qualityHolds,
+    recentSignups,
   ] = await Promise.all([
     db.select({ count: count() }).from(organization),
     db
@@ -454,12 +465,7 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
     db
       .select({ count: count() })
       .from(orders)
-      .where(
-        and(
-          eq(orders.orgId, orders.orgId),
-          sql`${orders.createdAt} >= ${startOfMonth.toISOString()}`,
-        ),
-      ),
+      .where(sql`${orders.createdAt} >= ${startOfMonth.toISOString()}`),
     db
       .select({ total: sql<number>`COALESCE(SUM(${invoices.total}), 0)` })
       .from(invoices)
@@ -490,6 +496,11 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
           eq(productionTasks.status, 'review'),
         ),
       ),
+    // Organizations created this month
+    db
+      .select({ count: count() })
+      .from(organization)
+      .where(sql`${organization.createdAt} >= ${startOfMonth.toISOString()}`),
   ])
 
   return {
@@ -501,7 +512,7 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
     unpaidInvoicesTotal: unpaidInvoicesResult[0]?.total ?? 0,
     productionBottleneckCount: bottleneckTasks[0]?.count ?? 0,
     qualityHoldsCount: qualityHolds[0]?.count ?? 0,
-    recentSignups: 0, // Filled in below
+    recentSignups: recentSignups[0]?.count ?? 0,
   }
 }
 
@@ -710,13 +721,19 @@ export async function getProductionBottlenecks(
     .select({
       taskId: productionTasks.id,
       taskNumber: productionTasks.taskNumber,
-      stageName: productionTasks.context,
-      productName: productionTasks.context,
+      stageName: productionStages.name,
+      productName: sql<
+        string | null
+      >`${productionTasks.context}->>'productName'`,
       status: productionTasks.status,
       board: productionTasks.board,
       createdAt: productionTasks.createdAt,
     })
     .from(productionTasks)
+    .leftJoin(
+      productionStages,
+      eq(productionTasks.stageId, productionStages.id),
+    )
     .where(
       and(
         eq(productionTasks.orgId, orgId),
@@ -731,14 +748,8 @@ export async function getProductionBottlenecks(
   return rows.map((row) => ({
     taskId: row.taskId,
     taskNumber: row.taskNumber,
-    stageName:
-      typeof row.stageName === 'object' && row.stageName !== null
-        ? ((row.stageName as Record<string, unknown>).productName as string)
-        : null,
-    productName:
-      typeof row.productName === 'object' && row.productName !== null
-        ? ((row.productName as Record<string, unknown>).productName as string)
-        : 'Unknown',
+    stageName: row.stageName ?? null,
+    productName: row.productName ?? 'Unknown',
     status: row.status,
     board: row.board,
     createdAt: row.createdAt.toISOString(),

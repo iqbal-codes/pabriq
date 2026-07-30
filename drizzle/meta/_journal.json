@@ -281,6 +281,13 @@
       "when": 1785376155403,
       "tag": "0039_jazzy_marten_broadcloak",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1785381504823,
+      "tag": "0040_low_slayback",
+      "breakpoints": true
     }
   ]
 }

@@ -116,6 +116,8 @@ const id: Messages = {
     noAuditEvents: "Tidak ada audit ditemukan",
     noMigrations: "Tidak ada migrasi ditemukan",
     noAdmins: "Tidak ada admin platform ditemukan",
+    needsAttention: "Perlu perhatian",
+    none: "Tidak ada",
   },
   app: {
     title: "AKZ Production",
