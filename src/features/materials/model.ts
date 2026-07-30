@@ -105,7 +105,6 @@ export async function getResolvedTaskMaterials(
 export async function listMaterials(orgId: string): Promise<Material[]> {
   const elements = await listConfigurationElements(orgId, {
     elementType: 'material',
-    requireActiveConfig: true,
   })
   return elements.map(mapMaterialElement)
 }

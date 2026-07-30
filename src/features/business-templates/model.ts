@@ -482,11 +482,12 @@ export async function listConfigurationElements(
   filters?: {
     elementType?: ConfigurationElementType
     provenance?: ConfigurationProvenance
-    requireActiveConfig?: boolean
+    skipConfigGate?: boolean
   },
 ): Promise<ConfigurationElement[]> {
-  // Gate: if requireActiveConfig, ensure the org config is active (not migrating)
-  if (filters?.requireActiveConfig) {
+  // Gate: always check config status unless explicitly skipped
+  // (e.g., migration internals skip during write)
+  if (!filters?.skipConfigGate) {
     const [config] = await db
       .select({
         id: organizationConfigurations.id,
@@ -524,6 +525,17 @@ export async function getConfigurationElement(
   elementType: ConfigurationElementType,
   elementKey: string,
 ): Promise<ConfigurationElement | null> {
+  // Gate: check config status unless explicitly skipped
+  const [config] = await db
+    .select({
+      id: organizationConfigurations.id,
+      status: organizationConfigurations.status,
+    })
+    .from(organizationConfigurations)
+    .where(eq(organizationConfigurations.orgId, orgId))
+    .limit(1)
+  if (!config || config.status !== 'active') return null
+
   const [row] = await db
     .select()
     .from(configurationElements)
