@@ -279,6 +279,97 @@ export const organizationConfigurations = pgTable(
   },
 )
 
+export const COMPATIBILITY_MIGRATION_STATUSES = [
+  'pending_review',
+  'accepted',
+  'failed',
+] as const
+export type CompatibilityMigrationStatus =
+  (typeof COMPATIBILITY_MIGRATION_STATUSES)[number]
+
+export type CompatibilityMigrationReport = {
+  organization: { id: string; slug: string; name: string }
+  counts: Record<string, number>
+  totals: {
+    orderTotal: number
+    invoiceTotal: number
+    confirmedPaymentTotal: number
+    invoiceBalances: number
+  }
+  statuses: {
+    orders: Record<string, number>
+    invoices: Record<string, number>
+    payments: Record<string, number>
+  }
+  deadlines: { ordersWithDeadline: number; lineItemsWithDeadline: number }
+  ownership: {
+    assets: number
+    assetVariants: number
+    tokens: number
+    assistantActions: number
+    documents: number
+    assetStorageKeys: string[]
+    assetOwnerMap: Array<{
+      id: string
+      ownerType: string
+      ownerId: string | null
+      storageKey: string | null
+    }>
+    invoiceBalances: Array<{
+      invoiceId: string
+      invoiceNumber: string
+      total: number
+      paid: number
+      balance: number
+    }>
+    softDeletedCustomers: number
+    softDeletedProducts: number
+    generatedDocumentSourceRecords: Array<{
+      id: string
+      kind: 'invoice' | 'quotation' | 'order'
+      sourceId: string
+      storageKey: string | null
+    }>
+  }
+  reachability: { ordersWithPortalToken: number; reachablePortalTokens: number }
+  reviewItems: Array<{
+    kind: string
+    sourceId: string
+    label: string
+    value: string | null
+  }>
+  preservedIds: Record<string, string[]>
+}
+
+export const compatibilityMigrations = pgTable(
+  'compatibility_migrations',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .unique()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    sourceTemplateId: text('source_template_id')
+      .notNull()
+      .references(() => businessTemplates.id, { onDelete: 'restrict' }),
+    sourceTemplateVersion: integer('source_template_version').notNull(),
+    status: text('status')
+      .$type<CompatibilityMigrationStatus>()
+      .notNull()
+      .default('pending_review'),
+    report: json('report')
+      .$type<CompatibilityMigrationReport>()
+      .notNull()
+      .default({} as CompatibilityMigrationReport),
+    reviewedBy: text('reviewed_by'),
+    reviewedAt: timestamp('reviewed_at'),
+    failureReason: text('failure_reason'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [index('idx_compatibility_migrations_status').on(table.status)],
+)
+
 export const CONFIGURATION_ELEMENT_TYPES = [
   'product',
   'workflow_stage',
