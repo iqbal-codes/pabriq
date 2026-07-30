@@ -8,6 +8,7 @@ import {
   products as productsTable,
   productionTasks as tasksTable,
 } from '#/db/schema'
+import { getResolvedTaskMaterials } from '#/features/materials/model'
 import { getVisibleDesignName } from '#/features/orders/line-item-display'
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
@@ -95,33 +96,37 @@ export async function spawnQueuedPreProductionTasksForOrder(
     ...new Set(lineItemRows.map((item) => item.productId)),
   ]
 
-  const [latestTask, productPriorityRows, existingTasks] = await Promise.all([
-    client
-      .select({ taskNumber: tasksTable.taskNumber })
-      .from(tasksTable)
-      .where(eq(tasksTable.orgId, orgId))
-      .orderBy(desc(tasksTable.createdAt), desc(tasksTable.id))
-      .limit(1),
-    uniqueProductIds.length > 0
-      ? client
-          .select({
-            id: productsTable.id,
-            priority: productsTable.priority,
-            name: productsTable.name,
-          })
-          .from(productsTable)
-          .where(
-            and(
-              eq(productsTable.orgId, orgId),
-              inArray(productsTable.id, uniqueProductIds),
-            ),
-          )
-      : Promise.resolve([]),
-    client
-      .select({ lineItemId: tasksTable.lineItemId })
-      .from(tasksTable)
-      .where(and(eq(tasksTable.orgId, orgId), eq(tasksTable.orderId, orderId))),
-  ])
+  const [latestTask, productPriorityRows, existingTasks, resolvedMaterials] =
+    await Promise.all([
+      client
+        .select({ taskNumber: tasksTable.taskNumber })
+        .from(tasksTable)
+        .where(eq(tasksTable.orgId, orgId))
+        .orderBy(desc(tasksTable.createdAt), desc(tasksTable.id))
+        .limit(1),
+      uniqueProductIds.length > 0
+        ? client
+            .select({
+              id: productsTable.id,
+              priority: productsTable.priority,
+              name: productsTable.name,
+            })
+            .from(productsTable)
+            .where(
+              and(
+                eq(productsTable.orgId, orgId),
+                inArray(productsTable.id, uniqueProductIds),
+              ),
+            )
+        : Promise.resolve([]),
+      client
+        .select({ lineItemId: tasksTable.lineItemId })
+        .from(tasksTable)
+        .where(
+          and(eq(tasksTable.orgId, orgId), eq(tasksTable.orderId, orderId)),
+        ),
+      getResolvedTaskMaterials(orgId),
+    ])
 
   const productPriorityMap = new Map(
     productPriorityRows.map((row) => [row.id, row.priority]),
@@ -184,6 +189,7 @@ export async function spawnQueuedPreProductionTasksForOrder(
         unitPrice: item.unitPrice ?? 0,
         total: item.total ?? 0,
         deadline: item.deadline.toISOString(),
+        materials: resolvedMaterials,
       },
       createdAt: now,
       updatedAt: now,

@@ -19,6 +19,8 @@ import {
   taskActivity,
 } from '#/db/schema'
 import type { ShippingAddress } from '#/features/address/model'
+import { getCourierAdapter } from '#/features/fulfillment/courier-adapter'
+import { getFulfillmentForOrder } from '#/features/fulfillment/model'
 import { normalizeDesignName } from '#/features/orders/line-item-display'
 import {
   calculatePrice,
@@ -84,6 +86,19 @@ export type PortalInvoice = {
   shippingFee: number | null
 }
 
+export type PortalFulfillment = {
+  type: 'shipping' | 'pickup'
+  status: string
+  courier: string | null
+  service: string | null
+  trackingNumber: string | null
+  trackingUrl: string | null
+  shippedAt: Date | null
+  deliveredAt: Date | null
+  pickedUpAt: Date | null
+  pickupNotes: string | null
+  recipientName: string | null
+}
 export type PortalOrder = {
   id: string
   orgId: string
@@ -107,6 +122,8 @@ export type PortalOrder = {
   preProductionFirstStageName?: string | null
   courier: string | null
   trackingNumber: string | null
+  trackingUrl?: string | null
+  fulfillment?: PortalFulfillment | null
   approvedAt: Date | null
   shippedAt: Date | null
   deliveredAt: Date | null
@@ -554,6 +571,35 @@ export async function getPortalOrder(
     }),
   )
 
+  const fulfillmentRecord = await getFulfillmentForOrder(order.id, order.orgId)
+  const adapter = getCourierAdapter()
+  const courier = fulfillmentRecord?.courier ?? order.courier ?? null
+  const trackingNumber =
+    fulfillmentRecord?.trackingNumber ?? order.trackingNumber ?? null
+  const trackingUrl =
+    courier && trackingNumber
+      ? adapter.getTrackingUrl(courier, trackingNumber)
+      : null
+
+  const portalFulfillment: PortalFulfillment = {
+    type: fulfillmentRecord?.type ?? 'shipping',
+    status:
+      fulfillmentRecord?.status ??
+      (order.deliveredAt
+        ? 'delivered'
+        : order.shippedAt
+          ? 'shipped'
+          : 'unfulfilled'),
+    courier,
+    service: fulfillmentRecord?.service ?? null,
+    trackingNumber,
+    trackingUrl,
+    shippedAt: fulfillmentRecord?.shippedAt ?? order.shippedAt ?? null,
+    deliveredAt: fulfillmentRecord?.deliveredAt ?? order.deliveredAt ?? null,
+    pickedUpAt: fulfillmentRecord?.pickedUpAt ?? null,
+    pickupNotes: fulfillmentRecord?.pickupNotes ?? null,
+    recipientName: fulfillmentRecord?.recipientName ?? null,
+  }
   return {
     ok: true,
     order: {
@@ -578,8 +624,10 @@ export async function getPortalOrder(
       rejectReason: order.rejectReason ?? null,
       productionFirstStageName,
       preProductionFirstStageName,
-      courier: order.courier ?? null,
-      trackingNumber: order.trackingNumber ?? null,
+      courier,
+      trackingNumber,
+      trackingUrl,
+      fulfillment: portalFulfillment,
       approvedAt: order.approvedAt ?? null,
       shippedAt: order.shippedAt ?? null,
       deliveredAt: order.deliveredAt ?? null,

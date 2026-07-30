@@ -8,6 +8,7 @@ import {
   productionStages as stagesTable,
   productionTasks as tasksTable,
 } from '#/db/schema'
+import { getResolvedTaskMaterials } from '#/features/materials/model'
 import { getVisibleDesignName } from '#/features/orders/line-item-display'
 import { advanceOrderStatus, getOrder } from '#/features/orders/model'
 import { READY_FOR_PRODUCTION_STATUS } from '#/features/production/constants'
@@ -56,17 +57,20 @@ export async function spawnProductionTasks(
   if (order.status !== 'in_progress') {
     throw new Error('Order is not in progress')
   }
-  const [latestTask, productPriorityMap] = await Promise.all([
-    db
-      .select({ taskNumber: tasksTable.taskNumber })
-      .from(tasksTable)
-      .where(eq(tasksTable.orgId, orgId))
-      .orderBy(desc(tasksTable.createdAt), desc(tasksTable.id))
-      .limit(1),
-    getProductPriorityMap(orgId, [
-      ...new Set(lineItems.map((item) => item.productId)),
-    ]),
-  ])
+  const [latestTask, productPriorityMap, resolvedMaterials] = await Promise.all(
+    [
+      db
+        .select({ taskNumber: tasksTable.taskNumber })
+        .from(tasksTable)
+        .where(eq(tasksTable.orgId, orgId))
+        .orderBy(desc(tasksTable.createdAt), desc(tasksTable.id))
+        .limit(1),
+      getProductPriorityMap(orgId, [
+        ...new Set(lineItems.map((item) => item.productId)),
+      ]),
+      getResolvedTaskMaterials(orgId),
+    ],
+  )
 
   let nextNum = latestTask[0]?.taskNumber
     ? Number.parseInt(latestTask[0].taskNumber.split('-')[1], 10) + 1
@@ -98,6 +102,7 @@ export async function spawnProductionTasks(
         orderNumber: order.orderNumber ?? '',
         quantity: item.quantity ?? 1,
         deadline: item.deadline.toISOString(),
+        materials: resolvedMaterials,
       },
       createdAt: now,
       updatedAt: now,

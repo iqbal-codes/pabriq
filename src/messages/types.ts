@@ -771,6 +771,8 @@ export type Messages = {
     noTasks: string;
     taskDetail: string;
     specification: string;
+    materialsRequired: string;
+    wastePercentage: string;
     attachments: string;
     proofFiles: string;
     activity: string;
@@ -1135,6 +1137,7 @@ export type Messages = {
     paymentGatewayUnavailable: string;
     paymentManualReview: string;
     shipmentTracking: string;
+    storePickup: string;
     trackShipment: string;
     orderTimelineSectionTitle: string;
     timelineLastUpdatePrefix: string;

@@ -20,6 +20,7 @@ import {
   productionStages as stagesTable,
   productionTasks as tasksTable,
 } from '#/db/schema'
+import { getFulfillmentForOrder } from '#/features/fulfillment/model'
 import {
   adjustOrderQuantity,
   approveOrder,
@@ -1587,6 +1588,18 @@ async function createOrderWithSpec(
     createdAt: now,
     updatedAt: now,
   })
+  await db.insert(lineItemsTable).values({
+    id: `item-${specId}`,
+    orgId,
+    orderId,
+    productId,
+    productName: 'Spec Test Product',
+    quantity: 1,
+    unitPrice: 10000,
+    total: 10000,
+    createdAt: now,
+    updatedAt: now,
+  })
   await db.insert(specifications).values({
     id: specId,
     orgId,
@@ -1779,6 +1792,10 @@ describe('approveOrder with specifications', () => {
       .from(specificationSnapshots)
       .where(eq(specificationSnapshots.specificationId, specId))
     expect(snapshots.length).toBe(1)
+    // Fulfillment record should be created
+    const fulfillment = await getFulfillmentForOrder(orderId, org1Id)
+    expect(fulfillment).not.toBeNull()
+    expect(fulfillment?.status).toBe('unfulfilled')
   })
 
   it('is idempotent — does not create duplicate snapshots', async () => {
