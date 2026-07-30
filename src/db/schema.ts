@@ -1642,3 +1642,81 @@ export const telegramProcessedUpdates = pgTable(
     index('idx_telegram_updates_org').on(table.orgId),
   ],
 )
+
+// ─── Audit Events (Platform-level audit trail) ────────────────────────────────
+
+export const AUDIT_ACTION_TYPES = [
+  'organization.created',
+  'organization.updated',
+  'organization.suspended',
+  'organization.restored',
+  'plan.created',
+  'plan.updated',
+  'plan.versioned',
+  'subscription.changed',
+  'subscription.canceled',
+  'subscription.suspended',
+  'subscription.restored',
+  'trial.started',
+  'trial.extended',
+  'exception.granted',
+  'exception.revoked',
+  'retention.applied',
+  'export.created',
+  'migration.reviewed',
+  'migration.accepted',
+  'member.role_changed',
+  'admin.action',
+] as const
+export type AuditActionType = (typeof AUDIT_ACTION_TYPES)[number]
+
+export const auditEvents = pgTable(
+  'audit_events',
+  {
+    id: text('id').primaryKey(),
+    actorId: text('actor_id').notNull(),
+    actorName: text('actor_name').notNull(),
+    organizationId: text('organization_id').references(() => organization.id, {
+      onDelete: 'set null',
+    }),
+    organizationName: text('organization_name'),
+    action: text('action').$type<AuditActionType>().notNull(),
+    reason: text('reason'),
+    details: json('details').$type<Record<string, unknown>>().default({}),
+    expiresAt: timestamp('expires_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_audit_events_actor').on(table.actorId),
+    index('idx_audit_events_organization').on(table.organizationId),
+    index('idx_audit_events_action').on(table.action),
+    index('idx_audit_events_created').on(table.createdAt),
+  ],
+)
+
+export type AuditEvent = typeof auditEvents.$inferSelect
+export type NewAuditEvent = typeof auditEvents.$inferInsert
+
+// ─── Platform Admin Users ─────────────────────────────────────────────────────
+
+export const platformAdminUsers = pgTable(
+  'platform_admin_users',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .unique()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    grantedBy: text('granted_by').notNull(),
+    grantedAt: timestamp('granted_at').notNull().defaultNow(),
+    revokedAt: timestamp('revoked_at'),
+    revokedBy: text('revoked_by'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_platform_admin_user').on(table.userId),
+    index('idx_platform_admin_active').on(table.userId, table.revokedAt),
+  ],
+)
+
+export type PlatformAdminUser = typeof platformAdminUsers.$inferSelect

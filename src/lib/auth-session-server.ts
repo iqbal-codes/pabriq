@@ -85,3 +85,31 @@ export async function resolveOrgIdWithSubscription(): Promise<OrgAndSubscription
     return { orgId, subscriptionStatus: null }
   }
 }
+
+export type PlatformAdminSession = {
+  isAdmin: boolean
+  session: {
+    user: { id: string; name: string | null; email: string }
+  } | null
+}
+
+export async function resolvePlatformAdmin(): Promise<PlatformAdminSession> {
+  const session = await getSessionServer()
+  if (!session) {
+    return { isAdmin: false, session: null }
+  }
+
+  const { isPlatformAdmin } = await import('#/features/permissions/model')
+  const isAdmin = await isPlatformAdmin(session.user.id)
+
+  return {
+    isAdmin,
+    session: {
+      user: {
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+      },
+    },
+  }
+}

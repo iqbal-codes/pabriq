@@ -15,6 +15,7 @@ import { Route as OperatorRouteImport } from './routes/operator'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ForbiddenRouteImport } from './routes/forbidden'
 import { Route as OrgRouteImport } from './routes/_org'
+import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as OperatorIndexRouteImport } from './routes/operator/index'
 import { Route as OrgIndexRouteImport } from './routes/_org/index'
 import { Route as OrderTokenRouteImport } from './routes/order.$token'
@@ -23,6 +24,12 @@ import { Route as ApiReadyRouteImport } from './routes/api/ready'
 import { Route as ApiMidtransReconciliationRouteImport } from './routes/api/midtrans-reconciliation'
 import { Route as ApiMidtransNotificationRouteImport } from './routes/api/midtrans-notification'
 import { Route as ApiHealthzRouteImport } from './routes/api/healthz'
+import { Route as AdminPlansRouteImport } from './routes/_admin/plans'
+import { Route as AdminOrganizationsRouteImport } from './routes/_admin/organizations'
+import { Route as AdminMigrationsRouteImport } from './routes/_admin/migrations'
+import { Route as AdminAuditRouteImport } from './routes/_admin/audit'
+import { Route as AdminAdminsRouteImport } from './routes/_admin/admins'
+import { Route as AdminAdminRouteImport } from './routes/_admin/admin'
 import { Route as OrgSettingsRouteRouteImport } from './routes/_org/settings/route'
 import { Route as OrgSettingsIndexRouteImport } from './routes/_org/settings/index'
 import { Route as OrgProductsIndexRouteImport } from './routes/_org/products/index'
@@ -85,6 +92,10 @@ const OrgRoute = OrgRouteImport.update({
   id: '/_org',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/_admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OperatorIndexRoute = OperatorIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -125,6 +136,36 @@ const ApiHealthzRoute = ApiHealthzRouteImport.update({
   id: '/api/healthz',
   path: '/api/healthz',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPlansRoute = AdminPlansRouteImport.update({
+  id: '/plans',
+  path: '/plans',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOrganizationsRoute = AdminOrganizationsRouteImport.update({
+  id: '/organizations',
+  path: '/organizations',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMigrationsRoute = AdminMigrationsRouteImport.update({
+  id: '/migrations',
+  path: '/migrations',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminsRoute = AdminAdminsRouteImport.update({
+  id: '/admins',
+  path: '/admins',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminRoute = AdminAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AdminRoute,
 } as any)
 const OrgSettingsRouteRoute = OrgSettingsRouteRouteImport.update({
   id: '/settings',
@@ -303,6 +344,12 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/settings': typeof OrgSettingsRouteRouteWithChildren
+  '/admin': typeof AdminAdminRoute
+  '/admins': typeof AdminAdminsRoute
+  '/audit': typeof AdminAuditRoute
+  '/migrations': typeof AdminMigrationsRoute
+  '/organizations': typeof AdminOrganizationsRoute
+  '/plans': typeof AdminPlansRoute
   '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
   '/api/midtrans-reconciliation': typeof ApiMidtransReconciliationRoute
@@ -343,17 +390,23 @@ export interface FileRoutesByFullPath {
   '/api/documents/invoices/portal/$invoiceId/$token': typeof ApiDocumentsInvoicesPortalInvoiceIdTokenRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof OrgIndexRoute
   '/forbidden': typeof ForbiddenRoute
   '/onboarding': typeof OnboardingRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/admin': typeof AdminAdminRoute
+  '/admins': typeof AdminAdminsRoute
+  '/audit': typeof AdminAuditRoute
+  '/migrations': typeof AdminMigrationsRoute
+  '/organizations': typeof AdminOrganizationsRoute
+  '/plans': typeof AdminPlansRoute
   '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
   '/api/midtrans-reconciliation': typeof ApiMidtransReconciliationRoute
   '/api/ready': typeof ApiReadyRoute
   '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
-  '/': typeof OrgIndexRoute
   '/operator': typeof OperatorIndexRoute
   '/customers/new': typeof OrgCustomersNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
@@ -389,6 +442,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_admin': typeof AdminRouteWithChildren
   '/_org': typeof OrgRouteWithChildren
   '/forbidden': typeof ForbiddenRoute
   '/onboarding': typeof OnboardingRoute
@@ -396,6 +450,12 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/_org/settings': typeof OrgSettingsRouteRouteWithChildren
+  '/_admin/admin': typeof AdminAdminRoute
+  '/_admin/admins': typeof AdminAdminsRoute
+  '/_admin/audit': typeof AdminAuditRoute
+  '/_admin/migrations': typeof AdminMigrationsRoute
+  '/_admin/organizations': typeof AdminOrganizationsRoute
+  '/_admin/plans': typeof AdminPlansRoute
   '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
   '/api/midtrans-reconciliation': typeof ApiMidtransReconciliationRoute
@@ -446,6 +506,12 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/settings'
+    | '/admin'
+    | '/admins'
+    | '/audit'
+    | '/migrations'
+    | '/organizations'
+    | '/plans'
     | '/api/healthz'
     | '/api/midtrans-notification'
     | '/api/midtrans-reconciliation'
@@ -486,17 +552,23 @@ export interface FileRouteTypes {
     | '/api/documents/invoices/portal/$invoiceId/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/forbidden'
     | '/onboarding'
     | '/sign-in'
     | '/sign-up'
+    | '/admin'
+    | '/admins'
+    | '/audit'
+    | '/migrations'
+    | '/organizations'
+    | '/plans'
     | '/api/healthz'
     | '/api/midtrans-notification'
     | '/api/midtrans-reconciliation'
     | '/api/ready'
     | '/invite/accept'
     | '/order/$token'
-    | '/'
     | '/operator'
     | '/customers/new'
     | '/orders/new'
@@ -531,6 +603,7 @@ export interface FileRouteTypes {
     | '/api/documents/invoices/portal/$invoiceId/$token'
   id:
     | '__root__'
+    | '/_admin'
     | '/_org'
     | '/forbidden'
     | '/onboarding'
@@ -538,6 +611,12 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/_org/settings'
+    | '/_admin/admin'
+    | '/_admin/admins'
+    | '/_admin/audit'
+    | '/_admin/migrations'
+    | '/_admin/organizations'
+    | '/_admin/plans'
     | '/api/healthz'
     | '/api/midtrans-notification'
     | '/api/midtrans-reconciliation'
@@ -580,6 +659,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  AdminRoute: typeof AdminRouteWithChildren
   OrgRoute: typeof OrgRouteWithChildren
   ForbiddenRoute: typeof ForbiddenRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -646,6 +726,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_admin': {
+      id: '/_admin'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/operator/': {
       id: '/operator/'
       path: '/'
@@ -701,6 +788,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/healthz'
       preLoaderRoute: typeof ApiHealthzRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_admin/plans': {
+      id: '/_admin/plans'
+      path: '/plans'
+      fullPath: '/plans'
+      preLoaderRoute: typeof AdminPlansRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/organizations': {
+      id: '/_admin/organizations'
+      path: '/organizations'
+      fullPath: '/organizations'
+      preLoaderRoute: typeof AdminOrganizationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/migrations': {
+      id: '/_admin/migrations'
+      path: '/migrations'
+      fullPath: '/migrations'
+      preLoaderRoute: typeof AdminMigrationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/audit': {
+      id: '/_admin/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admins': {
+      id: '/_admin/admins'
+      path: '/admins'
+      fullPath: '/admins'
+      preLoaderRoute: typeof AdminAdminsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin': {
+      id: '/_admin/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminAdminRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/_org/settings': {
       id: '/_org/settings'
@@ -929,6 +1058,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminAdminRoute: typeof AdminAdminRoute
+  AdminAdminsRoute: typeof AdminAdminsRoute
+  AdminAuditRoute: typeof AdminAuditRoute
+  AdminMigrationsRoute: typeof AdminMigrationsRoute
+  AdminOrganizationsRoute: typeof AdminOrganizationsRoute
+  AdminPlansRoute: typeof AdminPlansRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAdminRoute: AdminAdminRoute,
+  AdminAdminsRoute: AdminAdminsRoute,
+  AdminAuditRoute: AdminAuditRoute,
+  AdminMigrationsRoute: AdminMigrationsRoute,
+  AdminOrganizationsRoute: AdminOrganizationsRoute,
+  AdminPlansRoute: AdminPlansRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 interface OrgSettingsRouteRouteChildren {
   OrgSettingsBusinessTemplatesRoute: typeof OrgSettingsBusinessTemplatesRoute
   OrgSettingsChannelsRoute: typeof OrgSettingsChannelsRoute
@@ -1009,6 +1158,7 @@ const OperatorRouteWithChildren = OperatorRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
+  AdminRoute: AdminRouteWithChildren,
   OrgRoute: OrgRouteWithChildren,
   ForbiddenRoute: ForbiddenRoute,
   OnboardingRoute: OnboardingRoute,

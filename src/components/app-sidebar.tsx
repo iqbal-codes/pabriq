@@ -2,17 +2,21 @@
 
 import { Link, useLocation } from '@tanstack/react-router'
 import {
+  Activity,
   ArrowLeft,
   Building2,
   Cpu,
   CreditCard,
   FileText,
   GalleryVerticalEnd,
+  History,
   KanbanSquare,
   LayoutDashboard,
   MessageSquare,
+  Milestone,
   Package,
   Settings2,
+  ShieldCheck,
   ShoppingCart,
   UserRound,
   Users,
@@ -84,6 +88,28 @@ const settingsNavItems: SettingsNavItem[] = [
   },
   { key: 'invoicing', href: '/settings/invoicing', icon: FileText },
 ]
+type AdminNavItem = {
+  key:
+    | 'dashboard'
+    | 'organizations'
+    | 'plans'
+    | 'subscriptions'
+    | 'auditLog'
+    | 'migrations'
+    | 'platformAdmins'
+  href: string
+  icon: React.ComponentType<{ className?: string }>
+}
+
+const adminNavItems: AdminNavItem[] = [
+  { key: 'dashboard', href: '/admin', icon: LayoutDashboard },
+  { key: 'organizations', href: '/admin/organizations', icon: Building2 },
+  { key: 'plans', href: '/admin/plans', icon: CreditCard },
+  { key: 'subscriptions', href: '/admin/subscriptions', icon: Activity },
+  { key: 'auditLog', href: '/admin/audit', icon: History },
+  { key: 'migrations', href: '/admin/migrations', icon: Milestone },
+  { key: 'platformAdmins', href: '/admin/admins', icon: ShieldCheck },
+]
 
 function getVisibleNavItems(role: Role): MainNavItem[] {
   return allNavItems.filter((item) => {
@@ -99,6 +125,7 @@ export function AppSidebar({
   user,
   org,
   role = 'member',
+  sidebarMode = 'org',
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   user: {
@@ -106,21 +133,82 @@ export function AppSidebar({
     email: string
     avatar: string
   }
-  org: {
+  org?: {
     name: string
     slug: string
     logo?: string | null
   }
   role?: Role
+  sidebarMode?: 'org' | 'admin'
 }) {
   const t = useTranslations('sidebar')
   const ct = useTranslations('common')
   const st = useTranslations('settings')
   const pt = useTranslations('production')
+  const at = useTranslations('admin')
   const navItems = getVisibleNavItems(role)
   const { pathname } = useLocation()
   const isSettingsSection = pathname.startsWith('/settings')
 
+  if (sidebarMode === 'admin') {
+    return (
+      <Sidebar collapsible="icon" {...props}>
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <Link to="/admin">
+                <SidebarMenuButton size="lg" className="hover:bg-transparent!">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                    <ShieldCheck className="size-4" />
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-medium">
+                      {at('controlPanel')}
+                    </span>
+                  </div>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarMenu className="px-2">
+            {adminNavItems.map((item) => {
+              const isActive =
+                item.href === '/admin'
+                  ? pathname === '/admin'
+                  : pathname === item.href ||
+                    pathname.startsWith(`${item.href}/`)
+              const label = at(item.key)
+              return (
+                <SidebarMenuItem key={item.key}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    tooltip={label}
+                  >
+                    <Link to={item.href}>
+                      <item.icon />
+                      <span>{label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+            })}
+          </SidebarMenu>
+        </SidebarContent>
+        <SidebarFooter>
+          <div className="flex items-center justify-end gap-1 border-b border-sidebar-border px-3 py-1 md:hidden">
+            <ThemeToggle />
+            <LanguageToggle />
+          </div>
+          <NavUser user={user} />
+        </SidebarFooter>
+        <SidebarRail />
+      </Sidebar>
+    )
+  }
+  if (!org) return null
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
