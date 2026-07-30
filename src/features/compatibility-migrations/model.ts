@@ -1108,7 +1108,8 @@ export async function migrateOrganizationCompatibility(
       if (!org) throw new Error('Organization not found')
 
       // 3. Create/reset migration record (only if failed or new)
-      await tx
+      // Use DO NOTHING to let the SELECT FOR UPDATE serialize concurrent callers.
+      const insertResult = await tx
         .insert(compatibilityMigrations)
         .values({
           id: existing?.id ?? migrationId,
@@ -1120,16 +1121,62 @@ export async function migrateOrganizationCompatibility(
           createdAt: existing?.createdAt ?? now,
           updatedAt: now,
         })
-        .onConflictDoUpdate({
-          target: compatibilityMigrations.orgId,
-          set: {
+        .onConflictDoNothing()
+        .returning({ id: compatibilityMigrations.id })
+
+      let effectiveMigrationId: string
+      if (insertResult[0]) {
+        // Fresh insert succeeded
+        effectiveMigrationId = insertResult[0].id
+      } else {
+        // Conflict — re-read the winning row
+        const [winner] = await tx
+          .select({
+            id: compatibilityMigrations.id,
+            status: compatibilityMigrations.status,
+          })
+          .from(compatibilityMigrations)
+          .where(eq(compatibilityMigrations.orgId, orgId))
+          .for('update')
+          .limit(1)
+        if (!winner)
+          throw new Error('Migration row disappeared during insert conflict')
+        effectiveMigrationId = winner.id
+        // If another caller finished, abort
+        if (
+          winner.status === 'accepted' ||
+          winner.status === 'pending_review'
+        ) {
+          const [full] = await tx
+            .select({
+              id: compatibilityMigrations.id,
+              orgId: compatibilityMigrations.orgId,
+              sourceTemplateId: compatibilityMigrations.sourceTemplateId,
+              sourceTemplateVersion:
+                compatibilityMigrations.sourceTemplateVersion,
+              status: compatibilityMigrations.status,
+              report: compatibilityMigrations.report,
+              reviewedBy: compatibilityMigrations.reviewedBy,
+              reviewedAt: compatibilityMigrations.reviewedAt,
+              failureReason: compatibilityMigrations.failureReason,
+              createdAt: compatibilityMigrations.createdAt,
+              updatedAt: compatibilityMigrations.updatedAt,
+            })
+            .from(compatibilityMigrations)
+            .where(eq(compatibilityMigrations.orgId, orgId))
+            .limit(1)
+          if (full) return full
+        }
+        // Reset failed row to pending_review
+        await tx
+          .update(compatibilityMigrations)
+          .set({
             status: 'pending_review',
             failureReason: null,
             updatedAt: now,
-          },
-        })
-
-      const effectiveMigrationId = existing?.id ?? migrationId
+          })
+          .where(eq(compatibilityMigrations.id, effectiveMigrationId))
+      }
       const configId = await ensureLegacyConfiguration(
         tx,
         orgId,

@@ -482,8 +482,22 @@ export async function listConfigurationElements(
   filters?: {
     elementType?: ConfigurationElementType
     provenance?: ConfigurationProvenance
+    requireActiveConfig?: boolean
   },
 ): Promise<ConfigurationElement[]> {
+  // Gate: if requireActiveConfig, ensure the org config is active (not migrating)
+  if (filters?.requireActiveConfig) {
+    const [config] = await db
+      .select({
+        id: organizationConfigurations.id,
+        status: organizationConfigurations.status,
+      })
+      .from(organizationConfigurations)
+      .where(eq(organizationConfigurations.orgId, orgId))
+      .limit(1)
+    if (!config || config.status !== 'active') return []
+  }
+
   const conditions = [eq(configurationElements.orgId, orgId)]
 
   if (filters?.elementType) {

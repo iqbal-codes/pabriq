@@ -1,5 +1,4 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequestHeaders } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import {
   acceptCompatibilityMigration,
@@ -9,8 +8,12 @@ import {
   migrateOrganizationCompatibility,
   validateCompatibilityMigration,
 } from '#/features/compatibility-migrations/model'
-import { auth } from '#/lib/auth'
-import { resolveOrgId } from '#/lib/auth-session-server'
+import { canManageSettings, type Role } from '#/features/permissions/model'
+import {
+  getSessionServer,
+  resolveOrgAndRole,
+  resolveOrgId,
+} from '#/lib/auth-session-server'
 import { wrapError } from '#/lib/server-results'
 
 const acceptInputSchema = z.object({
@@ -39,7 +42,11 @@ export const runCompatibilityMigrationFn = createServerFn({
   method: 'POST',
 }).handler(async (): Promise<MigrationResult> => {
   try {
-    const data = await migrateOrganizationCompatibility(await resolveOrgId())
+    const { orgId, role } = await resolveOrgAndRole()
+    if (!canManageSettings(role as Role)) {
+      return { ok: false as const, error: 'Not authorized' }
+    }
+    const data = await migrateOrganizationCompatibility(orgId)
     return { ok: true as const, data }
   } catch (err: unknown) {
     return wrapError(err)
@@ -52,9 +59,11 @@ export const acceptCompatibilityMigrationFn = createServerFn({
   .inputValidator((input: unknown) => acceptInputSchema.parse(input))
   .handler(async ({ data }): Promise<MigrationResult> => {
     try {
-      const orgId = await resolveOrgId()
-      const headers = getRequestHeaders()
-      const session = await auth.api.getSession({ headers })
+      const { orgId, role } = await resolveOrgAndRole()
+      if (!canManageSettings(role as Role)) {
+        return { ok: false as const, error: 'Not authorized' }
+      }
+      const session = await getSessionServer()
       if (!session) {
         return { ok: false as const, error: 'Not authorized' }
       }
