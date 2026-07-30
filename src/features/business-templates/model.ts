@@ -482,8 +482,23 @@ export async function listConfigurationElements(
   filters?: {
     elementType?: ConfigurationElementType
     provenance?: ConfigurationProvenance
+    skipConfigGate?: boolean
   },
 ): Promise<ConfigurationElement[]> {
+  // Gate: always check config status unless explicitly skipped
+  // (e.g., migration internals skip during write)
+  if (!filters?.skipConfigGate) {
+    const [config] = await db
+      .select({
+        id: organizationConfigurations.id,
+        status: organizationConfigurations.status,
+      })
+      .from(organizationConfigurations)
+      .where(eq(organizationConfigurations.orgId, orgId))
+      .limit(1)
+    if (!config || config.status !== 'active') return []
+  }
+
   const conditions = [eq(configurationElements.orgId, orgId)]
 
   if (filters?.elementType) {
@@ -510,6 +525,17 @@ export async function getConfigurationElement(
   elementType: ConfigurationElementType,
   elementKey: string,
 ): Promise<ConfigurationElement | null> {
+  // Gate: check config status unless explicitly skipped
+  const [config] = await db
+    .select({
+      id: organizationConfigurations.id,
+      status: organizationConfigurations.status,
+    })
+    .from(organizationConfigurations)
+    .where(eq(organizationConfigurations.orgId, orgId))
+    .limit(1)
+  if (!config || config.status !== 'active') return null
+
   const [row] = await db
     .select()
     .from(configurationElements)
