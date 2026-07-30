@@ -222,6 +222,14 @@ type TaskDetailsTabProps = {
   customerName: string
   quantity: string
   spec: string
+  materials?: Array<{
+    key: string
+    name: string
+    unit: string
+    estimatedQuantity?: number | null
+    wasteAllowance?: number | null
+    supplier?: string | null
+  }> | null
   deadline: DeadlineInfo | null
   deadlineStatusLabel: string
 }
@@ -231,6 +239,7 @@ function TaskDetailsTab({
   customerName,
   quantity,
   spec,
+  materials,
   deadline,
   deadlineStatusLabel,
 }: TaskDetailsTabProps) {
@@ -300,6 +309,36 @@ function TaskDetailsTab({
           </h3>
           <div className="bg-card border border-border rounded-none p-3.5 text-sm text-foreground/95 leading-relaxed whitespace-pre-wrap">
             {spec}
+          </div>
+        </section>
+      )}
+      {materials && materials.length > 0 && (
+        <section className="space-y-2">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            {t('materialsRequired')}
+          </h3>
+          <div className="bg-card border border-border rounded-none p-3 space-y-2 text-xs">
+            {materials.map((m) => (
+              <div
+                key={m.key}
+                className="flex items-center justify-between border-b border-border/50 pb-1.5 last:border-0 last:pb-0"
+              >
+                <div>
+                  <span className="font-medium text-foreground">{m.name}</span>
+                  {m.supplier && (
+                    <span className="text-muted-foreground ml-1 font-normal">
+                      ({m.supplier})
+                    </span>
+                  )}
+                </div>
+                <div className="font-mono text-muted-foreground">
+                  {m.estimatedQuantity ?? 1} {m.unit}
+                  {m.wasteAllowance
+                    ? ` ${t('wastePercentage', { percentage: Math.round(m.wasteAllowance * 100) })}`
+                    : ''}
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       )}
@@ -606,6 +645,18 @@ export function TaskDetailModal({
                   customerName={String(ctx?.customerName ?? '')}
                   quantity={String(ctx?.quantity ?? '')}
                   spec={String(ctx?.requirements ?? '')}
+                  materials={
+                    Array.isArray(ctx?.materials)
+                      ? (ctx.materials as Array<{
+                          key: string
+                          name: string
+                          unit: string
+                          estimatedQuantity?: number | null
+                          wasteAllowance?: number | null
+                          supplier?: string | null
+                        }>)
+                      : null
+                  }
                   deadline={deadline}
                   deadlineStatusLabel={deadlineStatusLabel}
                 />
