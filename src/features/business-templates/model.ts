@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, or, sql } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   type BusinessTemplateStatus,
@@ -591,6 +591,21 @@ export async function addConfigurationElement(
   if (!row) throw new Error('Failed to add configuration element')
   return row as unknown as ConfigurationElement
 }
+export async function deleteConfigurationElement(
+  orgId: string,
+  elementType: ConfigurationElementType,
+  elementKey: string,
+): Promise<void> {
+  await db
+    .delete(configurationElements)
+    .where(
+      and(
+        eq(configurationElements.orgId, orgId),
+        eq(configurationElements.elementType, elementType),
+        eq(configurationElements.elementKey, elementKey),
+      ),
+    )
+}
 
 // ─── Upgrade Proposals ───────────────────────────────────────────────────────
 
@@ -785,21 +800,27 @@ export async function createUpgradeProposal(
     .where(
       and(
         eq(templateUpgradeProposals.orgId, orgId),
-        eq(templateUpgradeProposals.sourceTemplateId, config.sourceTemplateId),
-        eq(
-          templateUpgradeProposals.sourceTemplateVersion,
-          config.sourceTemplateVersion,
-        ),
         eq(templateUpgradeProposals.targetTemplateId, targetTemplateId),
         eq(
           templateUpgradeProposals.targetTemplateVersion,
           targetTemplate.version,
         ),
-        eq(templateUpgradeProposals.status, 'applied'),
+        or(
+          eq(templateUpgradeProposals.status, 'applied'),
+          and(
+            eq(
+              templateUpgradeProposals.sourceTemplateId,
+              config.sourceTemplateId,
+            ),
+            or(
+              eq(templateUpgradeProposals.status, 'pending_review'),
+              eq(templateUpgradeProposals.status, 'accepted'),
+            ),
+          ),
+        ),
       ),
     )
     .limit(1)
-
   if (existingApplied[0]) {
     return existingApplied[0] as unknown as UpgradeProposal
   }

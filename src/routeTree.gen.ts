@@ -38,6 +38,7 @@ import { Route as OrgSettingsProfileRouteImport } from './routes/_org/settings/p
 import { Route as OrgSettingsProductionStagesRouteImport } from './routes/_org/settings/production-stages'
 import { Route as OrgSettingsPaymentMethodsRouteImport } from './routes/_org/settings/payment-methods'
 import { Route as OrgSettingsMembersRouteImport } from './routes/_org/settings/members'
+import { Route as OrgSettingsMaterialsRouteImport } from './routes/_org/settings/materials'
 import { Route as OrgSettingsInvoicingRouteImport } from './routes/_org/settings/invoicing'
 import { Route as OrgSettingsGeneralRouteImport } from './routes/_org/settings/general'
 import { Route as OrgSettingsChannelsRouteImport } from './routes/_org/settings/channels'
@@ -203,6 +204,11 @@ const OrgSettingsMembersRoute = OrgSettingsMembersRouteImport.update({
   path: '/members',
   getParentRoute: () => OrgSettingsRouteRoute,
 } as any)
+const OrgSettingsMaterialsRoute = OrgSettingsMaterialsRouteImport.update({
+  id: '/materials',
+  path: '/materials',
+  getParentRoute: () => OrgSettingsRouteRoute,
+} as any)
 const OrgSettingsInvoicingRoute = OrgSettingsInvoicingRouteImport.update({
   id: '/invoicing',
   path: '/invoicing',
@@ -311,6 +317,7 @@ export interface FileRoutesByFullPath {
   '/settings/channels': typeof OrgSettingsChannelsRoute
   '/settings/general': typeof OrgSettingsGeneralRoute
   '/settings/invoicing': typeof OrgSettingsInvoicingRoute
+  '/settings/materials': typeof OrgSettingsMaterialsRoute
   '/settings/members': typeof OrgSettingsMembersRoute
   '/settings/payment-methods': typeof OrgSettingsPaymentMethodsRoute
   '/settings/production-stages': typeof OrgSettingsProductionStagesRoute
@@ -355,6 +362,7 @@ export interface FileRoutesByTo {
   '/settings/channels': typeof OrgSettingsChannelsRoute
   '/settings/general': typeof OrgSettingsGeneralRoute
   '/settings/invoicing': typeof OrgSettingsInvoicingRoute
+  '/settings/materials': typeof OrgSettingsMaterialsRoute
   '/settings/members': typeof OrgSettingsMembersRoute
   '/settings/payment-methods': typeof OrgSettingsPaymentMethodsRoute
   '/settings/production-stages': typeof OrgSettingsProductionStagesRoute
@@ -403,6 +411,7 @@ export interface FileRoutesById {
   '/_org/settings/channels': typeof OrgSettingsChannelsRoute
   '/_org/settings/general': typeof OrgSettingsGeneralRoute
   '/_org/settings/invoicing': typeof OrgSettingsInvoicingRoute
+  '/_org/settings/materials': typeof OrgSettingsMaterialsRoute
   '/_org/settings/members': typeof OrgSettingsMembersRoute
   '/_org/settings/payment-methods': typeof OrgSettingsPaymentMethodsRoute
   '/_org/settings/production-stages': typeof OrgSettingsProductionStagesRoute
@@ -451,6 +460,7 @@ export interface FileRouteTypes {
     | '/settings/channels'
     | '/settings/general'
     | '/settings/invoicing'
+    | '/settings/materials'
     | '/settings/members'
     | '/settings/payment-methods'
     | '/settings/production-stages'
@@ -495,6 +505,7 @@ export interface FileRouteTypes {
     | '/settings/channels'
     | '/settings/general'
     | '/settings/invoicing'
+    | '/settings/materials'
     | '/settings/members'
     | '/settings/payment-methods'
     | '/settings/production-stages'
@@ -542,6 +553,7 @@ export interface FileRouteTypes {
     | '/_org/settings/channels'
     | '/_org/settings/general'
     | '/_org/settings/invoicing'
+    | '/_org/settings/materials'
     | '/_org/settings/members'
     | '/_org/settings/payment-methods'
     | '/_org/settings/production-stages'
@@ -795,6 +807,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgSettingsMembersRouteImport
       parentRoute: typeof OrgSettingsRouteRoute
     }
+    '/_org/settings/materials': {
+      id: '/_org/settings/materials'
+      path: '/materials'
+      fullPath: '/settings/materials'
+      preLoaderRoute: typeof OrgSettingsMaterialsRouteImport
+      parentRoute: typeof OrgSettingsRouteRoute
+    }
     '/_org/settings/invoicing': {
       id: '/_org/settings/invoicing'
       path: '/invoicing'
@@ -915,6 +934,7 @@ interface OrgSettingsRouteRouteChildren {
   OrgSettingsChannelsRoute: typeof OrgSettingsChannelsRoute
   OrgSettingsGeneralRoute: typeof OrgSettingsGeneralRoute
   OrgSettingsInvoicingRoute: typeof OrgSettingsInvoicingRoute
+  OrgSettingsMaterialsRoute: typeof OrgSettingsMaterialsRoute
   OrgSettingsMembersRoute: typeof OrgSettingsMembersRoute
   OrgSettingsPaymentMethodsRoute: typeof OrgSettingsPaymentMethodsRoute
   OrgSettingsProductionStagesRoute: typeof OrgSettingsProductionStagesRoute
@@ -928,6 +948,7 @@ const OrgSettingsRouteRouteChildren: OrgSettingsRouteRouteChildren = {
   OrgSettingsChannelsRoute: OrgSettingsChannelsRoute,
   OrgSettingsGeneralRoute: OrgSettingsGeneralRoute,
   OrgSettingsInvoicingRoute: OrgSettingsInvoicingRoute,
+  OrgSettingsMaterialsRoute: OrgSettingsMaterialsRoute,
   OrgSettingsMembersRoute: OrgSettingsMembersRoute,
   OrgSettingsPaymentMethodsRoute: OrgSettingsPaymentMethodsRoute,
   OrgSettingsProductionStagesRoute: OrgSettingsProductionStagesRoute,

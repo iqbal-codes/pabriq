@@ -37,6 +37,10 @@ import {
 import type { ShippingAddress } from '#/features/address/model'
 import { getCustomerAddress } from '#/features/address/model'
 import type { AssetMetadata } from '#/features/assets/server'
+import {
+  createFulfillmentForOrder,
+  transitionFulfillment,
+} from '#/features/fulfillment/model'
 import { rewriteFinalInvoiceFromOrder } from '#/features/invoices/model'
 import { normalizeDesignName } from '#/features/orders/line-item-display'
 import { type Breakpoint, calculateUnitPrice } from '#/features/pricing/engine'
@@ -1659,9 +1663,14 @@ export async function approveOrder(
   orgId: string,
   approvedBy: string,
 ): Promise<void> {
+  let customerId: string | null = null
   await db.transaction(async (tx) => {
     const orderRows = await tx
-      .select({ id: ordersTable.id, status: ordersTable.status })
+      .select({
+        id: ordersTable.id,
+        status: ordersTable.status,
+        customerId: ordersTable.customerId,
+      })
       .from(ordersTable)
       .where(and(eq(ordersTable.id, id), eq(ordersTable.orgId, orgId)))
       .limit(1)
@@ -1672,6 +1681,7 @@ export async function approveOrder(
     if (orderRows[0].status !== 'pending')
       throw new Error('Only pending orders can be approved')
 
+    customerId = orderRows[0].customerId
     const now = new Date()
 
     // Commit all specifications for this order (idempotent)
@@ -1718,6 +1728,12 @@ export async function approveOrder(
       allowedStatuses: ['approved'] as const,
     })
   })
+
+  await createFulfillmentForOrder({
+    orgId,
+    orderId: id,
+    customerId,
+  }).catch(() => {})
 }
 
 export async function rejectOrder(
@@ -1829,11 +1845,21 @@ export async function advanceOrderStatus(
       createdAt: now,
     })
   } else if (order.status === 'in_progress') {
+    await transitionFulfillment({
+      orderId: id,
+      orgId: order.orgId,
+      nextStatus: 'shipped',
+    }).catch(() => {})
     await db
       .update(ordersTable)
       .set({ status: 'in_delivery', shippedAt: now, updatedAt: now })
       .where(eq(ordersTable.id, id))
   } else if (order.status === 'in_delivery') {
+    await transitionFulfillment({
+      orderId: id,
+      orgId: order.orgId,
+      nextStatus: 'completed',
+    }).catch(() => {})
     await db
       .update(ordersTable)
       .set({ status: 'completed', deliveredAt: now, updatedAt: now })
@@ -1859,6 +1885,13 @@ export async function setDeliveryInfo(
     throw new Error('Only in_delivery orders can have delivery info set')
 
   const now = new Date()
+  await transitionFulfillment({
+    orderId: id,
+    orgId,
+    nextStatus: 'shipped',
+    courier: delivery.courier,
+    trackingNumber: delivery.trackingNumber,
+  }).catch(() => {})
   const updates: Record<string, unknown> = { updatedAt: now }
   if (delivery.courier !== undefined) updates.courier = delivery.courier
   if (delivery.trackingNumber !== undefined)
@@ -1883,6 +1916,13 @@ export async function markShipped(
     throw new Error('Only in_progress orders can be shipped')
 
   const now = new Date()
+  await transitionFulfillment({
+    orderId: id,
+    orgId,
+    nextStatus: 'shipped',
+    courier: delivery.courier,
+    trackingNumber: delivery.trackingNumber,
+  }).catch(() => {})
   await db.transaction(async (tx) => {
     await tx
       .update(ordersTable)
