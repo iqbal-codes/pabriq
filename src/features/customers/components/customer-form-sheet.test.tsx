@@ -27,6 +27,12 @@ vi.mock('#/features/customers/hooks', () => ({
       : undefined,
     isLoading: false,
   })),
+  useCustomerMaybe: vi.fn((id: string) => ({
+    data: id
+      ? { id, name: 'John Doe', email: 'john@example.com', active: true }
+      : undefined,
+    isLoading: false,
+  })),
   useCreateCustomer: vi.fn(() => ({
     mutateAsync: vi.fn().mockResolvedValue({ ok: true }),
   })),

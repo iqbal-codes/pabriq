@@ -36,6 +36,14 @@ export function useOrder(params: { id: string }) {
     queryFn: () => getOrderFn({ data: params }),
   })
 }
+
+export function useOrderMaybe(params: { id: string }) {
+  return useQuery({
+    queryKey: queryKeys.orders.detail(params.id),
+    queryFn: () => getOrderFn({ data: params }),
+    enabled: Boolean(params.id),
+  })
+}
 export function useOrderCreationReadiness() {
   return useQuery<OrderCreationReadiness>({
     queryKey: queryKeys.orders.creationReadiness(),

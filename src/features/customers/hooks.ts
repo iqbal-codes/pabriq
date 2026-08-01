@@ -31,6 +31,14 @@ export function useCustomer(id: string) {
   })
 }
 
+export function useCustomerMaybe(id: string) {
+  return useQuery({
+    queryKey: queryKeys.customers.detail(id),
+    queryFn: () => getCustomerFn({ data: { id } }),
+    enabled: Boolean(id),
+  })
+}
+
 export function useCreateCustomer() {
   const queryClient = useQueryClient()
   return useMutation({

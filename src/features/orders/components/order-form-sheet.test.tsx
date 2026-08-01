@@ -33,6 +33,15 @@ vi.mock('#/features/orders/hooks', () => ({
       : undefined,
     isLoading: false,
   })),
+  useOrderMaybe: vi.fn((params: { id: string }) => ({
+    data: params.id
+      ? {
+          order: { id: params.id, customerId: 'cust-1', notes: 'Test Notes' },
+          lineItems: [],
+        }
+      : undefined,
+    isLoading: false,
+  })),
   useCreateDraftOrder: vi.fn(() => ({
     mutateAsync: vi
       .fn()

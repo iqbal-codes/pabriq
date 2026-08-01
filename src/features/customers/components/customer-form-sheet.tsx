@@ -11,7 +11,7 @@ import { Button } from '#/components/ui/button'
 import { CustomerFormFields } from '#/features/customers/components/customer-form-fields'
 import {
   useCreateCustomer,
-  useCustomer,
+  useCustomerMaybe,
   useUpdateCustomer,
 } from '#/features/customers/hooks'
 import type { Customer } from '#/features/customers/model'
@@ -137,7 +137,7 @@ export function CustomerFormSheet({
   const isEdit = mode.type === 'edit'
   const customerId = isEdit ? mode.id : ''
 
-  const customerQuery = useCustomer(customerId)
+  const customerQuery = useCustomerMaybe(customerId)
 
   if (!open) {
     return null
