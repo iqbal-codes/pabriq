@@ -23,6 +23,7 @@ import { Skeleton } from '#/components/ui/skeleton'
 import {
   type DashboardPeriod,
   useDashboardData,
+  useSubscriptionWithUsage,
 } from '#/features/dashboard/hooks'
 import { getReadyForProductionLabel } from '#/features/production/ready-for-production-label'
 import { formatCurrency, formatNumber } from '#/lib/formatters'
@@ -31,6 +32,7 @@ import { KpiCard } from './-dashboard/kpi-card'
 import { KpiCardSkeleton } from './-dashboard/kpi-card-skeleton'
 import { RecentOrdersCard } from './-dashboard/recent-orders-card'
 import { RevenueChartSection } from './-dashboard/revenue-chart-section'
+import { SubscriptionLimitCard } from './-dashboard/subscription-limit-card'
 import { TaskStageList } from './-dashboard/task-stage-list'
 
 export const Route = createFileRoute('/_org/')({
@@ -48,6 +50,8 @@ function OrgDashboard() {
   const ot = useTranslations('orders')
   const [period, setPeriod] = useState<DashboardPeriod>('thisMonth')
   const { data, isLoading } = useDashboardData(period)
+  const { data: subscriptionUsage, isLoading: usageLoading } =
+    useSubscriptionWithUsage()
 
   const periodLabels: Record<DashboardPeriod, string> = {
     '7d': t('period.7d'),
@@ -127,6 +131,13 @@ function OrgDashboard() {
             />
           </>
         )}
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <SubscriptionLimitCard
+          data={subscriptionUsage}
+          isLoading={usageLoading}
+        />
       </section>
 
       <RevenueChartSection

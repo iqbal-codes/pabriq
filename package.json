@@ -7,7 +7,7 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "bun --env-file=.env.local -- sh -c \"NODE_OPTIONS='--import ./instrument.server.mjs' vite dev --port 3001\"",
+    "dev": "NODE_OPTIONS='--import ./instrument.server.mjs' bun --env-file=.env.local run vite dev --port 3001",
     "build": "vite build && cp instrument.server.mjs dist/server && bun build src/db/migrate.ts --outfile=dist/migrate.js --target=node",
     "preview": "vite preview",
     "test": "NODE_ENV=test VITEST_FROM_SCRIPT=true bun --env-file=.env.test x vitest run --passWithNoTests",
@@ -81,6 +81,7 @@
     "react-dropzone": "^15.0.0",
     "recharts": "3.8.0",
     "remark-gfm": "^4.0.1",
+    "resend": "^6.18.1",
     "serwist": "^9.5.11",
     "shadcn": "^4.13.0",
     "sonner": "^2.0.7",

@@ -3,19 +3,27 @@ import {
   createOrganizationExportFn,
   createPlanFn,
   createPlanVersionFn,
+  createRetentionPolicyFn,
   deactivatePlanFn,
+  deleteRetentionPolicyFn,
+  executeOrganizationExportFn,
   getAdminDashboardMetricsFn,
+  getExportDownloadUrlFn,
   getProductionBottlenecksFn,
   grantPlatformAdminFn,
   listAuditEventsFn,
+  listBillingEventsFn,
   listMigrationsFn,
+  listOrganizationExportsFn,
   listOrganizationsFn,
   listPlansFn,
   listPlatformAdminsFn,
+  listRetentionPoliciesFn,
   listSubscriptionsFn,
   restoreOrganizationFn,
   revokePlatformAdminFn,
   suspendOrganizationFn,
+  updateRetentionPolicyFn,
 } from '#/features/admin/server'
 import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 import { queryKeys } from '#/lib/query-keys'
@@ -232,5 +240,115 @@ export function useProductionBottlenecks(orgId: string, limit = 10) {
     queryKey: queryKeys.admin.productionBottlenecks(orgId, limit),
     queryFn: () => getProductionBottlenecksFn({ data: { orgId, limit } }),
     enabled: !!orgId,
+  })
+}
+
+// ─── Billing Events ──────────────────────────────────────────────────────────
+
+export function useAdminBillingEvents(
+  options: {
+    limit?: number
+    offset?: number
+    orgId?: string
+    eventType?: string
+  } = {},
+) {
+  return useQuery({
+    queryKey: queryKeys.admin.billingEvents(options),
+    queryFn: () =>
+      listBillingEventsFn({
+        data: {
+          limit: options.limit ?? 50,
+          offset: options.offset ?? 0,
+          orgId: options.orgId,
+          eventType: options.eventType,
+        },
+      }),
+  })
+}
+
+// ─── Organization Exports ────────────────────────────────────────────────────
+
+export function useAdminExports(orgId?: string) {
+  return useQuery({
+    queryKey: queryKeys.admin.exports(orgId),
+    queryFn: () => listOrganizationExportsFn({ data: { orgId } }),
+  })
+}
+
+export function useExportDownloadUrl() {
+  return useMutation({
+    mutationFn: (input: { exportId: string }) =>
+      getExportDownloadUrlFn({ data: input }),
+  })
+}
+
+export function useExecuteOrganizationExport() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { orgId: string }) =>
+      executeOrganizationExportFn({ data: input }),
+    onSuccess: () => {
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.admin.exports() },
+        { queryKey: queryKeys.admin.audit() },
+      ])
+    },
+  })
+}
+
+// ─── Retention Policies ──────────────────────────────────────────────────────
+
+export function useRetentionPolicies() {
+  return useQuery({
+    queryKey: queryKeys.admin.retentionPolicies(),
+    queryFn: () => listRetentionPoliciesFn(),
+  })
+}
+
+export function useCreateRetentionPolicy() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: {
+      targetTable: string
+      retentionDays: number
+      enabled?: boolean
+    }) => createRetentionPolicyFn({ data: input }),
+    onSuccess: () => {
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.admin.retentionPolicies() },
+        { queryKey: queryKeys.admin.audit() },
+      ])
+    },
+  })
+}
+
+export function useUpdateRetentionPolicy() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: {
+      id: string
+      retentionDays?: number
+      enabled?: boolean
+    }) => updateRetentionPolicyFn({ data: input }),
+    onSuccess: () => {
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.admin.retentionPolicies() },
+      ])
+    },
+  })
+}
+
+export function useDeleteRetentionPolicy() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { id: string }) =>
+      deleteRetentionPolicyFn({ data: input }),
+    onSuccess: () => {
+      return invalidateMutationQueries(queryClient, [
+        { queryKey: queryKeys.admin.retentionPolicies() },
+        { queryKey: queryKeys.admin.audit() },
+      ])
+    },
   })
 }

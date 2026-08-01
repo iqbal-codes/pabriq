@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '#/db/index'
 import {
   type BillingCadence,
+  billingEvents,
   type PlanEntitlements,
   plans,
   type SubscriptionStatus,
@@ -175,15 +176,31 @@ export async function startTrial(
 
   const result = await getSubscription(orgId)
   if (!result) throw new Error('Failed to create subscription')
+
+  // Record billing event
+  await db.insert(billingEvents).values({
+    id: crypto.randomUUID(),
+    orgId,
+    subscriptionId: result.id,
+    eventType: 'trial_started',
+    newStatus: 'trialing',
+    newPlanId: plan.id,
+    metadata: { planSlug: plan.slug, planName: plan.name },
+  })
+
   return result
 }
 
 export async function transitionSubscription(
   orgId: string,
   targetStatus: SubscriptionStatus,
+  actorId?: string,
 ): Promise<void> {
   const sub = await db
-    .select({ status: subscriptions.status })
+    .select({
+      status: subscriptions.status,
+      id: subscriptions.id,
+    })
     .from(subscriptions)
     .where(eq(subscriptions.orgId, orgId))
     .limit(1)
@@ -222,6 +239,50 @@ export async function transitionSubscription(
     .update(subscriptions)
     .set(updates)
     .where(eq(subscriptions.orgId, orgId))
+
+  // Record billing event
+  const eventType =
+    targetStatus === 'canceled'
+      ? 'subscription_canceled'
+      : targetStatus === 'suspended'
+        ? 'status_transitioned'
+        : targetStatus === 'active' && currentStatus === 'suspended'
+          ? 'subscription_reinstated'
+          : 'status_transitioned'
+
+  await recordBillingEvent({
+    orgId,
+    subscriptionId: sub[0].id,
+    eventType,
+    previousStatus: currentStatus,
+    newStatus: targetStatus,
+    actorId: actorId ?? null,
+  })
+}
+
+async function recordBillingEvent(event: {
+  orgId: string
+  subscriptionId: string
+  eventType: string
+  previousStatus?: string | null
+  newStatus?: string | null
+  previousPlanId?: string | null
+  newPlanId?: string | null
+  metadata?: Record<string, unknown>
+  actorId?: string | null
+}): Promise<void> {
+  await db.insert(billingEvents).values({
+    id: crypto.randomUUID(),
+    orgId: event.orgId,
+    subscriptionId: event.subscriptionId,
+    eventType: event.eventType as never,
+    previousStatus: event.previousStatus ?? null,
+    newStatus: event.newStatus ?? null,
+    previousPlanId: event.previousPlanId ?? null,
+    newPlanId: event.newPlanId ?? null,
+    metadata: (event.metadata ?? {}) as Record<string, unknown>,
+    actorId: event.actorId ?? null,
+  })
 }
 
 export async function canWrite(orgId: string): Promise<boolean> {
@@ -362,15 +423,25 @@ export async function changePlan(
   targetPlanSlug: string,
   cadence: BillingCadence,
 ): Promise<void> {
-  const targetPlanRows = await db
-    .select({ id: plans.id })
-    .from(plans)
-    .where(eq(plans.slug, targetPlanSlug))
-    .limit(1)
+  const [sub, targetPlanRows] = await Promise.all([
+    db
+      .select({ id: subscriptions.id, planId: subscriptions.planId })
+      .from(subscriptions)
+      .where(eq(subscriptions.orgId, orgId))
+      .limit(1),
+    db
+      .select({ id: plans.id, slug: plans.slug, name: plans.name })
+      .from(plans)
+      .where(eq(plans.slug, targetPlanSlug))
+      .limit(1),
+  ])
 
+  if (sub.length === 0) throw new Error('No subscription found')
   if (targetPlanRows.length === 0) {
     throw new Error(`Plan not found: ${targetPlanSlug}`)
   }
+
+  const previousPlanId = sub[0].planId
 
   await db
     .update(subscriptions)
@@ -380,6 +451,21 @@ export async function changePlan(
       updatedAt: new Date(),
     })
     .where(eq(subscriptions.orgId, orgId))
+
+  // Record billing event
+  await db.insert(billingEvents).values({
+    id: crypto.randomUUID(),
+    orgId,
+    subscriptionId: sub[0].id,
+    eventType: 'plan_changed',
+    previousPlanId,
+    newPlanId: targetPlanRows[0].id,
+    metadata: {
+      previousPlanSlug: null,
+      newPlanSlug: targetPlanSlug,
+      newCadence: cadence,
+    },
+  })
 }
 
 export async function renewBillingPeriod(orgId: string): Promise<void> {
@@ -402,6 +488,18 @@ export async function renewBillingPeriod(orgId: string): Promise<void> {
       updatedAt: now,
     })
     .where(eq(subscriptions.orgId, orgId))
+
+  // Record billing event
+  await db.insert(billingEvents).values({
+    id: crypto.randomUUID(),
+    orgId,
+    subscriptionId: sub[0].id,
+    eventType: 'billing_period_renewed',
+    metadata: {
+      periodStartsAt: now.toISOString(),
+      periodEndsAt: periodEnd.toISOString(),
+    },
+  })
 }
 
 export async function markPastDue(orgId: string): Promise<void> {

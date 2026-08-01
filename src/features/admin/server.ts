@@ -5,30 +5,41 @@ import { db } from '#/db/index'
 import { user } from '#/db/schema'
 import type {
   AdminAuditEvent,
+  AdminBillingEvent,
   AdminDashboardMetrics,
   AdminMigrationSummary,
   AdminOrgSummary,
   AdminPlanSummary,
   AdminSubscriptionSummary,
+  OrganizationExportSummary,
+  RetentionPolicySummary,
 } from '#/features/admin/model'
 import {
   createOrganizationExport,
   createPlan,
   createPlanVersion,
+  createRetentionPolicy,
   deactivatePlan,
+  deleteRetentionPolicy,
+  executeOrganizationExport,
   getAdminDashboardMetrics,
+  getExportDownloadUrl,
   getProductionBottlenecks,
   grantPlatformAdmin,
   listAuditEvents,
+  listBillingEvents,
   listMigrations,
+  listOrganizationExports,
   listOrganizations,
   listPlans,
   listPlatformAdmins,
+  listRetentionPolicies,
   listSubscriptions,
   recordAuditEvent,
   restoreOrganization,
   revokePlatformAdmin,
   suspendOrganization,
+  updateRetentionPolicy,
 } from '#/features/admin/model'
 import { resolvePlatformAdmin } from '#/lib/auth-session-server'
 import { wrapError } from '#/lib/server-results'
@@ -366,6 +377,161 @@ export const revokePlatformAdminFn = createServerFn({ method: 'POST' })
         details: { targetUserId: data.userId },
       })
       return { ok: true, data: { userId: data.userId } }
+    } catch (err: unknown) {
+      return wrapError(err)
+    }
+  })
+
+// ─── Billing Events ──────────────────────────────────────────────────────────
+
+export const listBillingEventsFn = createServerFn({ method: 'GET' })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        limit: z.number().int().min(1).max(200).default(50),
+        offset: z.number().int().min(0).default(0),
+        orgId: z.string().optional(),
+        eventType: z.string().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }): Promise<AdminBillingEvent[]> => {
+    await requirePlatformAdmin()
+    return listBillingEvents(data.limit, data.offset, {
+      orgId: data.orgId,
+      eventType: data.eventType as AdminBillingEvent['eventType'] | undefined,
+    })
+  })
+
+// ─── Organization Exports ────────────────────────────────────────────────────
+
+export const listOrganizationExportsFn = createServerFn({ method: 'GET' })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        orgId: z.string().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }): Promise<OrganizationExportSummary[]> => {
+    await requirePlatformAdmin()
+    return listOrganizationExports(data.orgId)
+  })
+
+export const getExportDownloadUrlFn = createServerFn({ method: 'GET' })
+  .inputValidator((input: unknown) =>
+    z.object({ exportId: z.string() }).parse(input),
+  )
+  .handler(
+    async ({
+      data,
+    }): Promise<AdminResult<{ url: string; expiresAt: number }>> => {
+      try {
+        await requirePlatformAdmin()
+        const result = await getExportDownloadUrl(data.exportId)
+        if (!result) {
+          return { ok: false, error: 'Export not found or not completed' }
+        }
+        return { ok: true, data: result }
+      } catch (err: unknown) {
+        return wrapError(err)
+      }
+    },
+  )
+
+export const executeOrganizationExportFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: unknown) =>
+    z.object({ orgId: z.string() }).parse(input),
+  )
+  .handler(async ({ data }): Promise<AdminResult<{ exportId: string }>> => {
+    try {
+      const { actorId, actorName } = await requirePlatformAdmin()
+      const result = await executeOrganizationExport(
+        data.orgId,
+        actorId,
+        actorName,
+      )
+      return { ok: true, data: result }
+    } catch (err: unknown) {
+      return wrapError(err)
+    }
+  })
+
+// ─── Retention Policies ──────────────────────────────────────────────────────
+
+export const listRetentionPoliciesFn = createServerFn({
+  method: 'GET',
+}).handler(async (): Promise<RetentionPolicySummary[]> => {
+  await requirePlatformAdmin()
+  return listRetentionPolicies()
+})
+
+export const createRetentionPolicyFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        targetTable: z.string().trim().min(1),
+        retentionDays: z.number().int().min(1),
+        enabled: z.boolean().optional().default(true),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }): Promise<AdminResult<{ id: string }>> => {
+    try {
+      const { actorId, actorName } = await requirePlatformAdmin()
+      const policy = await createRetentionPolicy({
+        targetTable: data.targetTable,
+        retentionDays: data.retentionDays,
+        enabled: data.enabled,
+        createdBy: actorName,
+      })
+      await recordAuditEvent({
+        actorId,
+        actorName,
+        action: 'admin.action' as const,
+        reason: `Created retention policy for ${data.targetTable}: ${data.retentionDays} days`,
+        details: {
+          policyId: policy.id,
+          targetTable: data.targetTable,
+          retentionDays: data.retentionDays,
+        },
+      })
+      return { ok: true, data: { id: policy.id } }
+    } catch (err: unknown) {
+      return wrapError(err)
+    }
+  })
+
+export const updateRetentionPolicyFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        id: z.string(),
+        retentionDays: z.number().int().min(1).optional(),
+        enabled: z.boolean().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }): Promise<AdminResult<{ id: string }>> => {
+    try {
+      await requirePlatformAdmin()
+      await updateRetentionPolicy(data.id, {
+        retentionDays: data.retentionDays,
+        enabled: data.enabled,
+      })
+      return { ok: true, data: { id: data.id } }
+    } catch (err: unknown) {
+      return wrapError(err)
+    }
+  })
+
+export const deleteRetentionPolicyFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: unknown) => z.object({ id: z.string() }).parse(input))
+  .handler(async ({ data }): Promise<AdminResult<{ id: string }>> => {
+    try {
+      await requirePlatformAdmin()
+      await deleteRetentionPolicy(data.id)
+      return { ok: true, data: { id: data.id } }
     } catch (err: unknown) {
       return wrapError(err)
     }

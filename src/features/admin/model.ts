@@ -4,6 +4,7 @@ import type {
   AuditActionType,
   AuditEvent,
   BillingCadence,
+  BillingEventType,
   CompatibilityMigrationReport,
   NewAuditEvent,
   PlanEntitlements,
@@ -11,15 +12,20 @@ import type {
 } from '#/db/schema'
 import {
   auditEvents,
+  billingEvents,
   compatibilityMigrations,
+  customers,
   invoices,
   member,
   orders,
   organization,
+  organizationExports,
   plans,
   platformAdminUsers,
   productionStages,
   productionTasks,
+  products,
+  retentionPolicies,
   subscriptions,
   user,
 } from '#/db/schema'
@@ -661,8 +667,12 @@ export async function restoreOrganization(
   })
 }
 
-// ─── Export (placeholder for retention/export) ───────────────────────────────
+// ─── Export ───────────────────────────────────────────────────────────────────
 
+/**
+ * Legacy placeholder — records audit event only.
+ * Use executeOrganizationExport for the full data export pipeline.
+ */
 export async function createOrganizationExport(
   orgId: string,
   actorId: string,
@@ -754,4 +764,384 @@ export async function getProductionBottlenecks(
     board: row.board,
     createdAt: row.createdAt.toISOString(),
   }))
+}
+
+// ─── Billing Events ──────────────────────────────────────────────────────────
+
+export type AdminBillingEvent = {
+  id: string
+  orgId: string
+  orgName: string
+  subscriptionId: string
+  eventType: BillingEventType
+  previousStatus: string | null
+  newStatus: string | null
+  previousPlanId: string | null
+  newPlanId: string | null
+  metadata: Record<string, string | number | boolean | null> | null
+  actorId: string | null
+  createdAt: string
+}
+
+export type RetentionPolicySummary = {
+  id: string
+  orgId: string | null
+  orgName: string | null
+  targetTable: string
+  retentionDays: number
+  enabled: boolean
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type OrganizationExportSummary = {
+  id: string
+  orgId: string
+  orgName: string
+  status: string
+  format: string
+  r2Key: string | null
+  fileSizeBytes: number | null
+  includedData: string[]
+  requestedBy: string
+  completedAt: string | null
+  expiresAt: string | null
+  createdAt: string
+}
+
+export async function listBillingEvents(
+  limit = 50,
+  offset = 0,
+  filters?: {
+    orgId?: string
+    eventType?: BillingEventType
+  },
+): Promise<AdminBillingEvent[]> {
+  const conditions: ReturnType<typeof eq>[] = []
+
+  if (filters?.orgId) {
+    conditions.push(eq(billingEvents.orgId, filters.orgId))
+  }
+  if (filters?.eventType) {
+    conditions.push(eq(billingEvents.eventType, filters.eventType))
+  }
+
+  const rows = await db
+    .select({
+      id: billingEvents.id,
+      orgId: billingEvents.orgId,
+      orgName: organization.name,
+      subscriptionId: billingEvents.subscriptionId,
+      eventType: billingEvents.eventType,
+      previousStatus: billingEvents.previousStatus,
+      newStatus: billingEvents.newStatus,
+      previousPlanId: billingEvents.previousPlanId,
+      newPlanId: billingEvents.newPlanId,
+      metadata: billingEvents.metadata,
+      actorId: billingEvents.actorId,
+      createdAt: billingEvents.createdAt,
+    })
+    .from(billingEvents)
+    .innerJoin(organization, eq(billingEvents.orgId, organization.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(billingEvents.createdAt))
+    .limit(limit)
+    .offset(offset)
+
+  return rows.map((row) => ({
+    ...row,
+    metadata: (row.metadata ?? {}) as Record<
+      string,
+      string | number | boolean | null
+    >,
+    createdAt: row.createdAt.toISOString(),
+  }))
+}
+
+export async function recordBillingEvent(event: {
+  orgId: string
+  subscriptionId: string
+  eventType: BillingEventType
+  previousStatus?: string | null
+  newStatus?: string | null
+  previousPlanId?: string | null
+  newPlanId?: string | null
+  metadata?: Record<string, unknown>
+  actorId?: string | null
+}): Promise<void> {
+  await db.insert(billingEvents).values({
+    id: crypto.randomUUID(),
+    orgId: event.orgId,
+    subscriptionId: event.subscriptionId,
+    eventType: event.eventType,
+    previousStatus: event.previousStatus ?? null,
+    newStatus: event.newStatus ?? null,
+    previousPlanId: event.previousPlanId ?? null,
+    newPlanId: event.newPlanId ?? null,
+    metadata: (event.metadata ?? {}) as Record<string, unknown>,
+    actorId: event.actorId ?? null,
+  })
+}
+
+// ─── Organization Exports ────────────────────────────────────────────────────
+
+export async function listOrganizationExports(
+  orgId?: string,
+): Promise<OrganizationExportSummary[]> {
+  const conditions: ReturnType<typeof eq>[] = []
+
+  if (orgId) {
+    conditions.push(eq(organizationExports.orgId, orgId))
+  }
+
+  const rows = await db
+    .select({
+      id: organizationExports.id,
+      orgId: organizationExports.orgId,
+      orgName: organization.name,
+      status: organizationExports.status,
+      format: organizationExports.format,
+      r2Key: organizationExports.r2Key,
+      fileSizeBytes: organizationExports.fileSizeBytes,
+      includedData: organizationExports.includedData,
+      requestedBy: organizationExports.requestedBy,
+      completedAt: organizationExports.completedAt,
+      expiresAt: organizationExports.expiresAt,
+      createdAt: organizationExports.createdAt,
+    })
+    .from(organizationExports)
+    .innerJoin(organization, eq(organizationExports.orgId, organization.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(organizationExports.createdAt))
+
+  return rows.map((row) => ({
+    ...row,
+    completedAt: row.completedAt?.toISOString() ?? null,
+    expiresAt: row.expiresAt?.toISOString() ?? null,
+    createdAt: row.createdAt.toISOString(),
+  }))
+}
+
+export async function getExportDownloadUrl(
+  exportId: string,
+): Promise<{ url: string; expiresAt: number } | null> {
+  const [record] = await db
+    .select({ r2Key: organizationExports.r2Key })
+    .from(organizationExports)
+    .where(
+      and(
+        eq(organizationExports.id, exportId),
+        eq(organizationExports.status, 'completed'),
+      ),
+    )
+    .limit(1)
+
+  if (!record?.r2Key) return null
+
+  const { generateSignedDownloadUrl } = await import('#/lib/r2')
+  return generateSignedDownloadUrl(record.r2Key, 3600, {
+    contentDisposition: `attachment; filename="org-export-${exportId}.json"`,
+  })
+}
+
+// ─── Retention Policies ──────────────────────────────────────────────────────
+
+export async function listRetentionPolicies(): Promise<
+  RetentionPolicySummary[]
+> {
+  const rows = await db
+    .select({
+      id: retentionPolicies.id,
+      orgId: retentionPolicies.orgId,
+      orgName: organization.name,
+      targetTable: retentionPolicies.targetTable,
+      retentionDays: retentionPolicies.retentionDays,
+      enabled: retentionPolicies.enabled,
+      createdBy: retentionPolicies.createdBy,
+      createdAt: retentionPolicies.createdAt,
+      updatedAt: retentionPolicies.updatedAt,
+    })
+    .from(retentionPolicies)
+    .leftJoin(organization, eq(retentionPolicies.orgId, organization.id))
+    .orderBy(desc(retentionPolicies.createdAt))
+
+  return rows.map((row) => ({
+    ...row,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  }))
+}
+
+export async function createRetentionPolicy(input: {
+  orgId?: string | null
+  targetTable: string
+  retentionDays: number
+  enabled?: boolean
+  createdBy: string
+}): Promise<typeof retentionPolicies.$inferSelect> {
+  const [record] = await db
+    .insert(retentionPolicies)
+    .values({
+      id: crypto.randomUUID(),
+      orgId: input.orgId ?? null,
+      targetTable: input.targetTable,
+      retentionDays: input.retentionDays,
+      enabled: input.enabled ?? true,
+      createdBy: input.createdBy,
+    })
+    .returning()
+
+  return record
+}
+
+export async function updateRetentionPolicy(
+  id: string,
+  input: {
+    retentionDays?: number
+    enabled?: boolean
+  },
+): Promise<void> {
+  await db
+    .update(retentionPolicies)
+    .set({
+      ...input,
+      updatedAt: sql`now()`,
+    })
+    .where(eq(retentionPolicies.id, id))
+}
+
+export async function deleteRetentionPolicy(id: string): Promise<void> {
+  await db.delete(retentionPolicies).where(eq(retentionPolicies.id, id))
+}
+
+// ─── Proper Data Export ───────────────────────────────────────────────────────
+
+export async function executeOrganizationExport(
+  orgId: string,
+  actorId: string,
+  actorName: string,
+): Promise<{ exportId: string }> {
+  const [orgRecord] = await db
+    .select({ name: organization.name, slug: organization.slug })
+    .from(organization)
+    .where(eq(organization.id, orgId))
+    .limit(1)
+
+  if (!orgRecord) {
+    throw new Error('Organization not found')
+  }
+
+  // Gather all data for the export
+  const [
+    orgData,
+    membersData,
+    ordersData,
+    customersData,
+    productsData,
+    invoicesData,
+    subscriptionsData,
+  ] = await Promise.all([
+    db.select().from(organization).where(eq(organization.id, orgId)).limit(1),
+    db
+      .select({
+        id: member.id,
+        userId: member.userId,
+        role: member.role,
+        createdAt: member.createdAt,
+        userName: user.name,
+        userEmail: user.email,
+      })
+      .from(member)
+      .innerJoin(user, eq(member.userId, user.id))
+      .where(eq(member.organizationId, orgId)),
+    db.select().from(orders).where(eq(orders.orgId, orgId)),
+    db.select().from(customers).where(eq(customers.orgId, orgId)),
+    db.select().from(products).where(eq(products.orgId, orgId)),
+    db.select().from(invoices).where(eq(invoices.orgId, orgId)),
+    db
+      .select({
+        id: subscriptions.id,
+        status: subscriptions.status,
+        billingCadence: subscriptions.billingCadence,
+        planSnapshot: subscriptions.planSnapshot,
+        trialStartsAt: subscriptions.trialStartsAt,
+        trialEndsAt: subscriptions.trialEndsAt,
+        currentPeriodStartsAt: subscriptions.currentPeriodStartsAt,
+        currentPeriodEndsAt: subscriptions.currentPeriodEndsAt,
+        createdAt: subscriptions.createdAt,
+        planName: plans.name,
+        planSlug: plans.slug,
+        planVersion: plans.version,
+      })
+      .from(subscriptions)
+      .innerJoin(plans, eq(subscriptions.planId, plans.id))
+      .where(eq(subscriptions.orgId, orgId)),
+  ])
+
+  const exportData = {
+    organization: orgData[0],
+    members: membersData,
+    orders: ordersData,
+    customers: customersData,
+    products: productsData,
+    invoices: invoicesData,
+    subscription: subscriptionsData[0] ?? null,
+    exportedAt: new Date().toISOString(),
+  }
+
+  const jsonContent = JSON.stringify(exportData, null, 2)
+  const contentBytes = new TextEncoder().encode(jsonContent).length
+
+  // Upload to R2
+  const exportId = crypto.randomUUID()
+  const key = `exports/${orgId}/${exportId}.json`
+
+  const { generateSignedUploadUrl } = await import('#/lib/r2')
+  const { url: uploadUrl } = await generateSignedUploadUrl(
+    key,
+    'application/json',
+    300,
+  )
+
+  await fetch(uploadUrl, {
+    method: 'PUT',
+    body: jsonContent,
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+  // Create export record
+  await db.insert(organizationExports).values({
+    id: exportId,
+    orgId,
+    status: 'completed',
+    format: 'json',
+    r2Key: key,
+    fileSizeBytes: contentBytes,
+    includedData: [
+      'organization',
+      'members',
+      'orders',
+      'customers',
+      'products',
+      'invoices',
+      'subscription',
+    ],
+    requestedBy: actorName,
+    completedAt: sql`now()`,
+    expiresAt: sql`now() + interval '30 days'`,
+  })
+
+  // Record audit event
+  await recordAuditEvent({
+    actorId,
+    actorName,
+    organizationId: orgId,
+    organizationName: orgRecord.name,
+    action: 'export.created',
+    reason: 'Organization data export completed',
+    details: { exportId, format: 'json', sizeBytes: contentBytes },
+  })
+
+  return { exportId }
 }

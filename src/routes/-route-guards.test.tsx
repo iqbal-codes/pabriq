@@ -137,14 +137,27 @@ function buildAuthPageRouter(initialEntry: string) {
     getParentRoute: () => rootRoute,
     path: '/sign-up',
     beforeLoad: async () => {
-      throw redirect({ to: '/sign-in', search: { redirect: undefined } })
+      const session = await mockGetCurrentSession()
+      if (session)
+        throw redirect({ to: '/sign-in', search: { redirect: undefined } })
     },
-    component: () => null,
+    component: () => <div>Sign Up Page</div>,
+  })
+  const forgotPasswordRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/forgot-password',
+    beforeLoad: async () => {
+      const session = await mockGetCurrentSession()
+      if (session)
+        throw redirect({ to: '/sign-in', search: { redirect: undefined } })
+    },
+    component: () => <div>Forgot Password Page</div>,
   })
   const routeTree = rootRoute.addChildren([
     signInRoute,
     onboardingRoute,
     signUpRoute,
+    forgotPasswordRoute,
   ])
 
   return createRouter({
@@ -233,36 +246,45 @@ describe('workspace route guards', () => {
 describe('auth page guards', () => {
   it('renders sign-in for unauthenticated users', async () => {
     mockGetCurrentSession.mockResolvedValue(null)
-
     const router = buildAuthPageRouter('/sign-in')
-
     await router.load()
     await renderRouter(router)
-
     expect(await screen.findByText('Sign In Page')).toBeDefined()
     expect(router.state.location.pathname).toBe('/sign-in')
   })
 
-  it('redirects sign-up to sign-in for unauthenticated users', async () => {
+  it('renders sign-up for unauthenticated users', async () => {
     mockGetCurrentSession.mockResolvedValue(null)
-
     const router = buildAuthPageRouter('/sign-up')
-
     await router.load()
     await renderRouter(router)
+    expect(await screen.findByText('Sign Up Page')).toBeDefined()
+    expect(router.state.location.pathname).toBe('/sign-up')
+  })
 
+  it('redirects authenticated users from sign-up to sign-in', async () => {
+    mockGetCurrentSession.mockResolvedValue(createMockSession())
+    const router = buildAuthPageRouter('/sign-up')
+    await router.load()
+    await renderRouter(router)
     expect(await screen.findByText('Sign In Page')).toBeDefined()
     expect(router.state.location.pathname).toBe('/sign-in')
   })
 
-  it('redirects sign-up to sign-in for authenticated users', async () => {
-    mockGetCurrentSession.mockResolvedValue(createMockSession())
-
-    const router = buildAuthPageRouter('/sign-up')
-
+  it('renders forgot password for unauthenticated users', async () => {
+    mockGetCurrentSession.mockResolvedValue(null)
+    const router = buildAuthPageRouter('/forgot-password')
     await router.load()
     await renderRouter(router)
+    expect(await screen.findByText('Forgot Password Page')).toBeDefined()
+    expect(router.state.location.pathname).toBe('/forgot-password')
+  })
 
+  it('redirects authenticated users from forgot password to sign-in', async () => {
+    mockGetCurrentSession.mockResolvedValue(createMockSession())
+    const router = buildAuthPageRouter('/forgot-password')
+    await router.load()
+    await renderRouter(router)
     expect(await screen.findByText('Sign In Page')).toBeDefined()
     expect(router.state.location.pathname).toBe('/sign-in')
   })

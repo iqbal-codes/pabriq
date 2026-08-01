@@ -61,6 +61,24 @@ describe('rewriteAppUrlInput', () => {
   })
 })
 
+describe('auth callback paths', () => {
+  it.each([
+    '/forgot-password',
+    '/forgot-password/retry',
+    '/reset-password',
+    '/reset-password/token',
+    '/verify-email',
+    '/verify-email/status',
+  ])('preserves %s on operator and portal subdomains', (pathname) => {
+    for (const host of ['operator.example.com', 'portal.example.com']) {
+      const url = new URL(`http://${host}${pathname}`)
+      rewriteAppUrlInput(url)
+      expect(url.pathname).toBe(pathname)
+      expect(url.hostname).toBe(host)
+    }
+  })
+})
+
 describe('rewriteAppUrlOutput', () => {
   it('rewrites /operator to operator subdomain', () => {
     const url = new URL('/operator', 'http://example.com')

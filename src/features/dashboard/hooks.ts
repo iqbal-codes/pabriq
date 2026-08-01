@@ -5,7 +5,7 @@ import type {
   RevenuePoint,
   TaskStageCount,
 } from './model'
-import { getDashboardData } from './server'
+import { getDashboardData, getSubscriptionWithUsageFn } from './server'
 
 export type DashboardPeriod = '7d' | '30d' | 'thisMonth' | 'lastMonth'
 
@@ -21,5 +21,12 @@ export function useDashboardData(period: DashboardPeriod = 'thisMonth') {
   return useQuery({
     queryKey: ['dashboard', period],
     queryFn: () => getDashboardData({ data: period }),
+  })
+}
+
+export function useSubscriptionWithUsage() {
+  return useQuery({
+    queryKey: ['dashboard', 'subscription-usage'],
+    queryFn: () => getSubscriptionWithUsageFn(),
   })
 }

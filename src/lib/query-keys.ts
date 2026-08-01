@@ -253,5 +253,17 @@ export const queryKeys = {
     platformAdmins: () => [...queryKeys.admin.all, 'platform-admins'] as const,
     productionBottlenecks: (orgId: string, limit?: number) =>
       [...queryKeys.admin.all, 'bottlenecks', orgId, limit] as const,
+    billingEvents: (options?: {
+      limit?: number
+      offset?: number
+      orgId?: string
+      eventType?: string
+    }) => [...queryKeys.admin.all, 'billing-events', options ?? {}] as const,
+    exports: (orgId?: string) =>
+      [...queryKeys.admin.all, 'exports', { orgId }] as const,
+    exportDownload: (exportId: string) =>
+      [...queryKeys.admin.all, 'export-download', exportId] as const,
+    retentionPolicies: () =>
+      [...queryKeys.admin.all, 'retention-policies'] as const,
   },
 }

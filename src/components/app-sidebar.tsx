@@ -5,8 +5,11 @@ import {
   Activity,
   ArrowLeft,
   Building2,
+  Clock,
   Cpu,
   CreditCard,
+  Database,
+  Download,
   FileText,
   GalleryVerticalEnd,
   History,
@@ -94,6 +97,9 @@ type AdminNavItem = {
     | 'organizations'
     | 'plans'
     | 'subscriptions'
+    | 'billingEvents'
+    | 'exports'
+    | 'retentionPolicies'
     | 'auditLog'
     | 'migrations'
     | 'platformAdmins'
@@ -106,6 +112,13 @@ const adminNavItems: AdminNavItem[] = [
   { key: 'organizations', href: '/admin/organizations', icon: Building2 },
   { key: 'plans', href: '/admin/plans', icon: CreditCard },
   { key: 'subscriptions', href: '/admin/subscriptions', icon: Activity },
+  { key: 'billingEvents', href: '/admin/billing-events', icon: Clock },
+  { key: 'exports', href: '/admin/exports', icon: Download },
+  {
+    key: 'retentionPolicies',
+    href: '/admin/retention-policies',
+    icon: Database,
+  },
   { key: 'auditLog', href: '/admin/audit', icon: History },
   { key: 'migrations', href: '/admin/migrations', icon: Milestone },
   { key: 'platformAdmins', href: '/admin/admins', icon: ShieldCheck },

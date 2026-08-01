@@ -1,42 +1,20 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { AuthForm } from '#/features/auth/AuthForm'
-import { resolveOrgContext } from '#/lib/auth-session'
-
-function sanitizeRedirect(value: unknown) {
-  if (
-    typeof value !== 'string' ||
-    !value.startsWith('/') ||
-    value.startsWith('//')
-  ) {
-    return undefined
-  }
-
-  return value
-}
+import {
+  resolvePublicAuthPage,
+  sanitizeAuthRedirect,
+} from '#/features/auth/route-guards'
 
 export const Route = createFileRoute('/sign-in')({
   validateSearch: (search) => ({
-    redirect: sanitizeRedirect(search.redirect),
+    redirect: sanitizeAuthRedirect(search.redirect),
   }),
-  beforeLoad: async ({ search }) => {
-    const result = await resolveOrgContext()
-
-    if (result.ok) {
-      if (result.role === 'member') {
-        throw redirect({ to: '/operator' })
-      }
-      throw redirect({ to: search.redirect ?? '/' })
-    }
-
-    if (result.reason === 'no-org') {
-      throw redirect({ to: '/onboarding' })
-    }
-
-    return { pageTitle: 'signIn' as const }
-  },
+  beforeLoad: async ({ search }) =>
+    resolvePublicAuthPage('signIn', search.redirect),
   component: SignInRoute,
 })
 
 function SignInRoute() {
-  return <AuthForm mode="sign-in" redirectTo="/" />
+  const { redirect } = Route.useSearch()
+  return <AuthForm mode="sign-in" redirectTo={redirect ?? '/'} />
 }
