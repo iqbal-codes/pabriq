@@ -122,6 +122,9 @@ describe('Auth Flow UI Contracts', () => {
 
     renderWithIntl(<AuthForm mode="sign-in" redirectTo="/operator" />)
 
+    expect(
+      screen.getByRole('link', { name: en.auth.createOne }),
+    ).toHaveAttribute('href', '/sign-up?redirect=%2Foperator')
     await user.type(
       screen.getByRole('textbox', { name: /Email/ }),
       'john@example.com',

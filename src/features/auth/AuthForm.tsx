@@ -146,12 +146,24 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps): ReactElement {
         </form.AppForm>
 
         {!isSignUp && (
-          <Link
-            className="block text-center text-sm text-primary underline-offset-4 hover:underline"
-            to="/forgot-password"
-          >
-            {t('forgotPassword')}
-          </Link>
+          <div className="space-y-2 text-center">
+            <Link
+              className="block text-center text-primary underline-offset-4 hover:underline"
+              to="/forgot-password"
+            >
+              {t('forgotPassword')}
+            </Link>
+            <p className="text-sm text-muted-foreground">
+              {t('needAccount')}{' '}
+              <Link
+                className="text-primary underline-offset-4 hover:underline"
+                to="/sign-up"
+                search={{ redirect: redirectTo }}
+              >
+                {t('createOne')}
+              </Link>
+            </p>
+          </div>
         )}
         {isSignUp && (
           <Link
