@@ -58,9 +58,9 @@ export function renderAuthEmail(
 
 export async function sendAuthEmail(input: AuthEmailInput): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY
-  const from = process.env.EMAIL_FROM
+  const from = process.env.RESEND_FROM_EMAIL
   if (!apiKey) throw new Error('RESEND_API_KEY is not configured')
-  if (!from) throw new Error('EMAIL_FROM is not configured')
+  if (!from) throw new Error('RESEND_FROM_EMAIL is not configured')
 
   const resend = new Resend(apiKey)
   const { error } = await resend.emails.send({

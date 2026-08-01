@@ -107,7 +107,7 @@ export const auth = betterAuth({
         ...rendered,
       }).catch((error: unknown) => {
         logger.error(
-          { error, email: user.email },
+          { err: error, email: user.email },
           'Failed to send verification email',
         )
       })

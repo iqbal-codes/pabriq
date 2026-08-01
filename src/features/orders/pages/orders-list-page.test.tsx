@@ -42,6 +42,7 @@ vi.mock('#/features/orders/hooks', () => ({
     isLoading: false,
     refetch: vi.fn(),
   })),
+  useOrderMaybe: vi.fn(() => ({ data: undefined, isLoading: false })),
   useOrderCreationReadiness: vi.fn(() => ({
     data: { isReady: true },
     isLoading: false,

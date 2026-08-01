@@ -26,8 +26,8 @@ import type { OrderFormValues } from '#/features/orders/components/order-form-ty
 import { defaultOrderValues } from '#/features/orders/components/order-form-types'
 import {
   useCreateDraftOrder,
-  useOrder,
   useOrderCreationReadiness,
+  useOrderMaybe,
   useUpdateDraftOrder,
 } from '#/features/orders/hooks'
 import { useProductsList } from '#/features/products/hooks'
@@ -302,7 +302,7 @@ export function OrderFormSheet({
   const orderId = isEdit ? mode.id : ''
 
   const readinessQuery = useOrderCreationReadiness()
-  const orderQuery = useOrder({ id: orderId })
+  const orderQuery = useOrderMaybe({ id: orderId })
   const customersQuery = useCustomersList({ orgId })
   const productsQuery = useProductsList({ orgId })
 
@@ -398,7 +398,6 @@ export function OrderFormSheet({
       )
     }
 
-    // Map orderData values into OrderFormValues format
     const initialValues: OrderFormValues = {
       customerId: orderData.order.customerId ?? '',
       notes: orderData.order.notes ?? '',
@@ -411,26 +410,25 @@ export function OrderFormSheet({
         ? new Date(orderData.order.deadline).toISOString().split('T')[0]
         : '',
       manualDeadline: orderData.order.manualDeadline ?? false,
-      lineItems:
-        orderData.lineItems.map((li) => ({
-          id: li.id,
-          productId: li.productId,
-          quantity: String(li.quantity),
-          unitPrice: String(li.unitPrice),
-          designName: li.designName ?? '',
-          notes: li.notes ?? '',
-          attachments: [] as string[],
-          addonIds:
-            (li.selectedAddons?.flatMap((a) =>
-              a.productAddonId ? [a.productAddonId] : [],
-            ) as string[]) ?? [],
-          isRepeatOrder: li.isRepeatOrder ?? false,
-          deadline:
-            li.manualDeadline && li.deadline
-              ? new Date(li.deadline).toISOString().split('T')[0]
-              : '',
-          manualDeadline: li.manualDeadline ?? false,
-        })) ?? [],
+      lineItems: orderData.lineItems.map((li) => ({
+        id: li.id,
+        productId: li.productId,
+        quantity: String(li.quantity),
+        unitPrice: String(li.unitPrice),
+        designName: li.designName ?? '',
+        notes: li.notes ?? '',
+        attachments: [] as string[],
+        addonIds:
+          (li.selectedAddons?.flatMap((a) =>
+            a.productAddonId ? [a.productAddonId] : [],
+          ) as string[]) ?? [],
+        isRepeatOrder: li.isRepeatOrder ?? false,
+        deadline:
+          li.manualDeadline && li.deadline
+            ? new Date(li.deadline).toISOString().split('T')[0]
+            : '',
+        manualDeadline: li.manualDeadline ?? false,
+      })),
     }
 
     return (

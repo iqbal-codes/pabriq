@@ -43,7 +43,7 @@ vi.mock('#/features/customers/hooks', () => ({
   useDeleteCustomer: vi.fn(() => ({
     mutateAsync: vi.fn(),
   })),
-  useCustomer: vi.fn(() => ({ data: undefined, isLoading: true })),
+  useCustomerMaybe: vi.fn(() => ({ data: undefined, isLoading: true })),
   useCreateCustomer: vi.fn(() => ({
     mutateAsync: vi.fn().mockResolvedValue({ ok: true }),
   })),
