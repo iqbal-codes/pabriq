@@ -33,6 +33,15 @@ function stripInternalPrefix(pathname: string, prefix: string): string {
 function shouldBypassSubdomainRewrite(pathname: string): boolean {
   if (pathname === '/sign-in' || pathname.startsWith('/sign-in/')) return true
   if (pathname === '/sign-up' || pathname.startsWith('/sign-up/')) return true
+  if (
+    pathname === '/forgot-password' ||
+    pathname.startsWith('/forgot-password/')
+  )
+    return true
+  if (pathname === '/reset-password' || pathname.startsWith('/reset-password/'))
+    return true
+  if (pathname === '/verify-email' || pathname.startsWith('/verify-email/'))
+    return true
   if (pathname === '/onboarding' || pathname.startsWith('/onboarding/'))
     return true
   if (pathname === '/forbidden' || pathname.startsWith('/forbidden/'))

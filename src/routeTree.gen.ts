@@ -9,12 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as OperatorRouteImport } from './routes/operator'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as ForbiddenRouteImport } from './routes/forbidden'
 import { Route as OrgRouteImport } from './routes/_org'
+import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as OperatorIndexRouteImport } from './routes/operator/index'
 import { Route as OrgIndexRouteImport } from './routes/_org/index'
 import { Route as OrderTokenRouteImport } from './routes/order.$token'
@@ -23,6 +27,15 @@ import { Route as ApiReadyRouteImport } from './routes/api/ready'
 import { Route as ApiMidtransReconciliationRouteImport } from './routes/api/midtrans-reconciliation'
 import { Route as ApiMidtransNotificationRouteImport } from './routes/api/midtrans-notification'
 import { Route as ApiHealthzRouteImport } from './routes/api/healthz'
+import { Route as AdminRetentionPoliciesRouteImport } from './routes/_admin/retention-policies'
+import { Route as AdminPlansRouteImport } from './routes/_admin/plans'
+import { Route as AdminOrganizationsRouteImport } from './routes/_admin/organizations'
+import { Route as AdminMigrationsRouteImport } from './routes/_admin/migrations'
+import { Route as AdminExportsRouteImport } from './routes/_admin/exports'
+import { Route as AdminBillingEventsRouteImport } from './routes/_admin/billing-events'
+import { Route as AdminAuditRouteImport } from './routes/_admin/audit'
+import { Route as AdminAdminsRouteImport } from './routes/_admin/admins'
+import { Route as AdminAdminRouteImport } from './routes/_admin/admin'
 import { Route as OrgSettingsRouteRouteImport } from './routes/_org/settings/route'
 import { Route as OrgSettingsIndexRouteImport } from './routes/_org/settings/index'
 import { Route as OrgProductsIndexRouteImport } from './routes/_org/products/index'
@@ -56,6 +69,11 @@ import { Route as ApiDocumentsInvoicesTokenTokenRouteImport } from './routes/api
 import { Route as ApiDocumentsInvoicesIdPdfRouteImport } from './routes/api/documents/invoices/$id/pdf'
 import { Route as ApiDocumentsInvoicesPortalInvoiceIdTokenRouteImport } from './routes/api/documents/invoices/portal/$invoiceId/$token'
 
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
@@ -64,6 +82,11 @@ const SignUpRoute = SignUpRouteImport.update({
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OperatorRoute = OperatorRouteImport.update({
@@ -76,6 +99,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ForbiddenRoute = ForbiddenRouteImport.update({
   id: '/forbidden',
   path: '/forbidden',
@@ -83,6 +111,10 @@ const ForbiddenRoute = ForbiddenRouteImport.update({
 } as any)
 const OrgRoute = OrgRouteImport.update({
   id: '/_org',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/_admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OperatorIndexRoute = OperatorIndexRouteImport.update({
@@ -125,6 +157,51 @@ const ApiHealthzRoute = ApiHealthzRouteImport.update({
   id: '/api/healthz',
   path: '/api/healthz',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRetentionPoliciesRoute = AdminRetentionPoliciesRouteImport.update({
+  id: '/retention-policies',
+  path: '/retention-policies',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPlansRoute = AdminPlansRouteImport.update({
+  id: '/plans',
+  path: '/plans',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOrganizationsRoute = AdminOrganizationsRouteImport.update({
+  id: '/organizations',
+  path: '/organizations',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMigrationsRoute = AdminMigrationsRouteImport.update({
+  id: '/migrations',
+  path: '/migrations',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminExportsRoute = AdminExportsRouteImport.update({
+  id: '/exports',
+  path: '/exports',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBillingEventsRoute = AdminBillingEventsRouteImport.update({
+  id: '/billing-events',
+  path: '/billing-events',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminsRoute = AdminAdminsRouteImport.update({
+  id: '/admins',
+  path: '/admins',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminRoute = AdminAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AdminRoute,
 } as any)
 const OrgSettingsRouteRoute = OrgSettingsRouteRouteImport.update({
   id: '/settings',
@@ -298,11 +375,23 @@ const ApiDocumentsInvoicesPortalInvoiceIdTokenRoute =
 export interface FileRoutesByFullPath {
   '/': typeof OrgIndexRoute
   '/forbidden': typeof ForbiddenRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/onboarding': typeof OnboardingRoute
   '/operator': typeof OperatorRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/settings': typeof OrgSettingsRouteRouteWithChildren
+  '/admin': typeof AdminAdminRoute
+  '/admins': typeof AdminAdminsRoute
+  '/audit': typeof AdminAuditRoute
+  '/billing-events': typeof AdminBillingEventsRoute
+  '/exports': typeof AdminExportsRoute
+  '/migrations': typeof AdminMigrationsRoute
+  '/organizations': typeof AdminOrganizationsRoute
+  '/plans': typeof AdminPlansRoute
+  '/retention-policies': typeof AdminRetentionPoliciesRoute
   '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
   '/api/midtrans-reconciliation': typeof ApiMidtransReconciliationRoute
@@ -343,17 +432,29 @@ export interface FileRoutesByFullPath {
   '/api/documents/invoices/portal/$invoiceId/$token': typeof ApiDocumentsInvoicesPortalInvoiceIdTokenRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof OrgIndexRoute
   '/forbidden': typeof ForbiddenRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/onboarding': typeof OnboardingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/verify-email': typeof VerifyEmailRoute
+  '/admin': typeof AdminAdminRoute
+  '/admins': typeof AdminAdminsRoute
+  '/audit': typeof AdminAuditRoute
+  '/billing-events': typeof AdminBillingEventsRoute
+  '/exports': typeof AdminExportsRoute
+  '/migrations': typeof AdminMigrationsRoute
+  '/organizations': typeof AdminOrganizationsRoute
+  '/plans': typeof AdminPlansRoute
+  '/retention-policies': typeof AdminRetentionPoliciesRoute
   '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
   '/api/midtrans-reconciliation': typeof ApiMidtransReconciliationRoute
   '/api/ready': typeof ApiReadyRoute
   '/invite/accept': typeof InviteAcceptRoute
   '/order/$token': typeof OrderTokenRoute
-  '/': typeof OrgIndexRoute
   '/operator': typeof OperatorIndexRoute
   '/customers/new': typeof OrgCustomersNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
@@ -389,13 +490,26 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_admin': typeof AdminRouteWithChildren
   '/_org': typeof OrgRouteWithChildren
   '/forbidden': typeof ForbiddenRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/onboarding': typeof OnboardingRoute
   '/operator': typeof OperatorRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/_org/settings': typeof OrgSettingsRouteRouteWithChildren
+  '/_admin/admin': typeof AdminAdminRoute
+  '/_admin/admins': typeof AdminAdminsRoute
+  '/_admin/audit': typeof AdminAuditRoute
+  '/_admin/billing-events': typeof AdminBillingEventsRoute
+  '/_admin/exports': typeof AdminExportsRoute
+  '/_admin/migrations': typeof AdminMigrationsRoute
+  '/_admin/organizations': typeof AdminOrganizationsRoute
+  '/_admin/plans': typeof AdminPlansRoute
+  '/_admin/retention-policies': typeof AdminRetentionPoliciesRoute
   '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
   '/api/midtrans-reconciliation': typeof ApiMidtransReconciliationRoute
@@ -441,11 +555,23 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/forbidden'
+    | '/forgot-password'
     | '/onboarding'
     | '/operator'
+    | '/reset-password'
     | '/sign-in'
     | '/sign-up'
+    | '/verify-email'
     | '/settings'
+    | '/admin'
+    | '/admins'
+    | '/audit'
+    | '/billing-events'
+    | '/exports'
+    | '/migrations'
+    | '/organizations'
+    | '/plans'
+    | '/retention-policies'
     | '/api/healthz'
     | '/api/midtrans-notification'
     | '/api/midtrans-reconciliation'
@@ -486,17 +612,29 @@ export interface FileRouteTypes {
     | '/api/documents/invoices/portal/$invoiceId/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/forbidden'
+    | '/forgot-password'
     | '/onboarding'
+    | '/reset-password'
     | '/sign-in'
     | '/sign-up'
+    | '/verify-email'
+    | '/admin'
+    | '/admins'
+    | '/audit'
+    | '/billing-events'
+    | '/exports'
+    | '/migrations'
+    | '/organizations'
+    | '/plans'
+    | '/retention-policies'
     | '/api/healthz'
     | '/api/midtrans-notification'
     | '/api/midtrans-reconciliation'
     | '/api/ready'
     | '/invite/accept'
     | '/order/$token'
-    | '/'
     | '/operator'
     | '/customers/new'
     | '/orders/new'
@@ -531,13 +669,26 @@ export interface FileRouteTypes {
     | '/api/documents/invoices/portal/$invoiceId/$token'
   id:
     | '__root__'
+    | '/_admin'
     | '/_org'
     | '/forbidden'
+    | '/forgot-password'
     | '/onboarding'
     | '/operator'
+    | '/reset-password'
     | '/sign-in'
     | '/sign-up'
+    | '/verify-email'
     | '/_org/settings'
+    | '/_admin/admin'
+    | '/_admin/admins'
+    | '/_admin/audit'
+    | '/_admin/billing-events'
+    | '/_admin/exports'
+    | '/_admin/migrations'
+    | '/_admin/organizations'
+    | '/_admin/plans'
+    | '/_admin/retention-policies'
     | '/api/healthz'
     | '/api/midtrans-notification'
     | '/api/midtrans-reconciliation'
@@ -580,12 +731,16 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  AdminRoute: typeof AdminRouteWithChildren
   OrgRoute: typeof OrgRouteWithChildren
   ForbiddenRoute: typeof ForbiddenRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   OnboardingRoute: typeof OnboardingRoute
   OperatorRoute: typeof OperatorRouteWithChildren
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   ApiHealthzRoute: typeof ApiHealthzRoute
   ApiMidtransNotificationRoute: typeof ApiMidtransNotificationRoute
   ApiMidtransReconciliationRoute: typeof ApiMidtransReconciliationRoute
@@ -604,6 +759,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sign-up': {
       id: '/sign-up'
       path: '/sign-up'
@@ -616,6 +778,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-in'
       fullPath: '/sign-in'
       preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/operator': {
@@ -632,6 +801,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forbidden': {
       id: '/forbidden'
       path: '/forbidden'
@@ -644,6 +820,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof OrgRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_admin': {
+      id: '/_admin'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/operator/': {
@@ -701,6 +884,69 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/healthz'
       preLoaderRoute: typeof ApiHealthzRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_admin/retention-policies': {
+      id: '/_admin/retention-policies'
+      path: '/retention-policies'
+      fullPath: '/retention-policies'
+      preLoaderRoute: typeof AdminRetentionPoliciesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/plans': {
+      id: '/_admin/plans'
+      path: '/plans'
+      fullPath: '/plans'
+      preLoaderRoute: typeof AdminPlansRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/organizations': {
+      id: '/_admin/organizations'
+      path: '/organizations'
+      fullPath: '/organizations'
+      preLoaderRoute: typeof AdminOrganizationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/migrations': {
+      id: '/_admin/migrations'
+      path: '/migrations'
+      fullPath: '/migrations'
+      preLoaderRoute: typeof AdminMigrationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/exports': {
+      id: '/_admin/exports'
+      path: '/exports'
+      fullPath: '/exports'
+      preLoaderRoute: typeof AdminExportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/billing-events': {
+      id: '/_admin/billing-events'
+      path: '/billing-events'
+      fullPath: '/billing-events'
+      preLoaderRoute: typeof AdminBillingEventsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/audit': {
+      id: '/_admin/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admins': {
+      id: '/_admin/admins'
+      path: '/admins'
+      fullPath: '/admins'
+      preLoaderRoute: typeof AdminAdminsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin': {
+      id: '/_admin/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminAdminRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/_org/settings': {
       id: '/_org/settings'
@@ -929,6 +1175,32 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminAdminRoute: typeof AdminAdminRoute
+  AdminAdminsRoute: typeof AdminAdminsRoute
+  AdminAuditRoute: typeof AdminAuditRoute
+  AdminBillingEventsRoute: typeof AdminBillingEventsRoute
+  AdminExportsRoute: typeof AdminExportsRoute
+  AdminMigrationsRoute: typeof AdminMigrationsRoute
+  AdminOrganizationsRoute: typeof AdminOrganizationsRoute
+  AdminPlansRoute: typeof AdminPlansRoute
+  AdminRetentionPoliciesRoute: typeof AdminRetentionPoliciesRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAdminRoute: AdminAdminRoute,
+  AdminAdminsRoute: AdminAdminsRoute,
+  AdminAuditRoute: AdminAuditRoute,
+  AdminBillingEventsRoute: AdminBillingEventsRoute,
+  AdminExportsRoute: AdminExportsRoute,
+  AdminMigrationsRoute: AdminMigrationsRoute,
+  AdminOrganizationsRoute: AdminOrganizationsRoute,
+  AdminPlansRoute: AdminPlansRoute,
+  AdminRetentionPoliciesRoute: AdminRetentionPoliciesRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 interface OrgSettingsRouteRouteChildren {
   OrgSettingsBusinessTemplatesRoute: typeof OrgSettingsBusinessTemplatesRoute
   OrgSettingsChannelsRoute: typeof OrgSettingsChannelsRoute
@@ -1009,12 +1281,16 @@ const OperatorRouteWithChildren = OperatorRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
+  AdminRoute: AdminRouteWithChildren,
   OrgRoute: OrgRouteWithChildren,
   ForbiddenRoute: ForbiddenRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   OnboardingRoute: OnboardingRoute,
   OperatorRoute: OperatorRouteWithChildren,
+  ResetPasswordRoute: ResetPasswordRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   ApiHealthzRoute: ApiHealthzRoute,
   ApiMidtransNotificationRoute: ApiMidtransNotificationRoute,
   ApiMidtransReconciliationRoute: ApiMidtransReconciliationRoute,

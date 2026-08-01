@@ -145,6 +145,7 @@ export const plans = pgTable(
     slug: text('slug').notNull().unique(),
     name: text('name').notNull(),
     version: integer('version').notNull().default(1),
+    parentPlanId: text('parent_plan_id'),
     description: text('description'),
     entitlements: json('entitlements').$type<PlanEntitlements>().notNull(),
     monthlyPriceCents: integer('monthly_price_cents').notNull().default(0),
@@ -188,6 +189,16 @@ export const subscriptions = pgTable('subscriptions', {
     .$type<BillingCadence>()
     .notNull()
     .default('monthly'),
+  planSnapshot: json('plan_snapshot')
+    .$type<{
+      planName: string
+      planSlug: string
+      planVersion: number
+      entitlements: PlanEntitlements
+      monthlyPriceCents: number
+      annualPriceCents: number
+    } | null>()
+    .default(null),
   trialStartsAt: timestamp('trial_starts_at'),
   trialEndsAt: timestamp('trial_ends_at'),
   currentPeriodStartsAt: timestamp('current_period_starts_at'),
@@ -1642,3 +1653,180 @@ export const telegramProcessedUpdates = pgTable(
     index('idx_telegram_updates_org').on(table.orgId),
   ],
 )
+
+// ─── Audit Events (Platform-level audit trail) ────────────────────────────────
+
+export const AUDIT_ACTION_TYPES = [
+  'organization.created',
+  'organization.updated',
+  'organization.suspended',
+  'organization.restored',
+  'plan.created',
+  'plan.updated',
+  'plan.versioned',
+  'subscription.changed',
+  'subscription.canceled',
+  'subscription.suspended',
+  'subscription.restored',
+  'trial.started',
+  'trial.extended',
+  'exception.granted',
+  'exception.revoked',
+  'retention.applied',
+  'export.created',
+  'migration.reviewed',
+  'migration.accepted',
+  'member.role_changed',
+  'admin.action',
+] as const
+export type AuditActionType = (typeof AUDIT_ACTION_TYPES)[number]
+
+export const auditEvents = pgTable(
+  'audit_events',
+  {
+    id: text('id').primaryKey(),
+    actorId: text('actor_id').notNull(),
+    actorName: text('actor_name').notNull(),
+    organizationId: text('organization_id').references(() => organization.id, {
+      onDelete: 'set null',
+    }),
+    organizationName: text('organization_name'),
+    action: text('action').$type<AuditActionType>().notNull(),
+    reason: text('reason'),
+    details: json('details').$type<Record<string, unknown>>().default({}),
+    expiresAt: timestamp('expires_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_audit_events_actor').on(table.actorId),
+    index('idx_audit_events_organization').on(table.organizationId),
+    index('idx_audit_events_action').on(table.action),
+    index('idx_audit_events_created').on(table.createdAt),
+  ],
+)
+
+export type AuditEvent = typeof auditEvents.$inferSelect
+export type NewAuditEvent = typeof auditEvents.$inferInsert
+
+// ─── Platform Admin Users ─────────────────────────────────────────────────────
+
+export const platformAdminUsers = pgTable(
+  'platform_admin_users',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .unique()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    grantedBy: text('granted_by').notNull(),
+    grantedAt: timestamp('granted_at').notNull().defaultNow(),
+    revokedAt: timestamp('revoked_at'),
+    revokedBy: text('revoked_by'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_platform_admin_user').on(table.userId),
+    index('idx_platform_admin_active').on(table.userId, table.revokedAt),
+  ],
+)
+
+export type PlatformAdminUser = typeof platformAdminUsers.$inferSelect
+
+// ─── Billing Events (Subscription lifecycle event history) ─────────────────────
+
+export const BILLING_EVENT_TYPES = [
+  'plan_changed',
+  'status_transitioned',
+  'trial_started',
+  'trial_ended',
+  'billing_period_renewed',
+  'payment_received',
+  'payment_failed',
+  'downgrade_attempted',
+  'subscription_canceled',
+  'subscription_reinstated',
+] as const
+export type BillingEventType = (typeof BILLING_EVENT_TYPES)[number]
+
+export const billingEvents = pgTable(
+  'billing_events',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    subscriptionId: text('subscription_id')
+      .notNull()
+      .references(() => subscriptions.id, { onDelete: 'cascade' }),
+    eventType: text('event_type').$type<BillingEventType>().notNull(),
+    previousStatus: text('previous_status'),
+    newStatus: text('new_status'),
+    previousPlanId: text('previous_plan_id'),
+    newPlanId: text('new_plan_id'),
+    metadata: json('metadata').$type<Record<string, unknown>>().default({}),
+    actorId: text('actor_id'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_billing_events_org').on(table.orgId),
+    index('idx_billing_events_subscription').on(table.subscriptionId),
+    index('idx_billing_events_event_type').on(table.eventType),
+    index('idx_billing_events_created').on(table.createdAt),
+  ],
+)
+
+export type BillingEvent = typeof billingEvents.$inferSelect
+export type NewBillingEvent = typeof billingEvents.$inferInsert
+
+// ─── Organization Exports (Data export records) ───────────────────────────────
+
+export const organizationExports = pgTable(
+  'organization_exports',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    status: text('status').notNull().default('pending'),
+    format: text('format').notNull().default('json'),
+    r2Key: text('r2_key'),
+    fileSizeBytes: integer('file_size_bytes'),
+    includedData: json('included_data').$type<string[]>().notNull().default([]),
+    requestedBy: text('requested_by').notNull(),
+    completedAt: timestamp('completed_at'),
+    expiresAt: timestamp('expires_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [index('idx_organization_exports_org').on(table.orgId)],
+)
+
+export type OrganizationExport = typeof organizationExports.$inferSelect
+export type NewOrganizationExport = typeof organizationExports.$inferInsert
+
+// ─── Retention Policies (Data retention rules) ────────────────────────────────
+
+export const retentionPolicies = pgTable(
+  'retention_policies',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id').references(() => organization.id, {
+      onDelete: 'cascade',
+    }),
+    targetTable: text('target_table').notNull(),
+    retentionDays: integer('retention_days').notNull(),
+    enabled: boolean('enabled').notNull().default(true),
+    createdBy: text('created_by').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_retention_policies_target').on(table.targetTable),
+    uniqueIndex('idx_retention_policies_org_table')
+      .on(table.orgId, table.targetTable)
+      .where(sql`${table.orgId} IS NOT NULL`),
+  ],
+)
+
+export type RetentionPolicy = typeof retentionPolicies.$inferSelect
+export type NewRetentionPolicy = typeof retentionPolicies.$inferInsert

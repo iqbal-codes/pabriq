@@ -13,6 +13,7 @@ type PageHeaderProps = {
   secondaryActions?: PageAction[]
   className?: string
   mobileVisible?: boolean
+  children?: React.ReactNode
 }
 export function PageHeader({
   title,
@@ -22,6 +23,7 @@ export function PageHeader({
   secondaryActions,
   className,
   mobileVisible = true,
+  children,
 }: PageHeaderProps) {
   return (
     <div
@@ -57,10 +59,13 @@ export function PageHeader({
           )}
         </div>
       </div>
-      <PageActions
-        primaryAction={primaryAction}
-        secondaryActions={secondaryActions}
-      />
+      <div className="flex items-center gap-2">
+        <PageActions
+          primaryAction={primaryAction}
+          secondaryActions={secondaryActions}
+        />
+        {children}
+      </div>
     </div>
   )
 }

@@ -84,3 +84,28 @@ export function canAdjustConfirmedOrder(role: Role): boolean {
 export function canUseAssistant(role: Role): boolean {
   return role === 'owner' || role === 'admin'
 }
+
+/**
+ * Check whether a user is a platform administrator (operates outside org membership).
+ */
+export async function isPlatformAdmin(userId: string): Promise<boolean> {
+  const [{ db }, { platformAdminUsers }, { and, eq, isNull }] =
+    await Promise.all([
+      import('#/db/index'),
+      import('#/db/schema'),
+      import('drizzle-orm'),
+    ])
+
+  const [record] = await db
+    .select({ id: platformAdminUsers.id })
+    .from(platformAdminUsers)
+    .where(
+      and(
+        eq(platformAdminUsers.userId, userId),
+        isNull(platformAdminUsers.revokedAt),
+      ),
+    )
+    .limit(1)
+
+  return !!record
+}
