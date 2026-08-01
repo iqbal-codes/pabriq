@@ -9,7 +9,7 @@ vi.mock('resend', () => ({
 afterEach(() => {
   vi.clearAllMocks()
   delete process.env.RESEND_API_KEY
-  delete process.env.EMAIL_FROM
+  delete process.env.RESEND_FROM_EMAIL
 })
 
 describe('renderAuthEmail', () => {
@@ -32,7 +32,7 @@ describe('renderAuthEmail', () => {
 describe('sendAuthEmail', () => {
   it('sends the exact Resend payload', async () => {
     process.env.RESEND_API_KEY = 'test-key'
-    process.env.EMAIL_FROM = 'Pabriq <auth@example.com>'
+    process.env.RESEND_FROM_EMAIL = 'Pabriq <auth@example.com>'
     send.mockResolvedValue({ data: { id: 'email-1' }, error: null })
     await sendAuthEmail({
       to: 'user@example.com',
@@ -66,12 +66,12 @@ describe('sendAuthEmail', () => {
         text: 'Text',
         html: '<p>HTML</p>',
       }),
-    ).rejects.toThrow('EMAIL_FROM')
+    ).rejects.toThrow('RESEND_FROM_EMAIL')
   })
 
   it('throws returned provider errors', async () => {
     process.env.RESEND_API_KEY = 'test-key'
-    process.env.EMAIL_FROM = 'auth@example.com'
+    process.env.RESEND_FROM_EMAIL = 'auth@example.com'
     send.mockResolvedValue({ data: null, error: { message: 'Rejected' } })
     await expect(
       sendAuthEmail({
