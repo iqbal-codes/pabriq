@@ -1,1 +1,0 @@
-ALTER TABLE "customers" ADD COLUMN "photo_asset_id" text REFERENCES "assets"("id") ON DELETE SET NULL;
