@@ -27,3 +27,6 @@ docs/specs/later
 # Worktrees and accidental directories
 .worktree/
 iajfoaiwe/
+
+# Playwright admin E2E evidence (generated)
+/e2e/screenshots/

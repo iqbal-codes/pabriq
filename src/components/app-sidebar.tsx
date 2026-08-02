@@ -109,19 +109,19 @@ type AdminNavItem = {
 
 const adminNavItems: AdminNavItem[] = [
   { key: 'dashboard', href: '/admin', icon: LayoutDashboard },
-  { key: 'organizations', href: '/admin/organizations', icon: Building2 },
-  { key: 'plans', href: '/admin/plans', icon: CreditCard },
-  { key: 'subscriptions', href: '/admin/subscriptions', icon: Activity },
-  { key: 'billingEvents', href: '/admin/billing-events', icon: Clock },
-  { key: 'exports', href: '/admin/exports', icon: Download },
+  { key: 'organizations', href: '/organizations', icon: Building2 },
+  { key: 'plans', href: '/plans', icon: CreditCard },
+  { key: 'subscriptions', href: '/subscriptions', icon: Activity },
+  { key: 'billingEvents', href: '/billing-events', icon: Clock },
+  { key: 'exports', href: '/exports', icon: Download },
   {
     key: 'retentionPolicies',
-    href: '/admin/retention-policies',
+    href: '/retention-policies',
     icon: Database,
   },
-  { key: 'auditLog', href: '/admin/audit', icon: History },
-  { key: 'migrations', href: '/admin/migrations', icon: Milestone },
-  { key: 'platformAdmins', href: '/admin/admins', icon: ShieldCheck },
+  { key: 'auditLog', href: '/audit', icon: History },
+  { key: 'migrations', href: '/migrations', icon: Milestone },
+  { key: 'platformAdmins', href: '/admins', icon: ShieldCheck },
 ]
 
 function getVisibleNavItems(role: Role): MainNavItem[] {
