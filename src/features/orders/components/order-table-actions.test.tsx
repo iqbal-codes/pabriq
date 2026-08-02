@@ -111,7 +111,7 @@ describe('OrderRowActions', () => {
   it('open portal link navigates via internal route, not a full URL', () => {
     renderActions(draftRowWithToken)
     const link = screen.getByRole('link', { name: 'Open Portal Link' })
-    expect(link).toHaveAttribute('href', '/order/$token')
+    expect(link).toHaveAttribute('href', '/portal/$token')
   })
 
   it('open portal link is absent when orderToken is null', () => {

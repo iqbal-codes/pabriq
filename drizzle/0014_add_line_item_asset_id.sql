@@ -1,1 +1,0 @@
-ALTER TABLE order_line_items ADD COLUMN asset_id TEXT REFERENCES assets(id) ON DELETE SET NULL;

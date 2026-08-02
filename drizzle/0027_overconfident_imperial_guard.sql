@@ -1,1 +1,0 @@
-ALTER TABLE "order_line_items" ADD COLUMN "product_name" text DEFAULT '' NOT NULL;
