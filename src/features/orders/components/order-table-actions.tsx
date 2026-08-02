@@ -57,7 +57,7 @@ export function OrderRowActions({ row }: { row: OrderRow }) {
           aria-label={t('openPortalLink')}
         >
           <Link
-            to="/order/$token"
+            to="/portal/$token"
             params={{ token: row.orderToken }}
             target="_blank"
             rel="noopener noreferrer"
