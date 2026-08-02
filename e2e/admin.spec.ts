@@ -78,6 +78,30 @@ test.describe('Admin control panel (superuser)', () => {
     })
   })
 
+  test('subscriptions page lists org subscriptions', async ({ page }) => {
+    await signIn(page, ADMIN_EMAIL, ADMIN_PASSWORD)
+    await page.goto('/subscriptions')
+
+    await expect(page.getByText('Subscriptions').first()).toBeVisible({
+      timeout: 20_000,
+    })
+    // Table headers
+    await expect(page.getByText('Organization').first()).toBeVisible()
+    await expect(page.getByText('Billing').first()).toBeVisible()
+    await expect(page.getByText('Trial Ends').first()).toBeVisible()
+    // Seeded fixtures render as subscription rows (org + plan + cadence)
+    await expect(page.getByText('PT Karet Jaya Abadi').first()).toBeVisible()
+    await expect(page.getByText('Furniture Nusantara').first()).toBeVisible()
+    await expect(page.getByText('Starter (fixture)').first()).toBeVisible()
+    await expect(page.getByText('active').first()).toBeVisible()
+    await expect(page.getByText('Monthly').first()).toBeVisible()
+
+    await page.screenshot({
+      path: `${SCREENSHOT_DIR}/06-admin-subscriptions.png`,
+      fullPage: true,
+    })
+  })
+
   test('audit log page renders event table', async ({ page }) => {
     await signIn(page, ADMIN_EMAIL, ADMIN_PASSWORD)
     await page.goto('/audit')

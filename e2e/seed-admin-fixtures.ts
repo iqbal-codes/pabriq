@@ -14,6 +14,7 @@ const ORG_FIXTURES = [
   { name: 'PT Karet Jaya Abadi', slug: 'karet-jaya-abadi' },
   { name: 'Furniture Nusantara', slug: 'furniture-nusantara' },
 ]
+const PLAN_FIXTURE = { slug: 'fixture-starter', name: 'Starter (fixture)' }
 
 async function main() {
   const client = new Client({ connectionString: process.env.DATABASE_URL })
@@ -35,6 +36,12 @@ async function main() {
       `DELETE FROM audit_events WHERE details->>'fixture' = 'true'`,
     )
     await client.query(
+      `DELETE FROM subscriptions WHERE org_id IN
+         (SELECT id FROM organization WHERE slug = ANY($1::text[]))`,
+      [ORG_FIXTURES.map((o) => o.slug)],
+    )
+    await client.query(`DELETE FROM plans WHERE slug = $1`, [PLAN_FIXTURE.slug])
+    await client.query(
       `DELETE FROM member WHERE organization_id IN
          (SELECT id FROM organization WHERE slug = ANY($1::text[]))`,
       [ORG_FIXTURES.map((o) => o.slug)],
@@ -44,7 +51,20 @@ async function main() {
       [ORG_FIXTURES.map((o) => o.slug)],
     )
 
-    // ── organizations + membership + audit trail ────────────────────────
+    // ── plan + organizations + membership + subscriptions + audit ──────
+    const planId = randomUUID()
+    await client.query(
+      `INSERT INTO plans
+         (id, slug, name, version, description, entitlements,
+          monthly_price_cents, annual_price_cents, active, created_at, updated_at)
+       VALUES ($1, $2, $3, 1, 'E2E fixture plan',
+               '{"maxOrders": 100, "maxProducts": 50, "maxCustomers": 100,
+                 "maxMembers": 10, "maxStorageBytes": null,
+                 "features": ["orders"], "warningThresholds": {}}',
+               50000, 500000, true, now() - interval '30 days', now())`,
+      [planId, PLAN_FIXTURE.slug, PLAN_FIXTURE.name],
+    )
+
     for (const org of ORG_FIXTURES) {
       const orgId = randomUUID()
       await client.query(
@@ -56,6 +76,16 @@ async function main() {
         `INSERT INTO member (id, organization_id, user_id, role, created_at)
          VALUES ($1, $2, $3, 'owner', now() - interval '30 days')`,
         [randomUUID(), orgId, actor.id],
+      )
+      await client.query(
+        `INSERT INTO subscriptions
+           (id, org_id, plan_id, status, billing_cadence,
+            current_period_starts_at, current_period_ends_at,
+            created_at, updated_at)
+         VALUES ($1, $2, $3, 'active', 'monthly',
+                 now() - interval '30 days', now() + interval '30 days',
+                 now() - interval '30 days', now())`,
+        [randomUUID(), orgId, planId],
       )
       await client.query(
         `INSERT INTO audit_events
@@ -87,8 +117,16 @@ async function main() {
         `SELECT count(*)::int AS n FROM audit_events WHERE details->>'fixture' = 'true'`,
       )
     ).rows[0]
+    const subs = (
+      await client.query(
+        `SELECT count(*)::int AS n FROM subscriptions s
+         JOIN organization o ON o.id = s.org_id
+         WHERE o.slug = ANY($1::text[])`,
+        [ORG_FIXTURES.map((o) => o.slug)],
+      )
+    ).rows[0]
     console.log(
-      `seeded: ${orgs.length} orgs (${orgs.map((o) => o.name).join(', ')}) + ${events.n} audit events`,
+      `seeded: ${orgs.length} orgs (${orgs.map((o) => o.name).join(', ')}) + ${events.n} audit events + ${subs.n} subscriptions`,
     )
   } finally {
     await client.end()
