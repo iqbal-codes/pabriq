@@ -28,6 +28,7 @@ import { Route as AdminMigrationsRouteImport } from './routes/_admin/migrations'
 import { Route as AdminOrganizationsRouteImport } from './routes/_admin/organizations'
 import { Route as AdminPlansRouteImport } from './routes/_admin/plans'
 import { Route as AdminRetentionPoliciesRouteImport } from './routes/_admin/retention-policies'
+import { Route as AdminSubscriptionsRouteImport } from './routes/_admin/subscriptions'
 import { Route as OrgIndexRouteImport } from './routes/_org/index'
 import { Route as OrgSettingsRouteRouteImport } from './routes/_org/settings/route'
 import { Route as ApiHealthzRouteImport } from './routes/api/healthz'
@@ -160,6 +161,11 @@ const AdminPlansRoute = AdminPlansRouteImport.update({
 const AdminRetentionPoliciesRoute = AdminRetentionPoliciesRouteImport.update({
   id: '/retention-policies',
   path: '/retention-policies',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
   getParentRoute: () => AdminRoute,
 } as any)
 const OrgIndexRoute = OrgIndexRouteImport.update({
@@ -392,6 +398,7 @@ export interface FileRoutesByFullPath {
   '/organizations': typeof AdminOrganizationsRoute
   '/plans': typeof AdminPlansRoute
   '/retention-policies': typeof AdminRetentionPoliciesRoute
+  '/subscriptions': typeof AdminSubscriptionsRoute
   '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
   '/api/midtrans-reconciliation': typeof ApiMidtransReconciliationRoute
@@ -449,6 +456,7 @@ export interface FileRoutesByTo {
   '/organizations': typeof AdminOrganizationsRoute
   '/plans': typeof AdminPlansRoute
   '/retention-policies': typeof AdminRetentionPoliciesRoute
+  '/subscriptions': typeof AdminSubscriptionsRoute
   '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
   '/api/midtrans-reconciliation': typeof ApiMidtransReconciliationRoute
@@ -510,6 +518,7 @@ export interface FileRoutesById {
   '/_admin/organizations': typeof AdminOrganizationsRoute
   '/_admin/plans': typeof AdminPlansRoute
   '/_admin/retention-policies': typeof AdminRetentionPoliciesRoute
+  '/_admin/subscriptions': typeof AdminSubscriptionsRoute
   '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
   '/api/midtrans-reconciliation': typeof ApiMidtransReconciliationRoute
@@ -572,6 +581,7 @@ export interface FileRouteTypes {
     | '/organizations'
     | '/plans'
     | '/retention-policies'
+    | '/subscriptions'
     | '/api/healthz'
     | '/api/midtrans-notification'
     | '/api/midtrans-reconciliation'
@@ -629,6 +639,7 @@ export interface FileRouteTypes {
     | '/organizations'
     | '/plans'
     | '/retention-policies'
+    | '/subscriptions'
     | '/api/healthz'
     | '/api/midtrans-notification'
     | '/api/midtrans-reconciliation'
@@ -689,6 +700,7 @@ export interface FileRouteTypes {
     | '/_admin/organizations'
     | '/_admin/plans'
     | '/_admin/retention-policies'
+    | '/_admin/subscriptions'
     | '/api/healthz'
     | '/api/midtrans-notification'
     | '/api/midtrans-reconciliation'
@@ -890,6 +902,13 @@ declare module '@tanstack/react-router' {
       path: '/retention-policies'
       fullPath: '/retention-policies'
       preLoaderRoute: typeof AdminRetentionPoliciesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/subscriptions': {
+      id: '/_admin/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/subscriptions'
+      preLoaderRoute: typeof AdminSubscriptionsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_org/': {
@@ -1185,6 +1204,7 @@ interface AdminRouteChildren {
   AdminOrganizationsRoute: typeof AdminOrganizationsRoute
   AdminPlansRoute: typeof AdminPlansRoute
   AdminRetentionPoliciesRoute: typeof AdminRetentionPoliciesRoute
+  AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -1197,6 +1217,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminOrganizationsRoute: AdminOrganizationsRoute,
   AdminPlansRoute: AdminPlansRoute,
   AdminRetentionPoliciesRoute: AdminRetentionPoliciesRoute,
+  AdminSubscriptionsRoute: AdminSubscriptionsRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
