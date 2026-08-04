@@ -75,12 +75,13 @@ describe('wrong-key rejection', () => {
 })
 
 describe('malformed input', () => {
-  it.each(['', 'notavalidtoken', 'abc.def'])(
-    'rejects malformed payload %j',
-    (payload) => {
-      expect(() => decryptTelegramBotToken(payload)).toThrow()
-    },
-  )
+  it.each([
+    '',
+    'notavalidtoken',
+    'abc.def',
+  ])('rejects malformed payload %j', (payload) => {
+    expect(() => decryptTelegramBotToken(payload)).toThrow()
+  })
 })
 
 describe('missing encryption key', () => {
