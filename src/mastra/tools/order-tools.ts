@@ -66,7 +66,6 @@ export const getOrderTool = createTool({
         notes: z.string().nullable(),
         total: z.number(),
         orderNumber: z.string().nullable(),
-        orderToken: z.string().nullable(),
         deadline: z.date().nullable(),
         manualDeadline: z.boolean(),
         createdAt: z.date(),

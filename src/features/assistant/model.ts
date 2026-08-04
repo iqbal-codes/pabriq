@@ -1173,7 +1173,10 @@ export async function getAssistantOrder(params: {
 }): Promise<
   | {
       ok: true
-      order: import('#/features/orders/model').Order
+      order: Omit<
+        import('#/features/orders/model').Order,
+        'orderToken' | 'validUntil'
+      >
       lineItems: import('#/features/orders/model').OrderLineItem[]
       customerName: string | null
     }
@@ -1183,9 +1186,14 @@ export async function getAssistantOrder(params: {
   if (!result) {
     return { ok: false, error: 'Order not found' }
   }
+  const {
+    orderToken: _orderToken,
+    validUntil: _validUntil,
+    ...safeOrder
+  } = result.order
   return {
     ok: true,
-    order: result.order,
+    order: safeOrder,
     lineItems: result.lineItems,
     customerName: result.customerName,
   }
