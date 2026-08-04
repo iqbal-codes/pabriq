@@ -572,7 +572,7 @@ const en: Messages = {
     ownerRole: "Owner",
     adminRole: "Admin",
     memberRole: "Operator",
-    operatorRole: "Operator",
+    operatorRole: "Operator (portal)",
     joined: "Joined",
     remove: "Remove",
     removeConfirm: "Are you sure you want to remove this operator?",

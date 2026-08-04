@@ -1358,4 +1358,16 @@ describe('getOrderIdFromToken', () => {
   it('returns null for an unknown token', async () => {
     expect(await getOrderIdFromToken('no-such-token')).toBeNull()
   })
+
+  it('returns null for an expired token', async () => {
+    const [orderRow] = await db.select().from(orders).limit(1)
+    expect(orderRow).toBeDefined()
+    const token = await generateOrderToken(orderRow.id)
+    // Backdate validUntil so the token is already expired.
+    await db
+      .update(orders)
+      .set({ validUntil: new Date(Date.now() - 60_000) })
+      .where(eq(orders.id, orderRow.id))
+    expect(await getOrderIdFromToken(token)).toBeNull()
+  })
 })

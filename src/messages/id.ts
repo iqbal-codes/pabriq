@@ -571,7 +571,7 @@ const id: Messages = {
     ownerRole: "Pemilik",
     adminRole: "Admin",
     memberRole: "Operator",
-    operatorRole: "Operator",
+    operatorRole: "Operator (portal)",
     joined: "Bergabung",
     remove: "Hapus",
     removeConfirm: "Yakin ingin menghapus operator ini?",

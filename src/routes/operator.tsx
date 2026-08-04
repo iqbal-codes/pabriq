@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { ForbiddenPage } from '#/components/app/forbidden-page'
 import { OperatorEmptyOrg } from '#/components/app/operator-empty-org'
 import { OperatorHeader } from '#/components/app/operator-header'
+import type { Role } from '#/features/permissions/model'
 import { resolveOrgContext } from '#/lib/auth-session'
 
 type OperatorCtx =
@@ -17,7 +18,7 @@ type OperatorCtx =
         user: { name: string | null; email: string; image: string | null }
       }
       org: { name: string; slug: string; logo?: string | null }
-      role: string
+      role: Role
     }
   | {
       access: 'allowed'
@@ -25,7 +26,7 @@ type OperatorCtx =
         user: { name: string | null; email: string; image: string | null }
       }
       org: { name: string; slug: string; logo?: string | null }
-      role: string
+      role: Role
     }
 
 export const Route = createFileRoute('/operator')({
@@ -51,7 +52,7 @@ export const Route = createFileRoute('/operator')({
       }
     }
 
-    if (result.role === 'member') {
+    if (result.role === 'member' || result.role === 'operator') {
       return {
         access: 'allowed' as const,
         session: result.session,
