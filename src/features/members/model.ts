@@ -10,7 +10,12 @@ export type InviteMemberInput = {
 }
 
 export type InviteMemberResult =
-  | { ok: true; mode: 'invitation'; invitationId: string }
+  | {
+      ok: true
+      mode: 'invitation'
+      invitationId: string
+      role: InviteMemberRole
+    }
   | {
       ok: true
       mode: 'operator-account'
@@ -105,10 +110,16 @@ export async function inviteOrganizationMember({
     headers,
     body: {
       email: input.email,
-      role: 'admin',
+      role: input.role, // 'admin' | 'operator' — pass through, never hard-code
       organizationId,
     },
   })
 
-  return { ok: true, mode: 'invitation', invitationId: invitation.id }
+  return {
+    ok: true,
+    mode: 'invitation',
+    invitationId: invitation.id,
+    // better-auth types invitation.role as string; narrow to the enum
+    role: invitation.role as InviteMemberRole,
+  }
 }

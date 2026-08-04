@@ -1,11 +1,66 @@
+import { serializeSignedCookie } from 'better-call'
 import { eq, sql } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '#/db/index'
 import { account, invitation, member, organization, user } from '#/db/schema'
 import { auth } from '#/lib/auth'
-import { createOperatorMemberAccount, DEFAULT_OPERATOR_PASSWORD } from './model'
+import {
+  createOperatorMemberAccount,
+  DEFAULT_OPERATOR_PASSWORD,
+  inviteOrganizationMember,
+} from './model'
 
 const org1Id = '00000000-0000-0000-0000-000000000001'
+
+// Mint a real owner session (email-verified credential account) so
+// auth.api.createInvitation's session middleware accepts the request.
+// signInEmail does not surface set-cookie headers in the vitest/happy-dom
+// environment, so rebuild the signed session cookie from the returned token.
+async function createOwnerSession(): Promise<Headers> {
+  const ctx = await auth.$context
+  const now = new Date()
+
+  const created = await ctx.internalAdapter.createUser({
+    email: 'owner@test.com',
+    name: 'Owner',
+    emailVerified: true,
+  })
+  await ctx.internalAdapter.linkAccount({
+    userId: created.id,
+    accountId: created.id,
+    providerId: 'credential',
+    password: await ctx.password.hash('OwnerPass123!'),
+  })
+  await db.insert(member).values({
+    id: 'owner-member-id',
+    organizationId: org1Id,
+    userId: created.id,
+    role: 'owner',
+    createdAt: now,
+  })
+
+  const signIn = await auth.api.signInEmail({
+    body: { email: 'owner@test.com', password: 'OwnerPass123!' },
+    asResponse: true,
+  })
+  const body = (await signIn.json()) as { token?: string }
+  if (!body.token) throw new Error('owner sign-in returned no session token')
+
+  const cookieName = ctx.authCookies.sessionToken.name
+  const serialized = await serializeSignedCookie(
+    cookieName,
+    body.token,
+    ctx.secret,
+    {},
+  )
+  // serialized is a full Set-Cookie header ("name=value; Path=/; ...");
+  // keep only the name=value pair for the request Cookie header.
+  const cookieValue = serialized.split(';')[0]
+
+  const headers = new Headers()
+  headers.set('cookie', cookieValue)
+  return headers
+}
 
 beforeEach(async () => {
   await db.execute(
@@ -71,7 +126,7 @@ describe('createOperatorMemberAccount', () => {
     expect(memberRow).toBeDefined()
     expect(memberRow.organizationId).toBe(org1Id)
     expect(memberRow.userId).toBe(userRow.id)
-    expect(memberRow.role).toBe('member')
+    expect(memberRow.role).toBe('operator')
 
     // Zero invitation rows for the email
     const invitations = await db
@@ -125,5 +180,58 @@ describe('createOperatorMemberAccount', () => {
       .from(user)
       .where(eq(user.email, 'cleanup@test.com'))
     expect(users).toHaveLength(0)
+  })
+})
+
+describe('inviteOrganizationMember', () => {
+  it('creates an admin invitation for role admin', async () => {
+    const headers = await createOwnerSession()
+    const result = await inviteOrganizationMember({
+      auth,
+      headers,
+      organizationId: org1Id,
+      input: { email: 'admin-invite@test.com', role: 'admin' },
+    })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.mode).toBe('invitation')
+      const [inv] = await db
+        .select()
+        .from(invitation)
+        .where(eq(invitation.email, 'admin-invite@test.com'))
+      expect(inv?.role).toBe('admin')
+    }
+  })
+
+  it('creates an operator invitation for role operator', async () => {
+    const headers = await createOwnerSession()
+    const result = await inviteOrganizationMember({
+      auth,
+      headers,
+      organizationId: org1Id,
+      input: { email: 'operator-invite@test.com', role: 'operator' },
+    })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.mode).toBe('invitation')
+      const [inv] = await db
+        .select()
+        .from(invitation)
+        .where(eq(invitation.email, 'operator-invite@test.com'))
+      expect(inv?.role).toBe('operator')
+    }
+  })
+
+  it('creates an operator account for role member', async () => {
+    const result = await inviteOrganizationMember({
+      auth,
+      headers: new Headers(),
+      organizationId: org1Id,
+      input: { email: 'member-account@test.com', role: 'member' },
+    })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.mode).toBe('operator-account')
+    }
   })
 })
