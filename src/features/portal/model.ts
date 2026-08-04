@@ -225,6 +225,17 @@ export async function generateOrderToken(orderId: string): Promise<string> {
   return token
 }
 
+export async function getOrderIdFromToken(
+  token: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ id: orders.id })
+    .from(orders)
+    .where(eq(orders.orderToken, token))
+    .limit(1)
+  return row?.id ?? null
+}
+
 export async function getPortalOrder(
   token: string,
 ): Promise<PortalOrderResult> {

@@ -155,10 +155,40 @@ export const portalGetInvoiceUploadUrlFn = createServerFn({ method: 'POST' })
     async ({
       data,
     }): Promise<{ uploadUrl: string; storageKey: string; assetId: string }> => {
-      const [orgId, { buildUploadUrl }] = await Promise.all([
-        getOrgIdFromToken(data.token),
+      const [
+        { getOrderIdFromToken },
+        { buildUploadUrl },
+        { db },
+        { invoices, orders },
+        { and, eq },
+      ] = await Promise.all([
+        import('./model'),
         import('#/features/assets/model'),
+        import('#/db/index'),
+        import('#/db/schema'),
+        import('drizzle-orm'),
       ])
+
+      const tokenOrderId = await getOrderIdFromToken(data.token)
+      if (!tokenOrderId) throw new Error('Invalid token')
+
+      const [order] = await db
+        .select({ orgId: orders.orgId })
+        .from(orders)
+        .where(eq(orders.id, tokenOrderId))
+        .limit(1)
+      if (!order) throw new Error('Invalid token')
+      const orgId = order.orgId
+
+      const [invoice] = await db
+        .select({ id: invoices.id, orderId: invoices.orderId })
+        .from(invoices)
+        .where(and(eq(invoices.id, data.invoiceId), eq(invoices.orgId, orgId)))
+        .limit(1)
+      if (!invoice || invoice.orderId !== tokenOrderId) {
+        throw new Error('Invoice not found')
+      }
+
       return buildUploadUrl(
         orgId,
         'invoice',
@@ -193,19 +223,30 @@ export const submitPaymentProofFn = createServerFn({ method: 'POST' })
           { db },
           { invoices, orders },
           { and, eq },
+          { getOrderIdFromToken },
         ] = await Promise.all([
           getOrgIdFromToken(data.token),
           import('#/features/assets/model'),
           import('#/db/index'),
           import('#/db/schema'),
           import('drizzle-orm'),
+          import('./model'),
         ])
 
-        // Verify the order belongs to this org
+        const tokenOrderId = await getOrderIdFromToken(data.token)
+        if (!tokenOrderId) throw new Error('Invalid token')
+
+        // Verify the token is for the order the caller claims
         const [portalOrder] = await db
-          .select({ id: orders.id })
+          .select({ id: orders.id, orgId: orders.orgId })
           .from(orders)
-          .where(and(eq(orders.orgId, orgId), eq(orders.id, data.orderId)))
+          .where(
+            and(
+              eq(orders.id, data.orderId),
+              eq(orders.id, tokenOrderId),
+              eq(orders.orgId, orgId),
+            ),
+          )
           .limit(1)
 
         if (!portalOrder) {
