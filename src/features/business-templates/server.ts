@@ -21,7 +21,11 @@ import {
 } from '#/features/business-templates/model'
 import type { Role } from '#/features/permissions/model'
 import { canManageSettings } from '#/features/permissions/model'
-import { resolveOrgAndRole, resolveOrgId } from '#/lib/auth-session-server'
+import {
+  requirePlatformAdmin,
+  resolveOrgAndRole,
+  resolveOrgId,
+} from '#/lib/auth-session-server'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -133,7 +137,7 @@ export const createTemplateFn = createServerFn({ method: 'POST' })
       data,
     }): Promise<BusinessTemplate | { ok: false; error: string }> => {
       try {
-        await requireSettingsAdmin()
+        await requirePlatformAdmin()
         return createTemplate(data)
       } catch (err: unknown) {
         return wrapError(err)
@@ -148,7 +152,7 @@ export const publishTemplateFn = createServerFn({ method: 'POST' })
       data,
     }): Promise<BusinessTemplate | { ok: false; error: string }> => {
       try {
-        await requireSettingsAdmin()
+        await requirePlatformAdmin()
         return publishTemplate(data.templateId)
       } catch (err: unknown) {
         return wrapError(err)
@@ -163,7 +167,7 @@ export const retireTemplateFn = createServerFn({ method: 'POST' })
       data,
     }): Promise<BusinessTemplate | { ok: false; error: string }> => {
       try {
-        await requireSettingsAdmin()
+        await requirePlatformAdmin()
         return retireTemplate(data.templateId)
       } catch (err: unknown) {
         return wrapError(err)

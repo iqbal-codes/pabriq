@@ -41,24 +41,10 @@ import {
   suspendOrganization,
   updateRetentionPolicy,
 } from '#/features/admin/model'
-import { resolvePlatformAdmin } from '#/lib/auth-session-server'
+import { requirePlatformAdmin } from '#/lib/auth-session-server'
 import { wrapError } from '#/lib/server-results'
 
 type AdminResult<T> = { ok: true; data: T } | { ok: false; error: string }
-
-async function requirePlatformAdmin(): Promise<{
-  actorId: string
-  actorName: string
-}> {
-  const { isAdmin, session } = await resolvePlatformAdmin()
-  if (!isAdmin || !session) {
-    throw new Error('Not authorized')
-  }
-  return {
-    actorId: session.user.id,
-    actorName: session.user.name ?? session.user.email,
-  }
-}
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────
 
