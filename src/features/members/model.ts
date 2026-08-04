@@ -1,6 +1,9 @@
+import { randomBytes } from 'node:crypto'
 import type { auth } from '#/lib/auth'
 
-export const DEFAULT_OPERATOR_PASSWORD = 'operator123' as const
+function generateOperatorPassword(): string {
+  return randomBytes(9).toString('base64url') // 12 chars, URL-safe
+}
 
 export type InviteMemberRole = 'admin' | 'member' | 'operator'
 
@@ -22,7 +25,7 @@ export type InviteMemberResult =
       userId: string
       memberId: string
       email: string
-      password: typeof DEFAULT_OPERATOR_PASSWORD
+      password: string
     }
   | { ok: false; error: string }
 
@@ -52,7 +55,8 @@ export async function createOperatorMemberAccount({
   })
 
   try {
-    const hashedPassword = await ctx.password.hash(DEFAULT_OPERATOR_PASSWORD)
+    const password = generateOperatorPassword()
+    const hashedPassword = await ctx.password.hash(password)
 
     await ctx.internalAdapter.linkAccount({
       userId: createdUser.id,
@@ -75,7 +79,7 @@ export async function createOperatorMemberAccount({
       userId: createdUser.id,
       memberId: createdMember.id,
       email: normalizedEmail,
-      password: DEFAULT_OPERATOR_PASSWORD,
+      password,
     }
   } catch (err: unknown) {
     try {

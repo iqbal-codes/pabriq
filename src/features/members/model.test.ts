@@ -4,11 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '#/db/index'
 import { account, invitation, member, organization, user } from '#/db/schema'
 import { auth } from '#/lib/auth'
-import {
-  createOperatorMemberAccount,
-  DEFAULT_OPERATOR_PASSWORD,
-  inviteOrganizationMember,
-} from './model'
+import { createOperatorMemberAccount, inviteOrganizationMember } from './model'
 
 const org1Id = '00000000-0000-0000-0000-000000000001'
 
@@ -88,8 +84,9 @@ describe('createOperatorMemberAccount', () => {
       ok: true,
       mode: 'operator-account',
       email: 'operator@example.test',
-      password: DEFAULT_OPERATOR_PASSWORD,
     })
+    expect(result.password).toBeTruthy()
+    expect(result.password.length).toBeGreaterThanOrEqual(12)
 
     // One user row for the normalized email
     const [userRow] = await db
@@ -110,11 +107,11 @@ describe('createOperatorMemberAccount', () => {
     expect(accountRow.userId).toBe(userRow.id)
     expect(accountRow.password).toBeTruthy()
 
-    // Password hash verifies against DEFAULT_OPERATOR_PASSWORD
+    // Password hash verifies against the returned per-account password
     const ctx = await auth.$context
     const verified = await ctx.password.verify({
       hash: accountRow.password ?? '',
-      password: DEFAULT_OPERATOR_PASSWORD,
+      password: result.password,
     })
     expect(verified).toBe(true)
 
@@ -180,6 +177,23 @@ describe('createOperatorMemberAccount', () => {
       .from(user)
       .where(eq(user.email, 'cleanup@test.com'))
     expect(users).toHaveLength(0)
+  })
+
+  it('creates operator account with a per-account random password', async () => {
+    const a = await createOperatorMemberAccount({
+      auth,
+      organizationId: org1Id,
+      email: 'random-pw-a@test.com',
+    })
+    const b = await createOperatorMemberAccount({
+      auth,
+      organizationId: org1Id,
+      email: 'random-pw-b@test.com',
+    })
+    if (!a.ok || !b.ok) throw new Error('expected success')
+    expect(a.password).not.toBe('operator123')
+    expect(a.password).not.toBe(b.password)
+    expect(a.password.length).toBeGreaterThanOrEqual(12)
   })
 })
 
