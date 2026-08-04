@@ -13,6 +13,9 @@ export default defineConfig({
   use: {
     baseURL,
     trace: 'on-first-retry',
+    // system Chrome fallback (PW_CHANNEL=chrome) — applies to the setup
+    // project too; the chromium project overrides with the same value.
+    channel: process.env.PW_CHANNEL === 'chrome' ? 'chrome' : undefined,
   },
   projects: [
     {
@@ -21,7 +24,12 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // Allow running against system Google Chrome when the bundled
+        // browser binaries aren't installed (PW_CHANNEL=chrome).
+        channel: process.env.PW_CHANNEL === 'chrome' ? 'chrome' : undefined,
+      },
       dependencies: ['setup'],
     },
   ],

@@ -153,7 +153,7 @@ export async function listOrganizations(
   const memberCounts = db
     .select({
       orgId: member.organizationId,
-      memberCount: count(),
+      memberCount: count().as('memberCount'),
     })
     .from(member)
     .groupBy(member.organizationId)
@@ -162,7 +162,7 @@ export async function listOrganizations(
   const orderCounts = db
     .select({
       orgId: orders.orgId,
-      orderCount: count(),
+      orderCount: count().as('orderCount'),
     })
     .from(orders)
     .groupBy(orders.orgId)
@@ -171,7 +171,7 @@ export async function listOrganizations(
   const invoiceUnpaidCounts = db
     .select({
       orgId: invoices.orgId,
-      invoiceUnpaidCount: count(),
+      invoiceUnpaidCount: count().as('invoiceUnpaidCount'),
     })
     .from(invoices)
     .where(

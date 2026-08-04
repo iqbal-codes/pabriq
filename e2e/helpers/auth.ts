@@ -38,6 +38,14 @@ export async function signIn(page: Page, email: string, password: string) {
   await page.getByLabel('Email').fill(email)
   await page.getByLabel('Password').fill(password)
   await page.getByRole('button', { name: 'Sign in' }).click()
+  // The submit is async (authClient.signIn.email() → cookie → client
+  // redirect). Wait for the redirect so callers can navigate immediately
+  // without racing the auth POST (a racing goto() gets bounced to
+  // /sign-in?redirect=... because the session cookie isn't set yet).
+  await page.waitForURL(
+    (url) => !new URL(url).pathname.startsWith('/sign-in'),
+    { timeout: 15_000 },
+  )
 }
 
 /** Fill the sign-up form and submit */
