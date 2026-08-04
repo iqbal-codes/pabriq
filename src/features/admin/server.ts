@@ -60,31 +60,6 @@ async function requirePlatformAdmin(): Promise<{
   }
 }
 
-async function requirePlatformAdminOrRole(
-  allowedRoles: string[],
-): Promise<{ actorId: string; actorName: string }> {
-  // First try platform admin
-  const { isAdmin, session } = await resolvePlatformAdmin()
-  if (isAdmin && session) {
-    return {
-      actorId: session.user.id,
-      actorName: session.user.name ?? session.user.email,
-    }
-  }
-
-  // Fall back to org role check
-  const { resolveOrgAndRole } = await import('#/lib/auth-session-server')
-  const { role } = await resolveOrgAndRole()
-  if (!allowedRoles.includes(role)) {
-    throw new Error('Not authorized')
-  }
-
-  return {
-    actorId: 'system',
-    actorName: `role:${role}`,
-  }
-}
-
 // ─── Dashboard ───────────────────────────────────────────────────────────────
 
 export const getAdminDashboardMetricsFn = createServerFn({
@@ -565,7 +540,7 @@ export const getProductionBottlenecksFn = createServerFn({ method: 'GET' })
       >
     > => {
       try {
-        await requirePlatformAdminOrRole(['owner', 'admin'])
+        await requirePlatformAdmin()
         const result = await getProductionBottlenecks(data.orgId, data.limit)
         return { ok: true, data: result }
       } catch (err: unknown) {
