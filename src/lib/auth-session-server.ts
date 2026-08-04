@@ -113,3 +113,17 @@ export async function resolvePlatformAdmin(): Promise<PlatformAdminSession> {
     },
   }
 }
+
+export async function requirePlatformAdmin(): Promise<{
+  actorId: string
+  actorName: string
+}> {
+  const { isAdmin, session } = await resolvePlatformAdmin()
+  if (!isAdmin || !session) {
+    throw new Error('Not authorized')
+  }
+  return {
+    actorId: session.user.id,
+    actorName: session.user.name ?? session.user.email,
+  }
+}

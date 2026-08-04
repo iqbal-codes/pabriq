@@ -6,6 +6,7 @@ import { db } from '#/db/index'
 import {
   channelAccesses,
   connectedChannels,
+  member,
   messagingIdentities,
   telegramProcessedUpdates,
 } from '#/db/schema'
@@ -364,15 +365,41 @@ export async function handleTelegramWebhook(
     }
   }
 
-  // Build RequestContext — orgId comes ONLY from verified channel row
+  // Build RequestContext — orgId comes ONLY from verified channel row.
+  // role must come from an actual org membership; never hard-code 'admin'.
+  const memberRows = await db
+    .select({ role: member.role })
+    .from(member)
+    .where(
+      and(
+        eq(member.organizationId, channel.orgId),
+        eq(member.userId, `telegram:${identity.id}`),
+      ),
+    )
+    .limit(1)
+  const membershipRole = memberRows[0]?.role
+
+  if (
+    !membershipRole ||
+    (membershipRole !== 'owner' && membershipRole !== 'admin')
+  ) {
+    await replyToTelegram({
+      token: botToken,
+      chatId,
+      text: replyText(locale, 'processingFailed'),
+    })
+    await recordProcessedUpdate(channel, updateIdKey)
+    return Response.json({ ok: true })
+  }
+
   const requestContext = new RequestContext<{
     orgId: string
     userId: string
-    role: 'admin'
+    role: 'owner' | 'admin'
   }>()
   requestContext.set('orgId', channel.orgId)
   requestContext.set('userId', `telegram:${identity.id}`)
-  requestContext.set('role', 'admin')
+  requestContext.set('role', membershipRole)
 
   const { mastra } = await import('#/mastra')
   const agent = mastra.getAgentById('business-assistant')

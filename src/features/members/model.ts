@@ -1,6 +1,9 @@
+import { randomBytes } from 'node:crypto'
 import type { auth } from '#/lib/auth'
 
-export const DEFAULT_OPERATOR_PASSWORD = 'operator123' as const
+function generateOperatorPassword(): string {
+  return randomBytes(9).toString('base64url') // 12 chars, URL-safe
+}
 
 export type InviteMemberRole = 'admin' | 'member' | 'operator'
 
@@ -10,14 +13,19 @@ export type InviteMemberInput = {
 }
 
 export type InviteMemberResult =
-  | { ok: true; mode: 'invitation'; invitationId: string }
+  | {
+      ok: true
+      mode: 'invitation'
+      invitationId: string
+      role: InviteMemberRole
+    }
   | {
       ok: true
       mode: 'operator-account'
       userId: string
       memberId: string
       email: string
-      password: typeof DEFAULT_OPERATOR_PASSWORD
+      password: string
     }
   | { ok: false; error: string }
 
@@ -47,7 +55,8 @@ export async function createOperatorMemberAccount({
   })
 
   try {
-    const hashedPassword = await ctx.password.hash(DEFAULT_OPERATOR_PASSWORD)
+    const password = generateOperatorPassword()
+    const hashedPassword = await ctx.password.hash(password)
 
     await ctx.internalAdapter.linkAccount({
       userId: createdUser.id,
@@ -70,7 +79,7 @@ export async function createOperatorMemberAccount({
       userId: createdUser.id,
       memberId: createdMember.id,
       email: normalizedEmail,
-      password: DEFAULT_OPERATOR_PASSWORD,
+      password,
     }
   } catch (err: unknown) {
     try {
@@ -105,10 +114,16 @@ export async function inviteOrganizationMember({
     headers,
     body: {
       email: input.email,
-      role: 'admin',
+      role: input.role, // 'admin' | 'operator' — pass through, never hard-code
       organizationId,
     },
   })
 
-  return { ok: true, mode: 'invitation', invitationId: invitation.id }
+  return {
+    ok: true,
+    mode: 'invitation',
+    invitationId: invitation.id,
+    // better-auth types invitation.role as string; narrow to the enum
+    role: invitation.role as InviteMemberRole,
+  }
 }

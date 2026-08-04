@@ -297,6 +297,7 @@ export type Messages = {
     ownerRole: string;
     adminRole: string;
     memberRole: string;
+    operatorRole: string;
     joined: string;
     remove: string;
     removeConfirm: string;
@@ -577,6 +578,7 @@ export type Messages = {
     nameInvalid: string;
     creating: string;
     creationFailed: string;
+    provisioningFailed: string;
     taken: string;
     redirecting: string;
     logoPhoto: string;

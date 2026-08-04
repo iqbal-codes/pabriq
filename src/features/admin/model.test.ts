@@ -118,6 +118,11 @@ describe('admin model', () => {
       expect(Array.isArray(result)).toBe(true)
     })
 
+    it('getProductionBottlenecks returns an array for any org id', async () => {
+      const result = await getProductionBottlenecks('org-any')
+      expect(Array.isArray(result)).toBe(true)
+    })
+
     // Database-dependent tests below require migration 0039
     // (audit_events, platform_admin_users tables) to be applied
     // to the test database. They are skipped when the migration

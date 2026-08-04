@@ -72,7 +72,7 @@ export function AcceptInvitationPage({
     )
   }
 
-  if (!invitation || invitation.status !== 'pending') {
+  if (invitation?.status !== 'pending') {
     return (
       <div className="flex min-h-screen items-center justify-center p-8">
         <Card className="w-full max-w-md">

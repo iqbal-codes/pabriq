@@ -1559,7 +1559,7 @@ describe('Issue #18 Production Workflow, Quality Evidence, and Shop-Floor Access
     const reworkActivity = activities.find((a) => a.type === 'reworked')
     expect(reworkActivity).toBeDefined()
     expect(
-      (reworkActivity!.data as Record<string, unknown> | undefined)
+      (reworkActivity?.data as Record<string, unknown> | undefined)
         ?.reviewNotes,
     ).toBe('Color tone mismatched, re-do stage 1 printing')
   })

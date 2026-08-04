@@ -21,6 +21,7 @@ import {
   buildAssistantMemoryScope,
   getAssistantAllowedDomains,
   getAssistantBusinessOverview,
+  getAssistantOrder,
   normalizeMastraMemoryMessages,
   proposeOrderDraft,
   resolveOrderDraft,
@@ -858,5 +859,19 @@ describe('proposeOrderDraft', () => {
       name: 'Acme Corp',
       hasAddress: false,
     })
+  })
+})
+
+describe('getAssistantOrder', () => {
+  it('does not expose orderToken in the assistant order payload', async () => {
+    const [orderRow] = await db.select().from(orders).limit(1)
+    expect(orderRow).toBeDefined()
+    const result = await getAssistantOrder({
+      orgId: orderRow.orgId,
+      orderId: orderRow.id,
+    })
+    if (!result.ok) throw new Error('expected ok')
+    expect('orderToken' in result.order).toBe(false)
+    expect('validUntil' in result.order).toBe(false)
   })
 })

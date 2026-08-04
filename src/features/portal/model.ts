@@ -225,6 +225,21 @@ export async function generateOrderToken(orderId: string): Promise<string> {
   return token
 }
 
+export async function getOrderIdFromToken(
+  token: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ id: orders.id, validUntil: orders.validUntil })
+    .from(orders)
+    .where(eq(orders.orderToken, token))
+    .limit(1)
+  if (!row) return null
+  // Enforce token expiry so callers (e.g. upload URL minting) can't use
+  // an expired portal token to obtain privileged upload URLs.
+  if (row.validUntil && new Date() > row.validUntil) return null
+  return row.id
+}
+
 export async function getPortalOrder(
   token: string,
 ): Promise<PortalOrderResult> {

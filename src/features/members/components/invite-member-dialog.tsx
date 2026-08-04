@@ -90,6 +90,7 @@ export function InviteMemberDialog({
                   options={[
                     { value: 'admin', label: t('adminRole') },
                     { value: 'member', label: t('memberRole') },
+                    { value: 'operator', label: t('operatorRole') },
                   ]}
                 />
               )}

@@ -155,6 +155,21 @@ describe('template lifecycle', () => {
     const fetched = await getTemplate(tmpl.id)
     expect(fetched?.status).toBe('retired')
   })
+
+  it('template CRUD functions still return expected shapes', async () => {
+    const template = await createTemplate({
+      slug: 'security-test',
+      name: 'Security Test',
+    })
+    expect(template.id).toBeTruthy()
+    expect(template.status).toBe('draft')
+    await publishTemplate(template.id)
+    const published = await getTemplate(template.id)
+    expect(published?.status).toBe('published')
+    await retireTemplate(template.id)
+    const retired = await getTemplate(template.id)
+    expect(retired?.status).toBe('retired')
+  })
 })
 
 // ─── Materialization ─────────────────────────────────────────────────────────

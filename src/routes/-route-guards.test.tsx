@@ -332,7 +332,7 @@ function buildRoleBasedRouter(initialEntry: string) {
         })
       const orgs = await mockListUserOrgs()
       if (orgs.length === 0) throw redirect({ to: '/onboarding' })
-      if (orgs[0].role !== 'member') {
+      if (orgs[0].role !== 'member' && orgs[0].role !== 'operator') {
         return {
           access: 'forbidden' as const,
           session,
@@ -495,6 +495,26 @@ describe('role-based route guards', () => {
 
     expect(await screen.findByText('Onboarding Page')).toBeDefined()
     expect(router.state.location.pathname).toBe('/onboarding')
+  })
+
+  it('renders operator page for operator role on /operator', async () => {
+    mockGetCurrentSession.mockResolvedValue(createMockSession())
+    mockListUserOrgs.mockResolvedValue([
+      {
+        id: 'org-1',
+        name: 'My Workshop',
+        slug: 'my-workshop',
+        logo: null,
+        role: 'operator',
+      },
+    ])
+
+    const router = buildRoleBasedRouter('/operator')
+    await router.load()
+    await renderRouter(router)
+
+    expect(await screen.findByText('Operator Page')).toBeDefined()
+    expect(router.state.location.pathname).toBe('/operator')
   })
 
   it('renders forbidden page for owner/admin on /operator', async () => {

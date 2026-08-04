@@ -496,7 +496,7 @@ export async function listConfigurationElements(
       .from(organizationConfigurations)
       .where(eq(organizationConfigurations.orgId, orgId))
       .limit(1)
-    if (!config || config.status !== 'active') return []
+    if (config?.status !== 'active') return []
   }
 
   const conditions = [eq(configurationElements.orgId, orgId)]
@@ -534,7 +534,7 @@ export async function getConfigurationElement(
     .from(organizationConfigurations)
     .where(eq(organizationConfigurations.orgId, orgId))
     .limit(1)
-  if (!config || config.status !== 'active') return null
+  if (config?.status !== 'active') return null
 
   const [row] = await db
     .select()

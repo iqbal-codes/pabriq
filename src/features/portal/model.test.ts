@@ -21,6 +21,7 @@ import {
 import {
   confirmPortalOrder,
   generateOrderToken,
+  getOrderIdFromToken,
   getOrderTasksTimeline,
   getOrderTimeline,
   getPortalOrder,
@@ -1341,5 +1342,32 @@ describe('getPortalOrder with specifications', () => {
       expect(result.order.specifications[0].id).toBe(spec1Id)
       expect(result.order.specifications[0].status).toBe('draft')
     }
+  })
+})
+
+describe('getOrderIdFromToken', () => {
+  it('returns the order id for a valid token', async () => {
+    const [orderRow] = await db.select().from(orders).limit(1)
+    expect(orderRow).toBeDefined()
+    // The beforeEach seed leaves orderToken null, so mint a real token first.
+    const token = await generateOrderToken(orderRow.id)
+    const id = await getOrderIdFromToken(token)
+    expect(id).toBe(orderRow.id)
+  })
+
+  it('returns null for an unknown token', async () => {
+    expect(await getOrderIdFromToken('no-such-token')).toBeNull()
+  })
+
+  it('returns null for an expired token', async () => {
+    const [orderRow] = await db.select().from(orders).limit(1)
+    expect(orderRow).toBeDefined()
+    const token = await generateOrderToken(orderRow.id)
+    // Backdate validUntil so the token is already expired.
+    await db
+      .update(orders)
+      .set({ validUntil: new Date(Date.now() - 60_000) })
+      .where(eq(orders.id, orderRow.id))
+    expect(await getOrderIdFromToken(token)).toBeNull()
   })
 })
