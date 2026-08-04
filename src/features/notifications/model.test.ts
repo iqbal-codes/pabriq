@@ -717,7 +717,7 @@ describe('listActionNotifications', () => {
     const dpItem = result.items.find(
       (item) => item.type === 'dp_invoice_request',
     )
-    if (!dpItem || dpItem.type !== 'dp_invoice_request') {
+    if (dpItem?.type !== 'dp_invoice_request') {
       expect.fail('Expected dp_invoice_request')
     }
     expect(dpItem.id).toBe('dp_invoice:order-dp-ready')
@@ -732,7 +732,7 @@ describe('listActionNotifications', () => {
     const finalItem = result.items.find(
       (item) => item.type === 'final_invoice_request',
     )
-    if (!finalItem || finalItem.type !== 'final_invoice_request') {
+    if (finalItem?.type !== 'final_invoice_request') {
       expect.fail('Expected final_invoice_request')
     }
     expect(finalItem.id).toBe('final_invoice:order-final-ready')

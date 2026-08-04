@@ -1276,7 +1276,7 @@ export async function acceptCompatibilityMigration(
       .from(organizationConfigurations)
       .where(eq(organizationConfigurations.orgId, orgId))
       .limit(1)
-    if (!config || config.status !== 'migrating') {
+    if (config?.status !== 'migrating') {
       throw new Error('Organization is not in compatibility mode')
     }
 
