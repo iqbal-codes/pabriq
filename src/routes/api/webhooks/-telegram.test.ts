@@ -331,6 +331,7 @@ describe('Telegram webhook', () => {
       [],
       [identity],
       [{ id: 'access-1', status: 'approved', startedConnectionVersion: 2 }],
+      [{ role: 'owner' }],
     )
     const response = await post(telegramMessage('Expense 50000 lunch'))
     expect(response.status).toBe(200)
@@ -351,6 +352,7 @@ describe('Telegram webhook', () => {
       [],
       [identity],
       [{ id: 'access-1', status: 'approved', startedConnectionVersion: 2 }],
+      [{ role: 'owner' }],
     )
     mockDownload.mockResolvedValue({
       bytes: new Uint8Array([1, 2, 3]),
@@ -390,6 +392,7 @@ describe('Telegram webhook', () => {
       [],
       [identity],
       [{ id: 'access-1', status: 'approved', startedConnectionVersion: 2 }],
+      [{ role: 'owner' }],
     )
     mockGenerate.mockRejectedValue(new Error('LLM timeout'))
 
@@ -442,5 +445,24 @@ describe('Telegram webhook', () => {
     const response = await post(body)
     expect(response.status).toBe(200)
     expect(mockSelect).toHaveBeenCalledTimes(2)
+  })
+
+  it('denies agent access to an approved identity with no org membership', async () => {
+    // channel, identity, access, member lookup (empty)
+    queryQueues.push(
+      [connectedChannel],
+      [],
+      [identity],
+      [{ id: 'access-1', status: 'approved', startedConnectionVersion: 2 }],
+      [],
+    )
+    const response = await post(telegramMessage('Hello'))
+    expect(response.status).toBe(200)
+    expect(mockGenerate).not.toHaveBeenCalled()
+    expect(mockSend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringContaining('wrong'),
+      }),
+    )
   })
 })
