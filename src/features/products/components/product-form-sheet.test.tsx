@@ -20,6 +20,13 @@ vi.mock('use-intl', () => ({
   IntlProvider: ({ children }: { children: React.ReactNode }) => children,
 }))
 
+vi.mock('#/features/product-templates/hooks', () => ({
+  useProductTemplates: vi.fn(() => ({
+    data: [],
+    isLoading: false,
+  })),
+}))
+
 vi.mock('#/features/products/hooks', () => ({
   useProduct: vi.fn((id: string) => ({
     data: id
@@ -101,5 +108,36 @@ describe('ProductFormSheet', () => {
 
     expect(screen.getByText('products.editTitle')).toBeDefined()
     expect(screen.getByText('products.updateProduct')).toBeDefined()
+  })
+
+  it('keeps legacy products editable without a template reference', () => {
+    render(
+      <TestWrapper>
+        <ProductFormSheet
+          mode={{ type: 'edit', id: 'legacy-prod-1' }}
+          open={true}
+          onOpenChange={vi.fn()}
+          onSaved={vi.fn()}
+        />
+      </TestWrapper>,
+    )
+
+    expect(
+      screen.getByRole('button', { name: 'products.updateProduct' }),
+    ).toBeEnabled()
+  })
+  it('shows an explicit no-source state for legacy products', () => {
+    render(
+      <TestWrapper>
+        <ProductFormSheet
+          mode={{ type: 'edit', id: 'legacy-prod-1' }}
+          open={true}
+          onOpenChange={vi.fn()}
+          onSaved={vi.fn()}
+        />
+      </TestWrapper>,
+    )
+
+    expect(screen.getByText('products.templateNoSource')).toBeDefined()
   })
 })

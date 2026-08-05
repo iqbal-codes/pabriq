@@ -45,9 +45,9 @@ setup('create test account', async ({ page }) => {
   // Wait for response — either onboarding (success) or error (account exists)
   await page.waitForTimeout(3000)
 
-  const url = page.url()
-  if (url.includes('/onboarding')) {
+  if (page.url().includes('/onboarding')) {
     // Account was created. Complete onboarding with a test org.
+    await page.getByRole('radio').first().click()
     await page.getByLabel('Organization Name').fill('E2E Test Org')
     await page.getByRole('button', { name: 'Create Organization' }).click()
     await page.waitForURL((u) => new URL(u).pathname === '/', {

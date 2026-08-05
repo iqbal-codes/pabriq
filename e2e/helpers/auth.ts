@@ -66,6 +66,9 @@ export async function signUp(
 export async function completeOnboarding(page: Page, orgName: string) {
   await expect(page).toHaveURL(/\/onboarding/)
   await page.getByLabel('Organization Name').fill(orgName)
+  const businessModel = page.getByRole('radio').first()
+  await expect(businessModel).toBeVisible()
+  await businessModel.click()
   await page.getByRole('button', { name: 'Create Organization' }).click()
 }
 

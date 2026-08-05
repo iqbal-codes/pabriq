@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { Check, ImageIcon, X } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { ImageIcon, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useTranslations } from 'use-intl'
 import { useAppForm } from '#/components/app/form'
@@ -13,20 +13,31 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
+import { Label } from '#/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '#/components/ui/radio-group'
 import { finalizeUpload, getUploadUrl } from '#/features/assets/server'
 import {
   createOrganization,
   listUserOrgs,
   setOrganizationLogo,
 } from '#/features/auth/org'
-import { usePublishedTemplates } from '#/features/business-templates/hooks'
+import { useBusinessTemplates } from '#/features/product-templates/hooks'
 import { getCurrentSession } from '#/lib/auth-session'
 import { cn } from '#/lib/utils'
 
-const ERROR_MAP: Record<string, 'nameInvalid' | 'creationFailed' | 'taken'> = {
+const ERROR_MAP: Record<
+  string,
+  | 'nameInvalid'
+  | 'creationFailed'
+  | 'taken'
+  | 'businessModelUnavailable'
+  | 'templateMaterializationFailed'
+> = {
   name_invalid: 'nameInvalid',
   creation_failed: 'creationFailed',
   name_taken: 'taken',
+  business_template_unavailable: 'businessModelUnavailable',
+  template_materialization_failed: 'templateMaterializationFailed',
 }
 
 export const Route = createFileRoute('/onboarding')({
@@ -47,6 +58,11 @@ function OnboardingPage() {
   const t = useTranslations('org')
   const ct = useTranslations('common')
   const navigate = useNavigate()
+  const {
+    data: businessTemplates,
+    isLoading: businessTemplatesLoading,
+    isError: businessTemplatesError,
+  } = useBusinessTemplates()
   const { data: orgs, isLoading } = useQuery({
     queryKey: ['user-orgs'],
     queryFn: () => listUserOrgs(),
@@ -61,10 +77,22 @@ function OnboardingPage() {
 
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
-    null,
-  )
-  const { data: templates } = usePublishedTemplates()
+  const [selectedBusinessTemplateId, setSelectedBusinessTemplateId] = useState<
+    string | null
+  >(null)
+
+  const logoPreviewUrl = useMemo(() => {
+    if (!logoFile) return null
+    return URL.createObjectURL(logoFile)
+  }, [logoFile])
+
+  useEffect(() => {
+    return () => {
+      if (logoPreviewUrl) {
+        URL.revokeObjectURL(logoPreviewUrl)
+      }
+    }
+  }, [logoPreviewUrl])
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -83,12 +111,26 @@ function OnboardingPage() {
     multiple: false,
   })
 
+  const hasBusinessTemplates = (businessTemplates?.length ?? 0) > 0
+  const businessTemplatesUnavailable =
+    businessTemplatesError ||
+    (!businessTemplatesLoading && !hasBusinessTemplates)
+
   const form = useAppForm({
     defaultValues: { name: '' },
     onSubmit: async ({ value }) => {
       setSubmitError(null)
+
+      if (!selectedBusinessTemplateId) {
+        setSubmitError(t('businessModelRequired'))
+        return
+      }
+
       const result = await createOrganization({
-        data: { name: value.name, templateId: selectedTemplateId ?? undefined },
+        data: {
+          name: value.name,
+          businessTemplateId: selectedBusinessTemplateId,
+        },
       })
 
       if (!result.ok) {
@@ -177,42 +219,6 @@ function OnboardingPage() {
           <CardDescription>{t('createDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Template Selection */}
-          {templates && templates.length > 0 && (
-            <div className="mb-6">
-              <p className="text-sm font-medium mb-3">Pilih Template Bisnis</p>
-              <div className="space-y-2">
-                {templates.map((tmpl) => (
-                  <button
-                    key={tmpl.id}
-                    type="button"
-                    className={cn(
-                      'w-full text-left p-3 rounded-lg border transition-colors',
-                      selectedTemplateId === tmpl.id
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                        : 'border-border hover:border-muted-foreground/50',
-                    )}
-                    onClick={() => setSelectedTemplateId(tmpl.id)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium">{tmpl.name}</p>
-                        {tmpl.description && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {tmpl.description}
-                          </p>
-                        )}
-                      </div>
-                      {selectedTemplateId === tmpl.id && (
-                        <Check className="size-4 text-primary shrink-0" />
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           <form
             onSubmit={(e) => {
               // react-doctor: intentional — TanStack Form handleSubmit needs preventDefault
@@ -240,7 +246,7 @@ function OnboardingPage() {
                 ) : (
                   <div className="relative size-24 rounded-lg border bg-background overflow-hidden group shrink-0">
                     <img
-                      src={URL.createObjectURL(logoFile)}
+                      src={logoPreviewUrl ?? ''}
                       alt={logoFile.name}
                       className="object-cover w-full h-full"
                     />
@@ -281,6 +287,53 @@ function OnboardingPage() {
               )}
             </form.AppField>
 
+            <div className="mt-6 space-y-3">
+              <div>
+                <p className="text-sm font-medium">{t('businessModel')}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t('businessModelDescription')}
+                </p>
+              </div>
+              {businessTemplatesLoading ? (
+                <p className="text-sm text-muted-foreground" role="status">
+                  {t('businessModelLoading')}
+                </p>
+              ) : businessTemplatesUnavailable ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {t('businessModelUnavailable')}
+                </p>
+              ) : (
+                <RadioGroup
+                  value={selectedBusinessTemplateId ?? undefined}
+                  onValueChange={setSelectedBusinessTemplateId}
+                  aria-label={t('businessModel')}
+                >
+                  {(businessTemplates ?? []).map((template) => (
+                    <div
+                      key={template.id}
+                      className="flex items-start gap-3 rounded-md border p-3"
+                    >
+                      <RadioGroupItem
+                        value={template.id}
+                        id={`business-template-${template.id}`}
+                      />
+                      <Label
+                        htmlFor={`business-template-${template.id}`}
+                        className="cursor-pointer"
+                      >
+                        <span className="font-medium">{template.name}</span>
+                        {template.description && (
+                          <span className="mt-1 block text-xs text-muted-foreground">
+                            {template.description}
+                          </span>
+                        )}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              )}
+            </div>
+
             {submitError && (
               <form.AppForm>
                 <form.FormError message={submitError} />
@@ -288,7 +341,12 @@ function OnboardingPage() {
             )}
 
             <form.AppForm>
-              <form.SubmitButton className="mt-6 w-full">
+              <form.SubmitButton
+                className="mt-6 w-full"
+                disabled={
+                  businessTemplatesLoading || businessTemplatesUnavailable
+                }
+              >
                 {t('create')}
               </form.SubmitButton>
             </form.AppForm>

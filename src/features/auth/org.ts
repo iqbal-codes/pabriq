@@ -1,22 +1,26 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequestHeaders } from '@tanstack/react-start/server'
+import { eq } from 'drizzle-orm'
+import {
+  member,
+  organizationProfiles,
+  organization as organizationTable,
+} from '#/db/schema'
+import type { auth as authInstance } from '#/lib/auth'
+import { logger } from '#/lib/logger'
+
+type AuthApi = typeof authInstance
 
 export const listUserOrgs = createServerFn({ method: 'GET' }).handler(
   async () => {
-    const auth = await import('#/lib/auth').then((m) => m.auth)
+    const [auth, { getRequestHeaders }] = await Promise.all([
+      import('#/lib/auth').then((m) => m.auth),
+      import('@tanstack/react-start/server'),
+    ])
     const headers = getRequestHeaders()
     const session = await auth.api.getSession({ headers })
     if (!session) return []
 
-    const [
-      { db },
-      { member, organizationProfiles, organization: organizationTable },
-      { eq },
-    ] = await Promise.all([
-      import('#/db/index'),
-      import('#/db/schema'),
-      import('drizzle-orm'),
-    ])
+    const { db } = await import('#/db/index')
     const memberships = await db
       .select({
         id: organizationTable.id,
@@ -63,77 +67,120 @@ type CreateOrgResult =
   | { ok: true; orgId: string }
   | { ok: false; error: string }
 
-export const createOrganization = createServerFn({ method: 'POST' })
-  .inputValidator((input: { name: string; templateId?: string }) => input)
-  .handler(async ({ data }): Promise<CreateOrgResult> => {
-    const [auth, { db }, { organization: organizationTable }, { eq }] =
-      await Promise.all([
-        import('#/lib/auth').then((m) => m.auth),
-        import('#/db/index'),
-        import('#/db/schema'),
-        import('drizzle-orm'),
-      ])
-    const headers = getRequestHeaders()
+export type CreateOrganizationInput = {
+  name: string
+  businessTemplateId: string
+}
 
-    const trimmed = data.name.trim()
-    const slug = slugify(trimmed)
-    if (!slug) return { ok: false, error: 'name_invalid' }
+export async function createOrganizationHandler(
+  data: CreateOrganizationInput,
+  headers: HeadersInit = {},
+): Promise<CreateOrgResult> {
+  const [auth, { db }, { getBusinessTemplate, materializeBusinessTemplate }] =
+    await Promise.all([
+      import('#/lib/auth').then((m) => m.auth),
+      import('#/db/index'),
+      import('#/features/product-templates/model'),
+    ])
+  const trimmed = data.name.trim()
+  const slug = slugify(trimmed)
+  if (!slug) return { ok: false, error: 'name_invalid' }
+  if (!(await getBusinessTemplate(data.businessTemplateId))) {
+    return { ok: false, error: 'business_template_unavailable' }
+  }
 
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const trySlug = attempt === 0 ? slug : `${slug}-${randomSuffix()}`
-      try {
-        await auth.api.createOrganization({
-          headers,
-          body: { name: trimmed, slug: trySlug },
-        })
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const trySlug = attempt === 0 ? slug : `${slug}-${randomSuffix()}`
+    try {
+      await auth.api.createOrganization({
+        headers,
+        body: { name: trimmed, slug: trySlug },
+      })
 
-        const orgs = await db
-          .select({ id: organizationTable.id })
-          .from(organizationTable)
-          .where(eq(organizationTable.slug, trySlug))
-          .limit(1)
+      const orgs = await db
+        .select({ id: organizationTable.id })
+        .from(organizationTable)
+        .where(eq(organizationTable.slug, trySlug))
+        .limit(1)
 
-        if (orgs[0]) {
-          // Materialize template if provided
-          if (data.templateId) {
-            const { materializeTemplate } = await import(
-              '#/features/business-templates/model'
-            )
-            await materializeTemplate(orgs[0].id, data.templateId).catch(() => {
-              // Best-effort: template materialization failure should not block org creation
-            })
+      if (orgs[0]) {
+        try {
+          const productTemplates = await materializeBusinessTemplate(
+            orgs[0].id,
+            data.businessTemplateId,
+          )
+          if (productTemplates.length === 0) {
+            await compensateOrganization(auth, headers, orgs[0].id)
+            return { ok: false, error: 'template_materialization_failed' }
           }
-
-          // Dynamic import keeps server-only module out of client bundles
-          const { startTrial } = await import('#/features/subscriptions/model')
-          await startTrial(orgs[0].id, 'starter').catch(() => {
-            // Best-effort: trial creation failure should not block org creation
-          })
-          return { ok: true, orgId: orgs[0].id }
+        } catch {
+          await compensateOrganization(auth, headers, orgs[0].id)
+          return { ok: false, error: 'template_materialization_failed' }
         }
-
-        return { ok: false, error: 'creation_failed' }
-      } catch (err: unknown) {
-        const msg =
-          err instanceof Error ? err.message.toLowerCase() : String(err)
-        if (!msg.includes('slug')) {
-          return { ok: false, error: 'creation_failed' }
-        }
+        return { ok: true, orgId: orgs[0].id }
       }
-    }
 
-    return { ok: false, error: 'name_taken' }
+      return { ok: false, error: 'creation_failed' }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message.toLowerCase() : String(err)
+      if (!msg.includes('slug')) return { ok: false, error: 'creation_failed' }
+    }
+  }
+
+  return { ok: false, error: 'name_taken' }
+}
+
+async function compensateOrganization(
+  auth: AuthApi,
+  headers: HeadersInit,
+  organizationId: string,
+): Promise<void> {
+  try {
+    await auth.api.deleteOrganization({
+      headers,
+      body: { organizationId },
+    })
+  } catch (rollbackError) {
+    logger.error(
+      { error: rollbackError, organizationId },
+      'Organization rollback failed after template materialization failure',
+    )
+  }
+}
+
+export const createOrganization = createServerFn({ method: 'POST' })
+  .inputValidator((input: unknown): CreateOrganizationInput => {
+    if (typeof input !== 'object' || input === null) {
+      throw new Error('Invalid organization input')
+    }
+    const value = input as Record<string, unknown>
+    if (
+      typeof value.name !== 'string' ||
+      typeof value.businessTemplateId !== 'string' ||
+      value.businessTemplateId.length === 0
+    ) {
+      throw new Error('Invalid organization input')
+    }
+    return {
+      name: value.name,
+      businessTemplateId: value.businessTemplateId,
+    }
+  })
+  .handler(async ({ data }): Promise<CreateOrgResult> => {
+    const { getRequestHeaders } = await import('@tanstack/react-start/server')
+    const headers = getRequestHeaders()
+    return createOrganizationHandler(data, headers)
   })
 
 export const setOrganizationLogo = createServerFn({ method: 'POST' })
   .inputValidator((input: { orgId: string; logoAssetId: string }) => input)
   .handler(
     async ({ data }): Promise<{ ok: true } | { ok: false; error: string }> => {
-      const [{ db }, { organizationProfiles }, { eq }] = await Promise.all([
+      const [{ db }, { organizationProfiles }] = await Promise.all([
         import('#/db/index'),
         import('#/db/schema'),
-        import('drizzle-orm'),
       ])
+
       try {
         const existing = await db
           .select({ id: organizationProfiles.id })

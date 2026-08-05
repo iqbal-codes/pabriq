@@ -5,7 +5,6 @@ import { organization } from 'better-auth/plugins/organization'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { db } from '#/db/index'
 import * as schema from '#/db/schema'
-import { renderAuthEmail, sendAuthEmail } from '#/lib/auth-email'
 import { logger } from '#/lib/logger'
 
 const statement = {
@@ -66,20 +65,6 @@ const member = ac.newRole({
   settings: ['read'],
 })
 
-const operator = ac.newRole({
-  organization: [],
-  member: [],
-  invitation: [],
-  team: [],
-  ac: [],
-  customer: [],
-  order: ['read'],
-  product: ['read'],
-  invoice: [],
-  production: ['read'],
-  settings: [],
-})
-
 const cookieDomain =
   process.env.COOKIE_DOMAIN ||
   (process.env.NODE_ENV === 'production' ? '.pabriq.com' : '.localhost')
@@ -90,60 +75,14 @@ export const auth = betterAuth({
     provider: 'pg',
     schema,
   }),
-  emailVerification: {
-    sendVerificationEmail: async ({ user, url }) => {
-      const rendered = renderAuthEmail({
-        title: 'Verify your Pabriq email address',
-        greeting: `Hi ${user.name || user.email},`,
-        message:
-          'Confirm your email address to finish creating your Pabriq account.',
-        actionLabel: 'Verify email address',
-        actionUrl: url,
-        footer: 'This link expires in 1 hour.',
-      })
-      void sendAuthEmail({
-        to: user.email,
-        subject: 'Verify your Pabriq email address',
-        ...rendered,
-      }).catch((error: unknown) => {
-        logger.error(
-          { err: error, email: user.email },
-          'Failed to send verification email',
-        )
-      })
-    },
-    sendOnSignUp: true,
-    sendOnSignIn: true,
-    autoSignInAfterVerification: true,
-    expiresIn: 3600,
-  },
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true,
-    autoSignIn: false,
-    sendResetPassword: async ({ user, url }) => {
-      const rendered = renderAuthEmail({
-        title: 'Reset your Pabriq password',
-        greeting: `Hi ${user.name || user.email},`,
-        message:
-          'Use the button below to choose a new password for your Pabriq account.',
-        actionLabel: 'Reset password',
-        actionUrl: url,
-        footer: 'This link expires in 1 hour and can be used only once.',
-      })
-      void sendAuthEmail({
-        to: user.email,
-        subject: 'Reset your Pabriq password',
-        ...rendered,
-      }).catch((error: unknown) => {
-        logger.error(
-          { error, email: user.email },
-          'Failed to send password reset email',
-        )
-      })
+    async sendResetPassword({ user, url }) {
+      logger.warn(
+        { email: user.email, url },
+        'reset password email link generated',
+      )
     },
-    resetPasswordTokenExpiresIn: 3600,
-    revokeSessionsOnPasswordReset: true,
   },
   trustedOrigins: [
     ...(process.env.TRUSTED_ORIGINS?.split(',').filter(Boolean) ?? []),
@@ -156,10 +95,10 @@ export const auth = betterAuth({
         owner,
         admin,
         member,
-        operator,
       },
       async sendInvitationEmail(data) {
-        logger.warn({ invitationId: data.id }, 'invite email not configured')
+        const link = `${process.env.BETTER_AUTH_URL}/invite/accept?invitationId=${data.id}`
+        logger.warn({ email: data.email, link }, 'invite email not configured')
       },
     }),
   ],

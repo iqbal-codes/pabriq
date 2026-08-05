@@ -2,12 +2,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useCreateProduct, useProductsList } from './hooks'
+import { useCreateProduct, useProduct, useProductsList } from './hooks'
 
+const mockGetProductFn = vi.fn()
 const mockListProductsFn = vi.fn()
 const mockCreateProductFn = vi.fn()
-
 vi.mock('#/features/products/server', () => ({
+  getProductFn: (...args: unknown[]) => mockGetProductFn(...args),
   listProductsFn: (...args: unknown[]) => mockListProductsFn(...args),
   createProductFn: (...args: unknown[]) => mockCreateProductFn(...args),
 }))
@@ -56,6 +57,23 @@ describe('useProductsList', () => {
     await waitFor(() => {
       expect(result.current.data?.rows).toEqual([])
     })
+  })
+})
+
+describe('useProduct', () => {
+  beforeEach(() => {
+    mockGetProductFn.mockReset()
+  })
+
+  it('does not fetch when no product id is provided', async () => {
+    const { result } = renderHook(() => useProduct(''), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => {
+      expect(result.current.fetchStatus).toBe('idle')
+    })
+    expect(mockGetProductFn).not.toHaveBeenCalled()
   })
 })
 

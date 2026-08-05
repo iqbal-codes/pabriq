@@ -3,7 +3,6 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
-  useSuspenseQuery,
 } from '@tanstack/react-query'
 import { invalidateMutationQueries } from '#/lib/mutation-invalidation'
 import { queryKeys } from '#/lib/query-keys'
@@ -32,9 +31,11 @@ export function useProductsList(filters: ListProductsParams) {
 }
 
 export function useProduct(id: string) {
-  return useSuspenseQuery({
+  return useQuery({
     queryKey: queryKeys.products.detail(id),
     queryFn: () => getProductFn({ data: { id } }),
+    enabled: !!id,
+    throwOnError: true,
   })
 }
 
@@ -67,6 +68,7 @@ export function useProductBreakpoints(productId: string) {
   return useQuery({
     queryKey: queryKeys.products.breakpoints(productId),
     queryFn: () => listBreakpointsFn({ data: { productId } }),
+    enabled: !!productId,
   })
 }
 

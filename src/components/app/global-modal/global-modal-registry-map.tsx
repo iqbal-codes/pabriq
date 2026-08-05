@@ -5,6 +5,7 @@ import { usePaymentMethods } from '#/features/invoices/hooks'
 import type { PaymentMethod } from '#/features/invoices/model'
 import type { Role } from '#/features/permissions/model'
 import { canApproveProductionTask } from '#/features/permissions/model'
+import { useProductTemplates } from '#/features/product-templates/hooks'
 import {
   useStages,
   useTaskDetail,
@@ -45,6 +46,16 @@ const ReviewModal = lazy(() =>
   import('#/features/production/components/review-modal').then((m) => ({
     default: m.ReviewModal,
   })),
+)
+const ProductTemplateFormDialog = lazy(() =>
+  import(
+    '#/features/product-templates/components/product-template-form-dialog'
+  ).then((m) => ({ default: m.ProductTemplateFormDialog })),
+)
+const MaterializeBusinessTemplateDialog = lazy(() =>
+  import(
+    '#/features/product-templates/components/materialize-business-template-dialog'
+  ).then((m) => ({ default: m.MaterializeBusinessTemplateDialog })),
 )
 
 // Smart container wrappers — resolve data deps so presentation components stay pure
@@ -224,9 +235,63 @@ function ReviewModalWrapper({ open, onOpenChange, id }: GlobalOverlayProps) {
   )
 }
 
+function ProductTemplateFormDialogWrapper({
+  open,
+  onOpenChange,
+  id,
+}: GlobalOverlayProps) {
+  const { data: templates } = useProductTemplates()
+  const editingTemplate = useMemo(() => {
+    return id
+      ? (templates?.find((template) => template.id === id) ?? null)
+      : null
+  }, [templates, id])
+
+  const mode = id
+    ? ({ type: 'edit', id } as const)
+    : ({ type: 'create' } as const)
+
+  // Avoid rendering an edit form before the templates query resolves, and
+  // never open an edit form for a template that no longer exists.
+  if (id && !editingTemplate) return null
+
+  return (
+    <ProductTemplateFormDialog
+      mode={mode}
+      open={open}
+      onOpenChange={onOpenChange}
+      template={editingTemplate}
+    />
+  )
+}
+
+function MaterializeBusinessTemplateDialogWrapper({
+  open,
+  onOpenChange,
+}: GlobalOverlayProps) {
+  return (
+    <MaterializeBusinessTemplateDialog
+      open={open}
+      onOpenChange={onOpenChange}
+    />
+  )
+}
+
+export type GlobalModalKey =
+  | 'invite-member'
+  | 'payment-method-form'
+  | 'record-payment'
+  | 'stage-form'
+  | 'task-detail'
+  | 'review-task'
+  | 'product-template-form'
+  | 'materialize-business-template'
+
 export {
   InviteMemberDialogWrapper,
+  MaterializeBusinessTemplateDialogWrapper,
   PaymentMethodFormDialogWrapper,
+  ProductTemplateFormDialogWrapper,
   RecordPaymentDialogWrapper,
   ReviewModalWrapper,
   StageFormWrapper,

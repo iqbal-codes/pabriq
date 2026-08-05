@@ -1,6 +1,21 @@
 import { createServerFn } from '@tanstack/react-start'
+import { getRequestHeaders } from '@tanstack/react-start/server'
+import { and, desc, eq, ilike, isNull, type SQL, sql } from 'drizzle-orm'
+import { db } from '#/db/index'
+import {
+  pricingBreakpoints as breakpointsTable,
+  member,
+  products as productsTable,
+} from '#/db/schema'
+import type { Role } from '#/features/permissions/model'
+import { canManageProducts } from '#/features/permissions/model'
 import { resolveOrgId } from '#/lib/auth-session-server'
 import type { MutationResult } from '#/lib/server-results'
+import { buildOrderBy, type SortColumnMap } from '#/lib/sorting'
+import {
+  createProductSchema,
+  updateProductSchema,
+} from '#/lib/validation-schemas'
 import type {
   CreateProductInput,
   ListProductsParams,
@@ -11,11 +26,110 @@ import type {
 
 export type { ProductRow } from './model'
 
+const PRODUCT_SORT_COLUMNS = {
+  name: productsTable.name,
+  basePrice: productsTable.basePrice,
+  productionDays: productsTable.productionDays,
+  createdAt: productsTable.createdAt,
+  active: productsTable.active,
+} satisfies SortColumnMap
+
+async function resolveManageProductsOrgId(): Promise<string> {
+  // Dynamic import keeps #/lib/auth out of the client bundle (project-wide
+  // convention for server functions).
+  const { auth } = await import('#/lib/auth')
+  const headers = getRequestHeaders()
+  const session = await auth.api.getSession({ headers })
+  if (!session) throw new Error('Not authenticated')
+
+  const memberships = await db
+    .select({ orgId: member.organizationId, role: member.role })
+    .from(member)
+    .where(eq(member.userId, session.user.id))
+    .limit(1)
+
+  if (memberships.length === 0) throw new Error('No organization')
+  if (!canManageProducts(memberships[0].role as Role)) {
+    throw new Error('Not authorized')
+  }
+  return memberships[0].orgId
+}
+
 export const listProductsFn = createServerFn({ method: 'GET' })
   .inputValidator((data: ListProductsParams) => data)
   .handler(async ({ data }): Promise<ListProductsResult> => {
-    const { listProductRows } = await import('./model')
-    return listProductRows(data)
+    const [{ db }, orgId] = await Promise.all([
+      import('#/db/index'),
+      resolveOrgId(),
+    ])
+    const conditions: SQL[] = [
+      eq(productsTable.orgId, orgId),
+      isNull(productsTable.deletedAt),
+    ]
+
+    if (data.search?.trim()) {
+      const pattern = `%${data.search.trim()}%`
+      conditions.push(ilike(productsTable.name, pattern) as SQL)
+    }
+
+    if (data.status === 'active') {
+      conditions.push(eq(productsTable.active, true))
+    } else if (data.status === 'inactive') {
+      conditions.push(eq(productsTable.active, false))
+    }
+
+    const allConditions = and(...conditions) as SQL
+
+    const orderBy = buildOrderBy(
+      data.sort,
+      PRODUCT_SORT_COLUMNS,
+      desc(productsTable.createdAt),
+    )
+
+    const page = data.page ?? 1
+    const perPage = data.perPage ?? 25
+
+    const [rows, countResult] = await Promise.all([
+      db
+        .select({
+          id: productsTable.id,
+          name: productsTable.name,
+          description: productsTable.description,
+          active: productsTable.active,
+          primaryImageAssetId: productsTable.primaryImageAssetId,
+          basePrice: productsTable.basePrice,
+          productionDays: productsTable.productionDays,
+          minQuantity: productsTable.minQuantity,
+          maxQuantity: productsTable.maxQuantity,
+          pricingMode: sql<
+            'interpolated' | 'step'
+          >`${productsTable.pricingMode}`,
+          negotiateAboveQuantity: productsTable.negotiateAboveQuantity,
+          repeatOrderUnitPrice: productsTable.repeatOrderUnitPrice,
+          repeatOrderMinQuantity: productsTable.repeatOrderMinQuantity,
+          maxProductionQuantity: productsTable.maxProductionQuantity,
+          minDiscountPrice: sql<number | null>`(
+          SELECT MIN(b.unit_price)
+          FROM ${breakpointsTable} b
+          WHERE b.product_id = products.id
+        )`,
+          createdAt: productsTable.createdAt,
+        })
+        .from(productsTable)
+        .where(allConditions)
+        .orderBy(orderBy)
+        .limit(perPage)
+        .offset((page - 1) * perPage),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(productsTable)
+        .where(allConditions),
+    ])
+
+    return {
+      rows,
+      totalRows: Number(countResult[0]?.count ?? 0),
+    }
   })
 
 export const getProductFn = createServerFn({ method: 'GET' })
@@ -29,14 +143,38 @@ export const getProductFn = createServerFn({ method: 'GET' })
   })
 
 export const createProductFn = createServerFn({ method: 'POST' })
-  .inputValidator((input: Omit<CreateProductInput, 'orgId'>) => input)
+  .inputValidator(
+    (input: unknown): Omit<CreateProductInput, 'orgId'> =>
+      createProductSchema.parse(input),
+  )
   .handler(async ({ data }): Promise<MutationResult> => {
     const [orgId, { createProduct }] = await Promise.all([
-      resolveOrgId(),
+      resolveManageProductsOrgId(),
       import('./model'),
     ])
     try {
       await createProduct({ ...data, orgId })
+      return { ok: true }
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Unknown error',
+      }
+    }
+  })
+
+export const updateProductFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (input: unknown): Omit<UpdateProductInput, 'orgId'> =>
+      updateProductSchema.parse(input),
+  )
+  .handler(async ({ data }): Promise<MutationResult> => {
+    const [orgId, { updateProduct }] = await Promise.all([
+      resolveManageProductsOrgId(),
+      import('./model'),
+    ])
+    try {
+      await updateProduct({ ...data, orgId })
       return { ok: true }
     } catch (e) {
       return {
@@ -51,7 +189,7 @@ export const deleteProductFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }): Promise<MutationResult> => {
     const [{ deleteProduct }, orgId] = await Promise.all([
       import('./model'),
-      resolveOrgId(),
+      resolveManageProductsOrgId(),
     ])
     try {
       await deleteProduct(data.id, orgId)
@@ -93,13 +231,14 @@ export const listProductAddonsFn = createServerFn({ method: 'GET' })
     async ({
       data,
     }): Promise<Array<{ id: string; name: string; unitSurcharge: number }>> => {
-      const [{ db }, { productAddons }, { eq, asc, and }, orgId] =
-        await Promise.all([
+      const [{ db }, { productAddons }, { eq, asc }, orgId] = await Promise.all(
+        [
           import('#/db/index'),
           import('#/db/schema'),
           import('drizzle-orm'),
           resolveOrgId(),
-        ])
+        ],
+      )
       const rows = await db
         .select({
           id: productAddons.id,
@@ -250,23 +389,5 @@ export const calculateProductPriceFn = createServerFn({ method: 'GET' })
       ok: true as const,
       unitPrice,
       total: unitPrice * data.quantity,
-    }
-  })
-
-export const updateProductFn = createServerFn({ method: 'POST' })
-  .inputValidator((input: Omit<UpdateProductInput, 'orgId'>) => input)
-  .handler(async ({ data }): Promise<MutationResult> => {
-    const [{ updateProduct }, orgId] = await Promise.all([
-      import('./model'),
-      resolveOrgId(),
-    ])
-    try {
-      await updateProduct({ ...data, orgId })
-      return { ok: true }
-    } catch (e) {
-      return {
-        ok: false,
-        error: e instanceof Error ? e.message : 'Unknown error',
-      }
     }
   })

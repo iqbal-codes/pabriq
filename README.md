@@ -46,7 +46,7 @@ bun run dev             # starts dev server using local env
 
 ```bash
 bun install                # install dependencies
-bun run dev                # start dev server (port 3001)
+bun run dev                # start dev server (port 3002)
 bun run dev:infisical      # start dev server with Infisical secrets (local user)
 bun run dev:agent          # start dev server with Infisical Machine Identity (for agents)
 bun run build              # production build
@@ -102,7 +102,7 @@ If you need to run without Infisical, copy `.env.example` to `.env.local` and fi
 | `DATABASE_URL` | Yes | Neon Postgres connection string |
 | `DATABASE_URL_POOLER` | No | Neon pooled connection (serverless) |
 | `BETTER_AUTH_SECRET` | Yes | 32+ char secret (`bunx @better-auth/cli@latest secret`) |
-| `BETTER_AUTH_URL` | Yes | App URL (default: `http://localhost:3001`) |
+| `BETTER_AUTH_URL` | Yes | App URL (default: `http://localhost:3002`) |
 | `SENTRY_DSN` | No | Sentry project DSN |
 
 ## Project Structure
