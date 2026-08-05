@@ -20,7 +20,7 @@ import type { InviteMemberRole } from '#/features/members/model'
 const BASE_URL =
   process.env.NODE_ENV === 'production'
     ? 'https://app.pabriq.com'
-    : 'http://localhost:3001'
+    : 'http://localhost:3002'
 
 export function InviteMemberDialog({
   open,

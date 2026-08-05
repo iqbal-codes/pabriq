@@ -2,7 +2,9 @@ import { Suspense, useEffect, useState } from 'react'
 import { useGlobalModal, useGlobalSheet } from '#/hooks/use-global-overlay'
 import {
   InviteMemberDialogWrapper,
+  MaterializeBusinessTemplateDialogWrapper,
   PaymentMethodFormDialogWrapper,
+  ProductTemplateFormDialogWrapper,
   RecordPaymentDialogWrapper,
   ReviewModalWrapper,
   StageFormWrapper,
@@ -16,6 +18,8 @@ const GLOBAL_MODALS = {
   'stage-form': StageFormWrapper,
   'task-detail': TaskDetailModalWrapper,
   'review-task': ReviewModalWrapper,
+  'product-template-form': ProductTemplateFormDialogWrapper,
+  'materialize-business-template': MaterializeBusinessTemplateDialogWrapper,
 } as const
 
 export function GlobalModalContainer() {

@@ -11,12 +11,11 @@ test.describe('Onboarding', () => {
 
     const currentPath = new URL(page.url()).pathname
     if (currentPath === '/onboarding') {
-      // Verify onboarding form elements
-      await expect(page.getByLabel('Organization Name')).toBeVisible()
+      await expect(page.getByLabel(/business model/i)).toBeVisible()
       await expect(
         page.getByRole('button', { name: 'Create Organization' }),
-      ).toBeVisible()
-      // Logo upload area should be present
+      ).toBeDisabled()
+      await expect(page.getByRole('radio').first()).toBeVisible()
       await expect(page.getByText('Organization Photo')).toBeVisible()
     }
     // If user already has an org, they land on dashboard — that's also valid
@@ -46,8 +45,11 @@ test.describe('Onboarding', () => {
 
     const currentPath = new URL(page.url()).pathname
     if (currentPath === '/onboarding') {
-      // Try to submit without name
-      await page.getByRole('button', { name: 'Create Organization' }).click()
+      // Interact with the name field so its onChange validator runs
+      const nameField = page.getByLabel('Organization Name')
+      await nameField.click()
+      await nameField.fill('X')
+      await nameField.blur()
 
       // Should show validation error
       await expect(page.getByText(/at least 2 characters/i)).toBeVisible()

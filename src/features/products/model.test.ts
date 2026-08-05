@@ -1,10 +1,16 @@
 import { eq, sql } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '#/db/index'
-import { organization, products as productsTable } from '#/db/schema'
+import {
+  organization,
+  products as productsTable,
+  productTemplates,
+} from '#/db/schema'
+import { updateProductTemplate } from '#/features/product-templates/model'
+import type { CreateProductInput } from './model'
 import {
   createBreakpoint,
-  createProduct,
+  createProduct as createProductModel,
   deleteBreakpoint,
   deleteProduct,
   getProduct,
@@ -16,6 +22,30 @@ import {
 
 const org1Id = '00000000-0000-0000-0000-000000000001'
 const org2Id = '00000000-0000-0000-0000-000000000002'
+const productTemplateId = '00000000-0000-0000-0000-000000000011'
+const productTemplate2Id = '00000000-0000-0000-0000-000000000012'
+
+const templateConfiguration = {
+  itemizationMode: 'uniform' as const,
+  fields: [],
+  pricing: { basePrice: 100, productionDays: 2, minQuantity: 1 },
+  production: { notes: null },
+  workflowStages: [],
+  bom: [],
+}
+
+async function createProduct(
+  input: Omit<CreateProductInput, 'productTemplateId'> & {
+    productTemplateId?: string
+  },
+) {
+  return createProductModel({
+    ...input,
+    productTemplateId:
+      input.productTemplateId ??
+      (input.orgId === org2Id ? productTemplate2Id : productTemplateId),
+  })
+}
 
 beforeEach(async () => {
   await db.execute(sql`TRUNCATE organization, biteship_areas CASCADE`)
@@ -36,6 +66,30 @@ beforeEach(async () => {
       updatedAt: now,
     },
   ])
+  await db.insert(productTemplates).values({
+    id: productTemplateId,
+    orgId: org1Id,
+    businessTemplateId: null,
+    name: 'Starter Template',
+    description: null,
+    category: null,
+    status: 'active',
+    configuration: templateConfiguration,
+    createdAt: now,
+    updatedAt: now,
+  })
+  await db.insert(productTemplates).values({
+    id: productTemplate2Id,
+    orgId: org2Id,
+    businessTemplateId: null,
+    name: 'Org 2 Template',
+    description: null,
+    category: null,
+    status: 'active',
+    configuration: templateConfiguration,
+    createdAt: now,
+    updatedAt: now,
+  })
 })
 
 describe('products', () => {
@@ -63,6 +117,42 @@ describe('products', () => {
 
     expect(products).toHaveLength(2)
     expect(products.map((p) => p.name).sort()).toEqual(['P1', 'P2'])
+  })
+
+  it('copies template configuration and preserves legacy products', async () => {
+    const originalConfiguration = structuredClone(templateConfiguration)
+    const product = await createProduct({
+      orgId: org1Id,
+      name: 'Copied Product',
+    })
+
+    await updateProductTemplate({
+      id: productTemplateId,
+      orgId: org1Id,
+      configuration: {
+        ...templateConfiguration,
+        pricing: { ...templateConfiguration.pricing, basePrice: 999 },
+      },
+    })
+
+    expect((await getProduct(product.id, org1Id))?.configuration).toEqual(
+      originalConfiguration,
+    )
+
+    const legacyId = '00000000-0000-0000-0000-000000000099'
+    await db.insert(productsTable).values({
+      id: legacyId,
+      orgId: org1Id,
+      name: 'Legacy Product',
+      productTemplateId: null,
+      itemizationMode: 'uniform',
+      configuration: null,
+    })
+    expect(await getProduct(legacyId, org1Id)).toMatchObject({
+      productTemplateId: null,
+      itemizationMode: 'uniform',
+      configuration: null,
+    })
   })
 
   it('gets a product by id and orgId', async () => {

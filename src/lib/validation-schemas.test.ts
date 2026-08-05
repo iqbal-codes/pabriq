@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import {
+  createProductSchema,
   customerFormSchema,
   orderFormSchema,
   productFormSchema,
+  updateProductFormSchema,
+  updateProductSchema,
 } from './validation-schemas'
 
 describe('productFormSchema', () => {
   it('rejects empty name', () => {
     const result = productFormSchema.safeParse({
+      productTemplateId: 'template-1',
       name: '',
       description: '',
       priority: false,
@@ -29,6 +33,7 @@ describe('productFormSchema', () => {
 
   it('accepts valid input', () => {
     const result = productFormSchema.safeParse({
+      productTemplateId: 'template-1',
       name: 'Custom T-Shirt',
       description: 'A nice shirt',
       priority: true,
@@ -50,6 +55,7 @@ describe('productFormSchema', () => {
 
   it('accepts optional fields as empty', () => {
     const result = productFormSchema.safeParse({
+      productTemplateId: 'template-1',
       name: 'Test Product',
       description: '',
       priority: false,
@@ -70,6 +76,7 @@ describe('productFormSchema', () => {
   })
   it('rejects undefined basePrice with custom error', () => {
     const result = productFormSchema.safeParse({
+      productTemplateId: 'template-1',
       name: 'Test Product',
       description: '',
       priority: false,
@@ -92,9 +99,9 @@ describe('productFormSchema', () => {
       expect(error.basePrice?._errors[0]).toBe('Price is required')
     }
   })
-
   it('rejects undefined breakpoint unitPrice with custom error', () => {
     const result = productFormSchema.safeParse({
+      productTemplateId: 'template-1',
       name: 'Test Product',
       description: '',
       priority: false,
@@ -125,6 +132,7 @@ describe('productFormSchema', () => {
 
   it('rejects undefined addon unitSurcharge with custom error', () => {
     const result = productFormSchema.safeParse({
+      productTemplateId: 'template-1',
       name: 'Test Product',
       description: '',
       priority: false,
@@ -151,6 +159,57 @@ describe('productFormSchema', () => {
       )
       expect(surchargeError?.message).toBe('Surcharge is required')
     }
+  })
+})
+
+describe('updateProductFormSchema', () => {
+  it('accepts legacy products without a template reference', () => {
+    const result = updateProductFormSchema.safeParse({
+      productTemplateId: '',
+      name: 'Legacy Product',
+      description: '',
+      priority: false,
+      primaryImageAssetId: null,
+      basePrice: 0,
+      productionDays: 1,
+      minQuantity: 1,
+      maxQuantity: undefined,
+      negotiateAboveQuantity: undefined,
+      repeatOrderUnitPrice: undefined,
+      repeatOrderMinQuantity: undefined,
+      maxProductionQuantity: undefined,
+      pricingMode: 'interpolated',
+      pricingBreakpoints: [],
+      productAddons: [],
+    })
+
+    expect(result.success).toBe(true)
+  })
+})
+describe('product server schemas', () => {
+  it('allows template defaults while preserving create overrides', () => {
+    const result = createProductSchema.safeParse({
+      productTemplateId: 'template-1',
+      name: 'Custom Tee',
+      productionNotes: 'Use soft thread',
+      maxQuantity: 100,
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.productionNotes).toBe('Use soft thread')
+      expect(result.data.maxQuantity).toBe(100)
+    }
+  })
+
+  it('preserves nullable update fields and active status', () => {
+    const result = updateProductSchema.safeParse({
+      id: 'product-1',
+      description: null,
+      productionNotes: null,
+      active: false,
+    })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.active).toBe(false)
   })
 })
 

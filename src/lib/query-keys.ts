@@ -1,4 +1,14 @@
 export const queryKeys = {
+  productTemplates: {
+    all: ['product-templates'] as const,
+    lists: () => [...queryKeys.productTemplates.all, 'list'] as const,
+    list: () => [...queryKeys.productTemplates.lists(), 'current'] as const,
+    details: () => [...queryKeys.productTemplates.all, 'detail'] as const,
+    detail: (id: string) =>
+      [...queryKeys.productTemplates.details(), id] as const,
+    businessTemplates: () =>
+      [...queryKeys.productTemplates.all, 'business-templates'] as const,
+  },
   products: {
     all: ['products'] as const,
     lists: () => [...queryKeys.products.all, 'list'] as const,

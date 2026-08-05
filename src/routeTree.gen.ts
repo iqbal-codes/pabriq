@@ -9,98 +9,51 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AdminRouteImport } from './routes/_admin'
-import { Route as OrgRouteImport } from './routes/_org'
-import { Route as ForbiddenRouteImport } from './routes/forbidden'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as OperatorRouteImport } from './routes/operator'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
-import { Route as VerifyEmailRouteImport } from './routes/verify-email'
-import { Route as AdminAdminRouteImport } from './routes/_admin/admin'
-import { Route as AdminAdminsRouteImport } from './routes/_admin/admins'
-import { Route as AdminAuditRouteImport } from './routes/_admin/audit'
-import { Route as AdminBillingEventsRouteImport } from './routes/_admin/billing-events'
-import { Route as AdminExportsRouteImport } from './routes/_admin/exports'
-import { Route as AdminMigrationsRouteImport } from './routes/_admin/migrations'
-import { Route as AdminOrganizationsRouteImport } from './routes/_admin/organizations'
-import { Route as AdminPlansRouteImport } from './routes/_admin/plans'
-import { Route as AdminRetentionPoliciesRouteImport } from './routes/_admin/retention-policies'
-import { Route as AdminSubscriptionsRouteImport } from './routes/_admin/subscriptions'
-import { Route as OrgIndexRouteImport } from './routes/_org/index'
-import { Route as OrgSettingsRouteRouteImport } from './routes/_org/settings/route'
-import { Route as ApiHealthzRouteImport } from './routes/api/healthz'
-import { Route as ApiMidtransNotificationRouteImport } from './routes/api/midtrans-notification'
-import { Route as ApiMidtransReconciliationRouteImport } from './routes/api/midtrans-reconciliation'
-import { Route as ApiReadyRouteImport } from './routes/api/ready'
-import { Route as InviteAcceptRouteImport } from './routes/invite/accept'
+import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as OperatorRouteImport } from './routes/operator'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as ForbiddenRouteImport } from './routes/forbidden'
+import { Route as OrgRouteImport } from './routes/_org'
 import { Route as OperatorIndexRouteImport } from './routes/operator/index'
-import { Route as PortalTokenRouteImport } from './routes/portal.$token'
-import { Route as OrgCustomersIndexRouteImport } from './routes/_org/customers/index'
-import { Route as OrgCustomersNewRouteImport } from './routes/_org/customers/new'
-import { Route as OrgOrdersIndexRouteImport } from './routes/_org/orders/index'
-import { Route as OrgOrdersNewRouteImport } from './routes/_org/orders/new'
-import { Route as OrgProductionIndexRouteImport } from './routes/_org/production/index'
-import { Route as OrgProductsIndexRouteImport } from './routes/_org/products/index'
-import { Route as OrgProductsNewRouteImport } from './routes/_org/products/new'
+import { Route as OrgIndexRouteImport } from './routes/_org/index'
+import { Route as OrderTokenRouteImport } from './routes/order.$token'
+import { Route as InviteAcceptRouteImport } from './routes/invite/accept'
+import { Route as ApiReadyRouteImport } from './routes/api/ready'
+import { Route as ApiMidtransNotificationRouteImport } from './routes/api/midtrans-notification'
+import { Route as ApiHealthzRouteImport } from './routes/api/healthz'
+import { Route as OrgSettingsRouteRouteImport } from './routes/_org/settings/route'
 import { Route as OrgSettingsIndexRouteImport } from './routes/_org/settings/index'
-import { Route as OrgSettingsBusinessTemplatesRouteImport } from './routes/_org/settings/business-templates'
-import { Route as OrgSettingsChannelsRouteImport } from './routes/_org/settings/channels'
-import { Route as OrgSettingsGeneralRouteImport } from './routes/_org/settings/general'
-import { Route as OrgSettingsInvoicingRouteImport } from './routes/_org/settings/invoicing'
-import { Route as OrgSettingsMaterialsRouteImport } from './routes/_org/settings/materials'
-import { Route as OrgSettingsMembersRouteImport } from './routes/_org/settings/members'
-import { Route as OrgSettingsPaymentMethodsRouteImport } from './routes/_org/settings/payment-methods'
-import { Route as OrgSettingsProductionStagesRouteImport } from './routes/_org/settings/production-stages'
-import { Route as OrgSettingsProfileRouteImport } from './routes/_org/settings/profile'
-import { Route as OrgSettingsShopFloorDevicesRouteImport } from './routes/_org/settings/shop-floor-devices'
-import { Route as ApiAssistantChatRouteImport } from './routes/api/assistant/chat'
-import { Route as ApiAssistantStreamRouteImport } from './routes/api/assistant/stream'
+import { Route as OrgProductsIndexRouteImport } from './routes/_org/products/index'
+import { Route as OrgProductionIndexRouteImport } from './routes/_org/production/index'
+import { Route as OrgOrdersIndexRouteImport } from './routes/_org/orders/index'
+import { Route as OrgCustomersIndexRouteImport } from './routes/_org/customers/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as ApiWebhooksTelegramRouteImport } from './routes/api/webhooks/telegram'
-import { Route as OrgCustomersIdIndexRouteImport } from './routes/_org/customers/$id/index'
-import { Route as OrgCustomersIdEditRouteImport } from './routes/_org/customers/$id/edit'
-import { Route as OrgOrdersIdIndexRouteImport } from './routes/_org/orders/$id/index'
-import { Route as OrgOrdersIdEditRouteImport } from './routes/_org/orders/$id/edit'
+import { Route as OrgSettingsProfileRouteImport } from './routes/_org/settings/profile'
+import { Route as OrgSettingsProductionStagesRouteImport } from './routes/_org/settings/production-stages'
+import { Route as OrgSettingsProductTemplatesRouteImport } from './routes/_org/settings/product-templates'
+import { Route as OrgSettingsPaymentMethodsRouteImport } from './routes/_org/settings/payment-methods'
+import { Route as OrgSettingsMembersRouteImport } from './routes/_org/settings/members'
+import { Route as OrgSettingsInvoicingRouteImport } from './routes/_org/settings/invoicing'
+import { Route as OrgSettingsGeneralRouteImport } from './routes/_org/settings/general'
+import { Route as OrgProductsNewRouteImport } from './routes/_org/products/new'
+import { Route as OrgOrdersNewRouteImport } from './routes/_org/orders/new'
+import { Route as OrgCustomersNewRouteImport } from './routes/_org/customers/new'
 import { Route as OrgProductsIdIndexRouteImport } from './routes/_org/products/$id/index'
-import { Route as ApiDocumentsInvoicesIdPdfRouteImport } from './routes/api/documents/invoices/$id/pdf'
-import { Route as ApiDocumentsInvoicesTokenTokenRouteImport } from './routes/api/documents/invoices/token/$token'
+import { Route as OrgOrdersIdIndexRouteImport } from './routes/_org/orders/$id/index'
+import { Route as OrgCustomersIdIndexRouteImport } from './routes/_org/customers/$id/index'
+import { Route as OrgOrdersIdEditRouteImport } from './routes/_org/orders/$id/edit'
+import { Route as OrgCustomersIdEditRouteImport } from './routes/_org/customers/$id/edit'
 import { Route as ApiDocumentsOrdersIdQuotationRouteImport } from './routes/api/documents/orders/$id/quotation'
+import { Route as ApiDocumentsInvoicesTokenTokenRouteImport } from './routes/api/documents/invoices/token/$token'
+import { Route as ApiDocumentsInvoicesIdPdfRouteImport } from './routes/api/documents/invoices/$id/pdf'
 import { Route as ApiDocumentsInvoicesPortalInvoiceIdTokenRouteImport } from './routes/api/documents/invoices/portal/$invoiceId/$token'
 
-const AdminRoute = AdminRouteImport.update({
-  id: '/_admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrgRoute = OrgRouteImport.update({
-  id: '/_org',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForbiddenRoute = ForbiddenRouteImport.update({
-  id: '/forbidden',
-  path: '/forbidden',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OperatorRoute = OperatorRouteImport.update({
-  id: '/operator',
-  path: '/operator',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
+const SignUpRoute = SignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignInRoute = SignInRouteImport.update({
@@ -108,100 +61,33 @@ const SignInRoute = SignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SignUpRoute = SignUpRouteImport.update({
-  id: '/sign-up',
-  path: '/sign-up',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VerifyEmailRoute = VerifyEmailRouteImport.update({
-  id: '/verify-email',
-  path: '/verify-email',
+const OperatorRoute = OperatorRouteImport.update({
+  id: '/operator',
+  path: '/operator',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminAdminRoute = AdminAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminsRoute = AdminAdminsRouteImport.update({
-  id: '/admins',
-  path: '/admins',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAuditRoute = AdminAuditRouteImport.update({
-  id: '/audit',
-  path: '/audit',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminBillingEventsRoute = AdminBillingEventsRouteImport.update({
-  id: '/billing-events',
-  path: '/billing-events',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminExportsRoute = AdminExportsRouteImport.update({
-  id: '/exports',
-  path: '/exports',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminMigrationsRoute = AdminMigrationsRouteImport.update({
-  id: '/migrations',
-  path: '/migrations',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminOrganizationsRoute = AdminOrganizationsRouteImport.update({
-  id: '/organizations',
-  path: '/organizations',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPlansRoute = AdminPlansRouteImport.update({
-  id: '/plans',
-  path: '/plans',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminRetentionPoliciesRoute = AdminRetentionPoliciesRouteImport.update({
-  id: '/retention-policies',
-  path: '/retention-policies',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
-  id: '/subscriptions',
-  path: '/subscriptions',
-  getParentRoute: () => AdminRoute,
-} as any)
-const OrgIndexRoute = OrgIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => OrgRoute,
-} as any)
-const OrgSettingsRouteRoute = OrgSettingsRouteRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => OrgRoute,
-} as any)
-const ApiHealthzRoute = ApiHealthzRouteImport.update({
-  id: '/api/healthz',
-  path: '/api/healthz',
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiMidtransNotificationRoute = ApiMidtransNotificationRouteImport.update({
-  id: '/api/midtrans-notification',
-  path: '/api/midtrans-notification',
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiMidtransReconciliationRoute =
-  ApiMidtransReconciliationRouteImport.update({
-    id: '/api/midtrans-reconciliation',
-    path: '/api/midtrans-reconciliation',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiReadyRoute = ApiReadyRouteImport.update({
-  id: '/api/ready',
-  path: '/api/ready',
+const ForbiddenRoute = ForbiddenRouteImport.update({
+  id: '/forbidden',
+  path: '/forbidden',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InviteAcceptRoute = InviteAcceptRouteImport.update({
-  id: '/invite/accept',
-  path: '/invite/accept',
+const OrgRoute = OrgRouteImport.update({
+  id: '/_org',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OperatorIndexRoute = OperatorIndexRouteImport.update({
@@ -209,44 +95,39 @@ const OperatorIndexRoute = OperatorIndexRouteImport.update({
   path: '/',
   getParentRoute: () => OperatorRoute,
 } as any)
-const PortalTokenRoute = PortalTokenRouteImport.update({
-  id: '/portal/$token',
-  path: '/portal/$token',
+const OrgIndexRoute = OrgIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OrgRoute,
+} as any)
+const OrderTokenRoute = OrderTokenRouteImport.update({
+  id: '/order/$token',
+  path: '/order/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OrgCustomersIndexRoute = OrgCustomersIndexRouteImport.update({
-  id: '/customers/',
-  path: '/customers/',
-  getParentRoute: () => OrgRoute,
+const InviteAcceptRoute = InviteAcceptRouteImport.update({
+  id: '/invite/accept',
+  path: '/invite/accept',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const OrgCustomersNewRoute = OrgCustomersNewRouteImport.update({
-  id: '/customers/new',
-  path: '/customers/new',
-  getParentRoute: () => OrgRoute,
+const ApiReadyRoute = ApiReadyRouteImport.update({
+  id: '/api/ready',
+  path: '/api/ready',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const OrgOrdersIndexRoute = OrgOrdersIndexRouteImport.update({
-  id: '/orders/',
-  path: '/orders/',
-  getParentRoute: () => OrgRoute,
+const ApiMidtransNotificationRoute = ApiMidtransNotificationRouteImport.update({
+  id: '/api/midtrans-notification',
+  path: '/api/midtrans-notification',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const OrgOrdersNewRoute = OrgOrdersNewRouteImport.update({
-  id: '/orders/new',
-  path: '/orders/new',
-  getParentRoute: () => OrgRoute,
+const ApiHealthzRoute = ApiHealthzRouteImport.update({
+  id: '/api/healthz',
+  path: '/api/healthz',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const OrgProductionIndexRoute = OrgProductionIndexRouteImport.update({
-  id: '/production/',
-  path: '/production/',
-  getParentRoute: () => OrgRoute,
-} as any)
-const OrgProductsIndexRoute = OrgProductsIndexRouteImport.update({
-  id: '/products/',
-  path: '/products/',
-  getParentRoute: () => OrgRoute,
-} as any)
-const OrgProductsNewRoute = OrgProductsNewRouteImport.update({
-  id: '/products/new',
-  path: '/products/new',
+const OrgSettingsRouteRoute = OrgSettingsRouteRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => OrgRoute,
 } as any)
 const OrgSettingsIndexRoute = OrgSettingsIndexRouteImport.update({
@@ -254,20 +135,57 @@ const OrgSettingsIndexRoute = OrgSettingsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => OrgSettingsRouteRoute,
 } as any)
-const OrgSettingsBusinessTemplatesRoute =
-  OrgSettingsBusinessTemplatesRouteImport.update({
-    id: '/business-templates',
-    path: '/business-templates',
-    getParentRoute: () => OrgSettingsRouteRoute,
-  } as any)
-const OrgSettingsChannelsRoute = OrgSettingsChannelsRouteImport.update({
-  id: '/channels',
-  path: '/channels',
+const OrgProductsIndexRoute = OrgProductsIndexRouteImport.update({
+  id: '/products/',
+  path: '/products/',
+  getParentRoute: () => OrgRoute,
+} as any)
+const OrgProductionIndexRoute = OrgProductionIndexRouteImport.update({
+  id: '/production/',
+  path: '/production/',
+  getParentRoute: () => OrgRoute,
+} as any)
+const OrgOrdersIndexRoute = OrgOrdersIndexRouteImport.update({
+  id: '/orders/',
+  path: '/orders/',
+  getParentRoute: () => OrgRoute,
+} as any)
+const OrgCustomersIndexRoute = OrgCustomersIndexRouteImport.update({
+  id: '/customers/',
+  path: '/customers/',
+  getParentRoute: () => OrgRoute,
+} as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrgSettingsProfileRoute = OrgSettingsProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => OrgSettingsRouteRoute,
 } as any)
-const OrgSettingsGeneralRoute = OrgSettingsGeneralRouteImport.update({
-  id: '/general',
-  path: '/general',
+const OrgSettingsProductionStagesRoute =
+  OrgSettingsProductionStagesRouteImport.update({
+    id: '/production-stages',
+    path: '/production-stages',
+    getParentRoute: () => OrgSettingsRouteRoute,
+  } as any)
+const OrgSettingsProductTemplatesRoute =
+  OrgSettingsProductTemplatesRouteImport.update({
+    id: '/product-templates',
+    path: '/product-templates',
+    getParentRoute: () => OrgSettingsRouteRoute,
+  } as any)
+const OrgSettingsPaymentMethodsRoute =
+  OrgSettingsPaymentMethodsRouteImport.update({
+    id: '/payment-methods',
+    path: '/payment-methods',
+    getParentRoute: () => OrgSettingsRouteRoute,
+  } as any)
+const OrgSettingsMembersRoute = OrgSettingsMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
   getParentRoute: () => OrgSettingsRouteRoute,
 } as any)
 const OrgSettingsInvoicingRoute = OrgSettingsInvoicingRouteImport.update({
@@ -275,77 +193,24 @@ const OrgSettingsInvoicingRoute = OrgSettingsInvoicingRouteImport.update({
   path: '/invoicing',
   getParentRoute: () => OrgSettingsRouteRoute,
 } as any)
-const OrgSettingsMaterialsRoute = OrgSettingsMaterialsRouteImport.update({
-  id: '/materials',
-  path: '/materials',
+const OrgSettingsGeneralRoute = OrgSettingsGeneralRouteImport.update({
+  id: '/general',
+  path: '/general',
   getParentRoute: () => OrgSettingsRouteRoute,
 } as any)
-const OrgSettingsMembersRoute = OrgSettingsMembersRouteImport.update({
-  id: '/members',
-  path: '/members',
-  getParentRoute: () => OrgSettingsRouteRoute,
-} as any)
-const OrgSettingsPaymentMethodsRoute =
-  OrgSettingsPaymentMethodsRouteImport.update({
-    id: '/payment-methods',
-    path: '/payment-methods',
-    getParentRoute: () => OrgSettingsRouteRoute,
-  } as any)
-const OrgSettingsProductionStagesRoute =
-  OrgSettingsProductionStagesRouteImport.update({
-    id: '/production-stages',
-    path: '/production-stages',
-    getParentRoute: () => OrgSettingsRouteRoute,
-  } as any)
-const OrgSettingsProfileRoute = OrgSettingsProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => OrgSettingsRouteRoute,
-} as any)
-const OrgSettingsShopFloorDevicesRoute =
-  OrgSettingsShopFloorDevicesRouteImport.update({
-    id: '/shop-floor-devices',
-    path: '/shop-floor-devices',
-    getParentRoute: () => OrgSettingsRouteRoute,
-  } as any)
-const ApiAssistantChatRoute = ApiAssistantChatRouteImport.update({
-  id: '/api/assistant/chat',
-  path: '/api/assistant/chat',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAssistantStreamRoute = ApiAssistantStreamRouteImport.update({
-  id: '/api/assistant/stream',
-  path: '/api/assistant/stream',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiWebhooksTelegramRoute = ApiWebhooksTelegramRouteImport.update({
-  id: '/api/webhooks/telegram',
-  path: '/api/webhooks/telegram',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrgCustomersIdIndexRoute = OrgCustomersIdIndexRouteImport.update({
-  id: '/customers/$id/',
-  path: '/customers/$id/',
+const OrgProductsNewRoute = OrgProductsNewRouteImport.update({
+  id: '/products/new',
+  path: '/products/new',
   getParentRoute: () => OrgRoute,
 } as any)
-const OrgCustomersIdEditRoute = OrgCustomersIdEditRouteImport.update({
-  id: '/customers/$id/edit',
-  path: '/customers/$id/edit',
+const OrgOrdersNewRoute = OrgOrdersNewRouteImport.update({
+  id: '/orders/new',
+  path: '/orders/new',
   getParentRoute: () => OrgRoute,
 } as any)
-const OrgOrdersIdIndexRoute = OrgOrdersIdIndexRouteImport.update({
-  id: '/orders/$id/',
-  path: '/orders/$id/',
-  getParentRoute: () => OrgRoute,
-} as any)
-const OrgOrdersIdEditRoute = OrgOrdersIdEditRouteImport.update({
-  id: '/orders/$id/edit',
-  path: '/orders/$id/edit',
+const OrgCustomersNewRoute = OrgCustomersNewRouteImport.update({
+  id: '/customers/new',
+  path: '/customers/new',
   getParentRoute: () => OrgRoute,
 } as any)
 const OrgProductsIdIndexRoute = OrgProductsIdIndexRouteImport.update({
@@ -353,10 +218,30 @@ const OrgProductsIdIndexRoute = OrgProductsIdIndexRouteImport.update({
   path: '/products/$id/',
   getParentRoute: () => OrgRoute,
 } as any)
-const ApiDocumentsInvoicesIdPdfRoute =
-  ApiDocumentsInvoicesIdPdfRouteImport.update({
-    id: '/api/documents/invoices/$id/pdf',
-    path: '/api/documents/invoices/$id/pdf',
+const OrgOrdersIdIndexRoute = OrgOrdersIdIndexRouteImport.update({
+  id: '/orders/$id/',
+  path: '/orders/$id/',
+  getParentRoute: () => OrgRoute,
+} as any)
+const OrgCustomersIdIndexRoute = OrgCustomersIdIndexRouteImport.update({
+  id: '/customers/$id/',
+  path: '/customers/$id/',
+  getParentRoute: () => OrgRoute,
+} as any)
+const OrgOrdersIdEditRoute = OrgOrdersIdEditRouteImport.update({
+  id: '/orders/$id/edit',
+  path: '/orders/$id/edit',
+  getParentRoute: () => OrgRoute,
+} as any)
+const OrgCustomersIdEditRoute = OrgCustomersIdEditRouteImport.update({
+  id: '/customers/$id/edit',
+  path: '/customers/$id/edit',
+  getParentRoute: () => OrgRoute,
+} as any)
+const ApiDocumentsOrdersIdQuotationRoute =
+  ApiDocumentsOrdersIdQuotationRouteImport.update({
+    id: '/api/documents/orders/$id/quotation',
+    path: '/api/documents/orders/$id/quotation',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiDocumentsInvoicesTokenTokenRoute =
@@ -365,10 +250,10 @@ const ApiDocumentsInvoicesTokenTokenRoute =
     path: '/api/documents/invoices/token/$token',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiDocumentsOrdersIdQuotationRoute =
-  ApiDocumentsOrdersIdQuotationRouteImport.update({
-    id: '/api/documents/orders/$id/quotation',
-    path: '/api/documents/orders/$id/quotation',
+const ApiDocumentsInvoicesIdPdfRoute =
+  ApiDocumentsInvoicesIdPdfRouteImport.update({
+    id: '/api/documents/invoices/$id/pdf',
+    path: '/api/documents/invoices/$id/pdf',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiDocumentsInvoicesPortalInvoiceIdTokenRoute =
@@ -387,42 +272,24 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
-  '/verify-email': typeof VerifyEmailRoute
   '/settings': typeof OrgSettingsRouteRouteWithChildren
-  '/admin': typeof AdminAdminRoute
-  '/admins': typeof AdminAdminsRoute
-  '/audit': typeof AdminAuditRoute
-  '/billing-events': typeof AdminBillingEventsRoute
-  '/exports': typeof AdminExportsRoute
-  '/migrations': typeof AdminMigrationsRoute
-  '/organizations': typeof AdminOrganizationsRoute
-  '/plans': typeof AdminPlansRoute
-  '/retention-policies': typeof AdminRetentionPoliciesRoute
-  '/subscriptions': typeof AdminSubscriptionsRoute
   '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
-  '/api/midtrans-reconciliation': typeof ApiMidtransReconciliationRoute
   '/api/ready': typeof ApiReadyRoute
   '/invite/accept': typeof InviteAcceptRoute
-  '/portal/$token': typeof PortalTokenRoute
+  '/order/$token': typeof OrderTokenRoute
   '/operator/': typeof OperatorIndexRoute
   '/customers/new': typeof OrgCustomersNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
   '/products/new': typeof OrgProductsNewRoute
-  '/settings/business-templates': typeof OrgSettingsBusinessTemplatesRoute
-  '/settings/channels': typeof OrgSettingsChannelsRoute
   '/settings/general': typeof OrgSettingsGeneralRoute
   '/settings/invoicing': typeof OrgSettingsInvoicingRoute
-  '/settings/materials': typeof OrgSettingsMaterialsRoute
   '/settings/members': typeof OrgSettingsMembersRoute
   '/settings/payment-methods': typeof OrgSettingsPaymentMethodsRoute
+  '/settings/product-templates': typeof OrgSettingsProductTemplatesRoute
   '/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/settings/profile': typeof OrgSettingsProfileRoute
-  '/settings/shop-floor-devices': typeof OrgSettingsShopFloorDevicesRoute
-  '/api/assistant/chat': typeof ApiAssistantChatRoute
-  '/api/assistant/stream': typeof ApiAssistantStreamRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/webhooks/telegram': typeof ApiWebhooksTelegramRoute
   '/customers/': typeof OrgCustomersIndexRoute
   '/orders/': typeof OrgOrdersIndexRoute
   '/production/': typeof OrgProductionIndexRoute
@@ -439,48 +306,30 @@ export interface FileRoutesByFullPath {
   '/api/documents/invoices/portal/$invoiceId/$token': typeof ApiDocumentsInvoicesPortalInvoiceIdTokenRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof OrgIndexRoute
   '/forbidden': typeof ForbiddenRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/onboarding': typeof OnboardingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
-  '/verify-email': typeof VerifyEmailRoute
-  '/admin': typeof AdminAdminRoute
-  '/admins': typeof AdminAdminsRoute
-  '/audit': typeof AdminAuditRoute
-  '/billing-events': typeof AdminBillingEventsRoute
-  '/exports': typeof AdminExportsRoute
-  '/migrations': typeof AdminMigrationsRoute
-  '/organizations': typeof AdminOrganizationsRoute
-  '/plans': typeof AdminPlansRoute
-  '/retention-policies': typeof AdminRetentionPoliciesRoute
-  '/subscriptions': typeof AdminSubscriptionsRoute
   '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
-  '/api/midtrans-reconciliation': typeof ApiMidtransReconciliationRoute
   '/api/ready': typeof ApiReadyRoute
   '/invite/accept': typeof InviteAcceptRoute
-  '/portal/$token': typeof PortalTokenRoute
+  '/order/$token': typeof OrderTokenRoute
+  '/': typeof OrgIndexRoute
   '/operator': typeof OperatorIndexRoute
   '/customers/new': typeof OrgCustomersNewRoute
   '/orders/new': typeof OrgOrdersNewRoute
   '/products/new': typeof OrgProductsNewRoute
-  '/settings/business-templates': typeof OrgSettingsBusinessTemplatesRoute
-  '/settings/channels': typeof OrgSettingsChannelsRoute
   '/settings/general': typeof OrgSettingsGeneralRoute
   '/settings/invoicing': typeof OrgSettingsInvoicingRoute
-  '/settings/materials': typeof OrgSettingsMaterialsRoute
   '/settings/members': typeof OrgSettingsMembersRoute
   '/settings/payment-methods': typeof OrgSettingsPaymentMethodsRoute
+  '/settings/product-templates': typeof OrgSettingsProductTemplatesRoute
   '/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/settings/profile': typeof OrgSettingsProfileRoute
-  '/settings/shop-floor-devices': typeof OrgSettingsShopFloorDevicesRoute
-  '/api/assistant/chat': typeof ApiAssistantChatRoute
-  '/api/assistant/stream': typeof ApiAssistantStreamRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/webhooks/telegram': typeof ApiWebhooksTelegramRoute
   '/customers': typeof OrgCustomersIndexRoute
   '/orders': typeof OrgOrdersIndexRoute
   '/production': typeof OrgProductionIndexRoute
@@ -498,7 +347,6 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_admin': typeof AdminRouteWithChildren
   '/_org': typeof OrgRouteWithChildren
   '/forbidden': typeof ForbiddenRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -507,43 +355,25 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
-  '/verify-email': typeof VerifyEmailRoute
   '/_org/settings': typeof OrgSettingsRouteRouteWithChildren
-  '/_admin/admin': typeof AdminAdminRoute
-  '/_admin/admins': typeof AdminAdminsRoute
-  '/_admin/audit': typeof AdminAuditRoute
-  '/_admin/billing-events': typeof AdminBillingEventsRoute
-  '/_admin/exports': typeof AdminExportsRoute
-  '/_admin/migrations': typeof AdminMigrationsRoute
-  '/_admin/organizations': typeof AdminOrganizationsRoute
-  '/_admin/plans': typeof AdminPlansRoute
-  '/_admin/retention-policies': typeof AdminRetentionPoliciesRoute
-  '/_admin/subscriptions': typeof AdminSubscriptionsRoute
   '/api/healthz': typeof ApiHealthzRoute
   '/api/midtrans-notification': typeof ApiMidtransNotificationRoute
-  '/api/midtrans-reconciliation': typeof ApiMidtransReconciliationRoute
   '/api/ready': typeof ApiReadyRoute
   '/invite/accept': typeof InviteAcceptRoute
-  '/portal/$token': typeof PortalTokenRoute
+  '/order/$token': typeof OrderTokenRoute
   '/_org/': typeof OrgIndexRoute
   '/operator/': typeof OperatorIndexRoute
   '/_org/customers/new': typeof OrgCustomersNewRoute
   '/_org/orders/new': typeof OrgOrdersNewRoute
   '/_org/products/new': typeof OrgProductsNewRoute
-  '/_org/settings/business-templates': typeof OrgSettingsBusinessTemplatesRoute
-  '/_org/settings/channels': typeof OrgSettingsChannelsRoute
   '/_org/settings/general': typeof OrgSettingsGeneralRoute
   '/_org/settings/invoicing': typeof OrgSettingsInvoicingRoute
-  '/_org/settings/materials': typeof OrgSettingsMaterialsRoute
   '/_org/settings/members': typeof OrgSettingsMembersRoute
   '/_org/settings/payment-methods': typeof OrgSettingsPaymentMethodsRoute
+  '/_org/settings/product-templates': typeof OrgSettingsProductTemplatesRoute
   '/_org/settings/production-stages': typeof OrgSettingsProductionStagesRoute
   '/_org/settings/profile': typeof OrgSettingsProfileRoute
-  '/_org/settings/shop-floor-devices': typeof OrgSettingsShopFloorDevicesRoute
-  '/api/assistant/chat': typeof ApiAssistantChatRoute
-  '/api/assistant/stream': typeof ApiAssistantStreamRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/webhooks/telegram': typeof ApiWebhooksTelegramRoute
   '/_org/customers/': typeof OrgCustomersIndexRoute
   '/_org/orders/': typeof OrgOrdersIndexRoute
   '/_org/production/': typeof OrgProductionIndexRoute
@@ -570,42 +400,24 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sign-in'
     | '/sign-up'
-    | '/verify-email'
     | '/settings'
-    | '/admin'
-    | '/admins'
-    | '/audit'
-    | '/billing-events'
-    | '/exports'
-    | '/migrations'
-    | '/organizations'
-    | '/plans'
-    | '/retention-policies'
-    | '/subscriptions'
     | '/api/healthz'
     | '/api/midtrans-notification'
-    | '/api/midtrans-reconciliation'
     | '/api/ready'
     | '/invite/accept'
-    | '/portal/$token'
+    | '/order/$token'
     | '/operator/'
     | '/customers/new'
     | '/orders/new'
     | '/products/new'
-    | '/settings/business-templates'
-    | '/settings/channels'
     | '/settings/general'
     | '/settings/invoicing'
-    | '/settings/materials'
     | '/settings/members'
     | '/settings/payment-methods'
+    | '/settings/product-templates'
     | '/settings/production-stages'
     | '/settings/profile'
-    | '/settings/shop-floor-devices'
-    | '/api/assistant/chat'
-    | '/api/assistant/stream'
     | '/api/auth/$'
-    | '/api/webhooks/telegram'
     | '/customers/'
     | '/orders/'
     | '/production/'
@@ -622,48 +434,30 @@ export interface FileRouteTypes {
     | '/api/documents/invoices/portal/$invoiceId/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/forbidden'
     | '/forgot-password'
     | '/onboarding'
     | '/reset-password'
     | '/sign-in'
     | '/sign-up'
-    | '/verify-email'
-    | '/admin'
-    | '/admins'
-    | '/audit'
-    | '/billing-events'
-    | '/exports'
-    | '/migrations'
-    | '/organizations'
-    | '/plans'
-    | '/retention-policies'
-    | '/subscriptions'
     | '/api/healthz'
     | '/api/midtrans-notification'
-    | '/api/midtrans-reconciliation'
     | '/api/ready'
     | '/invite/accept'
-    | '/portal/$token'
+    | '/order/$token'
+    | '/'
     | '/operator'
     | '/customers/new'
     | '/orders/new'
     | '/products/new'
-    | '/settings/business-templates'
-    | '/settings/channels'
     | '/settings/general'
     | '/settings/invoicing'
-    | '/settings/materials'
     | '/settings/members'
     | '/settings/payment-methods'
+    | '/settings/product-templates'
     | '/settings/production-stages'
     | '/settings/profile'
-    | '/settings/shop-floor-devices'
-    | '/api/assistant/chat'
-    | '/api/assistant/stream'
     | '/api/auth/$'
-    | '/api/webhooks/telegram'
     | '/customers'
     | '/orders'
     | '/production'
@@ -680,7 +474,6 @@ export interface FileRouteTypes {
     | '/api/documents/invoices/portal/$invoiceId/$token'
   id:
     | '__root__'
-    | '/_admin'
     | '/_org'
     | '/forbidden'
     | '/forgot-password'
@@ -689,43 +482,25 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sign-in'
     | '/sign-up'
-    | '/verify-email'
     | '/_org/settings'
-    | '/_admin/admin'
-    | '/_admin/admins'
-    | '/_admin/audit'
-    | '/_admin/billing-events'
-    | '/_admin/exports'
-    | '/_admin/migrations'
-    | '/_admin/organizations'
-    | '/_admin/plans'
-    | '/_admin/retention-policies'
-    | '/_admin/subscriptions'
     | '/api/healthz'
     | '/api/midtrans-notification'
-    | '/api/midtrans-reconciliation'
     | '/api/ready'
     | '/invite/accept'
-    | '/portal/$token'
+    | '/order/$token'
     | '/_org/'
     | '/operator/'
     | '/_org/customers/new'
     | '/_org/orders/new'
     | '/_org/products/new'
-    | '/_org/settings/business-templates'
-    | '/_org/settings/channels'
     | '/_org/settings/general'
     | '/_org/settings/invoicing'
-    | '/_org/settings/materials'
     | '/_org/settings/members'
     | '/_org/settings/payment-methods'
+    | '/_org/settings/product-templates'
     | '/_org/settings/production-stages'
     | '/_org/settings/profile'
-    | '/_org/settings/shop-floor-devices'
-    | '/api/assistant/chat'
-    | '/api/assistant/stream'
     | '/api/auth/$'
-    | '/api/webhooks/telegram'
     | '/_org/customers/'
     | '/_org/orders/'
     | '/_org/production/'
@@ -743,7 +518,6 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AdminRoute: typeof AdminRouteWithChildren
   OrgRoute: typeof OrgRouteWithChildren
   ForbiddenRoute: typeof ForbiddenRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
@@ -752,17 +526,12 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
-  VerifyEmailRoute: typeof VerifyEmailRoute
   ApiHealthzRoute: typeof ApiHealthzRoute
   ApiMidtransNotificationRoute: typeof ApiMidtransNotificationRoute
-  ApiMidtransReconciliationRoute: typeof ApiMidtransReconciliationRoute
   ApiReadyRoute: typeof ApiReadyRoute
   InviteAcceptRoute: typeof InviteAcceptRoute
-  PortalTokenRoute: typeof PortalTokenRoute
-  ApiAssistantChatRoute: typeof ApiAssistantChatRoute
-  ApiAssistantStreamRoute: typeof ApiAssistantStreamRoute
+  OrderTokenRoute: typeof OrderTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiWebhooksTelegramRoute: typeof ApiWebhooksTelegramRoute
   ApiDocumentsInvoicesIdPdfRoute: typeof ApiDocumentsInvoicesIdPdfRoute
   ApiDocumentsInvoicesTokenTokenRoute: typeof ApiDocumentsInvoicesTokenTokenRoute
   ApiDocumentsOrdersIdQuotationRoute: typeof ApiDocumentsOrdersIdQuotationRoute
@@ -771,53 +540,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_admin': {
-      id: '/_admin'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_org': {
-      id: '/_org'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof OrgRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forbidden': {
-      id: '/forbidden'
-      path: '/forbidden'
-      fullPath: '/forbidden'
-      preLoaderRoute: typeof ForbiddenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/operator': {
-      id: '/operator'
-      path: '/operator'
-      fullPath: '/operator'
-      preLoaderRoute: typeof OperatorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
+    '/sign-up': {
+      id: '/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof SignUpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign-in': {
@@ -827,137 +554,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignInRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sign-up': {
-      id: '/sign-up'
-      path: '/sign-up'
-      fullPath: '/sign-up'
-      preLoaderRoute: typeof SignUpRouteImport
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/verify-email': {
-      id: '/verify-email'
-      path: '/verify-email'
-      fullPath: '/verify-email'
-      preLoaderRoute: typeof VerifyEmailRouteImport
+    '/operator': {
+      id: '/operator'
+      path: '/operator'
+      fullPath: '/operator'
+      preLoaderRoute: typeof OperatorRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_admin/admin': {
-      id: '/_admin/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminAdminRouteImport
-      parentRoute: typeof AdminRoute
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_admin/admins': {
-      id: '/_admin/admins'
-      path: '/admins'
-      fullPath: '/admins'
-      preLoaderRoute: typeof AdminAdminsRouteImport
-      parentRoute: typeof AdminRoute
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_admin/audit': {
-      id: '/_admin/audit'
-      path: '/audit'
-      fullPath: '/audit'
-      preLoaderRoute: typeof AdminAuditRouteImport
-      parentRoute: typeof AdminRoute
+    '/forbidden': {
+      id: '/forbidden'
+      path: '/forbidden'
+      fullPath: '/forbidden'
+      preLoaderRoute: typeof ForbiddenRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_admin/billing-events': {
-      id: '/_admin/billing-events'
-      path: '/billing-events'
-      fullPath: '/billing-events'
-      preLoaderRoute: typeof AdminBillingEventsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/exports': {
-      id: '/_admin/exports'
-      path: '/exports'
-      fullPath: '/exports'
-      preLoaderRoute: typeof AdminExportsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/migrations': {
-      id: '/_admin/migrations'
-      path: '/migrations'
-      fullPath: '/migrations'
-      preLoaderRoute: typeof AdminMigrationsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/organizations': {
-      id: '/_admin/organizations'
-      path: '/organizations'
-      fullPath: '/organizations'
-      preLoaderRoute: typeof AdminOrganizationsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/plans': {
-      id: '/_admin/plans'
-      path: '/plans'
-      fullPath: '/plans'
-      preLoaderRoute: typeof AdminPlansRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/retention-policies': {
-      id: '/_admin/retention-policies'
-      path: '/retention-policies'
-      fullPath: '/retention-policies'
-      preLoaderRoute: typeof AdminRetentionPoliciesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/subscriptions': {
-      id: '/_admin/subscriptions'
-      path: '/subscriptions'
-      fullPath: '/subscriptions'
-      preLoaderRoute: typeof AdminSubscriptionsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_org/': {
-      id: '/_org/'
-      path: '/'
+    '/_org': {
+      id: '/_org'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof OrgIndexRouteImport
-      parentRoute: typeof OrgRoute
-    }
-    '/_org/settings': {
-      id: '/_org/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof OrgSettingsRouteRouteImport
-      parentRoute: typeof OrgRoute
-    }
-    '/api/healthz': {
-      id: '/api/healthz'
-      path: '/api/healthz'
-      fullPath: '/api/healthz'
-      preLoaderRoute: typeof ApiHealthzRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/midtrans-notification': {
-      id: '/api/midtrans-notification'
-      path: '/api/midtrans-notification'
-      fullPath: '/api/midtrans-notification'
-      preLoaderRoute: typeof ApiMidtransNotificationRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/midtrans-reconciliation': {
-      id: '/api/midtrans-reconciliation'
-      path: '/api/midtrans-reconciliation'
-      fullPath: '/api/midtrans-reconciliation'
-      preLoaderRoute: typeof ApiMidtransReconciliationRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/ready': {
-      id: '/api/ready'
-      path: '/api/ready'
-      fullPath: '/api/ready'
-      preLoaderRoute: typeof ApiReadyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/invite/accept': {
-      id: '/invite/accept'
-      path: '/invite/accept'
-      fullPath: '/invite/accept'
-      preLoaderRoute: typeof InviteAcceptRouteImport
+      preLoaderRoute: typeof OrgRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/operator/': {
@@ -967,60 +603,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OperatorIndexRouteImport
       parentRoute: typeof OperatorRoute
     }
-    '/portal/$token': {
-      id: '/portal/$token'
-      path: '/portal/$token'
-      fullPath: '/portal/$token'
-      preLoaderRoute: typeof PortalTokenRouteImport
+    '/_org/': {
+      id: '/_org/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof OrgIndexRouteImport
+      parentRoute: typeof OrgRoute
+    }
+    '/order/$token': {
+      id: '/order/$token'
+      path: '/order/$token'
+      fullPath: '/order/$token'
+      preLoaderRoute: typeof OrderTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_org/customers/': {
-      id: '/_org/customers/'
-      path: '/customers'
-      fullPath: '/customers/'
-      preLoaderRoute: typeof OrgCustomersIndexRouteImport
-      parentRoute: typeof OrgRoute
+    '/invite/accept': {
+      id: '/invite/accept'
+      path: '/invite/accept'
+      fullPath: '/invite/accept'
+      preLoaderRoute: typeof InviteAcceptRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_org/customers/new': {
-      id: '/_org/customers/new'
-      path: '/customers/new'
-      fullPath: '/customers/new'
-      preLoaderRoute: typeof OrgCustomersNewRouteImport
-      parentRoute: typeof OrgRoute
+    '/api/ready': {
+      id: '/api/ready'
+      path: '/api/ready'
+      fullPath: '/api/ready'
+      preLoaderRoute: typeof ApiReadyRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_org/orders/': {
-      id: '/_org/orders/'
-      path: '/orders'
-      fullPath: '/orders/'
-      preLoaderRoute: typeof OrgOrdersIndexRouteImport
-      parentRoute: typeof OrgRoute
+    '/api/midtrans-notification': {
+      id: '/api/midtrans-notification'
+      path: '/api/midtrans-notification'
+      fullPath: '/api/midtrans-notification'
+      preLoaderRoute: typeof ApiMidtransNotificationRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_org/orders/new': {
-      id: '/_org/orders/new'
-      path: '/orders/new'
-      fullPath: '/orders/new'
-      preLoaderRoute: typeof OrgOrdersNewRouteImport
-      parentRoute: typeof OrgRoute
+    '/api/healthz': {
+      id: '/api/healthz'
+      path: '/api/healthz'
+      fullPath: '/api/healthz'
+      preLoaderRoute: typeof ApiHealthzRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_org/production/': {
-      id: '/_org/production/'
-      path: '/production'
-      fullPath: '/production/'
-      preLoaderRoute: typeof OrgProductionIndexRouteImport
-      parentRoute: typeof OrgRoute
-    }
-    '/_org/products/': {
-      id: '/_org/products/'
-      path: '/products'
-      fullPath: '/products/'
-      preLoaderRoute: typeof OrgProductsIndexRouteImport
-      parentRoute: typeof OrgRoute
-    }
-    '/_org/products/new': {
-      id: '/_org/products/new'
-      path: '/products/new'
-      fullPath: '/products/new'
-      preLoaderRoute: typeof OrgProductsNewRouteImport
+    '/_org/settings': {
+      id: '/_org/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof OrgSettingsRouteRouteImport
       parentRoute: typeof OrgRoute
     }
     '/_org/settings/': {
@@ -1030,53 +659,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgSettingsIndexRouteImport
       parentRoute: typeof OrgSettingsRouteRoute
     }
-    '/_org/settings/business-templates': {
-      id: '/_org/settings/business-templates'
-      path: '/business-templates'
-      fullPath: '/settings/business-templates'
-      preLoaderRoute: typeof OrgSettingsBusinessTemplatesRouteImport
-      parentRoute: typeof OrgSettingsRouteRoute
+    '/_org/products/': {
+      id: '/_org/products/'
+      path: '/products'
+      fullPath: '/products/'
+      preLoaderRoute: typeof OrgProductsIndexRouteImport
+      parentRoute: typeof OrgRoute
     }
-    '/_org/settings/channels': {
-      id: '/_org/settings/channels'
-      path: '/channels'
-      fullPath: '/settings/channels'
-      preLoaderRoute: typeof OrgSettingsChannelsRouteImport
-      parentRoute: typeof OrgSettingsRouteRoute
+    '/_org/production/': {
+      id: '/_org/production/'
+      path: '/production'
+      fullPath: '/production/'
+      preLoaderRoute: typeof OrgProductionIndexRouteImport
+      parentRoute: typeof OrgRoute
     }
-    '/_org/settings/general': {
-      id: '/_org/settings/general'
-      path: '/general'
-      fullPath: '/settings/general'
-      preLoaderRoute: typeof OrgSettingsGeneralRouteImport
-      parentRoute: typeof OrgSettingsRouteRoute
+    '/_org/orders/': {
+      id: '/_org/orders/'
+      path: '/orders'
+      fullPath: '/orders/'
+      preLoaderRoute: typeof OrgOrdersIndexRouteImport
+      parentRoute: typeof OrgRoute
     }
-    '/_org/settings/invoicing': {
-      id: '/_org/settings/invoicing'
-      path: '/invoicing'
-      fullPath: '/settings/invoicing'
-      preLoaderRoute: typeof OrgSettingsInvoicingRouteImport
-      parentRoute: typeof OrgSettingsRouteRoute
+    '/_org/customers/': {
+      id: '/_org/customers/'
+      path: '/customers'
+      fullPath: '/customers/'
+      preLoaderRoute: typeof OrgCustomersIndexRouteImport
+      parentRoute: typeof OrgRoute
     }
-    '/_org/settings/materials': {
-      id: '/_org/settings/materials'
-      path: '/materials'
-      fullPath: '/settings/materials'
-      preLoaderRoute: typeof OrgSettingsMaterialsRouteImport
-      parentRoute: typeof OrgSettingsRouteRoute
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_org/settings/members': {
-      id: '/_org/settings/members'
-      path: '/members'
-      fullPath: '/settings/members'
-      preLoaderRoute: typeof OrgSettingsMembersRouteImport
-      parentRoute: typeof OrgSettingsRouteRoute
-    }
-    '/_org/settings/payment-methods': {
-      id: '/_org/settings/payment-methods'
-      path: '/payment-methods'
-      fullPath: '/settings/payment-methods'
-      preLoaderRoute: typeof OrgSettingsPaymentMethodsRouteImport
+    '/_org/settings/profile': {
+      id: '/_org/settings/profile'
+      path: '/profile'
+      fullPath: '/settings/profile'
+      preLoaderRoute: typeof OrgSettingsProfileRouteImport
       parentRoute: typeof OrgSettingsRouteRoute
     }
     '/_org/settings/production-stages': {
@@ -1086,74 +708,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgSettingsProductionStagesRouteImport
       parentRoute: typeof OrgSettingsRouteRoute
     }
-    '/_org/settings/profile': {
-      id: '/_org/settings/profile'
-      path: '/profile'
-      fullPath: '/settings/profile'
-      preLoaderRoute: typeof OrgSettingsProfileRouteImport
+    '/_org/settings/product-templates': {
+      id: '/_org/settings/product-templates'
+      path: '/product-templates'
+      fullPath: '/settings/product-templates'
+      preLoaderRoute: typeof OrgSettingsProductTemplatesRouteImport
       parentRoute: typeof OrgSettingsRouteRoute
     }
-    '/_org/settings/shop-floor-devices': {
-      id: '/_org/settings/shop-floor-devices'
-      path: '/shop-floor-devices'
-      fullPath: '/settings/shop-floor-devices'
-      preLoaderRoute: typeof OrgSettingsShopFloorDevicesRouteImport
+    '/_org/settings/payment-methods': {
+      id: '/_org/settings/payment-methods'
+      path: '/payment-methods'
+      fullPath: '/settings/payment-methods'
+      preLoaderRoute: typeof OrgSettingsPaymentMethodsRouteImport
       parentRoute: typeof OrgSettingsRouteRoute
     }
-    '/api/assistant/chat': {
-      id: '/api/assistant/chat'
-      path: '/api/assistant/chat'
-      fullPath: '/api/assistant/chat'
-      preLoaderRoute: typeof ApiAssistantChatRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_org/settings/members': {
+      id: '/_org/settings/members'
+      path: '/members'
+      fullPath: '/settings/members'
+      preLoaderRoute: typeof OrgSettingsMembersRouteImport
+      parentRoute: typeof OrgSettingsRouteRoute
     }
-    '/api/assistant/stream': {
-      id: '/api/assistant/stream'
-      path: '/api/assistant/stream'
-      fullPath: '/api/assistant/stream'
-      preLoaderRoute: typeof ApiAssistantStreamRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_org/settings/invoicing': {
+      id: '/_org/settings/invoicing'
+      path: '/invoicing'
+      fullPath: '/settings/invoicing'
+      preLoaderRoute: typeof OrgSettingsInvoicingRouteImport
+      parentRoute: typeof OrgSettingsRouteRoute
     }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_org/settings/general': {
+      id: '/_org/settings/general'
+      path: '/general'
+      fullPath: '/settings/general'
+      preLoaderRoute: typeof OrgSettingsGeneralRouteImport
+      parentRoute: typeof OrgSettingsRouteRoute
     }
-    '/api/webhooks/telegram': {
-      id: '/api/webhooks/telegram'
-      path: '/api/webhooks/telegram'
-      fullPath: '/api/webhooks/telegram'
-      preLoaderRoute: typeof ApiWebhooksTelegramRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_org/customers/$id/': {
-      id: '/_org/customers/$id/'
-      path: '/customers/$id'
-      fullPath: '/customers/$id/'
-      preLoaderRoute: typeof OrgCustomersIdIndexRouteImport
+    '/_org/products/new': {
+      id: '/_org/products/new'
+      path: '/products/new'
+      fullPath: '/products/new'
+      preLoaderRoute: typeof OrgProductsNewRouteImport
       parentRoute: typeof OrgRoute
     }
-    '/_org/customers/$id/edit': {
-      id: '/_org/customers/$id/edit'
-      path: '/customers/$id/edit'
-      fullPath: '/customers/$id/edit'
-      preLoaderRoute: typeof OrgCustomersIdEditRouteImport
+    '/_org/orders/new': {
+      id: '/_org/orders/new'
+      path: '/orders/new'
+      fullPath: '/orders/new'
+      preLoaderRoute: typeof OrgOrdersNewRouteImport
       parentRoute: typeof OrgRoute
     }
-    '/_org/orders/$id/': {
-      id: '/_org/orders/$id/'
-      path: '/orders/$id'
-      fullPath: '/orders/$id/'
-      preLoaderRoute: typeof OrgOrdersIdIndexRouteImport
-      parentRoute: typeof OrgRoute
-    }
-    '/_org/orders/$id/edit': {
-      id: '/_org/orders/$id/edit'
-      path: '/orders/$id/edit'
-      fullPath: '/orders/$id/edit'
-      preLoaderRoute: typeof OrgOrdersIdEditRouteImport
+    '/_org/customers/new': {
+      id: '/_org/customers/new'
+      path: '/customers/new'
+      fullPath: '/customers/new'
+      preLoaderRoute: typeof OrgCustomersNewRouteImport
       parentRoute: typeof OrgRoute
     }
     '/_org/products/$id/': {
@@ -1163,11 +771,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgProductsIdIndexRouteImport
       parentRoute: typeof OrgRoute
     }
-    '/api/documents/invoices/$id/pdf': {
-      id: '/api/documents/invoices/$id/pdf'
-      path: '/api/documents/invoices/$id/pdf'
-      fullPath: '/api/documents/invoices/$id/pdf'
-      preLoaderRoute: typeof ApiDocumentsInvoicesIdPdfRouteImport
+    '/_org/orders/$id/': {
+      id: '/_org/orders/$id/'
+      path: '/orders/$id'
+      fullPath: '/orders/$id/'
+      preLoaderRoute: typeof OrgOrdersIdIndexRouteImport
+      parentRoute: typeof OrgRoute
+    }
+    '/_org/customers/$id/': {
+      id: '/_org/customers/$id/'
+      path: '/customers/$id'
+      fullPath: '/customers/$id/'
+      preLoaderRoute: typeof OrgCustomersIdIndexRouteImport
+      parentRoute: typeof OrgRoute
+    }
+    '/_org/orders/$id/edit': {
+      id: '/_org/orders/$id/edit'
+      path: '/orders/$id/edit'
+      fullPath: '/orders/$id/edit'
+      preLoaderRoute: typeof OrgOrdersIdEditRouteImport
+      parentRoute: typeof OrgRoute
+    }
+    '/_org/customers/$id/edit': {
+      id: '/_org/customers/$id/edit'
+      path: '/customers/$id/edit'
+      fullPath: '/customers/$id/edit'
+      preLoaderRoute: typeof OrgCustomersIdEditRouteImport
+      parentRoute: typeof OrgRoute
+    }
+    '/api/documents/orders/$id/quotation': {
+      id: '/api/documents/orders/$id/quotation'
+      path: '/api/documents/orders/$id/quotation'
+      fullPath: '/api/documents/orders/$id/quotation'
+      preLoaderRoute: typeof ApiDocumentsOrdersIdQuotationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/documents/invoices/token/$token': {
@@ -1177,11 +813,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDocumentsInvoicesTokenTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/documents/orders/$id/quotation': {
-      id: '/api/documents/orders/$id/quotation'
-      path: '/api/documents/orders/$id/quotation'
-      fullPath: '/api/documents/orders/$id/quotation'
-      preLoaderRoute: typeof ApiDocumentsOrdersIdQuotationRouteImport
+    '/api/documents/invoices/$id/pdf': {
+      id: '/api/documents/invoices/$id/pdf'
+      path: '/api/documents/invoices/$id/pdf'
+      fullPath: '/api/documents/invoices/$id/pdf'
+      preLoaderRoute: typeof ApiDocumentsInvoicesIdPdfRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/documents/invoices/portal/$invoiceId/$token': {
@@ -1194,59 +830,25 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AdminRouteChildren {
-  AdminAdminRoute: typeof AdminAdminRoute
-  AdminAdminsRoute: typeof AdminAdminsRoute
-  AdminAuditRoute: typeof AdminAuditRoute
-  AdminBillingEventsRoute: typeof AdminBillingEventsRoute
-  AdminExportsRoute: typeof AdminExportsRoute
-  AdminMigrationsRoute: typeof AdminMigrationsRoute
-  AdminOrganizationsRoute: typeof AdminOrganizationsRoute
-  AdminPlansRoute: typeof AdminPlansRoute
-  AdminRetentionPoliciesRoute: typeof AdminRetentionPoliciesRoute
-  AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
-}
-
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminAdminRoute: AdminAdminRoute,
-  AdminAdminsRoute: AdminAdminsRoute,
-  AdminAuditRoute: AdminAuditRoute,
-  AdminBillingEventsRoute: AdminBillingEventsRoute,
-  AdminExportsRoute: AdminExportsRoute,
-  AdminMigrationsRoute: AdminMigrationsRoute,
-  AdminOrganizationsRoute: AdminOrganizationsRoute,
-  AdminPlansRoute: AdminPlansRoute,
-  AdminRetentionPoliciesRoute: AdminRetentionPoliciesRoute,
-  AdminSubscriptionsRoute: AdminSubscriptionsRoute,
-}
-
-const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
-
 interface OrgSettingsRouteRouteChildren {
-  OrgSettingsBusinessTemplatesRoute: typeof OrgSettingsBusinessTemplatesRoute
-  OrgSettingsChannelsRoute: typeof OrgSettingsChannelsRoute
   OrgSettingsGeneralRoute: typeof OrgSettingsGeneralRoute
   OrgSettingsInvoicingRoute: typeof OrgSettingsInvoicingRoute
-  OrgSettingsMaterialsRoute: typeof OrgSettingsMaterialsRoute
   OrgSettingsMembersRoute: typeof OrgSettingsMembersRoute
   OrgSettingsPaymentMethodsRoute: typeof OrgSettingsPaymentMethodsRoute
+  OrgSettingsProductTemplatesRoute: typeof OrgSettingsProductTemplatesRoute
   OrgSettingsProductionStagesRoute: typeof OrgSettingsProductionStagesRoute
   OrgSettingsProfileRoute: typeof OrgSettingsProfileRoute
-  OrgSettingsShopFloorDevicesRoute: typeof OrgSettingsShopFloorDevicesRoute
   OrgSettingsIndexRoute: typeof OrgSettingsIndexRoute
 }
 
 const OrgSettingsRouteRouteChildren: OrgSettingsRouteRouteChildren = {
-  OrgSettingsBusinessTemplatesRoute: OrgSettingsBusinessTemplatesRoute,
-  OrgSettingsChannelsRoute: OrgSettingsChannelsRoute,
   OrgSettingsGeneralRoute: OrgSettingsGeneralRoute,
   OrgSettingsInvoicingRoute: OrgSettingsInvoicingRoute,
-  OrgSettingsMaterialsRoute: OrgSettingsMaterialsRoute,
   OrgSettingsMembersRoute: OrgSettingsMembersRoute,
   OrgSettingsPaymentMethodsRoute: OrgSettingsPaymentMethodsRoute,
+  OrgSettingsProductTemplatesRoute: OrgSettingsProductTemplatesRoute,
   OrgSettingsProductionStagesRoute: OrgSettingsProductionStagesRoute,
   OrgSettingsProfileRoute: OrgSettingsProfileRoute,
-  OrgSettingsShopFloorDevicesRoute: OrgSettingsShopFloorDevicesRoute,
   OrgSettingsIndexRoute: OrgSettingsIndexRoute,
 }
 
@@ -1302,7 +904,6 @@ const OperatorRouteWithChildren = OperatorRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
-  AdminRoute: AdminRouteWithChildren,
   OrgRoute: OrgRouteWithChildren,
   ForbiddenRoute: ForbiddenRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
@@ -1311,17 +912,12 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
-  VerifyEmailRoute: VerifyEmailRoute,
   ApiHealthzRoute: ApiHealthzRoute,
   ApiMidtransNotificationRoute: ApiMidtransNotificationRoute,
-  ApiMidtransReconciliationRoute: ApiMidtransReconciliationRoute,
   ApiReadyRoute: ApiReadyRoute,
   InviteAcceptRoute: InviteAcceptRoute,
-  PortalTokenRoute: PortalTokenRoute,
-  ApiAssistantChatRoute: ApiAssistantChatRoute,
-  ApiAssistantStreamRoute: ApiAssistantStreamRoute,
+  OrderTokenRoute: OrderTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiWebhooksTelegramRoute: ApiWebhooksTelegramRoute,
   ApiDocumentsInvoicesIdPdfRoute: ApiDocumentsInvoicesIdPdfRoute,
   ApiDocumentsInvoicesTokenTokenRoute: ApiDocumentsInvoicesTokenTokenRoute,
   ApiDocumentsOrdersIdQuotationRoute: ApiDocumentsOrdersIdQuotationRoute,

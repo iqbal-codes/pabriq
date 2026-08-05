@@ -10,9 +10,11 @@ import {
   CardTitle,
 } from '#/components/ui/card'
 import { Switch } from '#/components/ui/switch'
+import type { ProductTemplate } from '#/features/product-templates/model'
 
 export const ProductFormFields = withForm({
   defaultValues: {
+    productTemplateId: '',
     name: '',
     description: '',
     priority: false,
@@ -35,19 +37,57 @@ export const ProductFormFields = withForm({
       unitSurcharge: number | undefined
     }>,
   },
-  render: function Render({ form }) {
+  props: {} as {
+    templates: ProductTemplate[]
+    isTemplatesLoading: boolean
+    isEdit: boolean
+    sourceTemplateName?: string | null
+    onTemplateChange?: (templateId: string) => void
+  },
+  render: function Render({
+    form,
+    templates,
+    isTemplatesLoading,
+    isEdit,
+    sourceTemplateName,
+    onTemplateChange,
+  }) {
     const t = useTranslations('products')
-    // Flat sections, no collapse state needed
 
     return (
       <div className="space-y-6 max-w-3xl mx-auto">
-        {/* Section 1: Product Identity */}
         <FormSection title={t('productInfo')} titleHidden>
           <Card>
             <CardHeader>
               <CardTitle className="text-base">{t('productInfo')}</CardTitle>
             </CardHeader>
             <CardContent>
+              <form.AppField name="productTemplateId">
+                {(field) => (
+                  <div className="space-y-2">
+                    <field.SelectField
+                      label={t('template')}
+                      placeholder={t('templatePlaceholder')}
+                      options={templates.map((template) => ({
+                        value: template.id,
+                        label: template.name,
+                      }))}
+                      disabled={isEdit || isTemplatesLoading}
+                      onValueChange={onTemplateChange}
+                    />
+                    {isEdit && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">
+                          {sourceTemplateName ?? t('templateNoSource')}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {t('templateSourceDescription')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </form.AppField>
               <FormGrid columns={1}>
                 <form.AppField name="name">
                   {(field) => (
@@ -131,7 +171,6 @@ export const ProductFormFields = withForm({
             {/* Section 3: Advanced Pricing & Configurations */}
           </div>
         </FormSection>
-
         <FormSection title={t('advancedSettings')} titleHidden>
           <Card>
             <CardHeader>

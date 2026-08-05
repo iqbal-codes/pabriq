@@ -138,26 +138,20 @@ function buildAuthPageRouter(initialEntry: string) {
     path: '/sign-up',
     beforeLoad: async () => {
       const session = await mockGetCurrentSession()
-      if (session)
-        throw redirect({ to: '/sign-in', search: { redirect: undefined } })
+      if (session) {
+        const orgs = await mockListUserOrgs()
+        if (orgs.length === 0) {
+          throw redirect({ to: '/onboarding' })
+        }
+        throw redirect({ to: '/' })
+      }
     },
     component: () => <div>Sign Up Page</div>,
-  })
-  const forgotPasswordRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/forgot-password',
-    beforeLoad: async () => {
-      const session = await mockGetCurrentSession()
-      if (session)
-        throw redirect({ to: '/sign-in', search: { redirect: undefined } })
-    },
-    component: () => <div>Forgot Password Page</div>,
   })
   const routeTree = rootRoute.addChildren([
     signInRoute,
     onboardingRoute,
     signUpRoute,
-    forgotPasswordRoute,
   ])
 
   return createRouter({
@@ -246,47 +240,39 @@ describe('workspace route guards', () => {
 describe('auth page guards', () => {
   it('renders sign-in for unauthenticated users', async () => {
     mockGetCurrentSession.mockResolvedValue(null)
+
     const router = buildAuthPageRouter('/sign-in')
+
     await router.load()
     await renderRouter(router)
+
     expect(await screen.findByText('Sign In Page')).toBeDefined()
     expect(router.state.location.pathname).toBe('/sign-in')
   })
 
   it('renders sign-up for unauthenticated users', async () => {
     mockGetCurrentSession.mockResolvedValue(null)
+
     const router = buildAuthPageRouter('/sign-up')
+
     await router.load()
     await renderRouter(router)
+
     expect(await screen.findByText('Sign Up Page')).toBeDefined()
     expect(router.state.location.pathname).toBe('/sign-up')
   })
 
-  it('redirects authenticated users from sign-up to sign-in', async () => {
+  it('redirects sign-up to onboarding for authenticated users without an org', async () => {
     mockGetCurrentSession.mockResolvedValue(createMockSession())
+    mockListUserOrgs.mockResolvedValue([])
+
     const router = buildAuthPageRouter('/sign-up')
-    await router.load()
-    await renderRouter(router)
-    expect(await screen.findByText('Sign In Page')).toBeDefined()
-    expect(router.state.location.pathname).toBe('/sign-in')
-  })
 
-  it('renders forgot password for unauthenticated users', async () => {
-    mockGetCurrentSession.mockResolvedValue(null)
-    const router = buildAuthPageRouter('/forgot-password')
     await router.load()
     await renderRouter(router)
-    expect(await screen.findByText('Forgot Password Page')).toBeDefined()
-    expect(router.state.location.pathname).toBe('/forgot-password')
-  })
 
-  it('redirects authenticated users from forgot password to sign-in', async () => {
-    mockGetCurrentSession.mockResolvedValue(createMockSession())
-    const router = buildAuthPageRouter('/forgot-password')
-    await router.load()
-    await renderRouter(router)
-    expect(await screen.findByText('Sign In Page')).toBeDefined()
-    expect(router.state.location.pathname).toBe('/sign-in')
+    expect(await screen.findByText('Onboarding Page')).toBeDefined()
+    expect(router.state.location.pathname).toBe('/onboarding')
   })
 })
 
@@ -332,7 +318,7 @@ function buildRoleBasedRouter(initialEntry: string) {
         })
       const orgs = await mockListUserOrgs()
       if (orgs.length === 0) throw redirect({ to: '/onboarding' })
-      if (orgs[0].role !== 'member' && orgs[0].role !== 'operator') {
+      if (orgs[0].role !== 'member') {
         return {
           access: 'forbidden' as const,
           session,
@@ -495,26 +481,6 @@ describe('role-based route guards', () => {
 
     expect(await screen.findByText('Onboarding Page')).toBeDefined()
     expect(router.state.location.pathname).toBe('/onboarding')
-  })
-
-  it('renders operator page for operator role on /operator', async () => {
-    mockGetCurrentSession.mockResolvedValue(createMockSession())
-    mockListUserOrgs.mockResolvedValue([
-      {
-        id: 'org-1',
-        name: 'My Workshop',
-        slug: 'my-workshop',
-        logo: null,
-        role: 'operator',
-      },
-    ])
-
-    const router = buildRoleBasedRouter('/operator')
-    await router.load()
-    await renderRouter(router)
-
-    expect(await screen.findByText('Operator Page')).toBeDefined()
-    expect(router.state.location.pathname).toBe('/operator')
   })
 
   it('renders forbidden page for owner/admin on /operator', async () => {

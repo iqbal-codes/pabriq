@@ -35,9 +35,9 @@ COPY --chown=pabriq:pabriq --from=builder /app/dist ./dist
 COPY --chown=pabriq:pabriq --from=builder /app/scripts/start-production.mjs ./scripts/start-production.mjs
 COPY --chown=pabriq:pabriq --from=builder /app/drizzle ./drizzle
 
-# Expose the default port for TanStack Start (usually 3001)
-EXPOSE 3001
-ENV PORT=3001
+# Expose the default port for TanStack Start (usually 3002)
+EXPOSE 3002
+ENV PORT=3002
 ENV HOST=0.0.0.0
 
 USER pabriq
@@ -45,6 +45,6 @@ USER pabriq
 STOPSIGNAL SIGTERM
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || '3001') + '/api/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+  CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || '3002') + '/api/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
 CMD ["npm", "run", "start:prod"]

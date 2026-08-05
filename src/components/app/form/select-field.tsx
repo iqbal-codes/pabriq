@@ -18,7 +18,11 @@ export function SelectField({
   requiredLabel,
   disabled,
   options,
-}: FieldProps & { options: SelectOption[] }) {
+  onValueChange,
+}: FieldProps & {
+  options: SelectOption[]
+  onValueChange?: (value: string) => void
+}) {
   const field = useFieldContext<string>()
   const error = firstError(field.state.meta.errors)
 
@@ -36,7 +40,10 @@ export function SelectField({
         <Select
           name={field.name}
           value={field.state.value || ''}
-          onValueChange={(value) => field.handleChange(value)}
+          onValueChange={(value) => {
+            field.handleChange(value)
+            onValueChange?.(value)
+          }}
           onOpenChange={(open) => {
             if (!open) field.handleBlur()
           }}

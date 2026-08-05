@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const port = 3001
+const port = 3002
 const baseURL = `http://localhost:${port}`
 
 export default defineConfig({
@@ -36,7 +36,7 @@ export default defineConfig({
   webServer: {
     command: 'bun run dev',
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
     timeout: 120_000,
   },
 })

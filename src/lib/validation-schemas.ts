@@ -17,6 +17,7 @@ const pricingBreakpointSchema = z.object({
 })
 
 export const productFormSchema = z.object({
+  productTemplateId: z.string().min(1, 'Product template is required'),
   name: z.string().min(1, 'Name is required'),
   description: z.string(),
   priority: z.boolean(),
@@ -46,6 +47,59 @@ export const productFormSchema = z.object({
       }
     }),
   productAddons: z.array(productAddonSchema),
+})
+
+export const createProductSchema = z
+  .object({
+    productTemplateId: z.string().min(1, 'Product template is required'),
+    name: z.string().min(1, 'Name is required'),
+    description: z.string().optional(),
+    priority: z.boolean().optional(),
+    productionNotes: z.string().optional(),
+    primaryImageAssetId: z.string().nullable().optional(),
+    basePrice: z.number().finite().min(0).optional(),
+    productionDays: z.number().int().min(1).optional(),
+    minQuantity: z.number().int().min(1).optional(),
+    maxQuantity: z.number().finite().min(0).optional(),
+    negotiateAboveQuantity: z.number().finite().min(0).optional(),
+    repeatOrderUnitPrice: z.number().finite().min(0).optional(),
+    repeatOrderMinQuantity: z.number().finite().min(0).optional(),
+    maxProductionQuantity: z.number().finite().min(0).optional(),
+    pricingMode: z.enum(['interpolated', 'step']).optional(),
+    pricingBreakpoints: z.array(pricingBreakpointSchema).optional(),
+    productAddons: z.array(productAddonSchema).optional(),
+  })
+  .strict()
+
+export const updateProductFormSchema = productFormSchema.extend({
+  productTemplateId: z.string(),
+})
+
+export const updateProductSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1).optional(),
+    description: z.string().nullable().optional(),
+    priority: z.boolean().optional(),
+    productionNotes: z.string().nullable().optional(),
+    primaryImageAssetId: z.string().nullable().optional(),
+    basePrice: z.number().finite().min(0).optional(),
+    productionDays: z.number().int().min(1).optional(),
+    minQuantity: z.number().int().min(1).optional(),
+    maxQuantity: z.number().finite().min(0).nullable().optional(),
+    negotiateAboveQuantity: z.number().finite().min(0).nullable().optional(),
+    repeatOrderUnitPrice: z.number().finite().min(0).nullable().optional(),
+    repeatOrderMinQuantity: z.number().finite().min(0).nullable().optional(),
+    maxProductionQuantity: z.number().finite().min(0).nullable().optional(),
+    active: z.boolean().optional(),
+    pricingMode: z.enum(['interpolated', 'step']).optional(),
+    pricingBreakpoints: z.array(pricingBreakpointSchema).optional(),
+    productAddons: z.array(productAddonSchema).optional(),
+  })
+  .strict()
+
+export const legacyProductFormSchema = productFormSchema.extend({
+  productTemplateId: z.string(),
 })
 
 export const customerFormSchema = z.object({
